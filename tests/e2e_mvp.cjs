@@ -68,9 +68,11 @@ const VIEWPORTS = [
   await page.waitForTimeout(500);
   ok(await page.locator('#scr-battle.on').count() === 1, '进入战斗');
   ok(await page.locator('#skillbar .sk').count() === 4, '技能栏 4 格');
-  const w0 = await page.evaluate(() => ({wave:G.wave, left: Math.round(waveLeft), spd: Math.round(G.stats.speed)}));
+  const w0 = await page.evaluate(() => ({wave:G.wave, left: Math.round(waveLeft),
+    spd: Math.round(G.stats.speed), pickup: Math.round(G.stats.pickup)}));
   ok(w0.wave === 1, '第 1 波开始');
-  ok(w0.spd > 30, '移速正常：' + w0.spd + ' px/s（bug 时会是个位数）');
+  ok(w0.spd >= 80, '★ 移速正常：' + w0.spd + ' px/s（旧版 62 偏慢，已提到基础 96 x 角色倍率）');
+  ok(w0.pickup >= 70, '★ 拾取半径 ' + w0.pickup + ' px（旧版仅 26，要踩上去）');
 
   console.log('\n== 4. ★ 摇杆必须真的移动角色 ==');
   const box = await page.locator('#stage').boundingBox();
@@ -100,6 +102,25 @@ const VIEWPORTS = [
   const combat = await page.evaluate(() => ({killed:G.battleKilled, enemies:ents.enemies.length}));
   ok(combat.killed > 0, '自动攻击在击杀（已清 ' + combat.killed + '）');
   ok(combat.enemies > 0, '怪潮在场（' + combat.enemies + ' 只）');
+
+  console.log('');
+  console.log('== 5b. ★ 经验自动拾取（玩家站着不动也要能吸到） ==');
+  await page.evaluate(() => {
+    G.exp = 0; G.expNeed = 99999;                 // 避免升级打断
+    G.player.inv = 99;                            // 免得被怪撞死
+    const px = G.player.x, py = G.player.y;
+    ents.gems.push({x: px + 70, y: py, v: 3, t: 0, pop: 0, vx: 0, vy: 0, tag: 'a'});
+    ents.gems.push({x: px, y: py - 60, v: 3, t: 0, pop: 0, vx: 0, vy: 0, tag: 'b'});
+    ents.gems.push({x: px + 400, y: py, v: 3, t: 0, pop: 0, vx: 0, vy: 0, tag: 'c'});
+  });
+  await page.waitForTimeout(1500);
+  const after = await page.evaluate(() => ({
+    a: ents.gems.some(g => g.tag === 'a'), b: ents.gems.some(g => g.tag === 'b'),
+    c: ents.gems.some(g => g.tag === 'c'), exp: G.exp
+  }));
+  ok(!after.a && !after.b, '★ 站着不动，60px / 70px 外的宝石全部自动吸走');
+  ok(after.c, '★ 400px 外的宝石原地不动（靠近才吸，不是全屏捡）');
+  ok(after.exp >= 6, '经验已入账 +' + after.exp);
   await page.screenshot({path: path.join(SHOT, '390x844-3-battle.png')});
 
   console.log('\n== 6. ★ 暂停必须有遮罩 ==');

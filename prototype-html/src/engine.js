@@ -26,13 +26,17 @@ const G = {
   hitstop: 0, shake: 0, flags: {harvest:false, thornmail:0, thunder:0}
 };
 
+const BASE_SPEED = 96;      // 基础移速 px/s（横穿 360 宽屏约 3.75s；原 62 太慢被用户打回）
+const BASE_PICKUP = 85;     // 基础拾取半径 px（靠近即自动吸取，不必踩上去）
+
 function freshStats(char){
-  const s = {power:1, haste:1, area:1, maxhp:100, speed:62, crit:0.05, critdmg:1.5,
-             pickup:26, armor:0, regen:0, projSpd:1, greed:0, tagBonus:{}, tagCdr:{}};
+  const s = {power:1, haste:1, area:1, maxhp:100, speed:BASE_SPEED, crit:0.05, critdmg:1.5,
+             pickup:BASE_PICKUP, armor:0, regen:0, projSpd:1, greed:0, tagBonus:{}, tagCdr:{}};
   const cs = char.stats || {};
   // ⚠️ 角色给的是「倍率」，不能直接覆盖绝对值（曾因此把移速写成 0.9 px/s，角色无法移动）
-  s.speed = 62 * (cs.speedMul || 1);
-  delete cs.speedMul;
+  s.speed = BASE_SPEED * (cs.speedMul || 1);
+  s.pickup = BASE_PICKUP * (cs.pickupMul || 1);
+  delete cs.speedMul; delete cs.pickupMul;
   Object.assign(s, cs);
   s.hp = s.maxhp;
   return s;
@@ -105,13 +109,13 @@ function resetFlags(){ G.flags = {harvest:false, thornmail:0, thunder:0}; }
 
 /* ---------- 敌人生成 ---------- */
 const ENEMY_DEF = {
-  // 速度标定：约为玩家移速(62)的 55%~95%；太慢会拖节奏，太快会无处可躲
-  slime: {spr:'slime', hp:12, spd:34, dmg:6,  r:9,  exp:1, gold:0},
-  goblin:{spr:'goblin',hp:20, spd:46, dmg:8,  r:9,  exp:1, gold:1},
-  skel:  {spr:'skel',  hp:26, spd:40, dmg:10, r:9,  exp:2, gold:1},
-  bat:   {spr:'bat',   hp:12, spd:58, dmg:7,  r:8,  exp:1, gold:0},
-  elite: {spr:'elite', hp:150,spd:28, dmg:16, r:13, exp:8, gold:6},
-  boss:  {spr:'boss',  hp:900,spd:30, dmg:22, r:20, exp:40, gold:40}
+  // 速度标定：约为玩家移速(96)的 55%~90%；随玩家提速同步上调，保持「能拉开但拉不掉」的追击感
+  slime: {spr:'slime', hp:12, spd:52, dmg:6,  r:9,  exp:1, gold:0},
+  goblin:{spr:'goblin',hp:20, spd:72, dmg:8,  r:9,  exp:1, gold:1},
+  skel:  {spr:'skel',  hp:26, spd:62, dmg:10, r:9,  exp:2, gold:1},
+  bat:   {spr:'bat',   hp:12, spd:86, dmg:7,  r:8,  exp:1, gold:0},
+  elite: {spr:'elite', hp:150,spd:44, dmg:16, r:13, exp:8, gold:6},
+  boss:  {spr:'boss',  hp:900,spd:48, dmg:22, r:20, exp:40, gold:40}
 };
 
 function spawnEnemy(kind, x, y, scale){
@@ -322,7 +326,9 @@ function killEnemy(e){
   G.hitstop = Math.max(G.hitstop || 0, e.boss ? 0.34 : (e.kind === 'elite' ? 0.16 : 0.035));
   G.shake = Math.max(G.shake || 0, e.boss ? 14 : (e.kind === 'elite' ? 8 : 1.2));
   ents.fx.push({type:'boom', x:e.x, y:e.y, r:e.r, t:0.22, life:0.22, color:'#FFFFFF'});
-  ents.gems.push({x:e.x, y:e.y, v:e.exp, t:0});
+  const ga = G.rng.range(0, Math.PI*2);
+  ents.gems.push({x:e.x, y:e.y, v:e.exp, t:0, pop:0.22,
+                  vx:Math.cos(ga)*G.rng.range(40,80), vy:Math.sin(ga)*G.rng.range(40,80)});
   if (e.gold > 0) G.gold += Math.round(e.gold * (1 + (G.stats.greed||0)));
   if (e.boss) G.banner = 'BOSS 倒下！';
 }
@@ -466,11 +472,22 @@ function updateSummons(dt){
 function updateGems(dt){
   const p = G.player, st = G.stats;
   for (const g of ents.gems){
-    const d = Math.hypot(p.x-g.x, p.y-g.y);
-    if (d < st.pickup){ const a = Math.atan2(p.y-g.y, p.x-g.x), sp = 150*dt; g.x += Math.cos(a)*sp; g.y += Math.sin(a)*sp; }
-    if (d < 14){ g.got = true; addExp(g.v); }
+    // 掉落时的轻微弹开（看得见"掉了东西"）
+    if (g.pop > 0){
+      g.x += g.vx*dt; g.y += g.vy*dt;
+      g.vx *= 0.88; g.vy *= 0.88; g.pop -= dt;
+    }
+    const dx = p.x - g.x, dy = p.y - g.y;
+    const d = Math.hypot(dx, dy) || 0.01;
+    // 进入拾取半径即被吸走：越近吸得越快，最终必然贴上玩家
+    if (d < st.pickup){
+      const pull = 1 - d / st.pickup;              // 0(边缘) → 1(贴身)
+      const sp = (170 + 430*pull) * dt;
+      g.x += dx/d * sp; g.y += dy/d * sp;
+    }
+    if (d < 17){ g.got = true; addExp(g.v); }
   }
-  ents.gems = ents.gems.filter(g=>!g.got);
+  ents.gems = ents.gems.filter(g => !g.got);
 }
 function addExp(v){
   G.exp += v;

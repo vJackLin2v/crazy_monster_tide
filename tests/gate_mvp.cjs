@@ -67,6 +67,11 @@ ok(pool.modules === 18, '行为模块 ' + pool.modules + ' 个（需求 §10 目
 ok(pool.items === 20, '道具 ' + pool.items + ' 个（MVP 演示 20 / 首版目标 50）');
 ok(pool.chars === 6, '角色 ' + pool.chars + ' 个（需求 §6：6）');
 
+const feel0 = await page.evaluate(() => ({speed:G.stats.speed, pickup:G.stats.pickup, base:BASE_SPEED, basePickup:BASE_PICKUP}));
+ok(feel0.base >= 90, '基础移速 ' + feel0.base + ' px/s（横穿 360px 屏幕约 ' + (360/feel0.base).toFixed(1) + ' 秒）');
+ok(feel0.pickup >= 80, '基础拾取半径 ' + feel0.pickup + ' px（屏幕宽度的 ' + Math.round(feel0.pickup/360*100) + '%）');
+console.log('');
+console.log('== 3b2. 手感基线（移速 / 拾取半径） ==');
 console.log('\n== 3c. 打击感机制 ==');
 await page.evaluate(() => { G.hitstop = 0.3; G.shake = 12; });
 await page.waitForTimeout(700);
@@ -75,6 +80,24 @@ ok(feel.hitstop < 0.3, '顿帧会衰减：0.3 -> ' + feel.hitstop.toFixed(3));
 ok(feel.shake < 12, '屏震会衰减：12 -> ' + feel.shake.toFixed(2));
 ok(await page.locator('#cd0').count() === 1, '技能冷却遮罩元素存在（CD 可视化）');
 
+console.log('');
+console.log('== 3d. 经验自动拾取（靠近即吸，不用走过去） ==');
+// 注意：战斗中会不断有新宝石掉落，不能看 gems.length，必须给测试宝石打标记
+await page.evaluate(() => {
+  G.exp = 0; G.expNeed = 99999;
+  ents.gems.push({x:G.player.x + 80, y:G.player.y + 20, v:4, t:0, pop:0, vx:0, vy:0, tag:'near'});
+  ents.gems.push({x:G.player.x + 400, y:G.player.y, v:4, t:0, pop:0, vx:0, vy:0, tag:'far'});
+  G.player.inv = 99;   // 免得被怪撞死影响测试
+});
+await page.waitForTimeout(1500);
+const gp = await page.evaluate(() => ({
+  near: ents.gems.some(g => g.tag === 'near'),
+  far:  ents.gems.some(g => g.tag === 'far'),
+  exp: G.exp
+}));
+ok(!gp.near, '★ 80px 外的宝石被自动吸走（仍在场：' + gp.near + '）');
+ok(gp.exp >= 4, '经验已入账 +' + gp.exp);
+ok(gp.far, '★ 400px 外的宝石原地不动（仍在场：' + gp.far + '）—— 半径不是无限大');
 console.log('\n== 4. 像素级可读性 ==');
 await page.waitForTimeout(2200);
 const pix = await page.evaluate(() => {

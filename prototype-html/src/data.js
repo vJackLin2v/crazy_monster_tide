@@ -209,7 +209,7 @@ const ATTRS = {
   speed:   {name:'移动速度', icon:'➤', base:62,  step:3,    fmt:v=>v+' px/s'},
   crit:    {name:'暴击率',   icon:'✹', base:0.05,step:0.05, fmt:v=>Math.round(v*100)+'%'},
   critdmg: {name:'暴击伤害', icon:'✦', base:1.5, step:0.15, fmt:v=>Math.round(v*100)+'%'},
-  pickup:  {name:'拾取范围', icon:'◎', base:26,  step:9,    fmt:v=>'+'+v},
+  pickup:  {name:'拾取范围', icon:'◎', base:85,  step:26,   fmt:v=>'+'+v},
   armor:   {name:'减伤',     icon:'🛡', base:0,   step:0.04, fmt:v=>Math.round(v*100)+'%'},
   regen:   {name:'生命回复', icon:'✚', base:0,   step:0.35, fmt:v=>v.toFixed(2)+'/s'}
 };
@@ -220,7 +220,7 @@ const ITEMS = {
   boots:    {name:'轻羽靴',   icon:'👟', tier:1, desc:'移动速度 +10%',                apply:s=>{s.speed*=1.10}},
   lens:     {name:'放大镜',   icon:'🔍', tier:1, desc:'范围 +12%',                    apply:s=>{s.area*=1.12}},
   ring:     {name:'疾风戒',   icon:'💍', tier:1, desc:'攻速 +12%',                    apply:s=>{s.haste*=1.12}},
-  magnet:   {name:'吸铁石',   icon:'🧲', tier:1, desc:'拾取范围 +10',                 apply:s=>{s.pickup+=10}},
+  magnet:   {name:'吸铁石',   icon:'🧲', tier:1, desc:'拾取范围 +25%',                apply:s=>{s.pickup*=1.25}},
   plate:    {name:'铁胸甲',   icon:'🛡', tier:1, desc:'减伤 +6%',                     apply:s=>{s.armor+=0.06}},
   heart:    {name:'生命护符', icon:'💗', tier:2, desc:'生命上限 +25 并立即回满',       apply:s=>{s.maxhp+=25;s.hp=s.maxhp}},
   ember:    {name:'余烬核心', icon:'🔥', tier:2, desc:'火/圣标签伤害 +25%',           apply:s=>{s.tagBonus=s.tagBonus||{};s.tagBonus.fire=(s.tagBonus.fire||0)+0.25}},
@@ -233,7 +233,7 @@ const ITEMS = {
   alloy:    {name:'合金板',   icon:'⬛', tier:1, desc:'减伤 +5%',                apply:s=>{s.armor+=0.05}},
   fang:     {name:'獠牙',     icon:'🦷', tier:1, desc:'暴击率 +6%',              apply:s=>{s.crit+=0.06}},
   scope:    {name:'瞄准镜',   icon:'🎯', tier:1, desc:'暴击伤害 +25%',           apply:s=>{s.critdmg+=0.25}},
-  magnet2:  {name:'强磁铁',   icon:'🧲', tier:1, desc:'拾取范围 +12',            apply:s=>{s.pickup+=12}},
+  magnet2:  {name:'强磁铁',   icon:'🧲', tier:1, desc:'拾取范围 +30%',           apply:s=>{s.pickup*=1.30}},
   medkit:   {name:'急救包',   icon:'🧰', tier:1, desc:'生命上限 +10 并立即回满', apply:s=>{s.maxhp+=10;s.hp=s.maxhp}},
   prism:    {name:'棱镜',     icon:'🔮', tier:2, desc:'全部标签伤害 +8%',        apply:s=>{s.tagAll=(s.tagAll||0)+0.08}}
 };
@@ -249,7 +249,7 @@ const CHARS = [
    start:'arcane', stats:{power:1.1,maxhp:80}},
   {id:'ranger', name:'荒野游侠', spr:'heroC', col:'g',
    pos:'投射物速度 +25%，拾取范围 +50%', neg:'减伤 -5%（更脆）',
-   start:'ice_spear', stats:{power:0.95,speedMul:1.15,maxhp:90,projSpd:1.25,pickup:39}},
+   start:'ice_spear', stats:{power:0.95,speedMul:1.15,maxhp:90,projSpd:1.25,pickupMul:1.5}},
   {id:'monk', name:'苦行僧', spr:'heroA', col:'t',
    pos:'生命回复 +0.5/s', neg:'攻击力 -12%',
    start:'thorn', stats:{power:0.88,regen:0.5,maxhp:110}},
