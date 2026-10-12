@@ -98,6 +98,61 @@ const gp = await page.evaluate(() => ({
 ok(!gp.near, '★ 80px 外的宝石被自动吸走（仍在场：' + gp.near + '）');
 ok(gp.exp >= 4, '经验已入账 +' + gp.exp);
 ok(gp.far, '★ 400px 外的宝石原地不动（仍在场：' + gp.far + '）—— 半径不是无限大');
+console.log('');
+console.log('== 3e. 难度曲线（反断崖）与性能 ==');
+const curve = await page.evaluate(() => {
+  const spawns = (w) => {
+    const T = waveTime(w);
+    const interval = Math.max(0.30, 0.95 - w*0.04);
+    const n = Math.min(5, 1 + Math.floor(w/4));
+    return Math.round(T / interval * n);
+  };
+  const pool = (w) => ['slime','bat','goblin','skel'].filter(k => w >= ENEMY_DEF[k].from);
+  return {w1: spawns(1), w2: spawns(2), w3: spawns(3), w20: spawns(20),
+          pool1: pool(1).join(','), pool2: pool(2).join(','), pool3: pool(3).join(','),
+          speedBat: ENEMY_DEF.bat.spd, speedPlayer: G.stats.speed};
+});
+ok(curve.w2 <= curve.w1 * 1.4, '第 2 波不是断崖：第1波 ' + curve.w1 + ' 只 -> 第2波 ' + curve.w2 + ' 只（旧版 24 -> 54，翻 2.25 倍）');
+ok(curve.pool1 === 'slime', '第 1 波只有史莱姆（新手保护）');
+ok(curve.pool2 === 'slime', '第 2 波仍只有史莱姆：' + curve.pool2);
+ok(curve.pool3 === 'slime,bat', '第 3 波才解锁蝙蝠：' + curve.pool3);
+ok(curve.speedBat < curve.speedPlayer, '最快怪 ' + curve.speedBat + ' px/s < 玩家 ' + curve.speedPlayer + ' px/s（可躲）');
+ok(curve.w20 < 800, '第 20 波总刷怪量 ' + curve.w20 + '（旧版 1800，已收敛）');
+
+const perf = await page.evaluate(async () => {
+  startWave(15); G.paused = false; go('battle');
+  ents.enemies.length = 0;
+  for (let i = 0; i < 130; i++){
+    const a = i/130*Math.PI*2, rr = 70 + (i % 45);
+    spawnEnemy('slime', G.player.x + Math.cos(a)*rr, G.player.y + Math.sin(a)*rr);
+  }
+  G.player.inv = 999;
+  const t0 = performance.now(); let frames = 0;
+  await new Promise(res => {
+    const tick = () => { frames++; (performance.now() - t0 < 1000) ? requestAnimationFrame(tick) : res(); };
+    requestAnimationFrame(tick);
+  });
+  return {frames, alive: ents.enemies.filter(e => !e.dead).length};
+});
+ok(perf.frames >= 40, '130 只怪同屏：1 秒 ' + perf.frames + ' 帧（>=40 视为可接受）');
+// 还原到正常第 1 波，后面的测试还要继续打怪
+await page.evaluate(() => { startWave(1); G.paused = false; go('battle'); });
+await page.waitForTimeout(300);
+
+console.log('');
+console.log('== 3f. 金币经济 ==');
+const gold = await page.evaluate(() => {
+  const rows = [];
+  for (const w of [1,3,5,10]) rows.push({w, clear: 16 + w*7, drop: ENEMY_DEF.slime.gold});
+  G.wave = 1; G.shopReroll = 0; G.shopStock = null;
+  const stock = makeShopStock().map(s => ({k:s.kind, p:s.price}));
+  return {rows, stock};
+});
+ok(gold.rows[0].clear >= 20, '第 1 波结算 ' + gold.rows[0].clear + ' 金币（旧版 16）');
+ok(gold.rows[2].clear >= 45, '第 5 波结算 ' + gold.rows[2].clear + ' 金币');
+const cheapest = Math.min(...gold.stock.map(s => s.p));
+ok(cheapest <= 20, '第 1 波商店最便宜 ' + cheapest + ' 金币（买得起）');
+
 console.log('\n== 4. 像素级可读性 ==');
 await page.waitForTimeout(2200);
 const pix = await page.evaluate(() => {

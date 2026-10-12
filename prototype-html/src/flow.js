@@ -33,7 +33,7 @@ function waveClear(){
   let bonus = 0;
   for (const e of ents.enemies){ if (!e.dead){ e.dead = true; G.kills++; bonus += e.gold || 0; } }
   ents.enemies = [];
-  const raw = 10 + G.wave*6 + bonus;   // 波次越深金币越多
+  const raw = 16 + G.wave*7 + bonus;   // 原 10+6/波，用户反馈「金币不够」→ 提高结算产出
   const gain = Math.round(raw * (1 + (G.stats.greed || 0)));
   G.gold += gain;
   G.lastWaveGold = gain;
@@ -57,17 +57,17 @@ function makeShopStock(){
     const roll = rng.rnd();
     if (roll < 0.45 && itemPool.length){
       const id = itemPool.splice(rng.int(0, itemPool.length-1), 1)[0];
-      out.push({kind:'item', id, price: 16 + rng.int(0,8) + G.wave*3});
+      out.push({kind:'item', id, price: 13 + rng.int(0,6) + G.wave*2});
     } else if (modPool.length){
       const id = modPool.splice(rng.int(0, modPool.length-1), 1)[0];
-      out.push({kind:'module', id, price: 20 + rng.int(0,10) + G.wave*4});
+      out.push({kind:'module', id, price: 17 + rng.int(0,7) + G.wave*3});
     } else if (itemPool.length){
       const id = itemPool.splice(rng.int(0, itemPool.length-1), 1)[0];
-      out.push({kind:'item', id, price: 16 + rng.int(0,8) + G.wave*3});
+      out.push({kind:'item', id, price: 13 + rng.int(0,6) + G.wave*2});
     }
   }
-  out.push({kind:'heal', id:'heal', price: 10 + G.wave*2});
-  out.push({kind:'attr', id:'attr', price: 22 + G.wave*4});
+  out.push({kind:'heal', id:'heal', price: 8 + G.wave});
+  out.push({kind:'attr', id:'attr', price: 16 + G.wave*3});
   return out;
 }
 function openShop(){

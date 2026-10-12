@@ -109,19 +109,20 @@ function resetFlags(){ G.flags = {harvest:false, thornmail:0, thunder:0}; }
 
 /* ---------- 敌人生成 ---------- */
 const ENEMY_DEF = {
-  // 速度标定：约为玩家移速(96)的 55%~90%；随玩家提速同步上调，保持「能拉开但拉不掉」的追击感
-  slime: {spr:'slime', hp:12, spd:52, dmg:6,  r:9,  exp:1, gold:0},
-  goblin:{spr:'goblin',hp:20, spd:72, dmg:8,  r:9,  exp:1, gold:1},
-  skel:  {spr:'skel',  hp:26, spd:62, dmg:10, r:9,  exp:2, gold:1},
-  bat:   {spr:'bat',   hp:12, spd:86, dmg:7,  r:8,  exp:1, gold:0},
-  elite: {spr:'elite', hp:150,spd:44, dmg:16, r:13, exp:8, gold:6},
-  boss:  {spr:'boss',  hp:900,spd:48, dmg:22, r:20, exp:40, gold:40}
+  // 速度标定：约为玩家移速(96)的 50%~80%（蝙蝠最快要保持在玩家速度带以下，否则无法躲）
+  // from = 从第几波开始出现：新手期只出慢怪，避免第 2 波就被高速怪围死
+  slime: {spr:'slime', hp:12, spd:50, dmg:6,  r:9,  exp:1, gold:1, from:1},
+  bat:   {spr:'bat',   hp:12, spd:76, dmg:7,  r:8,  exp:1, gold:1, from:3},
+  goblin:{spr:'goblin',hp:20, spd:66, dmg:8,  r:9,  exp:1, gold:2, from:5},
+  skel:  {spr:'skel',  hp:26, spd:58, dmg:10, r:9,  exp:2, gold:2, from:8},
+  elite: {spr:'elite', hp:150,spd:44, dmg:16, r:13, exp:8, gold:15},
+  boss:  {spr:'boss',  hp:900,spd:48, dmg:22, r:20, exp:40, gold:60}
 };
 
 function spawnEnemy(kind, x, y, scale){
   const d = ENEMY_DEF[kind], s = scale||1, g = (G.wave||1) - 1;
-  const hp = Math.round(d.hp * (1 + 0.42*g) * s);
-  ents.enemies.push({kind, spr:d.spr, x, y, hp, maxhp:hp, spd:d.spd, dmg:Math.round(d.dmg*(1+0.16*g)),
+  const hp = Math.round(d.hp * (1 + 0.32*g) * s);   // 原 0.42/波，用户反馈前中期过陡
+  ents.enemies.push({kind, spr:d.spr, x, y, hp, maxhp:hp, spd:d.spd, dmg:Math.round(d.dmg*(1+0.12*g)),
     r:d.r, exp:d.exp, gold:d.gold, flash:0, kb:0, kx:0, ky:0, slow:0, burn:0, dead:false, boss:kind==='boss'});
 }
 
@@ -175,11 +176,13 @@ function updateBattle(dt){
   }
   {
     spawnAcc += dt;
-    const interval = Math.max(0.22, 0.85 - G.wave*0.09);
+    // 平滑曲线：之前用 1+floor(wave/2)，第 2 波直接从 1 只/次跳到 2 只/次（强度翻 2.3 倍），
+    // 用户实测「第 2 波怪追得很凶」即由此而来。现在改为更缓的台阶。
+    const interval = Math.max(0.30, 0.95 - G.wave*0.04);
     if (spawnAcc > interval){
       spawnAcc = 0;
-      const pool = ['slime','bat','goblin','skel'].slice(0, Math.min(4, 1 + Math.floor(G.wave/2)));
-      const n = 1 + Math.floor(G.wave/2);
+      const pool = ['slime','bat','goblin','skel'].filter(k => G.wave >= ENEMY_DEF[k].from);
+      const n = Math.min(5, 1 + Math.floor(G.wave/4));
       for (let i=0;i<n;i++){
         // 围绕玩家、在可视区外一圈生成（否则慢速怪要走很久才到，节奏拖沓）
         const a = G.rng.range(0, Math.PI*2);
