@@ -44,7 +44,7 @@
 | 改道具 | `docs/systems/item_rules.md` | 道具分类与生成规则 |
 | 改角色天赋 | `docs/systems/character_rules.md` | 正/负天赋设计规则 |
 | 改升级 3 选 1 | `docs/systems/reward_rules.md` | 奖励池与抽取逻辑 |
-| 改地图 / 节点 | `docs/systems/map_rules.md` | 树形地图与节点规则 |
+| 改关卡 / 波次 | `docs/systems/wave_rules.md` | **波次闯关规则**（原树形地图已按 D-11 废弃） |
 | 调局内节奏 | `docs/systems/core_loop.md` | 核心循环与波次节奏 |
 | **任何 UI 任务** | `docs/ui/ui_capability_protocol.md` | UI 强制流程（不许凭感觉设计） |
 | 定尺寸/触控/字号 | `docs/ui/screen_specs.md`、`docs/ui/ui_principles.md` | 360×640 竖屏与热区规范 |

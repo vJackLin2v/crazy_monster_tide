@@ -28,7 +28,11 @@ const G = {
 function freshStats(char){
   const s = {power:1, haste:1, area:1, maxhp:100, speed:62, crit:0.05, critdmg:1.5,
              pickup:26, armor:0, regen:0, projSpd:1, greed:0, tagBonus:{}, tagCdr:{}};
-  Object.assign(s, char.stats || {});
+  const cs = char.stats || {};
+  // ⚠️ 角色给的是「倍率」，不能直接覆盖绝对值（曾因此把移速写成 0.9 px/s，角色无法移动）
+  s.speed = 62 * (cs.speedMul || 1);
+  delete cs.speedMul;
+  Object.assign(s, cs);
   s.hp = s.maxhp;
   return s;
 }
@@ -95,38 +99,51 @@ const ENEMY_DEF = {
 };
 
 function spawnEnemy(kind, x, y, scale){
-  const d = ENEMY_DEF[kind], s = scale||1, g = G.layer;
-  const hp = Math.round(d.hp * (1 + 0.34*g) * s);
-  ents.enemies.push({kind, spr:d.spr, x, y, hp, maxhp:hp, spd:d.spd, dmg:Math.round(d.dmg*(1+0.12*g)),
+  const d = ENEMY_DEF[kind], s = scale||1, g = (G.wave||1) - 1;
+  const hp = Math.round(d.hp * (1 + 0.42*g) * s);
+  ents.enemies.push({kind, spr:d.spr, x, y, hp, maxhp:hp, spd:d.spd, dmg:Math.round(d.dmg*(1+0.16*g)),
     r:d.r, exp:d.exp, gold:d.gold, flash:0, kb:0, kx:0, ky:0, slow:0, burn:0, dead:false, boss:kind==='boss'});
 }
 
-/* ---------- 波次：每节点一场战斗，随时间/关卡变强 ---------- */
-let waveT = 0, waveIdx = 0, spawnAcc = 0;
-function startBattle(){
-  resetEnts(); waveT = 0; waveIdx = 0; spawnAcc = 0;
-  const isBoss = G.currentNode && G.currentNode.type === 'boss';
-  const isElite = G.currentNode && G.currentNode.type === 'elite';
-  const p = {x: W/2, y: H/2};
-  G.player = {x:p.x, y:p.y, r:9, face:1, dmgFlash:0, inv:0, hudFlash:0};
-  G.stats.hp = Math.min(G.stats.hp, G.stats.maxhp);
-  if (isBoss){ spawnEnemy('boss', W/2, 90, 1); G.banner = 'BOSS 来了'; }
-  else if (isElite) spawnEnemy('elite', W/2, 90, 1.2);
-  G.battleKind = isBoss ? 'boss' : (isElite ? 'elite' : 'battle');
-  G.battleNeed = isBoss ? 1 : (isElite ? 6 + G.layer*2 : 14 + G.layer*4);
+/* ---------- 波次（土豆兄弟式闯关） ---------- */
+let waveT = 0, waveLeft = 0, spawnAcc = 0, eliteSpawned = false;
+function startWave(n){
+  resetEnts(); waveT = 0; spawnAcc = 0; eliteSpawned = false;
+  G.wave = n;
+  G.isBossWave = (n === RUN.bossWave);
   G.battleKilled = 0;
+  waveLeft = G.isBossWave ? 0 : waveTime(n);
+  if (!G.player) G.player = {x: W/2, y: H/2, r:9, face:1, dmgFlash:0, inv:0};
+  else { G.player.x = W/2; G.player.y = H/2; G.player.inv = 1.2; }
+  G.stats.hp = Math.min(G.stats.hp, G.stats.maxhp);
+  if (G.isBossWave){
+    spawnEnemy('boss', W/2, 110, 1);
+    G.banner = 'BOSS 来了';
+  }
 }
+function waveProgress(){ return G.isBossWave ? 1 : 1 - Math.max(0, waveLeft)/waveTime(G.wave); }
 
 function updateBattle(dt){
   waveT += dt; G.runTime += dt;
-  const kind = G.battleKind;
-  if (kind !== 'boss'){
+  // 波次计时：时间到即过关（怪潮全场清空并结算）
+  if (!G.isBossWave){
+    waveLeft -= dt;
+    if (waveLeft <= 0){ waveClear(); return; }
+    // 精英波：过半时投放一只精英
+    if (!eliteSpawned && RUN.eliteWaves.indexOf(G.wave) >= 0 && waveProgress() > 0.5){
+      eliteSpawned = true;
+      const a = G.rng.range(0, Math.PI*2);
+      spawnEnemy('elite', G.player.x + Math.cos(a)*250, G.player.y + Math.sin(a)*250, 1 + 0.15*G.wave);
+      G.banner = '精英出现';
+    }
+  }
+  {
     spawnAcc += dt;
-    const interval = Math.max(0.28, 0.9 - G.layer*0.06);
-    if (spawnAcc > interval && G.battleKilled < G.battleNeed){
+    const interval = Math.max(0.22, 0.85 - G.wave*0.09);
+    if (spawnAcc > interval){
       spawnAcc = 0;
-      const pool = ['slime','bat','goblin','skel'].slice(0, Math.min(4, 1 + Math.floor(G.layer/2)));
-      const n = 1 + Math.floor(G.layer/3);
+      const pool = ['slime','bat','goblin','skel'].slice(0, Math.min(4, 1 + Math.floor(G.wave/2)));
+      const n = 1 + Math.floor(G.wave/2);
       for (let i=0;i<n;i++){
         // 围绕玩家、在可视区外一圈生成（否则慢速怪要走很久才到，节奏拖沓）
         const a = G.rng.range(0, Math.PI*2);
@@ -146,9 +163,8 @@ function updateBattle(dt){
   updateTexts(dt);
   updateSummons(dt);
 
-  if (kind === 'boss' && ents.enemies.filter(e=>e.kind==='boss'&&!e.dead).length===0) endBattle(true);
-  else if (kind !== 'boss' && G.battleKilled >= G.battleNeed && ents.enemies.filter(e=>!e.dead).length <= 2) endBattle(true);
-  if (G.stats.hp <= 0) endBattle(false);
+  if (G.isBossWave && ents.enemies.filter(e=>e.kind==='boss'&&!e.dead).length===0) waveClear();
+  if (G.stats.hp <= 0) gameOver();
 }
 
 /* ---------- 玩家 ---------- */

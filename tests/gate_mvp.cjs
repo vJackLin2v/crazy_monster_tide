@@ -1,5 +1,5 @@
-/* 疯狂怪潮 · 静态门禁（能代码量的一律量，不问 VLM）
-   覆盖：Design Token 对比度 / 触控热区 / 像素级可读性 / 因果链 / 确定性 / 合规扫描 */
+/* 疯狂怪潮 · 静态门禁（波次闯关版）
+   能代码量的一律量，不问模型：对比度 / 热区 / 波次 / 像素可读性 / 因果链 / 确定性 / 合规 */
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '..', 'prototype-html');
@@ -20,87 +20,96 @@ const page = await b.newPage({viewport:{width:390,height:844}, deviceScaleFactor
 const errs = []; page.on('pageerror', e => errs.push(e.message));
 await page.goto('http://127.0.0.1:8778/index.html');
 
-console.log('\n== 1. Design Token 对比度（WCAG AA 正文 >= 4.5:1）==');
+console.log('\n== 1. Design Token 对比度（WCAG AA >= 4.5:1）==');
 const contrast = await page.evaluate(() => {
   const lum = h => { const c = [1,3,5].map(i => parseInt(h.substr(i,2),16)/255)
       .map(v => v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4));
     return 0.2126*c[0] + 0.7152*c[1] + 0.0722*c[2]; };
-  const ratio = (a,bb) => { const l1 = lum(a), l2 = lum(bb);
-    return (Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05); };
+  const ratio = (a, bb) => { const l1 = lum(a), l2 = lum(bb); return (Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05); };
   const cs = getComputedStyle(document.documentElement); const v = n => cs.getPropertyValue(n).trim();
-  return {
-    cream_on_bg1: ratio(v('--cream'), v('--bg-1')),
-    cream_on_bg2: ratio(v('--cream'), v('--bg-2')),
-    accent_on_bg2: ratio(v('--accent'), v('--bg-2')),
-    mint_on_bg2: ratio(v('--mint'), v('--bg-2')),
-    ink_on_accent: ratio('#20160A', v('--accent'))
-  };
+  return { cream_on_bg1: ratio(v('--cream'), v('--bg-1')), cream_on_bg2: ratio(v('--cream'), v('--bg-2')),
+           accent_on_bg2: ratio(v('--accent'), v('--bg-2')), mint_on_bg2: ratio(v('--mint'), v('--bg-2')),
+           ink_on_accent: ratio('#20160A', v('--accent')) };
 });
 Object.entries(contrast).forEach(([k, v]) => ok(v >= 4.5, k + ' = ' + v.toFixed(2) + ':1'));
 
 console.log('\n== 2. 触控热区 ==');
-const t1 = await page.locator('#btn-start').boundingBox();
-ok(t1.height >= 40, '主按钮高度 ' + t1.height.toFixed(0) + 'px (>=40，含描边容差)');
-ok(t1.width >= 200, '主按钮宽度 ' + t1.width.toFixed(0) + 'px');
-await page.locator('#charrow .char').first().click();
-await page.locator('#btn-start').click(); await page.waitForTimeout(300);
-const nb = await page.locator('.node.avail').first().boundingBox();
-ok(nb.width >= 44 && nb.height >= 44, '地图节点 ' + nb.width + 'x' + nb.height + ' (>=44)');
-await page.locator('.node.avail').first().click({force:true}); await page.waitForTimeout(400);
-const pb = await page.locator('#btn-pause').boundingBox();
-ok(pb.width >= 30 && pb.height >= 30, '暂停键 ' + pb.width + 'x' + pb.height + ' (>=30，战斗内图标)');
+const pb = await page.locator('#btn-play').boundingBox();   // 量完再点，否则元素已隐藏
+ok(pb.height >= 40, '主界面按钮高 ' + pb.height.toFixed(0) + 'px');
+await page.locator('#btn-play').click(); await page.waitForTimeout(250);
+const chBox = await page.locator('#chargrid .char').first().boundingBox();
+ok(chBox.width >= 90 && chBox.height >= 60, '角色卡 ' + chBox.width.toFixed(0) + 'x' + chBox.height.toFixed(0));
+const startBox = await page.locator('#btn-start').boundingBox();
+ok(startBox.height >= 40, '开始按钮高 ' + startBox.height.toFixed(0) + 'px');
+await page.locator('#btn-start').click(); await page.waitForTimeout(600);
+const pauseBox = await page.locator('#btn-pause').boundingBox();
+ok(pauseBox.width >= 30 && pauseBox.height >= 30, '暂停键 ' + pauseBox.width.toFixed(0) + 'x' + pauseBox.height.toFixed(0));
 
-console.log('\n== 3. 像素级可读性（玩家定位环 / 高亮反馈）==');
-await page.waitForTimeout(2600);
+console.log('\n== 3. 波次系统 ==');
+const wv = await page.evaluate(() => ({wave:G.wave, total:RUN.waves, t1:waveTime(1), t2:waveTime(2),
+                                       bossWave:RUN.bossWave, elite:RUN.eliteWaves.join(',')}));
+ok(wv.total === 5 && wv.wave === 1, '共 ' + wv.total + ' 波，当前第 ' + wv.wave + ' 波');
+ok(wv.t2 > wv.t1, '波次时长递增：' + wv.t1 + 's -> ' + wv.t2 + 's');
+ok(wv.bossWave === 5, '第 ' + wv.bossWave + ' 波是 BOSS');
+ok(wv.elite === '2,3,4', '精英出现在第 ' + wv.elite + ' 波');
+
+console.log('\n== 4. 像素级可读性 ==');
+await page.waitForTimeout(2200);
 const pix = await page.evaluate(() => {
-  const cv = document.getElementById('cv'), g = cv.getContext('2d');
+  const g = document.getElementById('cv').getContext('2d');
   const cam = {cx: Math.max(0, Math.min(ARENA.W-360, G.player.x-180)),
                cy: Math.max(0, Math.min(ARENA.H-640, G.player.y-320))};
   const px = G.player.x - cam.cx, py = G.player.y - cam.cy;
-  let orange = 0, ring = 0;
+  let warm = 0, ring = 0;
   for (let a = 0; a < 64; a++){
     const th = a/64*Math.PI*2;
     for (const rr of [11,12,13,14]){
       const x = Math.round(px + Math.cos(th)*rr), y = Math.round(py + 12 + Math.sin(th)*rr*0.42);
       if (x < 0 || y < 0 || x >= 360 || y >= 640) continue;
       const d = g.getImageData(x, y, 1, 1).data; ring++;
-      // 相对色判定：暖色（红通道显著高于蓝通道）即为定位环，避免被透明度混合值骗到
-      if (d[0] > 115 && (d[0] - d[2]) > 50 && d[0] > d[1] && d[1] > d[2]) orange++;
+      if (d[0] > 115 && (d[0]-d[2]) > 50 && d[0] > d[1] && d[1] > d[2]) warm++;
     }
   }
-  const img = g.getImageData(0, 0, 360, 640).data;
+  const img = g.getImageData(0,0,360,640).data;
   let bright = 0, total = 0;
-  for (let i = 0; i < img.length; i += 4){ total++;
-    if (img[i] > 235 && img[i+1] > 235 && img[i+2] > 200) bright++; }
-  return {ringPct: orange/ring*100, brightPct: bright/total*100,
-          enemies: ents.enemies.length, killed: G.battleKilled};
+  for (let i = 0; i < img.length; i += 4){ total++; if (img[i] > 235 && img[i+1] > 235 && img[i+2] > 200) bright++; }
+  return {ringPct: warm/ring*100, brightPct: bright/total*100, enemies: ents.enemies.length, killed: G.battleKilled};
 });
-ok(pix.ringPct > 40, '玩家脚下橙色定位环可见（环带暖色占比 ' + pix.ringPct.toFixed(0) + '%）');
-ok(pix.brightPct > 0.005, '画面存在高亮像素（伤害数字 / 白闪）' + pix.brightPct.toFixed(3) + '%');
-ok(pix.enemies >= 2, '怪潮在场（' + pix.enemies + ' 只）');
-ok(pix.killed > 0, '自动攻击确实在击杀（已清 ' + pix.killed + '）');
+ok(pix.ringPct > 40, '玩家定位环可见（暖色占比 ' + pix.ringPct.toFixed(0) + '%）');
+ok(pix.brightPct > 0.005, '有高亮像素（伤害数字/白闪）' + pix.brightPct.toFixed(3) + '%');
+ok(pix.killed > 0, '自动攻击在击杀（已清 ' + pix.killed + '）');
 
-console.log('\n== 4. 因果链：升级 -> 模块 -> 安装 -> 数值变化 ==');
-await page.evaluate(() => { G.levelPause = true; openInstall('multi', 'levelup'); });
+console.log('\n== 5. 因果链：模块 -> 安装 -> 数值 ==');
+await page.evaluate(() => { G.levelPause = true; openInstall('multi','levelup'); });
 await page.waitForTimeout(300);
-ok(await page.locator('#scr-install.on').count() === 1, '模块安装屏打开（多重 / 兼容 projectile）');
+ok(await page.locator('#scr-install.on').count() === 1, '安装屏打开');
 await page.locator('#instlist .row').first().click(); await page.waitForTimeout(300);
-const afterInst = await page.evaluate(() => ({ mods: G.skills[0].mods.slice(), count: calcSkill(G.skills[0]).count }));
-ok(afterInst.mods.length >= 1, '模块已装入技能：' + JSON.stringify(afterInst.mods));
-ok(afterInst.count >= 2, '「多重」生效：投射物数量 -> ' + afterInst.count);
+const aft = await page.evaluate(() => ({mods:G.skills[0].mods.slice(), count:calcSkill(G.skills[0]).count}));
+ok(aft.mods.length >= 1, '模块已装入：' + JSON.stringify(aft.mods));
+ok(aft.count >= 2, '「多重」生效：投射物 x' + aft.count);
 
-console.log('\n== 5. 确定性（固定 seed）==');
+console.log('\n== 6. 波间商店 ==');
+await page.evaluate(() => { G.paused = false; waveLeft = 0.05; });
+await page.waitForTimeout(700);
+ok(await page.locator('#scr-shop.on').count() === 1, '波次结束进入商店');
+const st = await page.evaluate(() => ({gold:G.gold, n:(G.shopStock||[]).length, kinds:[...new Set((G.shopStock||[]).map(s=>s.kind))]}));
+ok(st.gold > 0, '结算给金币 ' + st.gold);
+ok(st.n >= 3, '货架 ' + st.n + ' 件，类型：' + st.kinds.join('/'));
+const gA = await page.evaluate(() => G.gold);
+await page.locator('#btn-reroll').click(); await page.waitForTimeout(250);
+ok(await page.evaluate(() => G.gold) < gA, '刷新扣金币');
+
+console.log('\n== 7. 确定性 ==');
 const det = await page.evaluate(() => {
-  const a = genMap(999).layers.map(l => l.map(n => n.type).join(',')).join('|');
-  const c = genMap(999).layers.map(l => l.map(n => n.type).join(',')).join('|');
-  G.rng = makeRng(3); const r1 = rollRewards().map(r => r.kind + ':' + (r.id||'')).join(',');
-  G.rng = makeRng(3); const r2 = rollRewards().map(r => r.kind + ':' + (r.id||'')).join(',');
-  return {mapSame: a === c, rewardSame: r1 === r2, reward: r1};
+  G.shopReroll = 0; G.shopStock = null;
+  const a = makeShopStock().map(s => s.kind+':'+s.id).join(',');
+  G.shopStock = null;
+  const c = makeShopStock().map(s => s.kind+':'+s.id).join(',');
+  return {same: a === c, list: a};
 });
-ok(det.mapSame, '同 seed 地图一致');
-ok(det.rewardSame, '同 seed 奖励组一致：' + det.reward);
+ok(det.same, '同 seed 商店货架一致：' + det.list);
 
-console.log('\n== 6. 合规扫描（禁用赌博语义）==');
+console.log('\n== 8. 合规扫描（禁用赌博语义）==');
 const kw = ['老虎机','转盘','骰子','筹码','下注','赔率','开箱','抽奖','赌场'];
 let hits = [];
 for (const f of ['index.html','src/data.js','src/engine.js','src/flow.js','src/ui.js','src/render.js']){
@@ -108,6 +117,15 @@ for (const f of ['index.html','src/data.js','src/engine.js','src/flow.js','src/u
   kw.forEach(k => { if (t.includes(k)) hits.push(f + ':' + k); });
 }
 ok(hits.length === 0, '源码无赌博语义词' + (hits.length ? ' -> ' + hits.join(',') : ''));
+
+console.log('\n== 9. 旧系统已彻底移除 ==');
+const legacy = await page.evaluate(() => ({
+  genMap: typeof genMap, enterNode: typeof enterNode, renderMap: typeof renderMap, openEvent: typeof openEvent
+}));
+Object.entries(legacy).forEach(([k, v]) => ok(v === 'undefined', '旧函数 ' + k + ' 已移除'));
+const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+ok(!html.includes('scr-map'), 'index.html 无地图屏');
+ok(!html.includes('scr-event'), 'index.html 无事件屏');
 
 console.log('\n================ 门禁结果 ================');
 console.log('PASS ' + pass + ' / FAIL ' + fail);

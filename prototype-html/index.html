@@ -11,6 +11,45 @@
 <div id="stagewrap"><div id="stage">
   <canvas id="cv" width="360" height="640"></canvas>
 
+  <!-- ============ 主界面 ============ -->
+  <div class="screen" id="scr-menu">
+    <div class="menuwrap">
+      <div class="logo">
+        <div class="logoT">疯狂怪潮</div>
+        <div class="logoS">CRAZY MONSTER TIDE</div>
+      </div>
+      <div class="menubtns">
+        <button class="btn big" id="btn-play">开始游戏</button>
+        <button class="btn ghost big" id="btn-howto">玩法说明</button>
+      </div>
+      <div class="menufoot">
+        4 技能 &middot; 每技能 3 个行为槽 &middot; 5 波闯关
+        <div style="margin-top:6px;opacity:.6" id="menuseed">seed -</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 玩法说明（与主界面同级，否则会被父级 display:none 连带隐藏） ============ -->
+  <div class="screen" id="scr-howto">
+    <div class="ttl">玩法说明</div>
+    <div class="scroll">
+      <div class="panel" style="padding:12px;font-size:var(--ft-s);line-height:1.7">
+        <b style="color:var(--accent)">操作</b><br>
+        按住屏幕任意处拖动 = 动态摇杆，松开消失。<br>
+        技能<b>全自动开火</b>，你只需要走位。<br><br>
+        <b style="color:var(--accent)">一局怎么打</b><br>
+        共 5 波。每波有倒计时，撑到时间结束即过关，中途升级可 3 选 1。<br>
+        第 2~4 波中途会出现<b>精英</b>，第 5 波是 <b>BOSS</b>，击杀即通关。<br><br>
+        <b style="color:var(--accent)">波间商店</b><br>
+        每波结束进入商店：买道具 / 行为模块 / 属性，也可以花金币刷新。<br><br>
+        <b style="color:var(--accent)">核心构筑</b><br>
+        最多 4 个主动技能，每个技能 3 个行为槽。<br>
+        行为模块可以<b>重复安装</b>，也能在 Build 面板里<b>搬家</b>到别的技能。
+      </div>
+    </div>
+  <div class="footer"><button class="btn" id="btn-howtoback" style="width:100%">返回</button></div>
+  </div>
+
   <!-- ============ 战斗 ============ -->
   <div class="screen" id="scr-battle">
     <div class="hud">
@@ -20,7 +59,7 @@
     </div>
     <div class="expwrap"><div class="expbar" id="expbar"></div></div>
     <div class="goldline"><span>&#9670;</span><span id="goldtxt">0</span>
-      <span style="margin-left:auto;color:#8FA3C8" id="wavetxt">第 1 波</span></div>
+      <span id="wavetxt" style="margin-left:auto;color:var(--accent);font-weight:900">第 1 波</span></div>
     <div style="flex:1"></div>
     <div id="skillbar"></div>
   </div>
@@ -32,65 +71,61 @@
 
   <!-- ============ 角色选择 ============ -->
   <div class="screen" id="scr-charselect">
-    <div class="ttl">疯狂怪潮</div>
-    <div class="sub">4 技能 &middot; 每技能 3 个行为槽 &middot; 行为模块可重复安装</div>
-    <div class="charrow" id="charrow"></div>
+    <div class="ttl">选择角色</div>
+    <div class="sub">每个角色都有正向天赋，也有明显的负面代价</div>
+    <div class="chargrid" id="chargrid"></div>
     <div class="detail" id="chardetail"></div>
-    <div class="footer"><button class="btn" id="btn-start" style="width:100%">开始逃命</button></div>
-  </div>
-
-  <!-- ============ 地图 ============ -->
-  <div class="screen" id="scr-map">
-    <div class="hud">
-      <div class="hpwrap"><div class="hpbar" id="hpbar2"></div><div class="hptxt" id="hptxt2">100/100</div></div>
-      <div class="lv" id="lvbox2">Lv.1</div>
-      <div class="ico" id="btn-build">&#9638;</div>
+    <div class="footer" style="display:flex;gap:8px">
+      <button class="btn ghost" id="btn-csback" style="flex:0 0 84px">返回</button>
+      <button class="btn" id="btn-start" style="flex:1">开始闯关</button>
     </div>
-    <div class="ttl" style="font-size:var(--ft-n)">选择路线</div>
-    <div class="sub" id="mapseedtxt">seed -</div>
-    <div class="mapwrap" id="mapwrap"></div>
   </div>
 
-  <!-- ============ 升级 3 选 1 ============ -->
+  <!-- ============ 升级 3 选 1（模态） ============ -->
   <div class="screen" id="scr-levelup">
-    <div class="ttl">升级！</div>
-    <div class="sub" id="luSub">从下列 3 项中选择 1 项</div>
-    <div class="cards" id="lucards"></div>
-    <div class="footer"><button class="btn ghost" id="btn-skip" style="width:100%;font-size:var(--ft-s)">跳过（+8 金币）</button></div>
+    <div class="backdrop"></div>
+    <div class="modalbody">
+      <div class="ttl">升级！</div>
+      <div class="sub" id="luSub">从下列 3 项中选择 1 项</div>
+      <div class="cards" id="lucards"></div>
+      <div class="footer"><button class="btn ghost" id="btn-skip" style="width:100%;font-size:var(--ft-s)">跳过（+8 金币）</button></div>
+    </div>
   </div>
 
-  <!-- ============ 模块安装目标 ============ -->
+  <!-- ============ 模块安装目标（模态） ============ -->
   <div class="screen" id="scr-install">
-    <div class="ttl" style="font-size:var(--ft-n)" id="instTitle">安装到哪个技能？</div>
-    <div class="sub" id="instSub">仅显示兼容槽位</div>
-    <div class="scroll" id="instlist"></div>
-    <div class="footer"><button class="btn ghost" id="btn-instback" style="width:100%;font-size:var(--ft-s)">返回</button></div>
+    <div class="backdrop"></div>
+    <div class="modalbody">
+      <div class="ttl" style="font-size:var(--ft-n)" id="instTitle">安装到哪个技能？</div>
+      <div class="sub" id="instSub">仅显示兼容槽位</div>
+      <div class="scroll" id="instlist"></div>
+      <div class="footer"><button class="btn ghost" id="btn-instback" style="width:100%;font-size:var(--ft-s)">返回</button></div>
+    </div>
   </div>
 
-  <!-- ============ Build 面板 ============ -->
+  <!-- ============ Build 面板（暂停：遮罩 + 底部抽屉） ============ -->
   <div class="screen" id="scr-build">
-    <div class="ttl" style="font-size:var(--ft-n)">构建面板</div>
-    <div class="tabs" id="btabs"></div>
-    <div class="scroll" id="blist"></div>
-    <div class="footer"><button class="btn" id="btn-resume" style="width:100%">继续</button></div>
+    <div class="backdrop"></div>
+    <div class="sheet">
+      <div class="sheethead">
+        <div class="ttl" style="font-size:var(--ft-n);margin:0">构建面板</div>
+        <div class="sub" style="margin:2px 0 0">第 <span id="buildWave">1</span> 波 &middot; 已暂停</div>
+      </div>
+      <div class="tabs" id="btabs"></div>
+      <div class="scroll" id="blist"></div>
+      <div class="footer"><button class="btn" id="btn-resume" style="width:100%">继续</button></div>
+    </div>
   </div>
 
-  <!-- ============ 商店 ============ -->
+  <!-- ============ 波间商店 ============ -->
   <div class="screen" id="scr-shop">
-    <div class="ttl" style="font-size:var(--ft-n)">杂货铺</div>
+    <div class="ttl" id="shopTitle">第 1 波 结束</div>
     <div class="sub" id="shopGold">金币 0</div>
     <div class="scroll" id="shoplist"></div>
-    <div class="footer"><button class="btn" id="btn-shopleave" style="width:100%">离开</button></div>
-  </div>
-
-  <!-- ============ 事件 ============ -->
-  <div class="screen" id="scr-event">
-    <div class="ttl" style="font-size:var(--ft-n)">事件</div>
-    <div class="scroll">
-      <div class="panel" style="padding:12px;font-size:var(--ft-s);line-height:1.6" id="evtext"></div>
-      <div id="evopts" style="margin-top:10px"></div>
+    <div class="footer" style="display:flex;gap:8px">
+      <button class="btn ghost" id="btn-reroll" style="flex:0 0 112px;font-size:var(--ft-s)">刷新 ◆2</button>
+      <button class="btn" id="btn-nextwave" style="flex:1">下一波</button>
     </div>
-    <div class="footer"></div>
   </div>
 
   <!-- ============ 结算 ============ -->
@@ -102,7 +137,10 @@
       <h3 style="font-size:var(--ft-s);color:var(--accent);margin:12px 0 4px">本局 Build</h3>
       <div id="resBuild"></div>
     </div>
-    <div class="footer"><button class="btn" id="btn-again" style="width:100%">再来一局</button></div>
+    <div class="footer" style="display:flex;gap:8px">
+      <button class="btn ghost" id="btn-tomenu" style="flex:0 0 96px">主界面</button>
+      <button class="btn" id="btn-again" style="flex:1">再来一局</button>
+    </div>
   </div>
 
 </div></div>

@@ -223,13 +223,13 @@ const ELITE_POOL = ['heart','ember','shard','coin'];
 const CHARS = [
   {id:'knight', name:'铁拳骑士', spr:'heroA', col:'b',
    pos:'受击后 2s 内攻击力 +20%', neg:'移动速度 -10%',
-   start:'fireball', stats:{power:1.0,speed:0.9,maxhp:120}},
+   start:'fireball', stats:{power:1.0,speedMul:0.90,maxhp:120}},
   {id:'mage', name:'秘术学徒', spr:'heroB', col:'p',
    pos:'行为模块冷却效果 +25%', neg:'生命上限 -20',
    start:'arcane', stats:{power:1.1,maxhp:80}},
   {id:'ranger', name:'荒野游侠', spr:'heroC', col:'g',
    pos:'投射物速度 +25%，拾取范围 +50%', neg:'减伤 -5%（更脆）',
-   start:'ice_spear', stats:{power:0.95,speed:1.15,maxhp:90,projSpd:1.25,pickup:39}},
+   start:'ice_spear', stats:{power:0.95,speedMul:1.15,maxhp:90,projSpd:1.25,pickup:39}},
   {id:'monk', name:'苦行僧', spr:'heroA', col:'t',
    pos:'生命回复 +0.5/s', neg:'攻击力 -12%',
    start:'thorn', stats:{power:0.88,regen:0.5,maxhp:110}},
@@ -241,12 +241,13 @@ const CHARS = [
    start:'holybolt', stats:{power:1.05,crit:0.17,critdmg:1.9,maxhp:90,armor:-0.15}}
 ];
 
-/* ---------- 地图参数（需求 §2：树形路线） ---------- */
-const MAP_CFG = {layers:8, maxBranch:3};
-const NODE_DEF = {
-  battle:{icon:'⚔', label:'战斗', w:46},
-  elite: {icon:'☠', label:'精英', w:18},
-  shop:  {icon:'🏪', label:'商店', w:14},
-  event: {icon:'❓', label:'事件', w:16},
-  boss:  {icon:'👑', label:'BOSS', w:6}
+/* ---------- 闯关配置（土豆兄弟式波次） ----------
+   用户指令 2026-10-12：去掉树形地图，改为波次闯关（见 decisions.md D-11） */
+const RUN = {
+  waves: 5,           // 一局总波数
+  bossWave: 5,        // 哪一波是 BOSS 波
+  eliteWaves: [2,3,4],// 这些波中途会出精英
+  baseTime: 20,       // 第 1 波时长（秒）
+  timeStep: 4         // 每波递增时长
 };
+function waveTime(n){ return RUN.baseTime + (n-1)*RUN.timeStep; }
