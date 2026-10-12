@@ -3,15 +3,16 @@
    结果移速被角色数据覆盖成 0.9 px/s 的 bug 逃过了全部测试。 */
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
-const ROOT = path.resolve(__dirname, '..', 'prototype-html');
+const ROOT = path.resolve(__dirname, '..');            // 工程根（素材在 ../assets 下）
+const PAGE = '/prototype-html/index.html';
 const SHOT = path.resolve(__dirname, '..', 'screenshots');
-const MIME = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.jpg':'image/jpeg'};
+const MIME = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.jpg':'image/jpeg','.json':'application/json'};
 
 (async () => {
 let pass = 0, fail = 0;
 const ok = (c, m) => { c ? (pass++, console.log('  PASS ' + m)) : (fail++, console.log('  FAIL ' + m)); };
 const srv = http.createServer((req, res) => {
-  let p = decodeURIComponent(req.url.split('?')[0]); if (p === '/') p = '/index.html';
+  let p = decodeURIComponent(req.url.split('?')[0]); if (p === '/') p = PAGE;
   const f = path.join(ROOT, p);
   if (!fs.existsSync(f)) { res.writeHead(404); return res.end('404'); }
   res.writeHead(200, {'Content-Type': MIME[path.extname(f)] || 'application/octet-stream'});
@@ -32,7 +33,7 @@ const VIEWPORTS = [
   const page = await ctx.newPage();
   page.on('console', m => { if (m.type() === 'error') errors.push('[main] ' + m.text()); });
   page.on('pageerror', e => errors.push('[main] PAGEERROR ' + e.message));
-  await page.goto('http://127.0.0.1:8777/index.html');
+  await page.goto('http://127.0.0.1:8777' + PAGE);
   await page.waitForTimeout(400);
 
   console.log('\n== 1. 主界面 ==');
@@ -233,7 +234,7 @@ const VIEWPORTS = [
   await page.evaluate(() => { startWave(6); G.paused = false; go('battle'); waveLeft = waveTime(6) * 0.69; });
   await page.waitForTimeout(1200);
   const elite = await page.evaluate(() => ({
-    hasElite: ents.enemies.some(e => e.kind === 'elite'),
+    hasElite: ents.enemies.some(e => e.elite === true),
     shaking: G.shake > 0 || true,
     banner: G.banner
   }));
@@ -332,7 +333,7 @@ for (const vp of VIEWPORTS){
   const ctx = await browser.newContext({viewport:{width:vp.w,height:vp.h}, deviceScaleFactor:2, isMobile:true, hasTouch:true});
   const page = await ctx.newPage();
   page.on('pageerror', e => errors.push('[' + vp.name + '] PAGEERROR ' + e.message));
-  await page.goto('http://127.0.0.1:8777/index.html');
+  await page.goto('http://127.0.0.1:8777' + PAGE);
   await page.waitForTimeout(400);
   console.log('\n== 视口 ' + vp.name + ' ==');
   await page.screenshot({path: path.join(SHOT, vp.name + '-0-menu.png')});
@@ -357,7 +358,7 @@ for (const vp of VIEWPORTS){
   const ctx = await browser.newContext({viewport:{width:390,height:844}});
   const page = await ctx.newPage();
   page.on('pageerror', e => errors.push('[seed] PAGEERROR ' + e.message));
-  await page.goto('http://127.0.0.1:8777/index.html');
+  await page.goto('http://127.0.0.1:8777' + PAGE);
   console.log('\n== 固定 seed ==');
   const det = await page.evaluate(() => {
     G.rng = makeRng(7); G.stats = freshStats(CHARS[0]); G.char = CHARS[0];

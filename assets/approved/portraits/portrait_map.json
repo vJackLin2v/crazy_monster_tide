@@ -1,0 +1,7076 @@
+{
+  "generated_by": "tools/assets/build_portraits.py",
+  "method": "按 content_boxes.json 的 portrait 紧裁框从 2048² 图集裁首帧内容区（Cocos 版已验证方案）",
+  "why_not_port_png": "portraits/*_port.png 实测全是 11×11，铺到 72×72 会糊成马赛克",
+  "why_not_static_grid": "静态图是网格的紧裁版（如 480×440 网格裁成 462×418），除以帧尺寸非整数 → 切格必错位；故 @static/ 一律解析回正规名",
+  "coord_convention": "左上原点，不做 y 翻转（两个数据文件的 _note 与 Atlas.ts 均明确）",
+  "atlas_dir": "H:\\AI-game\\xingnang\\cocos_port\\assets\\resources\\atlas_png",
+  "atlas_map": "H:\\AI-game\\xingnang\\cocos_port\\assets\\resources\\atlas\\atlas_map.cocos.json",
+  "boxes": "H:\\AI-game\\xingnang\\cocos_port\\assets\\resources\\data\\content_boxes.json",
+  "count": 270,
+  "tiers": {
+    "unit": 250,
+    "boss": 11,
+    "enemy": 9
+  },
+  "excluded_non_character": 139,
+  "resolved_via_plain_name": 56,
+  "fallback_static_sheets": [
+    "@static/enemy__Demon__boss__MiniBlackDragon-Sheet.png",
+    "@static/enemy__Demon__boss__MiniHydra-Sheet.png",
+    "@static/enemy__Demon__boss__MiniSkeletonDragon-Sheet.png",
+    "@static/enemy__Star Wanderers__boss__01Twin Star Lords.png",
+    "@static/enemy__Star Wanderers__boss__01Twin Star Lords_2.png",
+    "@static/enemy__Star Wanderers__boss__30.png",
+    "@static/enemy__Star Wanderers__boss__31.png",
+    "@static/enemy__Star Wanderers__boss__32.png",
+    "@static/units__Summons__MiniDwarvenGolem.png",
+    "@static/units__Summons__MiniMoltenGolem.png",
+    "@static/units__SwordMan__04Legend__02LegendSwordMan_02.png",
+    "@static/units__SwordMan__04Legend__03LegendSwordMan_02_01.png",
+    "@static/waiting__Green__MiniBigSlime.png",
+    "@static/waiting__Green__MiniGiantSlime.png",
+    "@static/waiting__Green__MiniMutantSlime.png",
+    "@static/waiting__Green__MiniSlime.png",
+    "@static/waiting__Green__MiniSlimeMonster.png",
+    "@static/waiting__MinifolksHumans__MiniArchMage.png",
+    "@static/waiting__MinifolksHumans__MiniArcherMan.png",
+    "@static/waiting__MinifolksHumans__MiniCavalierMan.png",
+    "@static/waiting__MinifolksHumans__MiniCrossBowMan.png",
+    "@static/waiting__MinifolksHumans__MiniHalberdMan.png",
+    "@static/waiting__MinifolksHumans__MiniHorseMan.png",
+    "@static/waiting__MinifolksHumans__MiniKingMan.png",
+    "@static/waiting__MinifolksHumans__MiniMage.png",
+    "@static/waiting__MinifolksHumans__MiniPrinceMan.png",
+    "@static/waiting__MinifolksHumans__MiniShieldMan.png",
+    "@static/waiting__MinifolksHumans__MiniSpearMan.png",
+    "@static/waiting__MinifolksOrcs__QyGv7W.png"
+  ],
+  "card_sizes": [
+    72,
+    96
+  ],
+  "note": "源为主池（internal-use-only）→ 产物 gitignore，仅本地使用",
+  "portraits": {
+    "01AdvanceArcherMan": {
+      "sheet": "01AdvanceArcherMan",
+      "kind": "unit",
+      "file": "01AdvanceArcherMan.png",
+      "resolved_sheet": "01AdvanceArcherMan",
+      "src_rect": [
+        1901,
+        750,
+        15,
+        13
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x13",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x52"
+        },
+        "96": {
+          "scale": 6,
+          "size": "90x78"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01AdvanceHorseMan": {
+      "sheet": "01AdvanceHorseMan",
+      "kind": "unit",
+      "file": "01AdvanceHorseMan.png",
+      "resolved_sheet": "01AdvanceHorseMan",
+      "src_rect": [
+        767,
+        773,
+        17,
+        23
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x23",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "51x69"
+        },
+        "96": {
+          "scale": 4,
+          "size": "68x92"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01AdvanceMage": {
+      "sheet": "01AdvanceMage",
+      "kind": "unit",
+      "file": "01AdvanceMage.png",
+      "resolved_sheet": "01AdvanceMage",
+      "src_rect": [
+        1893,
+        782,
+        10,
+        14
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "10x14",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "50x70"
+        },
+        "96": {
+          "scale": 6,
+          "size": "60x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01AdvancePrinceMan": {
+      "sheet": "01AdvancePrinceMan",
+      "kind": "unit",
+      "file": "01AdvancePrinceMan.png",
+      "resolved_sheet": "01AdvancePrinceMan",
+      "src_rect": [
+        869,
+        812,
+        12,
+        17
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "12x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "48x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "60x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01AdvanceSpearMan": {
+      "sheet": "01AdvanceSpearMan",
+      "kind": "unit",
+      "file": "01AdvanceSpearMan.png",
+      "resolved_sheet": "01AdvanceSpearMan",
+      "src_rect": [
+        1693,
+        811,
+        13,
+        18
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x18",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "52x72"
+        },
+        "96": {
+          "scale": 5,
+          "size": "65x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01AdvanceSwordMan": {
+      "sheet": "01AdvanceSwordMan",
+      "kind": "unit",
+      "file": "01AdvanceSwordMan.png",
+      "resolved_sheet": "01AdvanceSwordMan",
+      "src_rect": [
+        835,
+        847,
+        15,
+        15
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "90x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01Beholder": {
+      "sheet": "01Beholder",
+      "kind": "unit",
+      "file": "01Beholder.png",
+      "resolved_sheet": "01Beholder",
+      "src_rect": [
+        1721,
+        68,
+        32,
+        24
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "32x24",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "64x48"
+        },
+        "96": {
+          "scale": 3,
+          "size": "96x72"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01CanyonRaptor": {
+      "sheet": "01CanyonRaptor",
+      "kind": "unit",
+      "file": "01CanyonRaptor.png",
+      "resolved_sheet": "01CanyonRaptor",
+      "src_rect": [
+        1115,
+        122,
+        22,
+        16
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "22x16",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "66x48"
+        },
+        "96": {
+          "scale": 4,
+          "size": "88x64"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01DarkLord": {
+      "sheet": "01DarkLord",
+      "kind": "unit",
+      "file": "01DarkLord.png",
+      "resolved_sheet": "01DarkLord",
+      "src_rect": [
+        336,
+        738,
+        25,
+        25
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "25x25",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "50x50"
+        },
+        "96": {
+          "scale": 3,
+          "size": "75x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01DragonkinShaman": {
+      "sheet": "01DragonkinShaman",
+      "kind": "unit",
+      "file": "01DragonkinShaman.png",
+      "resolved_sheet": "01DragonkinShaman",
+      "src_rect": [
+        1625,
+        148,
+        18,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "18x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x64"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01Dunefang": {
+      "sheet": "01Dunefang",
+      "kind": "unit",
+      "file": "01Dunefang.png",
+      "resolved_sheet": "01Dunefang",
+      "src_rect": [
+        69,
+        173,
+        28,
+        24
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "28x24",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "56x48"
+        },
+        "96": {
+          "scale": 3,
+          "size": "84x72"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01DustHyena": {
+      "sheet": "01DustHyena",
+      "kind": "unit",
+      "file": "01DustHyena.png",
+      "resolved_sheet": "01DustHyena",
+      "src_rect": [
+        1230,
+        185,
+        16,
+        12
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "16x12",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x48"
+        },
+        "96": {
+          "scale": 6,
+          "size": "96x72"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01EyeCrawler": {
+      "sheet": "01EyeCrawler",
+      "kind": "unit",
+      "file": "01EyeCrawler.png",
+      "resolved_sheet": "01EyeCrawler",
+      "src_rect": [
+        2026,
+        188,
+        8,
+        9
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "8x9",
+      "display": {
+        "72": {
+          "scale": 8,
+          "size": "64x72"
+        },
+        "96": {
+          "scale": 10,
+          "size": "80x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01Imp": {
+      "sheet": "01Imp",
+      "kind": "unit",
+      "file": "01Imp.png",
+      "resolved_sheet": "01Imp",
+      "src_rect": [
+        769,
+        214,
+        13,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "52x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "78x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01LegendSwordMan": {
+      "sheet": "01LegendSwordMan",
+      "kind": "unit",
+      "file": "01LegendSwordMan.png",
+      "resolved_sheet": "01LegendSwordMan",
+      "src_rect": [
+        1693,
+        847,
+        14,
+        15
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "14x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "56x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01MiniHorseMan": {
+      "sheet": "01MiniHorseMan",
+      "kind": "unit",
+      "file": "01MiniHorseMan.png",
+      "resolved_sheet": "01MiniHorseMan",
+      "src_rect": [
+        668,
+        870,
+        17,
+        25
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x25",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "34x50"
+        },
+        "96": {
+          "scale": 3,
+          "size": "51x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01MiniPrinceMan": {
+      "sheet": "01MiniPrinceMan",
+      "kind": "unit",
+      "file": "01MiniPrinceMan.png",
+      "resolved_sheet": "01MiniPrinceMan",
+      "src_rect": [
+        1892,
+        880,
+        12,
+        15
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "12x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "48x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "72x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01NormalArcherMan": {
+      "sheet": "01NormalArcherMan",
+      "kind": "unit",
+      "file": "01NormalArcherMan.png",
+      "resolved_sheet": "01NormalArcherMan",
+      "src_rect": [
+        1100,
+        913,
+        14,
+        15
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "14x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "56x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01NormalMage": {
+      "sheet": "01NormalMage",
+      "kind": "unit",
+      "file": "01NormalMage.png",
+      "resolved_sheet": "01NormalMage",
+      "src_rect": [
+        770,
+        946,
+        14,
+        15
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "14x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "56x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01NormalSpearMan": {
+      "sheet": "01NormalSpearMan",
+      "kind": "unit",
+      "file": "01NormalSpearMan.png",
+      "resolved_sheet": "01NormalSpearMan",
+      "src_rect": [
+        1661,
+        947,
+        12,
+        14
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "12x14",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "60x70"
+        },
+        "96": {
+          "scale": 6,
+          "size": "72x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01NormalSwordMan": {
+      "sheet": "01NormalSwordMan",
+      "kind": "unit",
+      "file": "01NormalSwordMan.png",
+      "resolved_sheet": "01NormalSwordMan",
+      "src_rect": [
+        439,
+        979,
+        13,
+        15
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "52x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "78x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01PrismSwordMan": {
+      "sheet": "01PrismSwordMan",
+      "kind": "unit",
+      "file": "01PrismSwordMan.png",
+      "resolved_sheet": "01PrismSwordMan",
+      "src_rect": [
+        1198,
+        978,
+        13,
+        16
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "52x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "78x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01RareArcherMan": {
+      "sheet": "01RareArcherMan",
+      "kind": "unit",
+      "file": "01RareArcherMan.png",
+      "resolved_sheet": "01RareArcherMan",
+      "src_rect": [
+        1464,
+        1373,
+        14,
+        13
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "14x13",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "70x65"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x78"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01RareHorseMan": {
+      "sheet": "01RareHorseMan",
+      "kind": "unit",
+      "file": "01RareHorseMan.png",
+      "resolved_sheet": "01RareHorseMan",
+      "src_rect": [
+        239,
+        1590,
+        17,
+        27
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x27",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "34x54"
+        },
+        "96": {
+          "scale": 3,
+          "size": "51x81"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01RareMage": {
+      "sheet": "01RareMage",
+      "kind": "unit",
+      "file": "01RareMage.png",
+      "resolved_sheet": "01RareMage",
+      "src_rect": [
+        639,
+        1470,
+        10,
+        15
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "10x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "40x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "60x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01RarePrinceMan": {
+      "sheet": "01RarePrinceMan",
+      "kind": "unit",
+      "file": "01RarePrinceMan.png",
+      "resolved_sheet": "01RarePrinceMan",
+      "src_rect": [
+        801,
+        1667,
+        15,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "90x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01RareSpearMan": {
+      "sheet": "01RareSpearMan",
+      "kind": "unit",
+      "file": "01RareSpearMan.png",
+      "resolved_sheet": "01RareSpearMan",
+      "src_rect": [
+        406,
+        1302,
+        13,
+        18
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x18",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "52x72"
+        },
+        "96": {
+          "scale": 5,
+          "size": "65x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01RareSwordMan": {
+      "sheet": "01RareSwordMan",
+      "kind": "unit",
+      "file": "01RareSwordMan.png",
+      "resolved_sheet": "01RareSwordMan",
+      "src_rect": [
+        1924,
+        980,
+        17,
+        14
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x14",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "68x56"
+        },
+        "96": {
+          "scale": 5,
+          "size": "85x70"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01Space_Assassin": {
+      "sheet": "01Space Assassin",
+      "kind": "unit",
+      "file": "01Space_Assassin.png",
+      "resolved_sheet": "01Space Assassin",
+      "src_rect": [
+        174,
+        246,
+        16,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "16x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "80x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "01SpecialJester": {
+      "sheet": "01SpecialJester",
+      "kind": "unit",
+      "file": "01SpecialJester.png",
+      "resolved_sheet": "01SpecialJester",
+      "src_rect": [
+        868,
+        1012,
+        14,
+        15
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "14x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "56x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02AdvanceArcherMan_01": {
+      "sheet": "02AdvanceArcherMan_01",
+      "kind": "unit",
+      "file": "02AdvanceArcherMan_01.png",
+      "resolved_sheet": "02AdvanceArcherMan_01",
+      "src_rect": [
+        11,
+        1046,
+        14,
+        14
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "14x14",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "70x70"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02AdvanceArcherMan_02": {
+      "sheet": "02AdvanceArcherMan_02",
+      "kind": "unit",
+      "file": "02AdvanceArcherMan_02.png",
+      "resolved_sheet": "02AdvanceArcherMan_02",
+      "src_rect": [
+        770,
+        1048,
+        15,
+        12
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x12",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x48"
+        },
+        "96": {
+          "scale": 6,
+          "size": "90x72"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02AdvanceHorseMan_01": {
+      "sheet": "02AdvanceHorseMan_01",
+      "kind": "unit",
+      "file": "02AdvanceHorseMan_01.png",
+      "resolved_sheet": "02AdvanceHorseMan_01",
+      "src_rect": [
+        1790,
+        1037,
+        17,
+        23
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x23",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "51x69"
+        },
+        "96": {
+          "scale": 4,
+          "size": "68x92"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02AdvanceHorseMan_02": {
+      "sheet": "02AdvanceHorseMan_02",
+      "kind": "unit",
+      "file": "02AdvanceHorseMan_02.png",
+      "resolved_sheet": "02AdvanceHorseMan_02",
+      "src_rect": [
+        569,
+        1071,
+        17,
+        22
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x22",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "51x66"
+        },
+        "96": {
+          "scale": 4,
+          "size": "68x88"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02AdvanceMage_01": {
+      "sheet": "02AdvanceMage_01",
+      "kind": "unit",
+      "file": "02AdvanceMage_01.png",
+      "resolved_sheet": "02AdvanceMage_01",
+      "src_rect": [
+        2023,
+        1077,
+        13,
+        16
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "52x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "78x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02AdvanceMage_02": {
+      "sheet": "02AdvanceMage_02",
+      "kind": "unit",
+      "file": "02AdvanceMage_02.png",
+      "resolved_sheet": "02AdvanceMage_02",
+      "src_rect": [
+        1166,
+        1107,
+        12,
+        19
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "12x19",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "36x57"
+        },
+        "96": {
+          "scale": 5,
+          "size": "60x95"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02AdvancePrinceMan_01": {
+      "sheet": "02AdvancePrinceMan_01",
+      "kind": "unit",
+      "file": "02AdvancePrinceMan_01.png",
+      "resolved_sheet": "02AdvancePrinceMan_01",
+      "src_rect": [
+        1989,
+        1108,
+        16,
+        18
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "16x18",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x72"
+        },
+        "96": {
+          "scale": 5,
+          "size": "80x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02AdvancePrinceMan_02": {
+      "sheet": "02AdvancePrinceMan_02",
+      "kind": "unit",
+      "file": "02AdvancePrinceMan_02.png",
+      "resolved_sheet": "02AdvancePrinceMan_02",
+      "src_rect": [
+        803,
+        1146,
+        18,
+        13
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "18x13",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x52"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x65"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02AdvanceSpearMan_01": {
+      "sheet": "02AdvanceSpearMan_01",
+      "kind": "unit",
+      "file": "02AdvanceSpearMan_01.png",
+      "resolved_sheet": "02AdvanceSpearMan_01",
+      "src_rect": [
+        1825,
+        1141,
+        13,
+        18
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x18",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "52x72"
+        },
+        "96": {
+          "scale": 5,
+          "size": "65x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02AdvanceSpearMan_02": {
+      "sheet": "02AdvanceSpearMan_02",
+      "kind": "unit",
+      "file": "02AdvanceSpearMan_02.png",
+      "resolved_sheet": "02AdvanceSpearMan_02",
+      "src_rect": [
+        1067,
+        1175,
+        18,
+        17
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "18x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02AdvanceSwordMan_01": {
+      "sheet": "02AdvanceSwordMan_01",
+      "kind": "unit",
+      "file": "02AdvanceSwordMan_01.png",
+      "resolved_sheet": "02AdvanceSwordMan_01",
+      "src_rect": [
+        110,
+        1210,
+        18,
+        15
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "18x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x60"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02AdvanceSwordMan_02": {
+      "sheet": "02AdvanceSwordMan_02",
+      "kind": "unit",
+      "file": "02AdvanceSwordMan_02.png",
+      "resolved_sheet": "02AdvanceSwordMan_02",
+      "src_rect": [
+        1166,
+        1208,
+        15,
+        17
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "75x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02Bloodtail": {
+      "sheet": "02Bloodtail",
+      "kind": "unit",
+      "file": "02Bloodtail.png",
+      "resolved_sheet": "02Bloodtail",
+      "src_rect": [
+        457,
+        158,
+        31,
+        29
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "31x29",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "62x58"
+        },
+        "96": {
+          "scale": 3,
+          "size": "93x87"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02Ember_Imp": {
+      "sheet": "02Ember Imp",
+      "kind": "unit",
+      "file": "02Ember_Imp.png",
+      "resolved_sheet": "02Ember Imp",
+      "src_rect": [
+        110,
+        282,
+        14,
+        14
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "14x14",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "70x70"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02EyeBat": {
+      "sheet": "02EyeBat",
+      "kind": "unit",
+      "file": "02EyeBat.png",
+      "resolved_sheet": "02EyeBat",
+      "src_rect": [
+        798,
+        274,
+        15,
+        14
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x14",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x56"
+        },
+        "96": {
+          "scale": 6,
+          "size": "90x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02GnollArcher": {
+      "sheet": "02GnollArcher",
+      "kind": "unit",
+      "file": "02GnollArcher.png",
+      "resolved_sheet": "02GnollArcher",
+      "src_rect": [
+        1660,
+        279,
+        18,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "18x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02LegendSwordMan_01": {
+      "sheet": "02LegendSwordMan_01",
+      "kind": "unit",
+      "file": "02LegendSwordMan_01.png",
+      "resolved_sheet": "02LegendSwordMan_01",
+      "src_rect": [
+        275,
+        1244,
+        17,
+        14
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x14",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "68x56"
+        },
+        "96": {
+          "scale": 5,
+          "size": "85x70"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02MiniHorseMan_01": {
+      "sheet": "02MiniHorseMan_01",
+      "kind": "unit",
+      "file": "02MiniHorseMan_01.png",
+      "resolved_sheet": "02MiniHorseMan_01",
+      "src_rect": [
+        1130,
+        1233,
+        17,
+        25
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x25",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "34x50"
+        },
+        "96": {
+          "scale": 3,
+          "size": "51x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02MiniHorseMan_02": {
+      "sheet": "02MiniHorseMan_02",
+      "kind": "unit",
+      "file": "02MiniHorseMan_02.png",
+      "resolved_sheet": "02MiniHorseMan_02",
+      "src_rect": [
+        237,
+        1271,
+        19,
+        20
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "19x20",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x60"
+        },
+        "96": {
+          "scale": 4,
+          "size": "76x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02MiniPrinceMan_01": {
+      "sheet": "02MiniPrinceMan_01",
+      "kind": "unit",
+      "file": "02MiniPrinceMan_01.png",
+      "resolved_sheet": "02MiniPrinceMan_01",
+      "src_rect": [
+        1463,
+        1278,
+        13,
+        13
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x13",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "65x65"
+        },
+        "96": {
+          "scale": 7,
+          "size": "91x91"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02MiniPrinceMan_02": {
+      "sheet": "02MiniPrinceMan_02",
+      "kind": "unit",
+      "file": "02MiniPrinceMan_02.png",
+      "resolved_sheet": "02MiniPrinceMan_02",
+      "src_rect": [
+        602,
+        1310,
+        20,
+        14
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "20x14",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "60x42"
+        },
+        "96": {
+          "scale": 4,
+          "size": "80x56"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02NormalArcherMan_01": {
+      "sheet": "02NormalArcherMan_01",
+      "kind": "unit",
+      "file": "02NormalArcherMan_01.png",
+      "resolved_sheet": "02NormalArcherMan_01",
+      "src_rect": [
+        1695,
+        1311,
+        13,
+        13
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x13",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "65x65"
+        },
+        "96": {
+          "scale": 7,
+          "size": "91x91"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02NormalArcherMan_02": {
+      "sheet": "02NormalArcherMan_02",
+      "kind": "unit",
+      "file": "02NormalArcherMan_02.png",
+      "resolved_sheet": "02NormalArcherMan_02",
+      "src_rect": [
+        836,
+        1343,
+        14,
+        14
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "14x14",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "70x70"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02NormalMage_01": {
+      "sheet": "02NormalMage_01",
+      "kind": "unit",
+      "file": "02NormalMage_01.png",
+      "resolved_sheet": "02NormalMage_01",
+      "src_rect": [
+        803,
+        1375,
+        15,
+        15
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "90x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02NormalMage_02": {
+      "sheet": "02NormalMage_02",
+      "kind": "unit",
+      "file": "02NormalMage_02.png",
+      "resolved_sheet": "02NormalMage_02",
+      "src_rect": [
+        1924,
+        1377,
+        12,
+        13
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "12x13",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "60x65"
+        },
+        "96": {
+          "scale": 7,
+          "size": "84x91"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02NormalSpearMan_01": {
+      "sheet": "02NormalSpearMan_01",
+      "kind": "unit",
+      "file": "02NormalSpearMan_01.png",
+      "resolved_sheet": "02NormalSpearMan_01",
+      "src_rect": [
+        736,
+        1407,
+        13,
+        16
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "52x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "78x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02NormalSpearMan_02": {
+      "sheet": "02NormalSpearMan_02",
+      "kind": "unit",
+      "file": "02NormalSpearMan_02.png",
+      "resolved_sheet": "02NormalSpearMan_02",
+      "src_rect": [
+        1658,
+        1405,
+        15,
+        18
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x18",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x72"
+        },
+        "96": {
+          "scale": 5,
+          "size": "75x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02NormalSwordMan_01": {
+      "sheet": "02NormalSwordMan_01",
+      "kind": "unit",
+      "file": "02NormalSwordMan_01.png",
+      "resolved_sheet": "02NormalSwordMan_01",
+      "src_rect": [
+        439,
+        1441,
+        14,
+        15
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "14x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "56x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02NormalSwordMan_02": {
+      "sheet": "02NormalSwordMan_02",
+      "kind": "unit",
+      "file": "02NormalSwordMan_02.png",
+      "resolved_sheet": "02NormalSwordMan_02",
+      "src_rect": [
+        1330,
+        1441,
+        13,
+        15
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "52x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "78x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02PrismSwordMan_01": {
+      "sheet": "02PrismSwordMan_01",
+      "kind": "unit",
+      "file": "02PrismSwordMan_01.png",
+      "resolved_sheet": "02PrismSwordMan_01",
+      "src_rect": [
+        997,
+        1473,
+        17,
+        16
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "68x64"
+        },
+        "96": {
+          "scale": 5,
+          "size": "85x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02PrismSwordMan_02": {
+      "sheet": "02PrismSwordMan_02",
+      "kind": "unit",
+      "file": "02PrismSwordMan_02.png",
+      "resolved_sheet": "02PrismSwordMan_02",
+      "src_rect": [
+        1920,
+        1472,
+        22,
+        17
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "22x17",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "66x51"
+        },
+        "96": {
+          "scale": 4,
+          "size": "88x68"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02RareArcherMan_01": {
+      "sheet": "02RareArcherMan_01",
+      "kind": "unit",
+      "file": "02RareArcherMan_01.png",
+      "resolved_sheet": "02RareArcherMan_01",
+      "src_rect": [
+        539,
+        1404,
+        20,
+        15
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "20x15",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "60x45"
+        },
+        "96": {
+          "scale": 4,
+          "size": "80x60"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02RareArcherMan_02": {
+      "sheet": "02RareArcherMan_02",
+      "kind": "unit",
+      "file": "02RareArcherMan_02.png",
+      "resolved_sheet": "02RareArcherMan_02",
+      "src_rect": [
+        1692,
+        1404,
+        16,
+        15
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "16x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "96x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02RareHorseMan_01": {
+      "sheet": "02RareHorseMan_01",
+      "kind": "unit",
+      "file": "02RareHorseMan_01.png",
+      "resolved_sheet": "02RareHorseMan_01",
+      "src_rect": [
+        1130,
+        1589,
+        17,
+        28
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x28",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "34x56"
+        },
+        "96": {
+          "scale": 3,
+          "size": "51x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02RareHorseMan_02": {
+      "sheet": "02RareHorseMan_02",
+      "kind": "unit",
+      "file": "02RareHorseMan_02.png",
+      "resolved_sheet": "02RareHorseMan_02",
+      "src_rect": [
+        3,
+        1621,
+        22,
+        29
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "22x29",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "44x58"
+        },
+        "96": {
+          "scale": 3,
+          "size": "66x87"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02RareMage_01": {
+      "sheet": "02RareMage_01",
+      "kind": "unit",
+      "file": "02RareMage_01.png",
+      "resolved_sheet": "02RareMage_01",
+      "src_rect": [
+        569,
+        1502,
+        20,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "20x16",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "60x48"
+        },
+        "96": {
+          "scale": 4,
+          "size": "80x64"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02RareMage_02": {
+      "sheet": "02RareMage_02",
+      "kind": "unit",
+      "file": "02RareMage_02.png",
+      "resolved_sheet": "02RareMage_02",
+      "src_rect": [
+        273,
+        1536,
+        14,
+        15
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "14x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "56x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02RarePrinceMan_01": {
+      "sheet": "02RarePrinceMan_01",
+      "kind": "unit",
+      "file": "02RarePrinceMan_01.png",
+      "resolved_sheet": "02RarePrinceMan_01",
+      "src_rect": [
+        1062,
+        1700,
+        18,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "18x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x64"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02RarePrinceMan_02": {
+      "sheet": "02RarePrinceMan_02",
+      "kind": "unit",
+      "file": "02RarePrinceMan_02.png",
+      "resolved_sheet": "02RarePrinceMan_02",
+      "src_rect": [
+        669,
+        1732,
+        15,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "75x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02RareSpearMan_01": {
+      "sheet": "02RareSpearMan_01",
+      "kind": "unit",
+      "file": "02RareSpearMan_01.png",
+      "resolved_sheet": "02RareSpearMan_01",
+      "src_rect": [
+        1363,
+        1300,
+        13,
+        20
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x20",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "39x60"
+        },
+        "96": {
+          "scale": 4,
+          "size": "52x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02RareSpearMan_02": {
+      "sheet": "02RareSpearMan_02",
+      "kind": "unit",
+      "file": "02RareSpearMan_02.png",
+      "resolved_sheet": "02RareSpearMan_02",
+      "src_rect": [
+        340,
+        1328,
+        13,
+        25
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x25",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "26x50"
+        },
+        "96": {
+          "scale": 3,
+          "size": "39x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02RareSwordMan_01": {
+      "sheet": "02RareSwordMan_01",
+      "kind": "unit",
+      "file": "02RareSwordMan_01.png",
+      "resolved_sheet": "02RareSwordMan_01",
+      "src_rect": [
+        767,
+        1509,
+        18,
+        13
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "18x13",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x52"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x65"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02RareSwordMan_02": {
+      "sheet": "02RareSwordMan_02",
+      "kind": "unit",
+      "file": "02RareSwordMan_02.png",
+      "resolved_sheet": "02RareSwordMan_02",
+      "src_rect": [
+        1992,
+        1507,
+        15,
+        15
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "90x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02Space_Guardian": {
+      "sheet": "02Space Guardian",
+      "kind": "unit",
+      "file": "02Space_Guardian.png",
+      "resolved_sheet": "02Space Guardian",
+      "src_rect": [
+        899,
+        313,
+        18,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "18x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x64"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02SpecialJester_01": {
+      "sheet": "02SpecialJester_01",
+      "kind": "unit",
+      "file": "02SpecialJester_01.png",
+      "resolved_sheet": "02SpecialJester_01",
+      "src_rect": [
+        1558,
+        1538,
+        16,
+        17
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "16x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "80x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02SpecialJester_02": {
+      "sheet": "02SpecialJester_02",
+      "kind": "unit",
+      "file": "02SpecialJester_02.png",
+      "resolved_sheet": "02SpecialJester_02",
+      "src_rect": [
+        472,
+        1570,
+        13,
+        18
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x18",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "52x72"
+        },
+        "96": {
+          "scale": 5,
+          "size": "65x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02SpineTyrant": {
+      "sheet": "02SpineTyrant",
+      "kind": "unit",
+      "file": "02SpineTyrant.png",
+      "resolved_sheet": "02SpineTyrant",
+      "src_rect": [
+        1562,
+        157,
+        32,
+        30
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "32x30",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "64x60"
+        },
+        "96": {
+          "scale": 3,
+          "size": "96x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "02VenomMaw": {
+      "sheet": "02VenomMaw",
+      "kind": "unit",
+      "file": "02VenomMaw.png",
+      "resolved_sheet": "02VenomMaw",
+      "src_rect": [
+        742,
+        204,
+        34,
+        24
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "34x24",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "68x48"
+        },
+        "96": {
+          "scale": 2,
+          "size": "68x48"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03AdvanceArcherMan_01_01": {
+      "sheet": "03AdvanceArcherMan_01_01",
+      "kind": "unit",
+      "file": "03AdvanceArcherMan_01_01.png",
+      "resolved_sheet": "03AdvanceArcherMan_01_01",
+      "src_rect": [
+        506,
+        1606,
+        14,
+        15
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "14x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "56x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03AdvanceArcherMan_02_01": {
+      "sheet": "03AdvanceArcherMan_02_01",
+      "kind": "unit",
+      "file": "03AdvanceArcherMan_02_01.png",
+      "resolved_sheet": "03AdvanceArcherMan_02_01",
+      "src_rect": [
+        1297,
+        1609,
+        16,
+        12
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "16x12",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x48"
+        },
+        "96": {
+          "scale": 6,
+          "size": "96x72"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03AdvanceHorseMan_01_01": {
+      "sheet": "03AdvanceHorseMan_01_01",
+      "kind": "unit",
+      "file": "03AdvanceHorseMan_01_01.png",
+      "resolved_sheet": "03AdvanceHorseMan_01_01",
+      "src_rect": [
+        238,
+        1630,
+        18,
+        24
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "18x24",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "54x72"
+        },
+        "96": {
+          "scale": 4,
+          "size": "72x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03AdvanceHorseMan_02_01": {
+      "sheet": "03AdvanceHorseMan_02_01",
+      "kind": "unit",
+      "file": "03AdvanceHorseMan_02_01.png",
+      "resolved_sheet": "03AdvanceHorseMan_02_01",
+      "src_rect": [
+        1061,
+        1631,
+        20,
+        23
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "20x23",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "60x69"
+        },
+        "96": {
+          "scale": 4,
+          "size": "80x92"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03AdvanceMage_01_01": {
+      "sheet": "03AdvanceMage_01_01",
+      "kind": "unit",
+      "file": "03AdvanceMage_01_01.png",
+      "resolved_sheet": "03AdvanceMage_01_01",
+      "src_rect": [
+        473,
+        1670,
+        16,
+        17
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "16x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "80x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03AdvanceMage_02_01": {
+      "sheet": "03AdvanceMage_02_01",
+      "kind": "unit",
+      "file": "03AdvanceMage_02_01.png",
+      "resolved_sheet": "03AdvanceMage_02_01",
+      "src_rect": [
+        1428,
+        1667,
+        14,
+        20
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "14x20",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "42x60"
+        },
+        "96": {
+          "scale": 4,
+          "size": "56x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03AdvancePrinceMan_01_01": {
+      "sheet": "03AdvancePrinceMan_01_01",
+      "kind": "unit",
+      "file": "03AdvancePrinceMan_01_01.png",
+      "resolved_sheet": "03AdvancePrinceMan_01_01",
+      "src_rect": [
+        304,
+        1701,
+        19,
+        19
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "19x19",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x57"
+        },
+        "96": {
+          "scale": 5,
+          "size": "95x95"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03AdvancePrinceMan_02_01": {
+      "sheet": "03AdvancePrinceMan_02_01",
+      "kind": "unit",
+      "file": "03AdvancePrinceMan_02_01.png",
+      "resolved_sheet": "03AdvancePrinceMan_02_01",
+      "src_rect": [
+        1562,
+        1706,
+        12,
+        14
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "12x14",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "60x70"
+        },
+        "96": {
+          "scale": 6,
+          "size": "72x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03AdvanceSpearMan_01_01": {
+      "sheet": "03AdvanceSpearMan_01_01",
+      "kind": "unit",
+      "file": "03AdvanceSpearMan_01_01.png",
+      "resolved_sheet": "03AdvanceSpearMan_01_01",
+      "src_rect": [
+        373,
+        1735,
+        14,
+        18
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "14x18",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "56x72"
+        },
+        "96": {
+          "scale": 5,
+          "size": "70x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03AdvanceSpearMan_02_01": {
+      "sheet": "03AdvanceSpearMan_02_01",
+      "kind": "unit",
+      "file": "03AdvanceSpearMan_02_01.png",
+      "resolved_sheet": "03AdvanceSpearMan_02_01",
+      "src_rect": [
+        1727,
+        1737,
+        16,
+        16
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "16x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "96x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03AdvanceSwordMan_01_01": {
+      "sheet": "03AdvanceSwordMan_01_01",
+      "kind": "unit",
+      "file": "03AdvanceSwordMan_01_01.png",
+      "resolved_sheet": "03AdvanceSwordMan_01_01",
+      "src_rect": [
+        77,
+        1772,
+        18,
+        14
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "18x14",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x56"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x70"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03AdvanceSwordMan_02_01": {
+      "sheet": "03AdvanceSwordMan_02_01",
+      "kind": "unit",
+      "file": "03AdvanceSwordMan_02_01.png",
+      "resolved_sheet": "03AdvanceSwordMan_02_01",
+      "src_rect": [
+        141,
+        1798,
+        17,
+        21
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x21",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "51x63"
+        },
+        "96": {
+          "scale": 4,
+          "size": "68x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03CaveBasilisk": {
+      "sheet": "03CaveBasilisk",
+      "kind": "unit",
+      "file": "03CaveBasilisk.png",
+      "resolved_sheet": "03CaveBasilisk",
+      "src_rect": [
+        1072,
+        199,
+        29,
+        29
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "29x29",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "58x58"
+        },
+        "96": {
+          "scale": 3,
+          "size": "87x87"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03LegendSwordMan_01_01": {
+      "sheet": "03LegendSwordMan_01_01",
+      "kind": "unit",
+      "file": "03LegendSwordMan_01_01.png",
+      "resolved_sheet": "03LegendSwordMan_01_01",
+      "src_rect": [
+        1197,
+        1800,
+        15,
+        19
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x19",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "45x57"
+        },
+        "96": {
+          "scale": 5,
+          "size": "75x95"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03LizardHunter": {
+      "sheet": "03LizardHunter",
+      "kind": "unit",
+      "file": "03LizardHunter.png",
+      "resolved_sheet": "03LizardHunter",
+      "src_rect": [
+        139,
+        346,
+        16,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "16x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "96x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03MiniHorseMan_01_01": {
+      "sheet": "03MiniHorseMan_01_01",
+      "kind": "unit",
+      "file": "03MiniHorseMan_01_01.png",
+      "resolved_sheet": "03MiniHorseMan_01_01",
+      "src_rect": [
+        41,
+        1830,
+        17,
+        22
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x22",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "51x66"
+        },
+        "96": {
+          "scale": 4,
+          "size": "68x88"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03MiniHorseMan_02_01": {
+      "sheet": "03MiniHorseMan_02_01",
+      "kind": "unit",
+      "file": "03MiniHorseMan_02_01.png",
+      "resolved_sheet": "03MiniHorseMan_02_01",
+      "src_rect": [
+        930,
+        1828,
+        19,
+        24
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "19x24",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x72"
+        },
+        "96": {
+          "scale": 4,
+          "size": "76x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03MiniPrinceMan_01_01": {
+      "sheet": "03MiniPrinceMan_01_01",
+      "kind": "unit",
+      "file": "03MiniPrinceMan_01_01.png",
+      "resolved_sheet": "03MiniPrinceMan_01_01",
+      "src_rect": [
+        44,
+        1870,
+        14,
+        15
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "14x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "56x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03MiniPrinceMan_02_01": {
+      "sheet": "03MiniPrinceMan_02_01",
+      "kind": "unit",
+      "file": "03MiniPrinceMan_02_01.png",
+      "resolved_sheet": "03MiniPrinceMan_02_01",
+      "src_rect": [
+        1427,
+        1871,
+        18,
+        14
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "18x14",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x56"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x70"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03NormalArcherMan_01_01": {
+      "sheet": "03NormalArcherMan_01_01",
+      "kind": "unit",
+      "file": "03NormalArcherMan_01_01.png",
+      "resolved_sheet": "03NormalArcherMan_01_01",
+      "src_rect": [
+        604,
+        1905,
+        15,
+        13
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x13",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x52"
+        },
+        "96": {
+          "scale": 6,
+          "size": "90x78"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03NormalArcherMan_02_01": {
+      "sheet": "03NormalArcherMan_02_01",
+      "kind": "unit",
+      "file": "03NormalArcherMan_02_01.png",
+      "resolved_sheet": "03NormalArcherMan_02_01",
+      "src_rect": [
+        1695,
+        1905,
+        13,
+        13
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x13",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "65x65"
+        },
+        "96": {
+          "scale": 7,
+          "size": "91x91"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03NormalMage_01_01": {
+      "sheet": "03NormalMage_01_01",
+      "kind": "unit",
+      "file": "03NormalMage_01_01.png",
+      "resolved_sheet": "03NormalMage_01_01",
+      "src_rect": [
+        999,
+        1937,
+        16,
+        14
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "16x14",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x56"
+        },
+        "96": {
+          "scale": 6,
+          "size": "96x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03NormalMage_02_01": {
+      "sheet": "03NormalMage_02_01",
+      "kind": "unit",
+      "file": "03NormalMage_02_01.png",
+      "resolved_sheet": "03NormalMage_02_01",
+      "src_rect": [
+        305,
+        1960,
+        13,
+        24
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x24",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "39x72"
+        },
+        "96": {
+          "scale": 4,
+          "size": "52x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03NormalSpearMan_01_01": {
+      "sheet": "03NormalSpearMan_01_01",
+      "kind": "unit",
+      "file": "03NormalSpearMan_01_01.png",
+      "resolved_sheet": "03NormalSpearMan_01_01",
+      "src_rect": [
+        1693,
+        1968,
+        13,
+        16
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "52x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "78x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03NormalSpearMan_02_01": {
+      "sheet": "03NormalSpearMan_02_01",
+      "kind": "unit",
+      "file": "03NormalSpearMan_02_01.png",
+      "resolved_sheet": "03NormalSpearMan_02_01",
+      "src_rect": [
+        836,
+        2001,
+        16,
+        16
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "16x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "96x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03NormalSwordMan_01_01": {
+      "sheet": "03NormalSwordMan_01_01",
+      "kind": "unit",
+      "file": "03NormalSwordMan_01_01.png",
+      "resolved_sheet": "03NormalSwordMan_01_01",
+      "src_rect": [
+        1594,
+        2001,
+        14,
+        16
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "14x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "56x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03NormalSwordMan_02_01": {
+      "sheet": "03NormalSwordMan_02_01",
+      "kind": "unit",
+      "file": "03NormalSwordMan_02_01.png",
+      "resolved_sheet": "03NormalSwordMan_02_01",
+      "src_rect": [
+        439,
+        17,
+        13,
+        15
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "52x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "78x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03Observer": {
+      "sheet": "03Observer",
+      "kind": "unit",
+      "file": "03Observer.png",
+      "resolved_sheet": "03Observer",
+      "src_rect": [
+        968,
+        345,
+        11,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "11x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "44x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "55x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03PrismSwordMan_01_01": {
+      "sheet": "03PrismSwordMan_01_01",
+      "kind": "unit",
+      "file": "03PrismSwordMan_01_01.png",
+      "resolved_sheet": "03PrismSwordMan_01_01",
+      "src_rect": [
+        106,
+        45,
+        17,
+        18
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x18",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "68x72"
+        },
+        "96": {
+          "scale": 5,
+          "size": "85x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03PrismSwordMan_02_01": {
+      "sheet": "03PrismSwordMan_02_01",
+      "kind": "unit",
+      "file": "03PrismSwordMan_02_01.png",
+      "resolved_sheet": "03PrismSwordMan_02_01",
+      "src_rect": [
+        892,
+        611,
+        29,
+        20
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "29x20",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "58x40"
+        },
+        "96": {
+          "scale": 3,
+          "size": "87x60"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03RareArcherMan_01_01": {
+      "sheet": "03RareArcherMan_01_01",
+      "kind": "unit",
+      "file": "03RareArcherMan_01_01.png",
+      "resolved_sheet": "03RareArcherMan_01_01",
+      "src_rect": [
+        637,
+        1434,
+        21,
+        18
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "21x18",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "63x54"
+        },
+        "96": {
+          "scale": 4,
+          "size": "84x72"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03RareArcherMan_02_01": {
+      "sheet": "03RareArcherMan_02_01",
+      "kind": "unit",
+      "file": "03RareArcherMan_02_01.png",
+      "resolved_sheet": "03RareArcherMan_02_01",
+      "src_rect": [
+        1656,
+        1436,
+        19,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "19x16",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x48"
+        },
+        "96": {
+          "scale": 5,
+          "size": "95x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03RareHorseMan_01_01": {
+      "sheet": "03RareHorseMan_01_01",
+      "kind": "unit",
+      "file": "03RareHorseMan_01_01.png",
+      "resolved_sheet": "03RareHorseMan_01_01",
+      "src_rect": [
+        932,
+        1621,
+        17,
+        29
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x29",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "34x58"
+        },
+        "96": {
+          "scale": 3,
+          "size": "51x87"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03RareHorseMan_02_01": {
+      "sheet": "03RareHorseMan_02_01",
+      "kind": "unit",
+      "file": "03RareHorseMan_02_01.png",
+      "resolved_sheet": "03RareHorseMan_02_01",
+      "src_rect": [
+        1850,
+        1621,
+        23,
+        29
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "23x29",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "46x58"
+        },
+        "96": {
+          "scale": 3,
+          "size": "69x87"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03RareMage_01_01": {
+      "sheet": "03RareMage_01_01",
+      "kind": "unit",
+      "file": "03RareMage_01_01.png",
+      "resolved_sheet": "03RareMage_01_01",
+      "src_rect": [
+        1463,
+        1535,
+        18,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "18x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x64"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03RareMage_02_01": {
+      "sheet": "03RareMage_02_01",
+      "kind": "unit",
+      "file": "03RareMage_02_01.png",
+      "resolved_sheet": "03RareMage_02_01",
+      "src_rect": [
+        1461,
+        1567,
+        13,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "52x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "65x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03RarePrinceMan_01_01": {
+      "sheet": "03RarePrinceMan_01_01",
+      "kind": "unit",
+      "file": "03RarePrinceMan_01_01.png",
+      "resolved_sheet": "03RarePrinceMan_01_01",
+      "src_rect": [
+        930,
+        1767,
+        18,
+        15
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "18x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x60"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03RarePrinceMan_02_01": {
+      "sheet": "03RarePrinceMan_02_01",
+      "kind": "unit",
+      "file": "03RarePrinceMan_02_01.png",
+      "resolved_sheet": "03RarePrinceMan_02_01",
+      "src_rect": [
+        1956,
+        1765,
+        16,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "16x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "80x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03RareSpearMan_01_01": {
+      "sheet": "03RareSpearMan_01_01",
+      "kind": "unit",
+      "file": "03RareSpearMan_01_01.png",
+      "resolved_sheet": "03RareSpearMan_01_01",
+      "src_rect": [
+        1394,
+        1328,
+        17,
+        25
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x25",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "34x50"
+        },
+        "96": {
+          "scale": 3,
+          "size": "51x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03RareSpearMan_02_01": {
+      "sheet": "03RareSpearMan_02_01",
+      "kind": "unit",
+      "file": "03RareSpearMan_02_01.png",
+      "resolved_sheet": "03RareSpearMan_02_01",
+      "src_rect": [
+        402,
+        1361,
+        17,
+        25
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x25",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "34x50"
+        },
+        "96": {
+          "scale": 3,
+          "size": "51x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03RareSwordMan_01_01": {
+      "sheet": "03RareSwordMan_01_01",
+      "kind": "unit",
+      "file": "03RareSwordMan_01_01.png",
+      "resolved_sheet": "03RareSwordMan_01_01",
+      "src_rect": [
+        1000,
+        51,
+        19,
+        14
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "19x14",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x42"
+        },
+        "96": {
+          "scale": 5,
+          "size": "95x70"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03RareSwordMan_02_01": {
+      "sheet": "03RareSwordMan_02_01",
+      "kind": "unit",
+      "file": "03RareSwordMan_02_01.png",
+      "resolved_sheet": "03RareSwordMan_02_01",
+      "src_rect": [
+        1198,
+        649,
+        17,
+        15
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "68x60"
+        },
+        "96": {
+          "scale": 5,
+          "size": "85x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03Rascal_Imp": {
+      "sheet": "03Rascal Imp",
+      "kind": "unit",
+      "file": "03Rascal_Imp.png",
+      "resolved_sheet": "03Rascal Imp",
+      "src_rect": [
+        175,
+        379,
+        13,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "52x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "78x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03RazorscaleElder": {
+      "sheet": "03RazorscaleElder",
+      "kind": "unit",
+      "file": "03RazorscaleElder.png",
+      "resolved_sheet": "03RazorscaleElder",
+      "src_rect": [
+        1058,
+        365,
+        29,
+        30
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "29x30",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "58x60"
+        },
+        "96": {
+          "scale": 3,
+          "size": "87x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03ShieldGnoll": {
+      "sheet": "03ShieldGnoll",
+      "kind": "unit",
+      "file": "03ShieldGnoll.png",
+      "resolved_sheet": "03ShieldGnoll",
+      "src_rect": [
+        2023,
+        377,
+        15,
+        18
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x18",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x72"
+        },
+        "96": {
+          "scale": 5,
+          "size": "75x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03Space_Hunter": {
+      "sheet": "03Space Hunter",
+      "kind": "unit",
+      "file": "03Space_Hunter.png",
+      "resolved_sheet": "03Space Hunter",
+      "src_rect": [
+        1660,
+        412,
+        15,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "90x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03SpecialJester_01_01": {
+      "sheet": "03SpecialJester_01_01",
+      "kind": "unit",
+      "file": "03SpecialJester_01_01.png",
+      "resolved_sheet": "03SpecialJester_01_01",
+      "src_rect": [
+        7,
+        78,
+        19,
+        20
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "19x20",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x60"
+        },
+        "96": {
+          "scale": 4,
+          "size": "76x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03SpecialJester_02_01": {
+      "sheet": "03SpecialJester_02_01",
+      "kind": "unit",
+      "file": "03SpecialJester_02_01.png",
+      "resolved_sheet": "03SpecialJester_02_01",
+      "src_rect": [
+        967,
+        79,
+        13,
+        19
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "13x19",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "39x57"
+        },
+        "96": {
+          "scale": 5,
+          "size": "65x95"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "03WastelandPiper": {
+      "sheet": "03WastelandPiper",
+      "kind": "unit",
+      "file": "03WastelandPiper.png",
+      "resolved_sheet": "03WastelandPiper",
+      "src_rect": [
+        1680,
+        8,
+        47,
+        40
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "47x40",
+      "display": {
+        "72": {
+          "scale": 1,
+          "size": "47x40"
+        },
+        "96": {
+          "scale": 2,
+          "size": "94x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "04Gazer": {
+      "sheet": "04Gazer",
+      "kind": "unit",
+      "file": "04Gazer.png",
+      "resolved_sheet": "04Gazer",
+      "src_rect": [
+        1989,
+        441,
+        15,
+        20
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x20",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "45x60"
+        },
+        "96": {
+          "scale": 4,
+          "size": "60x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "04Space_Knight": {
+      "sheet": "04Space Knight",
+      "kind": "unit",
+      "file": "04Space_Knight.png",
+      "resolved_sheet": "04Space Knight",
+      "src_rect": [
+        898,
+        477,
+        20,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "20x17",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "60x51"
+        },
+        "96": {
+          "scale": 4,
+          "size": "80x68"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "04Succubus": {
+      "sheet": "04Succubus",
+      "kind": "unit",
+      "file": "04Succubus.png",
+      "resolved_sheet": "04Succubus",
+      "src_rect": [
+        78,
+        511,
+        10,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "10x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "40x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "60x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "04WastelandWarrior": {
+      "sheet": "04WastelandWarrior",
+      "kind": "unit",
+      "file": "04WastelandWarrior.png",
+      "resolved_sheet": "04WastelandWarrior",
+      "src_rect": [
+        1198,
+        510,
+        17,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "68x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "85x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "05BloodscentAssassin": {
+      "sheet": "05BloodscentAssassin",
+      "kind": "unit",
+      "file": "05BloodscentAssassin.png",
+      "resolved_sheet": "05BloodscentAssassin",
+      "src_rect": [
+        439,
+        543,
+        15,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "75x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "05ClawedDemon": {
+      "sheet": "05ClawedDemon",
+      "kind": "unit",
+      "file": "05ClawedDemon.png",
+      "resolved_sheet": "05ClawedDemon",
+      "src_rect": [
+        1394,
+        543,
+        17,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "68x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "85x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "05LizardGuard": {
+      "sheet": "05LizardGuard",
+      "kind": "unit",
+      "file": "05LizardGuard.png",
+      "resolved_sheet": "05LizardGuard",
+      "src_rect": [
+        503,
+        577,
+        16,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "16x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "96x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "05Space_Cavalry": {
+      "sheet": "05Space Cavalry",
+      "kind": "unit",
+      "file": "05Space_Cavalry.png",
+      "resolved_sheet": "05Space Cavalry",
+      "src_rect": [
+        1491,
+        571,
+        21,
+        22
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "21x22",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "63x66"
+        },
+        "96": {
+          "scale": 4,
+          "size": "84x88"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "05StingerBat": {
+      "sheet": "05StingerBat",
+      "kind": "unit",
+      "file": "05StingerBat.png",
+      "resolved_sheet": "05StingerBat",
+      "src_rect": [
+        336,
+        604,
+        15,
+        20
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x20",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "45x60"
+        },
+        "96": {
+          "scale": 4,
+          "size": "60x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "06Deceiver": {
+      "sheet": "06Deceiver",
+      "kind": "unit",
+      "file": "06Deceiver.png",
+      "resolved_sheet": "06Deceiver",
+      "src_rect": [
+        1133,
+        610,
+        12,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "12x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "48x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "72x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "06Deceiver02": {
+      "sheet": "06Deceiver02",
+      "kind": "unit",
+      "file": "06Deceiver02.png",
+      "resolved_sheet": "06Deceiver02",
+      "src_rect": [
+        1364,
+        610,
+        12,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "12x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "48x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "72x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "06GnollBerserker": {
+      "sheet": "06GnollBerserker",
+      "kind": "unit",
+      "file": "06GnollBerserker.png",
+      "resolved_sheet": "06GnollBerserker",
+      "src_rect": [
+        1231,
+        642,
+        20,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "20x17",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "60x51"
+        },
+        "96": {
+          "scale": 4,
+          "size": "80x68"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "06HighDemon": {
+      "sheet": "06HighDemon",
+      "kind": "unit",
+      "file": "06HighDemon.png",
+      "resolved_sheet": "06HighDemon",
+      "src_rect": [
+        914,
+        248,
+        24,
+        21
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "24x21",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "72x63"
+        },
+        "96": {
+          "scale": 4,
+          "size": "96x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "06LizardBrute": {
+      "sheet": "06LizardBrute",
+      "kind": "unit",
+      "file": "06LizardBrute.png",
+      "resolved_sheet": "06LizardBrute",
+      "src_rect": [
+        1451,
+        506,
+        24,
+        26
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "24x26",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "48x52"
+        },
+        "96": {
+          "scale": 3,
+          "size": "72x78"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "06Space_Wizard": {
+      "sheet": "06Space Wizard",
+      "kind": "unit",
+      "file": "06Space_Wizard.png",
+      "resolved_sheet": "06Space Wizard",
+      "src_rect": [
+        735,
+        676,
+        16,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "16x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "96x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "07CackleShaman": {
+      "sheet": "07CackleShaman",
+      "kind": "unit",
+      "file": "07CackleShaman.png",
+      "resolved_sheet": "07CackleShaman",
+      "src_rect": [
+        272,
+        707,
+        15,
+        18
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x18",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x72"
+        },
+        "96": {
+          "scale": 5,
+          "size": "75x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "07Crescent_Raider": {
+      "sheet": "07Crescent Raider",
+      "kind": "unit",
+      "file": "07Crescent_Raider.png",
+      "resolved_sheet": "07Crescent Raider",
+      "src_rect": [
+        1722,
+        708,
+        21,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "21x17",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "63x51"
+        },
+        "96": {
+          "scale": 4,
+          "size": "84x68"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "07EyeMatron": {
+      "sheet": "07EyeMatron",
+      "kind": "unit",
+      "file": "07EyeMatron.png",
+      "resolved_sheet": "07EyeMatron",
+      "src_rect": [
+        434,
+        729,
+        25,
+        24
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "25x24",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "50x48"
+        },
+        "96": {
+          "scale": 3,
+          "size": "75x72"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "07HellWarden": {
+      "sheet": "07HellWarden",
+      "kind": "unit",
+      "file": "07HellWarden.png",
+      "resolved_sheet": "07HellWarden",
+      "src_rect": [
+        1758,
+        741,
+        16,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "16x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "80x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "07LizardShaman": {
+      "sheet": "07LizardShaman",
+      "kind": "unit",
+      "file": "07LizardShaman.png",
+      "resolved_sheet": "07LizardShaman",
+      "src_rect": [
+        1328,
+        767,
+        15,
+        24
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x24",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "45x72"
+        },
+        "96": {
+          "scale": 4,
+          "size": "60x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "08CaveBrute": {
+      "sheet": "08CaveBrute",
+      "kind": "unit",
+      "file": "08CaveBrute.png",
+      "resolved_sheet": "08CaveBrute",
+      "src_rect": [
+        304,
+        804,
+        19,
+        20
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "19x20",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x60"
+        },
+        "96": {
+          "scale": 4,
+          "size": "76x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "08Crystal_Guard": {
+      "sheet": "08Crystal Guard",
+      "kind": "unit",
+      "file": "08Crystal_Guard.png",
+      "resolved_sheet": "08Crystal Guard",
+      "src_rect": [
+        1461,
+        805,
+        15,
+        19
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x19",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "45x57"
+        },
+        "96": {
+          "scale": 5,
+          "size": "75x95"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "08GreatswordRider": {
+      "sheet": "08GreatswordRider",
+      "kind": "unit",
+      "file": "08GreatswordRider.png",
+      "resolved_sheet": "08GreatswordRider",
+      "src_rect": [
+        748,
+        288,
+        22,
+        22
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "22x22",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "66x66"
+        },
+        "96": {
+          "scale": 4,
+          "size": "88x88"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "08Hell_Witch": {
+      "sheet": "08Hell Witch",
+      "kind": "unit",
+      "file": "08Hell_Witch.png",
+      "resolved_sheet": "08Hell Witch",
+      "src_rect": [
+        866,
+        839,
+        16,
+        18
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "16x18",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x72"
+        },
+        "96": {
+          "scale": 5,
+          "size": "80x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "08PackChief": {
+      "sheet": "08PackChief",
+      "kind": "unit",
+      "file": "08PackChief.png",
+      "resolved_sheet": "08PackChief",
+      "src_rect": [
+        274,
+        872,
+        19,
+        18
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "19x18",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x54"
+        },
+        "96": {
+          "scale": 5,
+          "size": "95x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "09CrimsonRaptor": {
+      "sheet": "09CrimsonRaptor",
+      "kind": "unit",
+      "file": "09CrimsonRaptor.png",
+      "resolved_sheet": "09CrimsonRaptor",
+      "src_rect": [
+        215,
+        332,
+        22,
+        19
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "22x19",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "66x57"
+        },
+        "96": {
+          "scale": 4,
+          "size": "88x76"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "09EyeWarlock": {
+      "sheet": "09EyeWarlock",
+      "kind": "unit",
+      "file": "09EyeWarlock.png",
+      "resolved_sheet": "09EyeWarlock",
+      "src_rect": [
+        663,
+        861,
+        27,
+        29
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "27x29",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "54x58"
+        },
+        "96": {
+          "scale": 3,
+          "size": "81x87"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "09Hell_Enforcer": {
+      "sheet": "09Hell Enforcer",
+      "kind": "unit",
+      "file": "09Hell_Enforcer.png",
+      "resolved_sheet": "09Hell Enforcer",
+      "src_rect": [
+        136,
+        904,
+        25,
+        19
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "25x19",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "50x38"
+        },
+        "96": {
+          "scale": 3,
+          "size": "75x57"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "09Starlight_Paladin": {
+      "sheet": "09Starlight Paladin",
+      "kind": "unit",
+      "file": "09Starlight_Paladin.png",
+      "resolved_sheet": "09Starlight Paladin",
+      "src_rect": [
+        2021,
+        907,
+        18,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "18x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x64"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "10CaveDevourer": {
+      "sheet": "10CaveDevourer",
+      "kind": "unit",
+      "file": "10CaveDevourer.png",
+      "resolved_sheet": "10CaveDevourer",
+      "src_rect": [
+        1062,
+        928,
+        21,
+        28
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "21x28",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "42x56"
+        },
+        "96": {
+          "scale": 3,
+          "size": "63x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "10Demon_Lord": {
+      "sheet": "10Demon Lord",
+      "kind": "unit",
+      "file": "10Demon_Lord.png",
+      "resolved_sheet": "10Demon Lord",
+      "src_rect": [
+        215,
+        370,
+        26,
+        22
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "26x22",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "52x44"
+        },
+        "96": {
+          "scale": 3,
+          "size": "78x66"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "10LizardWarlord": {
+      "sheet": "10LizardWarlord",
+      "kind": "unit",
+      "file": "10LizardWarlord.png",
+      "resolved_sheet": "10LizardWarlord",
+      "src_rect": [
+        346,
+        572,
+        24,
+        26
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "24x26",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "48x52"
+        },
+        "96": {
+          "scale": 3,
+          "size": "72x78"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "10Star_Priestess": {
+      "sheet": "10Star Priestess",
+      "kind": "unit",
+      "file": "10Star_Priestess.png",
+      "resolved_sheet": "10Star Priestess",
+      "src_rect": [
+        372,
+        972,
+        15,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "75x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "AssaultBarrierattack": {
+      "sheet": "AssaultBarrierattack",
+      "kind": "unit",
+      "file": "AssaultBarrierattack.png",
+      "resolved_sheet": "AssaultBarrierattack",
+      "src_rect": [
+        797,
+        1197,
+        20,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "20x16",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "60x48"
+        },
+        "96": {
+          "scale": 4,
+          "size": "80x64"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "Bear": {
+      "sheet": "Bear",
+      "kind": "unit",
+      "file": "Bear.png",
+      "resolved_sheet": "Bear",
+      "src_rect": [
+        930,
+        120,
+        22,
+        11
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "22x11",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "66x33"
+        },
+        "96": {
+          "scale": 4,
+          "size": "88x44"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "BindingBoltAttack": {
+      "sheet": "BindingBoltAttack",
+      "kind": "unit",
+      "file": "BindingBoltAttack.png",
+      "resolved_sheet": "BindingBoltAttack",
+      "src_rect": [
+        936,
+        1199,
+        11,
+        11
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "11x11",
+      "display": {
+        "72": {
+          "scale": 6,
+          "size": "66x66"
+        },
+        "96": {
+          "scale": 8,
+          "size": "88x88"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "Boar": {
+      "sheet": "Boar",
+      "kind": "unit",
+      "file": "Boar.png",
+      "resolved_sheet": "Boar",
+      "src_rect": [
+        1724,
+        121,
+        18,
+        10
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "18x10",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x40"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x50"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "MiniColossus": {
+      "sheet": "MiniColossus",
+      "kind": "unit",
+      "file": "MiniColossus.png",
+      "resolved_sheet": "MiniColossus",
+      "src_rect": [
+        952,
+        672,
+        23,
+        25
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "23x25",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "46x50"
+        },
+        "96": {
+          "scale": 3,
+          "size": "69x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "MiniGoblin": {
+      "sheet": "MiniGoblin",
+      "kind": "unit",
+      "file": "MiniGoblin.png",
+      "resolved_sheet": "MiniGoblin",
+      "src_rect": [
+        902,
+        1011,
+        14,
+        11
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "14x11",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "70x55"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x66"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "MiniGoblinThief": {
+      "sheet": "MiniGoblinThief",
+      "kind": "unit",
+      "file": "MiniGoblinThief.png",
+      "resolved_sheet": "MiniGoblinThief",
+      "src_rect": [
+        209,
+        1011,
+        14,
+        11
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "14x11",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "70x55"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x66"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "MiniOrc": {
+      "sheet": "MiniOrc",
+      "kind": "unit",
+      "file": "MiniOrc.png",
+      "resolved_sheet": "MiniOrc",
+      "src_rect": [
+        1494,
+        1139,
+        19,
+        15
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "19x15",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x45"
+        },
+        "96": {
+          "scale": 5,
+          "size": "95x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "MiniOrcBerserker": {
+      "sheet": "MiniOrcBerserker",
+      "kind": "unit",
+      "file": "MiniOrcBerserker.png",
+      "resolved_sheet": "MiniOrcBerserker",
+      "src_rect": [
+        995,
+        1038,
+        24,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "24x17",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "72x51"
+        },
+        "96": {
+          "scale": 4,
+          "size": "96x68"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "MiniOrcPriest": {
+      "sheet": "MiniOrcPriest",
+      "kind": "unit",
+      "file": "MiniOrcPriest.png",
+      "resolved_sheet": "MiniOrcPriest",
+      "src_rect": [
+        764,
+        1066,
+        19,
+        22
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "19x22",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x66"
+        },
+        "96": {
+          "scale": 4,
+          "size": "76x88"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "MiniOrcShaman": {
+      "sheet": "MiniOrcShaman",
+      "kind": "unit",
+      "file": "MiniOrcShaman.png",
+      "resolved_sheet": "MiniOrcShaman",
+      "src_rect": [
+        1955,
+        1071,
+        16,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "16x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "80x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "MiniOrcVeteran": {
+      "sheet": "MiniOrcVeteran",
+      "kind": "unit",
+      "file": "MiniOrcVeteran.png",
+      "resolved_sheet": "MiniOrcVeteran",
+      "src_rect": [
+        629,
+        1103,
+        23,
+        18
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "23x18",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "69x54"
+        },
+        "96": {
+          "scale": 4,
+          "size": "92x72"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "MiniOrcWarChief": {
+      "sheet": "MiniOrcWarChief",
+      "kind": "unit",
+      "file": "MiniOrcWarChief.png",
+      "resolved_sheet": "MiniOrcWarChief",
+      "src_rect": [
+        1751,
+        1104,
+        23,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "23x17",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "69x51"
+        },
+        "96": {
+          "scale": 4,
+          "size": "92x68"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "MiniOrcWarrior": {
+      "sheet": "MiniOrcWarrior",
+      "kind": "unit",
+      "file": "MiniOrcWarrior.png",
+      "resolved_sheet": "MiniOrcWarrior",
+      "src_rect": [
+        503,
+        1138,
+        20,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "20x16",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "60x48"
+        },
+        "96": {
+          "scale": 4,
+          "size": "80x64"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "MiniOrcWerewolf": {
+      "sheet": "MiniOrcWerewolf",
+      "kind": "unit",
+      "file": "MiniOrcWerewolf.png",
+      "resolved_sheet": "MiniOrcWerewolf",
+      "src_rect": [
+        544,
+        415,
+        19,
+        18
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "19x18",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x54"
+        },
+        "96": {
+          "scale": 5,
+          "size": "95x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "MiniPanther": {
+      "sheet": "MiniPanther",
+      "kind": "unit",
+      "file": "MiniPanther.png",
+      "resolved_sheet": "MiniPanther",
+      "src_rect": [
+        377,
+        716,
+        25,
+        14
+      ],
+      "atlas_page": 2,
+      "note": "正规条目直接裁剪",
+      "native_size": "25x14",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "50x28"
+        },
+        "96": {
+          "scale": 3,
+          "size": "75x42"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "MiniWargRider": {
+      "sheet": "MiniWargRider",
+      "kind": "unit",
+      "file": "MiniWargRider.png",
+      "resolved_sheet": "MiniWargRider",
+      "src_rect": [
+        239,
+        1167,
+        22,
+        20
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "22x20",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "66x60"
+        },
+        "96": {
+          "scale": 4,
+          "size": "88x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "MiniWolfRider": {
+      "sheet": "MiniWolfRider",
+      "kind": "unit",
+      "file": "MiniWolfRider.png",
+      "resolved_sheet": "MiniWolfRider",
+      "src_rect": [
+        1098,
+        1166,
+        17,
+        21
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x21",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "51x63"
+        },
+        "96": {
+          "scale": 4,
+          "size": "68x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "OrcArchShamanattack": {
+      "sheet": "OrcArchShamanattack",
+      "kind": "unit",
+      "file": "OrcArchShamanattack.png",
+      "resolved_sheet": "OrcArchShamanattack",
+      "src_rect": [
+        515,
+        1278,
+        9,
+        7
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "9x7",
+      "display": {
+        "72": {
+          "scale": 8,
+          "size": "72x56"
+        },
+        "96": {
+          "scale": 10,
+          "size": "90x70"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "Wolf": {
+      "sheet": "Wolf",
+      "kind": "unit",
+      "file": "Wolf.png",
+      "resolved_sheet": "Wolf",
+      "src_rect": [
+        240,
+        1209,
+        17,
+        11
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "17x11",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "68x44"
+        },
+        "96": {
+          "scale": 5,
+          "size": "85x55"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "abyssarrow2": {
+      "sheet": "abyssarrow2",
+      "kind": "unit",
+      "file": "abyssarrow2.png",
+      "resolved_sheet": "abyssarrow2",
+      "src_rect": [
+        1492,
+        1197,
+        21,
+        6
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "21x6",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "63x18"
+        },
+        "96": {
+          "scale": 4,
+          "size": "84x24"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "bladewave": {
+      "sheet": "bladewave",
+      "kind": "unit",
+      "file": "bladewave.png",
+      "resolved_sheet": "bladewave",
+      "src_rect": [
+        732,
+        1273,
+        15,
+        15
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "15x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "90x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "bladewavefrankenstein": {
+      "sheet": "bladewavefrankenstein",
+      "kind": "unit",
+      "file": "bladewavefrankenstein.png",
+      "resolved_sheet": "bladewavefrankenstein",
+      "src_rect": [
+        807,
+        1275,
+        7,
+        10
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "7x10",
+      "display": {
+        "72": {
+          "scale": 7,
+          "size": "49x70"
+        },
+        "96": {
+          "scale": 9,
+          "size": "63x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "meteorfall": {
+      "sheet": "meteorfall",
+      "kind": "unit",
+      "file": "meteorfall.png",
+      "resolved_sheet": "meteorfall",
+      "src_rect": [
+        1430,
+        1275,
+        36,
+        64
+      ],
+      "atlas_page": 1,
+      "note": "正规条目直接裁剪",
+      "native_size": "36x64",
+      "display": {
+        "72": {
+          "scale": 1,
+          "size": "36x64"
+        },
+        "96": {
+          "scale": 1,
+          "size": "36x64"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "meteorground": {
+      "sheet": "meteorground",
+      "kind": "unit",
+      "file": "meteorground.png",
+      "resolved_sheet": "meteorground",
+      "src_rect": [
+        646,
+        1496,
+        54,
+        36
+      ],
+      "atlas_page": 1,
+      "note": "正规条目直接裁剪",
+      "native_size": "54x36",
+      "display": {
+        "72": {
+          "scale": 1,
+          "size": "54x36"
+        },
+        "96": {
+          "scale": 1,
+          "size": "54x36"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "stormblade": {
+      "sheet": "stormblade",
+      "kind": "unit",
+      "file": "stormblade.png",
+      "resolved_sheet": "stormblade",
+      "src_rect": [
+        1322,
+        1225,
+        20,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "正规条目直接裁剪",
+      "native_size": "20x16",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "60x48"
+        },
+        "96": {
+          "scale": 4,
+          "size": "80x64"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Demon__boss__MiniBlackDragon-Sheet.png": {
+      "sheet": "@static/enemy__Demon__boss__MiniBlackDragon-Sheet.png",
+      "kind": "boss",
+      "file": "static__enemy__Demon__boss__MiniBlackDragon-Sheet.png.png",
+      "resolved_sheet": "@static/enemy__Demon__boss__MiniBlackDragon-Sheet.png",
+      "src_rect": [
+        10,
+        1471,
+        1005,
+        222
+      ],
+      "atlas_page": 0,
+      "note": "透明间隙递归切格 16×5 → 1×2",
+      "native_size": "45x30",
+      "display": {
+        "72": {
+          "scale": 1,
+          "size": "45x30"
+        },
+        "96": {
+          "scale": 2,
+          "size": "90x60"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Demon__boss__MiniHydra-Sheet.png": {
+      "sheet": "@static/enemy__Demon__boss__MiniHydra-Sheet.png",
+      "kind": "boss",
+      "file": "static__enemy__Demon__boss__MiniHydra-Sheet.png.png",
+      "resolved_sheet": "@static/enemy__Demon__boss__MiniHydra-Sheet.png",
+      "src_rect": [
+        1034,
+        1472,
+        688,
+        221
+      ],
+      "atlas_page": 0,
+      "note": "透明间隙递归切格 11×5 → 1×2",
+      "native_size": "48x29",
+      "display": {
+        "72": {
+          "scale": 1,
+          "size": "48x29"
+        },
+        "96": {
+          "scale": 2,
+          "size": "96x58"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Demon__boss__MiniSkeletonDragon-Sheet.png": {
+      "sheet": "@static/enemy__Demon__boss__MiniSkeletonDragon-Sheet.png",
+      "kind": "boss",
+      "file": "static__enemy__Demon__boss__MiniSkeletonDragon-Sheet.png.png",
+      "resolved_sheet": "@static/enemy__Demon__boss__MiniSkeletonDragon-Sheet.png",
+      "src_rect": [
+        9,
+        1248,
+        1296,
+        220
+      ],
+      "atlas_page": 0,
+      "note": "透明间隙递归切格 14×6",
+      "native_size": "48x28",
+      "display": {
+        "72": {
+          "scale": 1,
+          "size": "48x28"
+        },
+        "96": {
+          "scale": 2,
+          "size": "96x56"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Orcs__MiniGoblinThief_S.png": {
+      "sheet": "@static/enemy__Orcs__MiniGoblinThief_S.png",
+      "kind": "enemy",
+      "file": "static__enemy__Orcs__MiniGoblinThief_S.png.png",
+      "resolved_sheet": "MiniGoblinThief",
+      "src_rect": [
+        209,
+        1011,
+        14,
+        11
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniGoblinThief",
+      "native_size": "14x11",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "70x55"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x66"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Orcs__MiniGoblin_S.png": {
+      "sheet": "@static/enemy__Orcs__MiniGoblin_S.png",
+      "kind": "enemy",
+      "file": "static__enemy__Orcs__MiniGoblin_S.png.png",
+      "resolved_sheet": "MiniGoblin",
+      "src_rect": [
+        902,
+        1011,
+        14,
+        11
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniGoblin",
+      "native_size": "14x11",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "70x55"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x66"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Orcs__MiniOrcBerserker_S.png": {
+      "sheet": "@static/enemy__Orcs__MiniOrcBerserker_S.png",
+      "kind": "enemy",
+      "file": "static__enemy__Orcs__MiniOrcBerserker_S.png.png",
+      "resolved_sheet": "MiniOrcBerserker",
+      "src_rect": [
+        995,
+        1038,
+        24,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniOrcBerserker",
+      "native_size": "24x17",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "72x51"
+        },
+        "96": {
+          "scale": 4,
+          "size": "96x68"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Orcs__MiniOrcVeteran_S.png": {
+      "sheet": "@static/enemy__Orcs__MiniOrcVeteran_S.png",
+      "kind": "enemy",
+      "file": "static__enemy__Orcs__MiniOrcVeteran_S.png.png",
+      "resolved_sheet": "MiniOrcVeteran",
+      "src_rect": [
+        629,
+        1103,
+        23,
+        18
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniOrcVeteran",
+      "native_size": "23x18",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "69x54"
+        },
+        "96": {
+          "scale": 4,
+          "size": "92x72"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Orcs__MiniOrcWarChief_S.png": {
+      "sheet": "@static/enemy__Orcs__MiniOrcWarChief_S.png",
+      "kind": "enemy",
+      "file": "static__enemy__Orcs__MiniOrcWarChief_S.png.png",
+      "resolved_sheet": "MiniOrcWarChief",
+      "src_rect": [
+        1751,
+        1104,
+        23,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniOrcWarChief",
+      "native_size": "23x17",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "69x51"
+        },
+        "96": {
+          "scale": 4,
+          "size": "92x68"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Orcs__MiniOrcWarrior_S.png": {
+      "sheet": "@static/enemy__Orcs__MiniOrcWarrior_S.png",
+      "kind": "enemy",
+      "file": "static__enemy__Orcs__MiniOrcWarrior_S.png.png",
+      "resolved_sheet": "MiniOrcWarrior",
+      "src_rect": [
+        503,
+        1138,
+        20,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniOrcWarrior",
+      "native_size": "20x16",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "60x48"
+        },
+        "96": {
+          "scale": 4,
+          "size": "80x64"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Orcs__MiniOrc_S.png": {
+      "sheet": "@static/enemy__Orcs__MiniOrc_S.png",
+      "kind": "enemy",
+      "file": "static__enemy__Orcs__MiniOrc_S.png.png",
+      "resolved_sheet": "MiniOrc",
+      "src_rect": [
+        1494,
+        1139,
+        19,
+        15
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniOrc",
+      "native_size": "19x15",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x45"
+        },
+        "96": {
+          "scale": 5,
+          "size": "95x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Orcs__MiniWargRider_S.png": {
+      "sheet": "@static/enemy__Orcs__MiniWargRider_S.png",
+      "kind": "enemy",
+      "file": "static__enemy__Orcs__MiniWargRider_S.png.png",
+      "resolved_sheet": "MiniWargRider",
+      "src_rect": [
+        239,
+        1167,
+        22,
+        20
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniWargRider",
+      "native_size": "22x20",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "66x60"
+        },
+        "96": {
+          "scale": 4,
+          "size": "88x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Orcs__MiniWolfRider_S.png": {
+      "sheet": "@static/enemy__Orcs__MiniWolfRider_S.png",
+      "kind": "enemy",
+      "file": "static__enemy__Orcs__MiniWolfRider_S.png.png",
+      "resolved_sheet": "MiniWolfRider",
+      "src_rect": [
+        1098,
+        1166,
+        17,
+        21
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniWolfRider",
+      "native_size": "17x21",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "51x63"
+        },
+        "96": {
+          "scale": 4,
+          "size": "68x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Orcs__boss__MiniOrcShaman_S.png": {
+      "sheet": "@static/enemy__Orcs__boss__MiniOrcShaman_S.png",
+      "kind": "boss",
+      "file": "static__enemy__Orcs__boss__MiniOrcShaman_S.png.png",
+      "resolved_sheet": "MiniOrcShaman",
+      "src_rect": [
+        1955,
+        1071,
+        16,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniOrcShaman",
+      "native_size": "16x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "80x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Orcs__boss__MiniOrcWerewolf_S.png": {
+      "sheet": "@static/enemy__Orcs__boss__MiniOrcWerewolf_S.png",
+      "kind": "boss",
+      "file": "static__enemy__Orcs__boss__MiniOrcWerewolf_S.png.png",
+      "resolved_sheet": "MiniOrcWerewolf",
+      "src_rect": [
+        544,
+        415,
+        19,
+        18
+      ],
+      "atlas_page": 2,
+      "note": "@static → 复用正规条目 MiniOrcWerewolf",
+      "native_size": "19x18",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x54"
+        },
+        "96": {
+          "scale": 5,
+          "size": "95x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Orcs__boss__Wolf_S.png": {
+      "sheet": "@static/enemy__Orcs__boss__Wolf_S.png",
+      "kind": "boss",
+      "file": "static__enemy__Orcs__boss__Wolf_S.png.png",
+      "resolved_sheet": "Wolf",
+      "src_rect": [
+        240,
+        1209,
+        17,
+        11
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 Wolf",
+      "native_size": "17x11",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "68x44"
+        },
+        "96": {
+          "scale": 5,
+          "size": "85x55"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Star_Wanderers__boss__01Twin_Star_Lords.png": {
+      "sheet": "@static/enemy__Star Wanderers__boss__01Twin Star Lords.png",
+      "kind": "boss",
+      "file": "static__enemy__Star_Wanderers__boss__01Twin_Star_Lords.png.png",
+      "resolved_sheet": "@static/enemy__Star Wanderers__boss__01Twin Star Lords.png",
+      "src_rect": [
+        1738,
+        1612,
+        218,
+        156
+      ],
+      "atlas_page": 1,
+      "note": "透明间隙递归切格 6×5",
+      "native_size": "26x28",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "52x56"
+        },
+        "96": {
+          "scale": 3,
+          "size": "78x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Star_Wanderers__boss__01Twin_Star_Lords_2.png": {
+      "sheet": "@static/enemy__Star Wanderers__boss__01Twin Star Lords_2.png",
+      "kind": "boss",
+      "file": "static__enemy__Star_Wanderers__boss__01Twin_Star_Lords_2.png.png",
+      "resolved_sheet": "@static/enemy__Star Wanderers__boss__01Twin Star Lords_2.png",
+      "src_rect": [
+        4,
+        1773,
+        218,
+        156
+      ],
+      "atlas_page": 1,
+      "note": "透明间隙递归切格 6×5",
+      "native_size": "26x28",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "52x56"
+        },
+        "96": {
+          "scale": 3,
+          "size": "78x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Star_Wanderers__boss__30.png": {
+      "sheet": "@static/enemy__Star Wanderers__boss__30.png",
+      "kind": "boss",
+      "file": "static__enemy__Star_Wanderers__boss__30.png.png",
+      "resolved_sheet": "@static/enemy__Star Wanderers__boss__30.png",
+      "src_rect": [
+        1549,
+        229,
+        271,
+        196
+      ],
+      "atlas_page": 1,
+      "note": "透明间隙递归切格 7×5",
+      "native_size": "31x36",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "62x72"
+        },
+        "96": {
+          "scale": 2,
+          "size": "62x72"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Star_Wanderers__boss__31.png": {
+      "sheet": "@static/enemy__Star Wanderers__boss__31.png",
+      "kind": "boss",
+      "file": "static__enemy__Star_Wanderers__boss__31.png.png",
+      "resolved_sheet": "@static/enemy__Star Wanderers__boss__31.png",
+      "src_rect": [
+        1189,
+        2,
+        382,
+        286
+      ],
+      "atlas_page": 0,
+      "note": "透明间隙递归切格 8×6",
+      "native_size": "46x46",
+      "display": {
+        "72": {
+          "scale": 1,
+          "size": "46x46"
+        },
+        "96": {
+          "scale": 2,
+          "size": "92x92"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__enemy__Star_Wanderers__boss__32.png": {
+      "sheet": "@static/enemy__Star Wanderers__boss__32.png",
+      "kind": "boss",
+      "file": "static__enemy__Star_Wanderers__boss__32.png.png",
+      "resolved_sheet": "@static/enemy__Star Wanderers__boss__32.png",
+      "src_rect": [
+        1050,
+        2009,
+        324,
+        34
+      ],
+      "atlas_page": 1,
+      "note": "透明间隙递归切格 7×1",
+      "native_size": "36x34",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "72x68"
+        },
+        "96": {
+          "scale": 2,
+          "size": "72x68"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__ArcherMan__03Rare__01RareArcherMan.png": {
+      "sheet": "@static/units__ArcherMan__03Rare__01RareArcherMan.png",
+      "kind": "unit",
+      "file": "static__units__ArcherMan__03Rare__01RareArcherMan.png.png",
+      "resolved_sheet": "01RareArcherMan",
+      "src_rect": [
+        1464,
+        1373,
+        14,
+        13
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 01RareArcherMan",
+      "native_size": "14x13",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "70x65"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x78"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__ArcherMan__03Rare__02RareArcherMan_01.png": {
+      "sheet": "@static/units__ArcherMan__03Rare__02RareArcherMan_01.png",
+      "kind": "unit",
+      "file": "static__units__ArcherMan__03Rare__02RareArcherMan_01.png.png",
+      "resolved_sheet": "02RareArcherMan_01",
+      "src_rect": [
+        539,
+        1404,
+        20,
+        15
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 02RareArcherMan_01",
+      "native_size": "20x15",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "60x45"
+        },
+        "96": {
+          "scale": 4,
+          "size": "80x60"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__ArcherMan__03Rare__02RareArcherMan_02.png": {
+      "sheet": "@static/units__ArcherMan__03Rare__02RareArcherMan_02.png",
+      "kind": "unit",
+      "file": "static__units__ArcherMan__03Rare__02RareArcherMan_02.png.png",
+      "resolved_sheet": "02RareArcherMan_02",
+      "src_rect": [
+        1692,
+        1404,
+        16,
+        15
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 02RareArcherMan_02",
+      "native_size": "16x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "96x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__ArcherMan__03Rare__03RareArcherMan_01_01.png": {
+      "sheet": "@static/units__ArcherMan__03Rare__03RareArcherMan_01_01.png",
+      "kind": "unit",
+      "file": "static__units__ArcherMan__03Rare__03RareArcherMan_01_01.png.png",
+      "resolved_sheet": "03RareArcherMan_01_01",
+      "src_rect": [
+        637,
+        1434,
+        21,
+        18
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 03RareArcherMan_01_01",
+      "native_size": "21x18",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "63x54"
+        },
+        "96": {
+          "scale": 4,
+          "size": "84x72"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__ArcherMan__03Rare__03RareArcherMan_02_01.png": {
+      "sheet": "@static/units__ArcherMan__03Rare__03RareArcherMan_02_01.png",
+      "kind": "unit",
+      "file": "static__units__ArcherMan__03Rare__03RareArcherMan_02_01.png.png",
+      "resolved_sheet": "03RareArcherMan_02_01",
+      "src_rect": [
+        1656,
+        1436,
+        19,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 03RareArcherMan_02_01",
+      "native_size": "19x16",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x48"
+        },
+        "96": {
+          "scale": 5,
+          "size": "95x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__HorseMan__03Rare__01RareHorseMan.png": {
+      "sheet": "@static/units__HorseMan__03Rare__01RareHorseMan.png",
+      "kind": "unit",
+      "file": "static__units__HorseMan__03Rare__01RareHorseMan.png.png",
+      "resolved_sheet": "01RareHorseMan",
+      "src_rect": [
+        239,
+        1590,
+        17,
+        27
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 01RareHorseMan",
+      "native_size": "17x27",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "34x54"
+        },
+        "96": {
+          "scale": 3,
+          "size": "51x81"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__HorseMan__03Rare__02RareHorseMan_01.png": {
+      "sheet": "@static/units__HorseMan__03Rare__02RareHorseMan_01.png",
+      "kind": "unit",
+      "file": "static__units__HorseMan__03Rare__02RareHorseMan_01.png.png",
+      "resolved_sheet": "02RareHorseMan_01",
+      "src_rect": [
+        1130,
+        1589,
+        17,
+        28
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 02RareHorseMan_01",
+      "native_size": "17x28",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "34x56"
+        },
+        "96": {
+          "scale": 3,
+          "size": "51x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__HorseMan__03Rare__02RareHorseMan_02.png": {
+      "sheet": "@static/units__HorseMan__03Rare__02RareHorseMan_02.png",
+      "kind": "unit",
+      "file": "static__units__HorseMan__03Rare__02RareHorseMan_02.png.png",
+      "resolved_sheet": "02RareHorseMan_02",
+      "src_rect": [
+        3,
+        1621,
+        22,
+        29
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 02RareHorseMan_02",
+      "native_size": "22x29",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "44x58"
+        },
+        "96": {
+          "scale": 3,
+          "size": "66x87"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__HorseMan__03Rare__03RareHorseMan_01_01.png": {
+      "sheet": "@static/units__HorseMan__03Rare__03RareHorseMan_01_01.png",
+      "kind": "unit",
+      "file": "static__units__HorseMan__03Rare__03RareHorseMan_01_01.png.png",
+      "resolved_sheet": "03RareHorseMan_01_01",
+      "src_rect": [
+        932,
+        1621,
+        17,
+        29
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 03RareHorseMan_01_01",
+      "native_size": "17x29",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "34x58"
+        },
+        "96": {
+          "scale": 3,
+          "size": "51x87"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__HorseMan__03Rare__03RareHorseMan_02_01.png": {
+      "sheet": "@static/units__HorseMan__03Rare__03RareHorseMan_02_01.png",
+      "kind": "unit",
+      "file": "static__units__HorseMan__03Rare__03RareHorseMan_02_01.png.png",
+      "resolved_sheet": "03RareHorseMan_02_01",
+      "src_rect": [
+        1850,
+        1621,
+        23,
+        29
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 03RareHorseMan_02_01",
+      "native_size": "23x29",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "46x58"
+        },
+        "96": {
+          "scale": 3,
+          "size": "69x87"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__Mage__03Rare__01RareMage.png": {
+      "sheet": "@static/units__Mage__03Rare__01RareMage.png",
+      "kind": "unit",
+      "file": "static__units__Mage__03Rare__01RareMage.png.png",
+      "resolved_sheet": "01RareMage",
+      "src_rect": [
+        639,
+        1470,
+        10,
+        15
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 01RareMage",
+      "native_size": "10x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "40x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "60x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__Mage__03Rare__02RareMage_01.png": {
+      "sheet": "@static/units__Mage__03Rare__02RareMage_01.png",
+      "kind": "unit",
+      "file": "static__units__Mage__03Rare__02RareMage_01.png.png",
+      "resolved_sheet": "02RareMage_01",
+      "src_rect": [
+        569,
+        1502,
+        20,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 02RareMage_01",
+      "native_size": "20x16",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "60x48"
+        },
+        "96": {
+          "scale": 4,
+          "size": "80x64"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__Mage__03Rare__02RareMage_02.png": {
+      "sheet": "@static/units__Mage__03Rare__02RareMage_02.png",
+      "kind": "unit",
+      "file": "static__units__Mage__03Rare__02RareMage_02.png.png",
+      "resolved_sheet": "02RareMage_02",
+      "src_rect": [
+        273,
+        1536,
+        14,
+        15
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 02RareMage_02",
+      "native_size": "14x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "56x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__Mage__03Rare__03RareMage_01_01.png": {
+      "sheet": "@static/units__Mage__03Rare__03RareMage_01_01.png",
+      "kind": "unit",
+      "file": "static__units__Mage__03Rare__03RareMage_01_01.png.png",
+      "resolved_sheet": "03RareMage_01_01",
+      "src_rect": [
+        1463,
+        1535,
+        18,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 03RareMage_01_01",
+      "native_size": "18x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x64"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__Mage__03Rare__03RareMage_02_01.png": {
+      "sheet": "@static/units__Mage__03Rare__03RareMage_02_01.png",
+      "kind": "unit",
+      "file": "static__units__Mage__03Rare__03RareMage_02_01.png.png",
+      "resolved_sheet": "03RareMage_02_01",
+      "src_rect": [
+        1461,
+        1567,
+        13,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 03RareMage_02_01",
+      "native_size": "13x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "52x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "65x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__PrinceMan__03Rare__01RarePrinceMan.png": {
+      "sheet": "@static/units__PrinceMan__03Rare__01RarePrinceMan.png",
+      "kind": "unit",
+      "file": "static__units__PrinceMan__03Rare__01RarePrinceMan.png.png",
+      "resolved_sheet": "01RarePrinceMan",
+      "src_rect": [
+        801,
+        1667,
+        15,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 01RarePrinceMan",
+      "native_size": "15x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "90x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__PrinceMan__03Rare__02RarePrinceMan_01.png": {
+      "sheet": "@static/units__PrinceMan__03Rare__02RarePrinceMan_01.png",
+      "kind": "unit",
+      "file": "static__units__PrinceMan__03Rare__02RarePrinceMan_01.png.png",
+      "resolved_sheet": "02RarePrinceMan_01",
+      "src_rect": [
+        1062,
+        1700,
+        18,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 02RarePrinceMan_01",
+      "native_size": "18x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x64"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__PrinceMan__03Rare__02RarePrinceMan_02.png": {
+      "sheet": "@static/units__PrinceMan__03Rare__02RarePrinceMan_02.png",
+      "kind": "unit",
+      "file": "static__units__PrinceMan__03Rare__02RarePrinceMan_02.png.png",
+      "resolved_sheet": "02RarePrinceMan_02",
+      "src_rect": [
+        669,
+        1732,
+        15,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 02RarePrinceMan_02",
+      "native_size": "15x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "75x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__PrinceMan__03Rare__03RarePrinceMan_01_01.png": {
+      "sheet": "@static/units__PrinceMan__03Rare__03RarePrinceMan_01_01.png",
+      "kind": "unit",
+      "file": "static__units__PrinceMan__03Rare__03RarePrinceMan_01_01.png.png",
+      "resolved_sheet": "03RarePrinceMan_01_01",
+      "src_rect": [
+        930,
+        1767,
+        18,
+        15
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 03RarePrinceMan_01_01",
+      "native_size": "18x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x60"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__PrinceMan__03Rare__03RarePrinceMan_02_01.png": {
+      "sheet": "@static/units__PrinceMan__03Rare__03RarePrinceMan_02_01.png",
+      "kind": "unit",
+      "file": "static__units__PrinceMan__03Rare__03RarePrinceMan_02_01.png.png",
+      "resolved_sheet": "03RarePrinceMan_02_01",
+      "src_rect": [
+        1956,
+        1765,
+        16,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 03RarePrinceMan_02_01",
+      "native_size": "16x17",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x68"
+        },
+        "96": {
+          "scale": 5,
+          "size": "80x85"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__SpearMan__03Rare__01RareSpearMan.png": {
+      "sheet": "@static/units__SpearMan__03Rare__01RareSpearMan.png",
+      "kind": "unit",
+      "file": "static__units__SpearMan__03Rare__01RareSpearMan.png.png",
+      "resolved_sheet": "01RareSpearMan",
+      "src_rect": [
+        406,
+        1302,
+        13,
+        18
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 01RareSpearMan",
+      "native_size": "13x18",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "52x72"
+        },
+        "96": {
+          "scale": 5,
+          "size": "65x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__SpearMan__03Rare__02RareSpearMan_01.png": {
+      "sheet": "@static/units__SpearMan__03Rare__02RareSpearMan_01.png",
+      "kind": "unit",
+      "file": "static__units__SpearMan__03Rare__02RareSpearMan_01.png.png",
+      "resolved_sheet": "02RareSpearMan_01",
+      "src_rect": [
+        1363,
+        1300,
+        13,
+        20
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 02RareSpearMan_01",
+      "native_size": "13x20",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "39x60"
+        },
+        "96": {
+          "scale": 4,
+          "size": "52x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__SpearMan__03Rare__02RareSpearMan_02.png": {
+      "sheet": "@static/units__SpearMan__03Rare__02RareSpearMan_02.png",
+      "kind": "unit",
+      "file": "static__units__SpearMan__03Rare__02RareSpearMan_02.png.png",
+      "resolved_sheet": "02RareSpearMan_02",
+      "src_rect": [
+        340,
+        1328,
+        13,
+        25
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 02RareSpearMan_02",
+      "native_size": "13x25",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "26x50"
+        },
+        "96": {
+          "scale": 3,
+          "size": "39x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__SpearMan__03Rare__03RareSpearMan_01_01.png": {
+      "sheet": "@static/units__SpearMan__03Rare__03RareSpearMan_01_01.png",
+      "kind": "unit",
+      "file": "static__units__SpearMan__03Rare__03RareSpearMan_01_01.png.png",
+      "resolved_sheet": "03RareSpearMan_01_01",
+      "src_rect": [
+        1394,
+        1328,
+        17,
+        25
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 03RareSpearMan_01_01",
+      "native_size": "17x25",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "34x50"
+        },
+        "96": {
+          "scale": 3,
+          "size": "51x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__SpearMan__03Rare__03RareSpearMan_02_01.png": {
+      "sheet": "@static/units__SpearMan__03Rare__03RareSpearMan_02_01.png",
+      "kind": "unit",
+      "file": "static__units__SpearMan__03Rare__03RareSpearMan_02_01.png.png",
+      "resolved_sheet": "03RareSpearMan_02_01",
+      "src_rect": [
+        402,
+        1361,
+        17,
+        25
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 03RareSpearMan_02_01",
+      "native_size": "17x25",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "34x50"
+        },
+        "96": {
+          "scale": 3,
+          "size": "51x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__Summons__MiniDwarvenGolem.png": {
+      "sheet": "@static/units__Summons__MiniDwarvenGolem.png",
+      "kind": "unit",
+      "file": "static__units__Summons__MiniDwarvenGolem.png.png",
+      "resolved_sheet": "@static/units__Summons__MiniDwarvenGolem.png",
+      "src_rect": [
+        584,
+        13,
+        246,
+        211
+      ],
+      "atlas_page": 1,
+      "note": "透明间隙递归切格 8×7",
+      "native_size": "24x19",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "72x57"
+        },
+        "96": {
+          "scale": 4,
+          "size": "96x76"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__Summons__MiniMoltenGolem.png": {
+      "sheet": "@static/units__Summons__MiniMoltenGolem.png",
+      "kind": "unit",
+      "file": "static__units__Summons__MiniMoltenGolem.png.png",
+      "resolved_sheet": "@static/units__Summons__MiniMoltenGolem.png",
+      "src_rect": [
+        294,
+        17,
+        283,
+        207
+      ],
+      "atlas_page": 1,
+      "note": "透明间隙递归切格 9×8",
+      "native_size": "23x15",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "69x45"
+        },
+        "96": {
+          "scale": 4,
+          "size": "92x60"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__SwordMan__04Legend__02LegendSwordMan_02.png": {
+      "sheet": "@static/units__SwordMan__04Legend__02LegendSwordMan_02.png",
+      "kind": "unit",
+      "file": "static__units__SwordMan__04Legend__02LegendSwordMan_02.png.png",
+      "resolved_sheet": "@static/units__SwordMan__04Legend__02LegendSwordMan_02.png",
+      "src_rect": [
+        1583,
+        853,
+        212,
+        175
+      ],
+      "atlas_page": 1,
+      "note": "透明间隙递归切格 7×6",
+      "native_size": "16x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "96x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__units__SwordMan__04Legend__03LegendSwordMan_02_01.png": {
+      "sheet": "@static/units__SwordMan__04Legend__03LegendSwordMan_02_01.png",
+      "kind": "unit",
+      "file": "static__units__SwordMan__04Legend__03LegendSwordMan_02_01.png.png",
+      "resolved_sheet": "@static/units__SwordMan__04Legend__03LegendSwordMan_02_01.png",
+      "src_rect": [
+        3,
+        1703,
+        623,
+        215
+      ],
+      "atlas_page": 0,
+      "note": "透明间隙递归切格 12×7",
+      "native_size": "28x23",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "56x46"
+        },
+        "96": {
+          "scale": 3,
+          "size": "84x69"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__Green__MiniBigSlime.png": {
+      "sheet": "@static/waiting__Green__MiniBigSlime.png",
+      "kind": "unit",
+      "file": "static__waiting__Green__MiniBigSlime.png.png",
+      "resolved_sheet": "@static/waiting__Green__MiniBigSlime.png",
+      "src_rect": [
+        1646,
+        665,
+        244,
+        170
+      ],
+      "atlas_page": 1,
+      "note": "透明间隙递归切格 7×6",
+      "native_size": "18x10",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x40"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x50"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__Green__MiniGiantSlime.png": {
+      "sheet": "@static/waiting__Green__MiniGiantSlime.png",
+      "kind": "unit",
+      "file": "static__waiting__Green__MiniGiantSlime.png.png",
+      "resolved_sheet": "@static/waiting__Green__MiniGiantSlime.png",
+      "src_rect": [
+        708,
+        1012,
+        346,
+        215
+      ],
+      "atlas_page": 0,
+      "note": "透明间隙递归切格 6×6",
+      "native_size": "27x15",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "54x30"
+        },
+        "96": {
+          "scale": 3,
+          "size": "81x45"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__Green__MiniMutantSlime.png": {
+      "sheet": "@static/waiting__Green__MiniMutantSlime.png",
+      "kind": "unit",
+      "file": "static__waiting__Green__MiniMutantSlime.png.png",
+      "resolved_sheet": "@static/waiting__Green__MiniMutantSlime.png",
+      "src_rect": [
+        1001,
+        751,
+        273,
+        230
+      ],
+      "atlas_page": 0,
+      "note": "透明间隙递归切格 12×8",
+      "native_size": "21x11",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "63x33"
+        },
+        "96": {
+          "scale": 4,
+          "size": "84x44"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__Green__MiniSlime.png": {
+      "sheet": "@static/waiting__Green__MiniSlime.png",
+      "kind": "unit",
+      "file": "static__waiting__Green__MiniSlime.png.png",
+      "resolved_sheet": "@static/waiting__Green__MiniSlime.png",
+      "src_rect": [
+        1070,
+        1794,
+        146,
+        103
+      ],
+      "atlas_page": 1,
+      "note": "透明间隙递归切格 5×4",
+      "native_size": "14x7",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "70x35"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x42"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__Green__MiniSlimeMonster.png": {
+      "sheet": "@static/waiting__Green__MiniSlimeMonster.png",
+      "kind": "unit",
+      "file": "static__waiting__Green__MiniSlimeMonster.png.png",
+      "resolved_sheet": "@static/waiting__Green__MiniSlimeMonster.png",
+      "src_rect": [
+        585,
+        461,
+        385,
+        260
+      ],
+      "atlas_page": 0,
+      "note": "透明间隙递归切格 7×7",
+      "native_size": "27x20",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "54x40"
+        },
+        "96": {
+          "scale": 3,
+          "size": "81x60"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksHumans__MiniArchMage.png": {
+      "sheet": "@static/waiting__MinifolksHumans__MiniArchMage.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksHumans__MiniArchMage.png.png",
+      "resolved_sheet": "@static/waiting__MinifolksHumans__MiniArchMage.png",
+      "src_rect": [
+        1579,
+        17,
+        340,
+        271
+      ],
+      "atlas_page": 0,
+      "note": "透明间隙递归切格 11×9",
+      "native_size": "19x15",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x45"
+        },
+        "96": {
+          "scale": 5,
+          "size": "95x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksHumans__MiniArcherMan.png": {
+      "sheet": "@static/waiting__MinifolksHumans__MiniArcherMan.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksHumans__MiniArcherMan.png.png",
+      "resolved_sheet": "@static/waiting__MinifolksHumans__MiniArcherMan.png",
+      "src_rect": [
+        671,
+        1711,
+        334,
+        207
+      ],
+      "atlas_page": 0,
+      "note": "透明间隙递归切格 11×7",
+      "native_size": "16x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "96x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksHumans__MiniCavalierMan.png": {
+      "sheet": "@static/waiting__MinifolksHumans__MiniCavalierMan.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksHumans__MiniCavalierMan.png.png",
+      "resolved_sheet": "@static/waiting__MinifolksHumans__MiniCavalierMan.png",
+      "src_rect": [
+        840,
+        7,
+        244,
+        217
+      ],
+      "atlas_page": 1,
+      "note": "透明间隙递归切格 8×7",
+      "native_size": "26x25",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "52x50"
+        },
+        "96": {
+          "scale": 3,
+          "size": "78x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksHumans__MiniCrossBowMan.png": {
+      "sheet": "@static/waiting__MinifolksHumans__MiniCrossBowMan.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksHumans__MiniCrossBowMan.png.png",
+      "resolved_sheet": "@static/waiting__MinifolksHumans__MiniCrossBowMan.png",
+      "src_rect": [
+        1345,
+        1713,
+        303,
+        205
+      ],
+      "atlas_page": 0,
+      "note": "透明间隙递归切格 10×7",
+      "native_size": "16x13",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x52"
+        },
+        "96": {
+          "scale": 6,
+          "size": "96x78"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksHumans__MiniHalberdMan.png": {
+      "sheet": "@static/waiting__MinifolksHumans__MiniHalberdMan.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksHumans__MiniHalberdMan.png.png",
+      "resolved_sheet": "@static/waiting__MinifolksHumans__MiniHalberdMan.png",
+      "src_rect": [
+        9,
+        1045,
+        181,
+        176
+      ],
+      "atlas_page": 1,
+      "note": "透明间隙递归切格 6×6",
+      "native_size": "15x16",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x64"
+        },
+        "96": {
+          "scale": 6,
+          "size": "90x96"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksHumans__MiniHorseMan.png": {
+      "sheet": "@static/waiting__MinifolksHumans__MiniHorseMan.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksHumans__MiniHorseMan.png.png",
+      "resolved_sheet": "@static/waiting__MinifolksHumans__MiniHorseMan.png",
+      "src_rect": [
+        1097,
+        7,
+        244,
+        217
+      ],
+      "atlas_page": 1,
+      "note": "透明间隙递归切格 8×7",
+      "native_size": "26x25",
+      "display": {
+        "72": {
+          "scale": 2,
+          "size": "52x50"
+        },
+        "96": {
+          "scale": 3,
+          "size": "78x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksHumans__MiniKingMan.png": {
+      "sheet": "@static/waiting__MinifolksHumans__MiniKingMan.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksHumans__MiniKingMan.png.png",
+      "resolved_sheet": "@static/waiting__MinifolksHumans__MiniKingMan.png",
+      "src_rect": [
+        1666,
+        1713,
+        302,
+        205
+      ],
+      "atlas_page": 0,
+      "note": "透明间隙递归切格 10×7",
+      "native_size": "15x13",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "60x52"
+        },
+        "96": {
+          "scale": 6,
+          "size": "90x78"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksHumans__MiniMage.png": {
+      "sheet": "@static/waiting__MinifolksHumans__MiniMage.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksHumans__MiniMage.png.png",
+      "resolved_sheet": "@static/waiting__MinifolksHumans__MiniMage.png",
+      "src_rect": [
+        7,
+        747,
+        339,
+        239
+      ],
+      "atlas_page": 0,
+      "note": "透明间隙递归切格 11×8",
+      "native_size": "18x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "72x60"
+        },
+        "96": {
+          "scale": 5,
+          "size": "90x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksHumans__MiniPrinceMan.png": {
+      "sheet": "@static/waiting__MinifolksHumans__MiniPrinceMan.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksHumans__MiniPrinceMan.png.png",
+      "resolved_sheet": "@static/waiting__MinifolksHumans__MiniPrinceMan.png",
+      "src_rect": [
+        201,
+        1046,
+        179,
+        175
+      ],
+      "atlas_page": 1,
+      "note": "透明间隙递归切格 6×6",
+      "native_size": "16x15",
+      "display": {
+        "72": {
+          "scale": 4,
+          "size": "64x60"
+        },
+        "96": {
+          "scale": 6,
+          "size": "96x90"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksHumans__MiniShieldMan.png": {
+      "sheet": "@static/waiting__MinifolksHumans__MiniShieldMan.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksHumans__MiniShieldMan.png.png",
+      "resolved_sheet": "@static/waiting__MinifolksHumans__MiniShieldMan.png",
+      "src_rect": [
+        1582,
+        17,
+        178,
+        207
+      ],
+      "atlas_page": 1,
+      "note": "透明间隙递归切格 6×7",
+      "native_size": "19x15",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x45"
+        },
+        "96": {
+          "scale": 5,
+          "size": "95x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksHumans__MiniSpearMan.png": {
+      "sheet": "@static/waiting__MinifolksHumans__MiniSpearMan.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksHumans__MiniSpearMan.png.png",
+      "resolved_sheet": "@static/waiting__MinifolksHumans__MiniSpearMan.png",
+      "src_rect": [
+        1810,
+        854,
+        210,
+        174
+      ],
+      "atlas_page": 1,
+      "note": "透明间隙递归切格 7×6",
+      "native_size": "14x14",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "70x70"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniGoblin.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniGoblin.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniGoblin.png.png",
+      "resolved_sheet": "MiniGoblin",
+      "src_rect": [
+        902,
+        1011,
+        14,
+        11
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniGoblin",
+      "native_size": "14x11",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "70x55"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x66"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniGoblinThief.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniGoblinThief.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniGoblinThief.png.png",
+      "resolved_sheet": "MiniGoblinThief",
+      "src_rect": [
+        209,
+        1011,
+        14,
+        11
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniGoblinThief",
+      "native_size": "14x11",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "70x55"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x66"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniOrc.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniOrc.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniOrc.png.png",
+      "resolved_sheet": "MiniOrc",
+      "src_rect": [
+        1494,
+        1139,
+        19,
+        15
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniOrc",
+      "native_size": "19x15",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x45"
+        },
+        "96": {
+          "scale": 5,
+          "size": "95x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniOrcBerserker.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniOrcBerserker.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniOrcBerserker.png.png",
+      "resolved_sheet": "MiniOrcBerserker",
+      "src_rect": [
+        995,
+        1038,
+        24,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniOrcBerserker",
+      "native_size": "24x17",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "72x51"
+        },
+        "96": {
+          "scale": 4,
+          "size": "96x68"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniOrcVeteran.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniOrcVeteran.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniOrcVeteran.png.png",
+      "resolved_sheet": "MiniOrcVeteran",
+      "src_rect": [
+        629,
+        1103,
+        23,
+        18
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniOrcVeteran",
+      "native_size": "23x18",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "69x54"
+        },
+        "96": {
+          "scale": 4,
+          "size": "92x72"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniOrcWarChief.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniOrcWarChief.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniOrcWarChief.png.png",
+      "resolved_sheet": "MiniOrcWarChief",
+      "src_rect": [
+        1751,
+        1104,
+        23,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniOrcWarChief",
+      "native_size": "23x17",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "69x51"
+        },
+        "96": {
+          "scale": 4,
+          "size": "92x68"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniOrcWarrior.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniOrcWarrior.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniOrcWarrior.png.png",
+      "resolved_sheet": "MiniOrcWarrior",
+      "src_rect": [
+        503,
+        1138,
+        20,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniOrcWarrior",
+      "native_size": "20x16",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "60x48"
+        },
+        "96": {
+          "scale": 4,
+          "size": "80x64"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniWargRider.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniWargRider.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniWargRider.png.png",
+      "resolved_sheet": "MiniWargRider",
+      "src_rect": [
+        239,
+        1167,
+        22,
+        20
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniWargRider",
+      "native_size": "22x20",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "66x60"
+        },
+        "96": {
+          "scale": 4,
+          "size": "88x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniWolfRider.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniWolfRider.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Outline__MiniWolfRider.png.png",
+      "resolved_sheet": "MiniWolfRider",
+      "src_rect": [
+        1098,
+        1166,
+        17,
+        21
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniWolfRider",
+      "native_size": "17x21",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "51x63"
+        },
+        "96": {
+          "scale": 4,
+          "size": "68x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniGoblin.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Without Outline__MiniGoblin.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniGoblin.png.png",
+      "resolved_sheet": "MiniGoblin",
+      "src_rect": [
+        902,
+        1011,
+        14,
+        11
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniGoblin",
+      "native_size": "14x11",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "70x55"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x66"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniGoblinThief.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Without Outline__MiniGoblinThief.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniGoblinThief.png.png",
+      "resolved_sheet": "MiniGoblinThief",
+      "src_rect": [
+        209,
+        1011,
+        14,
+        11
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniGoblinThief",
+      "native_size": "14x11",
+      "display": {
+        "72": {
+          "scale": 5,
+          "size": "70x55"
+        },
+        "96": {
+          "scale": 6,
+          "size": "84x66"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniOrc.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Without Outline__MiniOrc.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniOrc.png.png",
+      "resolved_sheet": "MiniOrc",
+      "src_rect": [
+        1494,
+        1139,
+        19,
+        15
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniOrc",
+      "native_size": "19x15",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "57x45"
+        },
+        "96": {
+          "scale": 5,
+          "size": "95x75"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniOrcBerserker.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Without Outline__MiniOrcBerserker.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniOrcBerserker.png.png",
+      "resolved_sheet": "MiniOrcBerserker",
+      "src_rect": [
+        995,
+        1038,
+        24,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniOrcBerserker",
+      "native_size": "24x17",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "72x51"
+        },
+        "96": {
+          "scale": 4,
+          "size": "96x68"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniOrcVeteran.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Without Outline__MiniOrcVeteran.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniOrcVeteran.png.png",
+      "resolved_sheet": "MiniOrcVeteran",
+      "src_rect": [
+        629,
+        1103,
+        23,
+        18
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniOrcVeteran",
+      "native_size": "23x18",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "69x54"
+        },
+        "96": {
+          "scale": 4,
+          "size": "92x72"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniOrcWarChief.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Without Outline__MiniOrcWarChief.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniOrcWarChief.png.png",
+      "resolved_sheet": "MiniOrcWarChief",
+      "src_rect": [
+        1751,
+        1104,
+        23,
+        17
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniOrcWarChief",
+      "native_size": "23x17",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "69x51"
+        },
+        "96": {
+          "scale": 4,
+          "size": "92x68"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniOrcWarrior.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Without Outline__MiniOrcWarrior.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniOrcWarrior.png.png",
+      "resolved_sheet": "MiniOrcWarrior",
+      "src_rect": [
+        503,
+        1138,
+        20,
+        16
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniOrcWarrior",
+      "native_size": "20x16",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "60x48"
+        },
+        "96": {
+          "scale": 4,
+          "size": "80x64"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniWargRider.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Without Outline__MiniWargRider.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniWargRider.png.png",
+      "resolved_sheet": "MiniWargRider",
+      "src_rect": [
+        239,
+        1167,
+        22,
+        20
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniWargRider",
+      "native_size": "22x20",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "66x60"
+        },
+        "96": {
+          "scale": 4,
+          "size": "88x80"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniWolfRider.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__MinifolksOrcs__Without Outline__MiniWolfRider.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__MinifolksOrcs__Without_Outline__MiniWolfRider.png.png",
+      "resolved_sheet": "MiniWolfRider",
+      "src_rect": [
+        1098,
+        1166,
+        17,
+        21
+      ],
+      "atlas_page": 3,
+      "note": "@static → 复用正规条目 MiniWolfRider",
+      "native_size": "17x21",
+      "display": {
+        "72": {
+          "scale": 3,
+          "size": "51x63"
+        },
+        "96": {
+          "scale": 4,
+          "size": "68x84"
+        }
+      },
+      "source_status": "internal-use-only"
+    },
+    "static__waiting__MinifolksOrcs__QyGv7W.png": {
+      "sheet": "@static/waiting__MinifolksOrcs__QyGv7W.png",
+      "kind": "unit",
+      "file": "static__waiting__MinifolksOrcs__QyGv7W.png.png",
+      "resolved_sheet": "@static/waiting__MinifolksOrcs__QyGv7W.png",
+      "src_rect": [
+        387,
+        988,
+        315,
+        250
+      ],
+      "atlas_page": 0,
+      "note": "单体插画（无分格间隙）",
+      "native_size": "315x250",
+      "display": {
+        "72": {
+          "scale": 1,
+          "size": "315x250"
+        },
+        "96": {
+          "scale": 1,
+          "size": "315x250"
+        }
+      },
+      "source_status": "internal-use-only"
+    }
+  }
+}

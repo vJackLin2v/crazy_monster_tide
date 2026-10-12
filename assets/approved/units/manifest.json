@@ -1,0 +1,405 @@
+{
+  "generated_by": "tools/assets/build_battle_sprites.py",
+  "purpose": "HTML MVP 战斗内动画精灵（统一 32×32 网格的帧序列）",
+  "why": "internal/portraits 是紧裁立绘、无统一基线；战斗需要网格化帧序列",
+  "source": {
+    "key": "POOL",
+    "name": "行囊守卫主池 sprites/units|enemies",
+    "license": "internal-use-only",
+    "commercial_use": false,
+    "modification_allowed": true,
+    "attribution_required": false,
+    "restrictions": "仅本地学习/演示；禁再分发；不进发布包",
+    "proof": "docs/assets/asset_license.md §1",
+    "status": "internal-use-only"
+  },
+  "players": {
+    "swordswoman": {
+      "pool_name": "01NormalSwordMan",
+      "kind": "units",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 6,
+        "death": 4
+      },
+      "dir": "swordswoman",
+      "total_frames": 20,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "archer": {
+      "pool_name": "01NormalArcherMan",
+      "kind": "units",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 11,
+        "death": 4
+      },
+      "dir": "archer",
+      "total_frames": 25,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "mage": {
+      "pool_name": "01NormalMage",
+      "kind": "units",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 11,
+        "death": 9
+      },
+      "dir": "mage",
+      "total_frames": 30,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "spearman": {
+      "pool_name": "01NormalSpearMan",
+      "kind": "units",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 7,
+        "death": 5
+      },
+      "dir": "spearman",
+      "total_frames": 22,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "rider": {
+      "pool_name": "01MiniHorseMan",
+      "kind": "units",
+      "anims": {
+        "idle": 8,
+        "walk": 6,
+        "attack": 7,
+        "death": 6
+      },
+      "dir": "rider",
+      "total_frames": 27,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "jester": {
+      "pool_name": "01SpecialJester",
+      "kind": "units",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 6,
+        "death": 5
+      },
+      "dir": "jester",
+      "total_frames": 21,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    }
+  },
+  "enemies": {
+    "orc": {
+      "pool_name": "MiniOrc",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 5,
+        "death": 6
+      },
+      "dir": "orc",
+      "total_frames": 21,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "goblin": {
+      "pool_name": "MiniGoblin",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 4,
+        "death": 4
+      },
+      "dir": "goblin",
+      "total_frames": 18,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "wolf": {
+      "pool_name": "Wolf",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 5,
+        "death": 4
+      },
+      "dir": "wolf",
+      "total_frames": 19,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "imp": {
+      "pool_name": "01Imp",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "walk": 5,
+        "attack": 6,
+        "death": 5
+      },
+      "dir": "imp",
+      "total_frames": 20,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "eyebat": {
+      "pool_name": "02EyeBat",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "walk": 4,
+        "death": 4
+      },
+      "dir": "eyebat",
+      "total_frames": 12,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "basilisk": {
+      "pool_name": "03CaveBasilisk",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "walk": 5,
+        "attack": 6,
+        "death": 7
+      },
+      "dir": "basilisk",
+      "total_frames": 22,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "hyena": {
+      "pool_name": "01DustHyena",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 4,
+        "death": 4
+      },
+      "dir": "hyena",
+      "total_frames": 18,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "axolizard": {
+      "pool_name": "02AxeLizard",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 8,
+        "death": 8
+      },
+      "dir": "axolizard",
+      "total_frames": 26,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "stingerbat": {
+      "pool_name": "05StingerBat",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "attack": 7,
+        "death": 4
+      },
+      "dir": "stingerbat",
+      "total_frames": 15,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "lizardhunter": {
+      "pool_name": "03LizardHunter",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 6,
+        "death": 8
+      },
+      "dir": "lizardhunter",
+      "total_frames": 24,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "gnollberserker": {
+      "pool_name": "06GnollBerserker",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 6,
+        "death": 6
+      },
+      "dir": "gnollberserker",
+      "total_frames": 22,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "succubus": {
+      "pool_name": "04Succubus",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 9,
+        "death": 7
+      },
+      "dir": "succubus",
+      "total_frames": 26,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    }
+  },
+  "bosses": {
+    "boss-demonlord": {
+      "pool_name": "10Demon Lord",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 7,
+        "death": 8
+      },
+      "dir": "boss-demonlord",
+      "total_frames": 25,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "boss-hellwarden": {
+      "pool_name": "07HellWarden",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 8,
+        "death": 7
+      },
+      "dir": "boss-hellwarden",
+      "total_frames": 25,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "boss-paladin": {
+      "pool_name": "09Starlight Paladin",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 9,
+        "death": 6
+      },
+      "dir": "boss-paladin",
+      "total_frames": 25,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    }
+  },
+  "counts": {
+    "players": 6,
+    "enemies": 12,
+    "bosses": 3,
+    "animation_sets": 82,
+    "files": 463
+  }
+}

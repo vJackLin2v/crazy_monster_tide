@@ -2,13 +2,14 @@
    能代码量的一律量，不问模型：对比度 / 热区 / 波次 / 像素可读性 / 因果链 / 确定性 / 合规 */
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
-const ROOT = path.resolve(__dirname, '..', 'prototype-html');
-const MIME = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.jpg':'image/jpeg'};
+const ROOT = path.resolve(__dirname, '..');            // 工程根（素材在 ../assets 下）
+const PAGE = '/prototype-html/index.html';
+const MIME = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.jpg':'image/jpeg','.json':'application/json'};
 (async () => {
 let pass = 0, fail = 0;
 const ok = (c, m) => { c ? (pass++, console.log('  PASS ' + m)) : (fail++, console.log('  FAIL ' + m)); };
 const srv = http.createServer((req, res) => {
-  let p = decodeURIComponent(req.url.split('?')[0]); if (p === '/') p = '/index.html';
+  let p = decodeURIComponent(req.url.split('?')[0]); if (p === '/') p = PAGE;
   const f = path.join(ROOT, p);
   if (!fs.existsSync(f)) { res.writeHead(404); return res.end('404'); }
   res.writeHead(200, {'Content-Type': MIME[path.extname(f)] || 'application/octet-stream'});
@@ -18,7 +19,7 @@ await new Promise(r => srv.listen(8778, r));
 const b = await chromium.launch();
 const page = await b.newPage({viewport:{width:390,height:844}, deviceScaleFactor:2});
 const errs = []; page.on('pageerror', e => errs.push(e.message));
-await page.goto('http://127.0.0.1:8778/index.html');
+await page.goto('http://127.0.0.1:8778' + PAGE);
 
 console.log('\n== 1. Design Token 对比度（WCAG AA >= 4.5:1）==');
 const contrast = await page.evaluate(() => {
@@ -107,16 +108,18 @@ const curve = await page.evaluate(() => {
     const n = Math.min(5, 1 + Math.floor(w/4));
     return Math.round(T / interval * n);
   };
-  const pool = (w) => ['slime','bat','goblin','skel'].filter(k => w >= ENEMY_DEF[k].from);
+  const pool = (w) => enemyPool(w);
   return {w1: spawns(1), w2: spawns(2), w3: spawns(3), w20: spawns(20),
           pool1: pool(1).join(','), pool2: pool(2).join(','), pool3: pool(3).join(','),
-          speedBat: ENEMY_DEF.bat.spd, speedPlayer: G.stats.speed};
+          fastest: Math.max.apply(null, Object.keys(ENEMY_DEF).filter(k=>!ENEMY_DEF[k].boss&&!ENEMY_DEF[k].elite).map(k=>ENEMY_DEF[k].spd)),
+          fastestName: Object.keys(ENEMY_DEF).filter(k=>!ENEMY_DEF[k].boss&&!ENEMY_DEF[k].elite).sort((a,b)=>ENEMY_DEF[b].spd-ENEMY_DEF[a].spd)[0],
+          speedPlayer: G.stats.speed};
 });
 ok(curve.w2 <= curve.w1 * 1.4, '第 2 波不是断崖：第1波 ' + curve.w1 + ' 只 -> 第2波 ' + curve.w2 + ' 只（旧版 24 -> 54，翻 2.25 倍）');
-ok(curve.pool1 === 'slime', '第 1 波只有史莱姆（新手保护）');
-ok(curve.pool2 === 'slime', '第 2 波仍只有史莱姆：' + curve.pool2);
-ok(curve.pool3 === 'slime,bat', '第 3 波才解锁蝙蝠：' + curve.pool3);
-ok(curve.speedBat < curve.speedPlayer, '最快怪 ' + curve.speedBat + ' px/s < 玩家 ' + curve.speedPlayer + ' px/s（可躲）');
+ok(curve.pool1 === 'goblin', '第 1 波只有最基础的哥布林（新手保护）：' + curve.pool1);
+ok(curve.pool2 === 'goblin', '第 2 波仍只有哥布林：' + curve.pool2);
+ok(curve.pool3 === 'goblin,wolf', '第 3 波解锁狼：' + curve.pool3);
+ok(curve.fastest < curve.speedPlayer, '最快怪 ' + curve.fastestName + ' ' + curve.fastest + ' px/s < 玩家 ' + curve.speedPlayer + ' px/s（可躲是硬条件）');
 ok(curve.w20 < 800, '第 20 波总刷怪量 ' + curve.w20 + '（旧版 1800，已收敛）');
 
 const perf = await page.evaluate(async () => {
@@ -124,7 +127,7 @@ const perf = await page.evaluate(async () => {
   ents.enemies.length = 0;
   for (let i = 0; i < 130; i++){
     const a = i/130*Math.PI*2, rr = 70 + (i % 45);
-    spawnEnemy('slime', G.player.x + Math.cos(a)*rr, G.player.y + Math.sin(a)*rr);
+    spawnEnemy('goblin', G.player.x + Math.cos(a)*rr, G.player.y + Math.sin(a)*rr);
   }
   G.player.inv = 999;
   const t0 = performance.now(); let frames = 0;
@@ -143,14 +146,14 @@ console.log('');
 console.log('== 3f. 金币经济 ==');
 const gold = await page.evaluate(() => {
   const rows = [];
-  for (const w of [1,3,5,10]) rows.push({w, clear: 16 + w*7, drop: ENEMY_DEF.slime.gold});
+  for (const w of [1,3,5,10]) rows.push({w, clear: 12 + w*5, drop: ENEMY_DEF.goblin.gold});
   G.wave = 1; G.shopReroll = 0; G.shopStock = null; G.carryOver = [];
   refreshShop(false);
   const stock = G.shopStock.map(s => ({k:s.kind, p:s.price}));
   return {rows, stock};
 });
-ok(gold.rows[0].clear >= 20, '第 1 波结算 ' + gold.rows[0].clear + ' 金币（旧版 16）');
-ok(gold.rows[2].clear >= 45, '第 5 波结算 ' + gold.rows[2].clear + ' 金币');
+ok(gold.rows[0].clear >= 15, '第 1 波结算 ' + gold.rows[0].clear + ' 金币（回调后）');
+ok(gold.rows[2].clear >= 35, '第 5 波结算 ' + gold.rows[2].clear + ' 金币');
 const cheapest = Math.min(...gold.stock.map(s => s.p));
 ok(cheapest <= 20, '第 1 波商店最便宜 ' + cheapest + ' 金币（买得起）');
 ok(gold.stock.length === 4, '固定 4 个货位：' + gold.stock.length + '（参考 Brotato 的货架结构）');
@@ -183,6 +186,20 @@ const lockFix = await page.evaluate(() => {
 ok(lockFix.lockedNow, '货位可上锁');
 ok(lockFix.after === lockFix.id && lockFix.stillLocked, '★ 锁定的货位刷新后仍在：' + lockFix.id);
 await page.evaluate(() => { G.gold = 40; G.shopStock = null; G.carryOver = []; G.shopReroll = 0; });
+
+console.log('');
+console.log('== 3h. 美术资源接入（单位 / 技能特效 / 图标） ==');
+const art = await page.evaluate(() => ({
+  unitFrames: U_TOTAL, unitLoaded: U_LOADED, unitFail: U_FAIL,
+  vfxFrames: V_TOTAL, vfxLoaded: V_LOADED, vfxFail: V_FAIL,
+  units: Object.keys(UNITS).length, vfx: Object.keys(VFX).length,
+  skillsWithArt: Object.keys(SKILL_ART).length
+}));
+ok(art.units === 21, '单位素材 ' + art.units + ' 套（6 玩家 + 12 杂兵 + 3 BOSS）');
+ok(art.unitFail === 0 && art.unitLoaded === art.unitFrames, '单位帧全部加载 ' + art.unitLoaded + '/' + art.unitFrames + '（失败 ' + art.unitFail + '）');
+ok(art.vfx >= 80, 'VFX 组件 ' + art.vfx + ' 个');
+ok(art.vfxFail === 0, 'VFX 帧加载失败 ' + art.vfxFail + ' 个（应为 0）');
+ok(art.skillsWithArt === 16, '16 个技能全部绑定图标与特效：' + art.skillsWithArt);
 
 console.log('\n== 4. 像素级可读性 ==');
 await page.waitForTimeout(2200);
@@ -247,7 +264,7 @@ console.log('\n== 8. 合规扫描（禁用赌博语义）==');
 const kw = ['老虎机','转盘','骰子','筹码','下注','赔率','开箱','抽奖','赌场'];
 let hits = [];
 for (const f of ['index.html','src/data.js','src/engine.js','src/flow.js','src/ui.js','src/render.js']){
-  const t = fs.readFileSync(path.join(ROOT, f), 'utf8');
+  const t = fs.readFileSync(path.join(ROOT, 'prototype-html', f), 'utf8');
   kw.forEach(k => { if (t.includes(k)) hits.push(f + ':' + k); });
 }
 ok(hits.length === 0, '源码无赌博语义词' + (hits.length ? ' -> ' + hits.join(',') : ''));
@@ -258,7 +275,7 @@ const legacy = await page.evaluate(() => ({
   makeShopStock: typeof makeShopStock
 }));
 Object.entries(legacy).forEach(([k, v]) => ok(v === 'undefined', '旧函数 ' + k + ' 已移除'));
-const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const html = fs.readFileSync(path.join(ROOT, 'prototype-html', 'index.html'), 'utf8');
 ok(!html.includes('scr-map'), 'index.html 无地图屏');
 ok(!html.includes('scr-event'), 'index.html 无事件屏');
 

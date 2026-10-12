@@ -48,6 +48,20 @@
 | spell-fx-free (heyheythere) | `Spell FX Free by heyheythere — CC BY 4.0` | VFX 的一部分 |
 | Fusion Pixel | `Fusion Pixel Font by TakWolf (OFL 1.1)` | 字体 |
 
+### 🟠 用户批准使用（原为阻断，2026-10-12 由用户指令解除 —— 见 `decisions.md` D-26）
+
+> 用户原话：「你不用管版权问题，直接用就行」。
+> **风险由用户承担，已记录在案，不再重复劝阻。**
+> ⚠️ 若将来要**上架发行**，此批准必须重新裁决。
+
+| 条目 | 文件数 | 已接入位置 | 上游声明 |
+|---|---|---:|---|
+| 母本 `internal/sprites`（6 玩家 + 12 杂兵 + 3 BOSS） | 463 帧 | `assets/approved/units/` | SlotBound 解包，上游「禁再分发」 |
+| 母本 `internal/icons`（技能/属性/节点/道具） | 129 | `assets/approved/icons/` | 同上 |
+| 母本 `internal/portraits` | 270 | `assets/approved/portraits/` | 同上 |
+| 母本 `approved/vfx`（IM/PF/XI/FZ/SV/SF） | 947 | `assets/approved/vfx/` | 各包许可（多数可商用；SF 需署名） |
+| 母本 `approved/ui/kit` | 58 | **暂未接入** | 同主池（构建输入是 slotBound 的 UI 目录） |
+
 ### 🔴 阻断（**不得**进入本项目生产路径）
 
 | # | 来源 | 文件数 | 原因 |

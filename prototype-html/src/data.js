@@ -158,7 +158,37 @@ const SPR = {
   ]
 };
 
-/* ---------- 技能（首版演示 12 个；需求建议 16，MVP 取子集） ---------- */
+/* 技能 → 美术资源映射
+   icon: assets/approved/icons/<file>
+   proj: 投射物 VFX 组件  hit: 命中 VFX  aoe: 范围/脉冲 VFX  zone: 地面持续 VFX */
+const SKILL_ART = {
+  fireball:   {icon:'skill-fireball.png',        proj:'projectile/fire/fireball-shot',      hit:'feedback/hit/fire-hit'},
+  ice_spear:  {icon:'skill-ice_spear.png',       proj:'projectile/ice/ice-shard-shot',      hit:'feedback/hit/ice-hit'},
+  arcane:     {icon:'skill-arcane_missile.png',  proj:'projectile/arcane/magic-missile',    hit:'core/spark/hit-spark'},
+  blade:      {icon:'skill-returning_blade.png', proj:'projectile/arcane/arcane-orb',       hit:'feedback/hit/slash-hit'},
+  shockwave:  {icon:'skill-ground_slash.png',    aoe:'core/ring/shockwave',                 hit:'feedback/hit/heavy-hit'},
+  chain:      {icon:'skill-chain_lightning.png', proj:'projectile/lightning/energy-bolt',   hit:'feedback/hit/shock-hit'},
+  poison:     {icon:'skill-poison_mist.png',     zone:'ground/fill/ground-fill-poison',     hit:'feedback/hit/poison-hit'},
+  sentry:     {icon:'skill-arcane_turret.png',   summon:'summon/summon_fx/summon'},
+  frostnova:  {icon:'skill-frost_ray.png',       aoe:'ground/frost/frost-nova',             hit:'feedback/hit/ice-hit'},
+  blade_storm:{icon:'skill-whirlwind.png',       zone:'ground/ring/burning-ground',         hit:'feedback/hit/slash-hit'},
+  holybolt:   {icon:'skill-arcane_pulse.png',    proj:'projectile/arcane/arcane-orb',       hit:'core/spark/hit-spark'},
+  thorn:      {icon:'skill-poison_thorn.png',    aoe:'ground/ring/cast-circle',             hit:'core/spark/block-spark'},
+  orb:        {icon:'skill-thunder_beam.png',    proj:'projectile/lightning/plasma-shot',   hit:'feedback/hit/shock-hit'},
+  spike:      {icon:'skill-flame_field.png',     zone:'ground/flame/flame-loop',            hit:'feedback/hit/slash-hit'},
+  frostring:  {icon:'skill-frost_ray.png',       aoe:'ground/frost/frost-nova',             hit:'feedback/hit/ice-hit'},
+  spirit:     {icon:'skill-arcane_pulse.png',    proj:'projectile/arcane/arcane-orb',       hit:'core/spark/pierce-spark'}
+};
+/* 通用特效（不绑定技能） */
+const FX = {
+  killSmall: 'core/burst/small-pop', killBig: 'core/burst/blast',
+  crit: 'feedback/crit/critical-star', hurt: 'core/flash/parry-flash',
+  levelUp: 'feedback/level_up/level-up-big', pickup: 'feedback/pickup/exp-gain',
+  spawnWarn: 'core/ring/zap-ring', summon: 'summon/summon_fx/portal',
+  orbit: 'defense/orbit/shock-aura', heal: 'support/heal/heal'
+};
+
+/* ---------- 技能（16 个） ---------- */
 const SKILLS = {
   fireball:   {name:'火球',      icon:'🔥', type:'projectile', tags:['fire','projectile'],   cd:0.85, dmg:12, spd:190, color:'#FFA84B', size:5},
   ice_spear:  {name:'冰晶矛',    icon:'❄',  type:'projectile', tags:['ice','projectile','pierceable'], cd:1.05, dmg:10, spd:250, color:'#88D6BC', size:4},
@@ -241,22 +271,22 @@ const ELITE_POOL = ['heart','ember','shard','coin'];
 
 /* ---------- 角色（需求 §6：6 角色 + 正负天赋 + 初始技能） ---------- */
 const CHARS = [
-  {id:'knight', name:'铁拳骑士', spr:'heroA', col:'b',
+  {id:'knight', name:'铁拳骑士', unit:'swordswoman', col:'b',
    pos:'受击后 2s 内攻击力 +20%', neg:'移动速度 -10%',
    start:'fireball', stats:{power:1.0,speedMul:0.90,maxhp:120}},
-  {id:'mage', name:'秘术学徒', spr:'heroB', col:'p',
+  {id:'mage', name:'秘术学徒', unit:'mage', col:'p',
    pos:'行为模块冷却效果 +25%', neg:'生命上限 -20',
    start:'arcane', stats:{power:1.1,maxhp:80}},
-  {id:'ranger', name:'荒野游侠', spr:'heroC', col:'g',
+  {id:'ranger', name:'荒野游侠', unit:'archer', col:'g',
    pos:'投射物速度 +25%，拾取范围 +50%', neg:'减伤 -5%（更脆）',
    start:'ice_spear', stats:{power:0.95,speedMul:1.15,maxhp:90,projSpd:1.25,pickupMul:1.5}},
-  {id:'monk', name:'苦行僧', spr:'heroA', col:'t',
+  {id:'monk', name:'苦行僧', unit:'spearman', col:'t',
    pos:'生命回复 +0.5/s', neg:'攻击力 -12%',
    start:'thorn', stats:{power:0.88,regen:0.5,maxhp:110}},
-  {id:'summoner', name:'图腾师', spr:'heroB', col:'g',
+  {id:'summoner', name:'图腾师', unit:'jester', col:'g',
    pos:'召唤类技能冷却 -30%', neg:'主动技能伤害 -10%',
    start:'sentry', stats:{power:0.9,maxhp:95}},
-  {id:'zealot', name:'狂信者', spr:'heroA', col:'r',
+  {id:'zealot', name:'狂信者', unit:'rider', col:'r',
    pos:'暴击率 +12%，暴击伤害 +40%', neg:'受到伤害 +15%',
    start:'holybolt', stats:{power:1.05,crit:0.17,critdmg:1.9,maxhp:90,armor:-0.15}}
 ];

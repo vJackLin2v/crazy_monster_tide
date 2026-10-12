@@ -1,0 +1,28 @@
+{
+  "id": "beam-start",
+  "group": "beam/start",
+  "role": "光束起手蓄能（VM-02）",
+  "gap": [
+    "VM-02"
+  ],
+  "frames": 15,
+  "native_size": "96x96",
+  "detected_pre_scale": 1,
+  "baseline_px": 32,
+  "display_scale": 1,
+  "display_size": "96x96",
+  "fps": 20,
+  "source": {
+    "key": "PF",
+    "name": "PVFX Foundry — Free Pixel VFX Pack",
+    "author": "Pixel VFX Studio (arcanite24)",
+    "url": "https://github.com/arcanite24/pixel-vfx-studio",
+    "license": "CC0 1.0",
+    "commercial_use": true,
+    "modification_allowed": true,
+    "attribution_required": false,
+    "restrictions": "CC0 仅覆盖渲染出的 sprite sheet 与元数据；不含软件与工程项目源",
+    "status": "approved",
+    "path": "focus-charge"
+  }
+}

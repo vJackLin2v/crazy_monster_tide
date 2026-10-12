@@ -1,0 +1,28 @@
+{
+  "id": "level-up-big",
+  "group": "feedback/level_up",
+  "role": "升级（128px 大规格，可缩到 32/64）",
+  "gap": [
+    "VM-07"
+  ],
+  "frames": 12,
+  "native_size": "128x128",
+  "detected_pre_scale": 1,
+  "baseline_px": 32,
+  "display_scale": 1,
+  "display_size": "128x128",
+  "fps": null,
+  "source": {
+    "key": "SV",
+    "name": "Pixel VFX: Level Up Effect",
+    "author": "Sentient Dream Studio",
+    "url": "https://sentient-dream-studio.itch.io/pixel-vfx-level-up-effect",
+    "license": "Sentient Dream Studio Free Asset Terms",
+    "commercial_use": true,
+    "modification_allowed": true,
+    "attribution_required": false,
+    "restrictions": "禁止转售本素材",
+    "status": "approved",
+    "path": "."
+  }
+}

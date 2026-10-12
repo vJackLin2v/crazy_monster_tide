@@ -104,26 +104,45 @@ function calcSkill(sk){
 
 /* ---------- 局内实体 ---------- */
 let ents = {enemies:[], bullets:[], areas:[], gems:[], texts:[], fx:[], summons:[]};
-function resetEnts(){ ents = {enemies:[], bullets:[], areas:[], gems:[], texts:[], fx:[], summons:[]}; G.areasOwned=[]; }
+function resetEnts(){ ents = {enemies:[], bullets:[], areas:[], gems:[], texts:[], fx:[], fx2:[], summons:[]}; G.areasOwned=[]; }
 function resetFlags(){ G.flags = {harvest:false, thornmail:0, thunder:0}; }
 
 /* ---------- 敌人生成 ---------- */
 const ENEMY_DEF = {
-  // 速度标定：约为玩家移速(96)的 50%~80%（蝙蝠最快要保持在玩家速度带以下，否则无法躲）
-  // from = 从第几波开始出现：新手期只出慢怪，避免第 2 波就被高速怪围死
-  slime: {spr:'slime', hp:12, spd:50, dmg:6,  r:9,  exp:1, gold:1, from:1},
-  bat:   {spr:'bat',   hp:12, spd:76, dmg:7,  r:8,  exp:1, gold:1, from:3},
-  goblin:{spr:'goblin',hp:20, spd:66, dmg:8,  r:9,  exp:1, gold:1, from:5},
-  skel:  {spr:'skel',  hp:26, spd:58, dmg:10, r:9,  exp:2, gold:2, from:8},
-  elite: {spr:'elite', hp:150,spd:44, dmg:16, r:13, exp:8, gold:12},
-  boss:  {spr:'boss',  hp:900,spd:48, dmg:22, r:20, exp:40, gold:45}
+  // unit = assets/approved/units/<unit>；from = 从第几波解锁（新手期只出慢怪）
+  // 速度标定：玩家 96 px/s 的 45%~75%；最快怪必须低于玩家速度（可躲是硬条件）
+  goblin:      {unit:'goblin',         hp:12, spd:50, dmg:6,  r:9,  exp:1, gold:1, from:1},
+  wolf:        {unit:'wolf',           hp:14, spd:60, dmg:7,  r:9,  exp:1, gold:1, from:3},
+  eyebat:      {unit:'eyebat',         hp:12, spd:70, dmg:7,  r:8,  exp:1, gold:1, from:4},
+  orc:         {unit:'orc',            hp:22, spd:46, dmg:9,  r:9,  exp:1, gold:2, from:5},
+  imp:         {unit:'imp',            hp:18, spd:56, dmg:8,  r:9,  exp:1, gold:1, from:7},
+  stingerbat:  {unit:'stingerbat',     hp:16, spd:66, dmg:8,  r:8,  exp:2, gold:2, from:8},
+  hyena:       {unit:'hyena',          hp:26, spd:62, dmg:10, r:9,  exp:2, gold:2, from:9},
+  axolizard:   {unit:'axolizard',      hp:34, spd:48, dmg:11, r:10, exp:2, gold:2, from:11},
+  lizardhunter:{unit:'lizardhunter',   hp:30, spd:58, dmg:11, r:9,  exp:2, gold:2, from:13},
+  succubus:    {unit:'succubus',       hp:38, spd:54, dmg:12, r:9,  exp:3, gold:3, from:15},
+  basilisk:    {unit:'basilisk',       hp:46, spd:44, dmg:13, r:11, exp:3, gold:3, from:17},
+  gnollberserker:{unit:'gnollberserker',hp:150,spd:44, dmg:16, r:13, exp:8, gold:12, elite:true},
+  boss:        {unit:'boss-demonlord', hp:900, spd:48, dmg:22, r:20, exp:40, gold:45, boss:true}
 };
+/* BOSS 轮换：第 10 波恶魔领主 / 第 20 波地狱守望者 / 第 30 波起星光圣骑士 */
+const BOSS_UNITS = ['boss-demonlord', 'boss-hellwarden', 'boss-paladin'];
+function bossUnitFor(wave){
+  const i = Math.max(0, Math.floor(wave / 10) - 1) % BOSS_UNITS.length;
+  return BOSS_UNITS[i];
+}
+/* 普通怪池：按 from 解锁 */
+function enemyPool(wave){
+  return Object.keys(ENEMY_DEF).filter(k => !ENEMY_DEF[k].elite && !ENEMY_DEF[k].boss && wave >= ENEMY_DEF[k].from);
+}
 
 function spawnEnemy(kind, x, y, scale){
   const d = ENEMY_DEF[kind], s = scale||1, g = (G.wave||1) - 1;
-  const hp = Math.round(d.hp * (1 + 0.32*g) * s);   // 原 0.42/波，用户反馈前中期过陡
-  ents.enemies.push({kind, spr:d.spr, x, y, hp, maxhp:hp, spd:d.spd, dmg:Math.round(d.dmg*(1+0.12*g)),
-    r:d.r, exp:d.exp, gold:d.gold, flash:0, kb:0, kx:0, ky:0, slow:0, burn:0, dead:false, boss:kind==='boss'});
+  const hp = Math.round(d.hp * (1 + 0.24*g) * s);   // 0.24/波（阵容扩到 12 种后回调，避免后期过肉）
+  ents.enemies.push({kind, unit:d.unit, x, y, hp, maxhp:hp, spd:d.spd, dmg:Math.round(d.dmg*(1+0.12*g)),
+    r:d.r, exp:d.exp, gold:d.gold, flash:0, kb:0, kx:0, ky:0, slow:0, burn:0, dead:false,
+    boss:!!d.boss, elite:!!d.elite,
+    animT: 0, walkT: 0, atkT: 0, deathT: 0, facing: 1});
 }
 
 /* ---------- 波次（土豆兄弟式闯关） ---------- */
@@ -145,6 +164,7 @@ function startWave(n){
     const bx = Math.max(30, Math.min(W-30, G.player.x + Math.cos(ba)*br));
     const by = Math.max(30, Math.min(H-30, G.player.y + Math.sin(ba)*br));
     spawnEnemy('boss', bx, by, 1 + 0.35*Math.floor(n/RUN.bossEvery - 1));
+    if (ents.enemies.length) ents.enemies[ents.enemies.length-1].unit = bossUnitFor(n);
     G.bossRef = ents.enemies[ents.enemies.length-1];
     G.banner = 'BOSS 来了';
     G.shake = 14;
@@ -166,7 +186,7 @@ function updateBattle(dt){
       elitesSpawned++;
       const a = G.rng.range(0, Math.PI*2);
       const ex = G.player.x + Math.cos(a)*250, ey = G.player.y + Math.sin(a)*250;
-      spawnEnemy('elite', ex, ey, 1 + 0.2*G.wave);
+      spawnEnemy('gnollberserker', ex, ey, 1 + 0.2*G.wave);
       const el = ents.enemies[ents.enemies.length-1];
       el.spawnT = 0.9;                       // 入场动画（缩放 + 警示环）
       ents.fx.push({type:'warn', x:ex, y:ey, r:0, max:64, t:0.6, life:0.6, color:'#E04060'});
@@ -181,7 +201,7 @@ function updateBattle(dt){
     const interval = Math.max(0.30, 0.95 - G.wave*0.04);
     if (spawnAcc > interval){
       spawnAcc = 0;
-      const pool = ['slime','bat','goblin','skel'].filter(k => G.wave >= ENEMY_DEF[k].from);
+      const pool = enemyPool(G.wave);
       const n = Math.min(5, 1 + Math.floor(G.wave/4));
       for (let i=0;i<n;i++){
         // 围绕玩家、在可视区外一圈生成（否则慢速怪要走很久才到，节奏拖沓）
@@ -217,6 +237,9 @@ function updatePlayer(dt){
   p.x = Math.max(12, Math.min(W-12, p.x));  p.y = Math.max(12, Math.min(H-12, p.y));
   if (Math.abs(dx) > 0.1) p.face = dx > 0 ? 1 : -1;
   p.dmgFlash = Math.max(0, p.dmgFlash - dt*2.4);
+  p.animT = (p.animT || 0) + dt;
+  if (Math.hypot(dx, dy) > 0.1) p.walkT = (p.walkT || 0) + dt; else p.walkT = 0;
+  if (p.atkT > 0) p.atkT -= dt;
   p.inv = Math.max(0, p.inv - dt);
   if (st.regen > 0) st.hp = Math.min(st.maxhp, st.hp + st.regen*dt);
 }
@@ -256,6 +279,7 @@ function updateSkills(dt){
     else tgt = nearestEnemy(p.x,p.y,260);
     if (!tgt && b.type !== 'pulse' && b.type !== 'area' && b.type !== 'summon') continue;
     sk.t = c.cd; sk.seq++;
+    if (G.player) G.player.atkT = 0.3;             // 播放攻击动画
     fireSkill(sk, c, tgt);
     if (c.echo > 0){
       for (let i=0;i<c.echo;i++) setTimeout(()=>{ if(G.screen==='battle') fireSkill(sk,c,tgt,0.6) }, 400);
@@ -285,7 +309,8 @@ function fireSkill(sk, c, tgt, mul){
       const a = dir + (n>1 ? (i-(n-1)/2)*spread : 0);
       ents.bullets.push({x:p.x, y:p.y, vx:Math.cos(a)*c.spd, vy:Math.sin(a)*c.spd,
         r:c.size, dmg:c.dmg*M, color:c.color, pierce:c.pierce, bounce:c.bounce, split:c.split,
-        chain:(c.chain||0), life:1.6, tags:b.tags, sk, hit:[], orbit:false, ret:!!b.tags.includes('return'), t:0});
+        chain:(c.chain||0), life:1.6, tags:b.tags, sk, hit:[], orbit:false, ret:!!b.tags.includes('return'), t:0,
+        vfx: (SKILL_ART[sk.id]||{}).proj, hitVfx: (SKILL_ART[sk.id]||{}).hit});
     }
     for (let i=0;i<c.orbit;i++){
       const a = (i/c.orbit)*Math.PI*2;
@@ -294,12 +319,12 @@ function fireSkill(sk, c, tgt, mul){
     }
   } else if (b.type === 'pulse'){
     ents.areas.push({x:p.x, y:p.y, r:0, max: c.size + 26, dmg:c.dmg*M, color:c.color, life:0.32, t:0,
-      tags:b.tags, sk, hitOnce:true, kind:'pulse'});
+      tags:b.tags, sk, hitOnce:true, kind:'pulse', vfx:(SKILL_ART[sk.id]||{}).aoe});
     ents.fx.push({type:'ring', x:p.x, y:p.y, r:0, max:c.size+26, t:0.32, life:0.32, color:c.color});
   } else if (b.type === 'area'){
     const ax = tgt? tgt.x : p.x, ay = tgt? tgt.y : p.y;
     ents.areas.push({x:ax, y:ay, r:c.size, max:c.size, dmg:c.dmg*M, color:c.color, life:3.4, t:0,
-      tags:b.tags, sk, tick:0, tickRate:0.45, kind:'zone'});
+      tags:b.tags, sk, tick:0, tickRate:0.45, kind:'zone', vfx:(SKILL_ART[sk.id]||{}).zone || (SKILL_ART[sk.id]||{}).aoe});
   } else if (b.type === 'summon'){
     ents.summons.push({x:p.x+G.rng.range(-24,24), y:p.y+G.rng.range(-24,24), life:9, t:0, cd:0.7, dmg:c.dmg*M, color:c.color, sk});
   }
@@ -328,7 +353,9 @@ function killEnemy(e){
   if (G.flags && G.flags.harvest) G.stats.hp = Math.min(G.stats.maxhp, G.stats.hp + 1);
   G.hitstop = Math.max(G.hitstop || 0, e.boss ? 0.34 : (e.kind === 'elite' ? 0.16 : 0.035));
   G.shake = Math.max(G.shake || 0, e.boss ? 14 : (e.kind === 'elite' ? 8 : 1.2));
-  ents.fx.push({type:'boom', x:e.x, y:e.y, r:e.r, t:0.22, life:0.22, color:'#FFFFFF'});
+  ents.fx2 = ents.fx2 || [];
+  ents.fx2.push({vfx: (e.boss || e.elite) ? FX.killBig : FX.killSmall,
+                 x:e.x, y:e.y, t:0, life:(e.boss||e.elite)?0.9:0.5, scale:(e.boss||e.elite)?2:1});
   const ga = G.rng.range(0, Math.PI*2);
   ents.gems.push({x:e.x, y:e.y, v:e.exp, t:0, pop:0.22,
                   vx:Math.cos(ga)*G.rng.range(40,80), vy:Math.sin(ga)*G.rng.range(40,80)});
@@ -342,12 +369,16 @@ function updateEnemies(dt){
   for (const e of ents.enemies){
     if (e.dead) continue;
     if (e.flash > 0) e.flash -= dt;
-    if (e.spawnT > 0) e.spawnT -= dt;
+    e.animT += dt;
+    if (e.atkT > 0) e.atkT -= dt;
+    if (e.dead){ e.deathT += dt; continue; }        // 死亡动画期间不再移动/攻击
     if (e.slow > 0){ e.slow -= dt; }
     const spdMul = e.slow > 0 ? 0.65 : 1;
     const a = Math.atan2(p.y-e.y, p.x-e.x);
     const sp = e.spd * spdMul * (e.boss?1:1) * dt;
     e.x += Math.cos(a)*sp; e.y += Math.sin(a)*sp;
+    e.walkT += dt;
+    if (Math.abs(Math.cos(a)) > 0.15) e.facing = Math.cos(a) > 0 ? 1 : -1;
     // 击退回弹
     e.x += e.kx*dt*4; e.y += e.ky*dt*4; e.kx *= 0.86; e.ky *= 0.86;
     // 持续伤害
@@ -361,12 +392,15 @@ function updateEnemies(dt){
       dm = Math.max(1, Math.round(dm * (G.char.negDmgMul||1)));
       G.stats.hp -= dm; p.inv = 0.55; p.dmgFlash = 1; G.hudFlash = 0.3;
       G.shake = Math.max(G.shake || 0, 4);
+      e.atkT = 0.34;                                 // 播放攻击动画
+      ents.fx2 = ents.fx2 || [];
       if (G.flags && G.flags.thornmail) dealDamage(e, G.flags.thornmail, null, null);
       ents.texts.push({x:p.x, y:p.y-14, vy:-24, t:0.6, life:0.6, txt:'-'+dm, color:'#FF8FA3', big:false});
       if (e.boss){ const a2 = Math.atan2(p.y-e.y,p.x-e.x); p.x += Math.cos(a2)*10; p.y += Math.sin(a2)*10; }
     }
   }
-  ents.enemies = ents.enemies.filter(e=>!e.dead);
+  // 死亡动画播完（0.75s）才真正移除，避免"一下子消失"
+  ents.enemies = ents.enemies.filter(e => !e.dead || e.deathT < 0.75);
 }
 
 /* ---------- 子弹 ---------- */
@@ -400,7 +434,8 @@ function updateBullets(dt){
       if (e.dead || b.hit.includes(e)) continue;
       if (Math.hypot(e.x-b.x, e.y-b.y) < e.r + b.r){
         b.hit.push(e); dealDamage(e, b.dmg, b, b.sk);
-        ents.fx.push({type:'hit', x:b.x, y:b.y, r:b.r*1.6, t:0.14, life:0.14, color:b.color});
+        ents.fx2 = ents.fx2 || [];
+        ents.fx2.push({vfx: b.hitVfx || 'core/spark/hit-spark', x:b.x, y:b.y, t:0, life:0.45, scale:1});
         // 连锁：命中后跳向附近另一个目标
         if (b.chain > 0 && b.hit.length <= b.chain){
           const o = nearestEnemyExcluding(b.x, b.y, 170, b.hit);
@@ -501,4 +536,5 @@ function updateTexts(dt){
   ents.texts = ents.texts.filter(t=>t.t<t.life);
   for (const f of ents.fx) f.t += dt;
   ents.fx = ents.fx.filter(f=>f.t<f.life);
+  if (ents.fx2){ for (const f of ents.fx2) f.t += dt; ents.fx2 = ents.fx2.filter(f=>f.t<f.life); }
 }

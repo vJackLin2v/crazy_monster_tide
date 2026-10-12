@@ -55,10 +55,20 @@ function renderCharSelect(){
   CHARS.forEach((c, i) => {
     const d = document.createElement('div');
     d.className = 'char' + (i === selChar ? ' sel' : '');
-    const cv = document.createElement('canvas'); cv.width = 48; cv.height = 48;
-    const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
-    g.drawImage(spriteCanvas(c.spr, 4, {[c.col]: PAL[c.col]}), 0, 0, 48, 48);
-    d.appendChild(cv);
+    // 直接用真实单位素材当头像（idle 首帧）
+    const im = UIMG[c.unit + '/idle/1'];
+    if (im && im.complete && im.naturalWidth){
+      const img = document.createElement('img');
+      img.src = im.src; img.width = 56; img.height = 56;
+      img.style.imageRendering = 'pixelated'; img.style.display = 'block';
+      img.style.margin = '0 auto 3px';
+      d.appendChild(img);
+    } else {
+      const cv = document.createElement('canvas'); cv.width = 48; cv.height = 48;
+      const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+      g.drawImage(spriteCanvas(c.spr, 4, {[c.col]: PAL[c.col]}), 0, 0, 48, 48);
+      d.appendChild(cv);
+    }
     const n = document.createElement('div'); n.className = 'nm'; n.textContent = c.name;
     d.appendChild(n);
     d.onclick = () => { selChar = i; renderCharSelect(); };
@@ -157,7 +167,9 @@ function syncUI(){
       const mid = sk.mods[s];
       slots += '<div class="slot' + (mid ? ' f' : '') + '"></div>';
     }
-    d.innerHTML = '<div class="ico2">' + b.icon +
+    const art = (typeof SKILL_ART !== 'undefined' && SKILL_ART[sk.id]) || {};
+    const iconImg = art.icon ? '<img src="../assets/approved/icons/' + art.icon + '" width="30" height="30" style="image-rendering:pixelated">' : b.icon;
+    d.innerHTML = '<div class="ico2">' + iconImg +
       '<div class="cdmask" id="cd' + i + '"></div>' +
       (top ? '<div class="stack" style="display:block">x' + top[1] + '</div>' : '') +
       '</div><div class="slots">' + slots + '</div><div class="nm">' + b.name + ' Lv' + sk.lvl + '</div>';
@@ -178,13 +190,17 @@ function onLevelUp(){
   G.levelCards.forEach((r, i) => {
     let icon = '?', name = '', desc = '', tag = KINDNAME[r.kind];
     if (r.kind === 'skill'){
-      const s = SKILLS[r.id]; icon = s.icon; name = s.name;
+      const s = SKILLS[r.id]; const a0 = (typeof SKILL_ART !== 'undefined' && SKILL_ART[r.id]) || {};
+      icon = a0.icon ? '<img src="../assets/approved/icons/' + a0.icon + '" width="40" height="40" style="image-rendering:pixelated">' : s.icon;
+      name = s.name;
       desc = r.needReplace
         ? s.type + ' · ' + s.tags.join('/') + '<br><span style="color:#FFA84B;font-weight:900">技能已满 4 个，需替换</span>'
         : s.type + ' · ' + s.tags.join('/');
       if (r.needReplace) tag = '技能（替换）';
     }
-    else if (r.kind === 'skillup'){ const s = SKILLS[r.id]; icon = '^'; name = s.name + ' 强化'; desc = '伤害 +22%，冷却 -6%'; }
+    else if (r.kind === 'skillup'){ const s = SKILLS[r.id]; const a1 = (typeof SKILL_ART !== 'undefined' && SKILL_ART[r.id]) || {};
+      icon = a1.icon ? '<img src="../assets/approved/icons/' + a1.icon + '" width="40" height="40" style="image-rendering:pixelated">' : '^';
+      name = s.name + ' 强化'; desc = '伤害 +22%，冷却 -6%'; }
     else if (r.kind === 'module'){ const m = MODULES[r.id]; icon = m.icon; name = m.name;
       desc = m.desc + '<br><span style="color:#FFA84B">' + m.requires.join(' / ') + '</span>'; }
     else if (r.kind === 'item'){ const it = ITEMS[r.id]; icon = it.icon; name = it.name; desc = it.desc; }
@@ -300,7 +316,9 @@ function renderBuild(){
     G.skills.forEach((sk, si) => {
       const b = SKILLS[sk.id], c = calcSkill(sk);
       const d = document.createElement('div'); d.className = 'row';
-      d.innerHTML = '<div class="ri">' + b.icon + '</div><div class="rt"><b>' + b.name + ' Lv' + sk.lvl + '</b>' +
+      const artS = (typeof SKILL_ART !== 'undefined' && SKILL_ART[sk.id]) || {};
+    const icS = artS.icon ? '<img src="../assets/approved/icons/' + artS.icon + '" width="24" height="24" style="image-rendering:pixelated">' : b.icon;
+    d.innerHTML = '<div class="ri">' + icS + '</div><div class="rt"><b>' + b.name + ' Lv' + sk.lvl + '</b>' +
         '<div class="rx">伤害 ' + c.dmg.toFixed(1) + ' · CD ' + c.cd.toFixed(2) + 's' +
         (c.count > 1 ? ' · x' + c.count : '') + (c.pierce ? ' · 穿透' + c.pierce : '') +
         (c.bounce ? ' · 反弹' + c.bounce : '') + (c.orbit ? ' · 环绕' + c.orbit : '') + '</div></div>';
@@ -598,5 +616,20 @@ function loop(now){
 /* ---------- 启动 ---------- */
 window.__G = G;
 G.seed = 20261012;
+// 预载单位与技能特效（本地文件，秒级完成）
+preloadUnits(Object.keys(UNITS));
+preloadVFX((function(){
+  const keys = Object.values(FX).slice();
+  for (const k in SKILL_ART){
+    const a = SKILL_ART[k];
+    if (a.proj) keys.push(a.proj);
+    if (a.hit)  keys.push(a.hit);
+    if (a.aoe)  keys.push(a.aoe);
+    if (a.zone) keys.push(a.zone);
+  }
+  keys.push('core/ring/zap-ring', 'chain/chain-node', 'summon/summon_fx/summon');
+  return keys.filter(Boolean).filter((v, i, arr) => arr.indexOf(v) === i);
+})());
+preloadIcons(Object.keys(SKILL_ART).map(k => SKILL_ART[k].icon).filter(Boolean));
 go('menu');
 requestAnimationFrame(loop);

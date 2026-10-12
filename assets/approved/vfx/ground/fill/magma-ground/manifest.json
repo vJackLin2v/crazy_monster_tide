@@ -1,0 +1,26 @@
+{
+  "id": "magma-ground",
+  "group": "ground/fill",
+  "role": "岩浆地面（领域内部低透明平铺质感）",
+  "gap": [],
+  "frames": 1,
+  "native_size": "32x32",
+  "detected_pre_scale": 1,
+  "baseline_px": 32,
+  "display_scale": 1,
+  "display_size": "32x32",
+  "fps": null,
+  "source": {
+    "key": "DCSS",
+    "name": "Dungeon Crawl Stone Soup tiles (crawl-tiles)",
+    "author": "DCSS 美术团队（多位作者，见包内 FilteredList.txt）",
+    "url": "https://github.com/crawl/tiles",
+    "license": "CC0 1.0",
+    "commercial_use": true,
+    "modification_allowed": true,
+    "attribution_required": false,
+    "restrictions": "无（作者已签署放弃版权，回归公有领域状态；见包内 LICENSE.TXT）",
+    "status": "approved",
+    "path": "dc-dngn/floor/lava0.png"
+  }
+}
