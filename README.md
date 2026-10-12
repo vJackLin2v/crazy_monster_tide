@@ -45,20 +45,27 @@ docs/
   ui/                   UI 流程、竖屏规格、原型门禁
   assets/               素材门禁、盘点、缺口、归一化、授权
   testing/              分层测试、固定种子、玩家模拟
+prototype-html/         竖屏 HTML 可玩 MVP（Möbelmon 式单手 UI）
+tests/                  E2E 玩家流程 + 静态门禁
+screenshots/            三档视口截图
+assets/ui-reference/    参考素材（reference_only，不进游戏）
 memory-bank/
   project.md            项目现状
-  architecture.md       目录与技术架构（引擎待定，见 decisions D-02）
-  decisions.md          已确认决策 D-01 ~ D-06
+  architecture.md       目录与技术架构（Cocos Creator 3.8.6，D-02）
+  decisions.md          已确认决策 D-01 ~ D-10
   rules.md              硬规则与红线
   tasks.md              当前阶段 / 里程碑 / 待办
-scripts/  tools/        实现期使用，当前为空
+tools/vision/           本地目视确认工具（注意：禁止批量跑大模型，见 memory-bank/rules.md §3B）
 ```
 
 ---
 
 ## 当前状态
 
-**M0 工程脚手架**：需求已固化、Agent 文档体系已就位，实现未开始。
+**M1 完成**：决策落定（引擎 Cocos Creator 3.8.6 / 世界观像素奇幻 / 命名确认 / 素材可迁移）
++ Möbelmon UI 参考采集与分析 + **竖屏 HTML 可玩 MVP**（`prototype-html/`，E2E 50 PASS、门禁 19 PASS）。
+
+下一阶段：UI 迭代与冻结（S3），或素材门禁（S1）—— 待用户确认。
 
 阶段路线：`需求分析 → 素材门禁 → HTML 可玩 MVP → UI 冻结 → 引擎实现 → 测试 → 验收`。
 

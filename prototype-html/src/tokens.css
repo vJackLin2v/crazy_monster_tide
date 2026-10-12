@@ -1,0 +1,28 @@
+/* ============================================================
+   Design Token —— 色值来自 Möbelmon 截图实测
+   （提取方法见 docs/ui/reference-library/mobelmon-analysis.md §1）
+   深蓝夜幕底 + 橙色 CTA + 薄荷绿辅助 + 暖白文字
+   ============================================================ */
+:root{
+  /* 底色（实测主色 #17233D / #1E1E40 / #233154 / #0D1732） */
+  --bg-0:#0D1732; --bg-1:#17233D; --bg-2:#1E1E40; --bg-3:#233154;
+  --line:#31456F; --line-2:#3E5490;
+  /* 强调（实测 CTA #FFA84B / #E08020） */
+  --accent:#FFA84B; --accent-d:#E08020; --accent-l:#FFC98A;
+  /* 辅助（实测 #88D6BC / #5FB79C） */
+  --mint:#88D6BC; --mint-d:#5FB79C;
+  /* 场景色（实测 #6842A7） */
+  --purple:#6842A7; --purple-l:#8C63CF;
+  /* 文字（实测暖白 #F7E9E0 / #EEDBCD） */
+  --cream:#F7E9E0; --cream-d:#EEDBCD; --ink:#0A1020;
+  /* 危险（实测 #E04060） */
+  --red:#E04060; --red-d:#B32C48;
+  --gold:#FFD166;
+
+  --r-s:6px; --r-m:10px; --r-l:16px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px;
+  --ft-n:16px; --ft-s:13px; --ft-xs:11px; --ft-l:20px; --ft-xl:26px;
+
+  --shadow-card:0 6px 0 rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);
+  --shadow-btn:0 3px 0 var(--accent-d),0 6px 12px rgba(0,0,0,.35);
+}

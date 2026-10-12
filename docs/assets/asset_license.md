@@ -32,6 +32,15 @@
 第三方截图 / 图标 / 字体仅可作 **reference_only**（放 `assets/ui-reference/`），
 **不得**进入 `assets/approved/`，也不得直接复制进游戏。
 
-## 5. 待办
+## 5. 已登记的参考素材（reference_only）
+
+| # | 素材 / 包 | 路径 | 来源 | 许可 | 商用 | 可改 | 状态 |
+|---|---|---|---|---|---|---|---|
+| 1 | Möbelmon UI 截图 x18 + logo/icon/css | `assets/ui-reference/mobelmon/` | <https://www.bran.organic/projects/mobelmon-ui/>（Bryan Oh Chung） | 未获授权 | 否 | 否 | **reference_only** |
+
+**用途限制**：仅用于提取「布局结构 / 信息层级 / 交互模式 / 配色关系」这类**设计规律**；
+不得复制其美术、图标、字体、文案；不得进入 `assets/approved/`；不得出现在最终产物中。
+
+## 6. 待办
 
 - [ ] S1 阶段完成首轮授权登记（依赖 `asset_inventory.md`）
