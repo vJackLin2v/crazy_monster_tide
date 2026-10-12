@@ -217,6 +217,42 @@ ok(art.vfx >= 80, 'VFX 组件 ' + art.vfx + ' 个');
 ok(art.vfxFail === 0, 'VFX 帧加载失败 ' + art.vfxFail + ' 个（应为 0）');
 ok(art.skillsWithArt === 16, '16 个技能全部绑定图标与特效：' + art.skillsWithArt);
 
+console.log('');
+console.log('== 3i. 素材接入范围（只允许 角色/怪物/技能 三类） ==');
+const scope = await page.evaluate(async () => {
+  const must = [
+    ['角色单位', 'assets/approved/units/swordswoman/idle/01.png'],
+    ['怪物单位', 'assets/approved/units/orc/walk/01.png'],
+    ['BOSS 单位','assets/approved/units/boss-demonlord/idle/01.png'],
+    ['技能图标', 'assets/approved/icons/skill-fireball.png'],
+    ['技能特效', 'assets/approved/vfx/projectile/fire/fireball-shot/001.png'],
+    ['BGM',     'assets/approved/audio/battle.ogg'],
+    ['音效',     'assets/approved/audio/Slash_Attack_Sword_1.wav']
+  ];
+  const banned = [
+    ['UI 套件按钮','assets/approved/ui/kit/btn-normal.png'],
+    ['UI 套件血条','assets/approved/ui/kit/bar-main.png'],
+    ['羊皮纸面板','assets/approved/ui/kit/panel-parch.png'],
+    ['战场背景','assets/approved/bg/arena/tile/battlefield1.png'],
+    ['菜单背景','assets/approved/bg/menu/menu-bg.png']
+  ];
+  const chk = async (u) => { try { const r = await fetch('../' + u, {method:'HEAD'}); return r.ok; } catch(e){ return false; } };
+  const miss = [], stillThere = [];
+  for (const [n, u] of must) if (!(await chk(u))) miss.push(n);
+  for (const [n, u] of banned) if (await chk(u)) stillThere.push(n);
+  return {miss, stillThere, snd: Object.keys(SND).length, bgm: Object.keys(BGM_FILE).length};
+});
+ok(scope.miss.length === 0, '角色/怪物/技能/音频素材全部可达（缺失：' + (scope.miss.join(',') || '无') + '）');
+ok(scope.stillThere.length === 0, '★ UI 与背景素材已彻底移除（残留：' + (scope.stillThere.join(',') || '无') + '）');
+ok(scope.snd >= 20, '音频 ' + scope.snd + ' 个（BGM ' + scope.bgm + ' 首 + 音效）');
+const noKitUi = await page.evaluate(() => {
+  const css = [...document.styleSheets].map(s => { try { return [...s.cssRules].map(r=>r.cssText).join(''); } catch(e){ return ''; } }).join('');
+  return { hasKit: css.indexOf('ui/kit') >= 0, hasBgImg: css.indexOf('bg/arena') >= 0 || css.indexOf('bg/menu') >= 0 };
+});
+ok(!noKitUi.hasKit && !noKitUi.hasBgImg, '★ CSS 里已无 UI 套件 / 背景图引用');
+
+console.log('== 4. 像素级可读性 ==');
+
 console.log('\n== 4. 像素级可读性 ==');
 await page.waitForTimeout(2200);
 const pix = await page.evaluate(() => {

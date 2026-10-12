@@ -23,6 +23,11 @@ function go(name){
   G.screen = name;
   SCREENS.forEach(s => document.getElementById('scr-' + s).classList.toggle('on', s === name));
   if (CANVAS_SCREENS.indexOf(name) < 0) clearCanvas();
+  // 音频：切屏时换 BGM（首次手势后才会真正播放）
+  if (typeof AUD !== 'undefined'){
+    if (name === 'menu') bgm('menu');
+    else if (name === 'battle') bgm(G.isBossWave ? 'boss' : 'battle');
+  }
   document.getElementById('joyhint').style.opacity = (name === 'battle') ? '1' : '0';
   if (name === 'menu') renderMenu();
   if (name === 'charselect') renderCharSelect();
@@ -91,6 +96,8 @@ function renderCharSelect(){
 }
 
 function startRun(){
+  unlockAudio();
+  sfx('click');
   const c = CHARS[selChar];
   G.char = c; c.colColor = PAL[c.col];
   G.rng = makeRng(G.seed);
@@ -179,6 +186,7 @@ function syncUI(){
 
 /* ---------- 升级 3 选 1 ---------- */
 function onLevelUp(){
+  sfx('levelUp');
   G.levelPause = true;
   G.levelCards = rollRewards();
   if (!G.levelCards.length){ resumeBattle(); return; }
@@ -217,6 +225,7 @@ function onLevelUp(){
   });
 }
 function chooseCard(i){
+  sfx('cardPick');
   const r = G.levelCards[i];
   if (r.kind === 'module'){ openInstall(r.id, 'levelup'); return; }
   if (r.kind === 'skill' && G.skills.length >= 4){ openSkillReplace(r.id); return; }
@@ -501,6 +510,8 @@ function hardResetRun(){
 
 /* ---------- 结算 ---------- */
 function renderResult(){
+  sfx((G.result && G.result.win) ? 'victory' : 'defeat', {vol: 0.7});
+  if (typeof bgm === 'function') bgm('menu');
   const r = G.result || {win:false};
   document.getElementById('resBig').textContent = r.win ? '通关！' : '倒下';
   document.getElementById('resBig').style.color = r.win ? 'var(--mint)' : 'var(--red)';
@@ -566,9 +577,26 @@ window.addEventListener('pointerup', onUp);
 window.addEventListener('pointercancel', onUp);
 window.addEventListener('blur', onUp);
 
+/* ---------- 全局：按钮点击音 + 首次手势解锁音频 ---------- */
+window.addEventListener('pointerdown', function(e){
+  unlockAudio();
+  const el = e.target && e.target.closest ? e.target.closest('.btn, .tab, .card, .slotbtn, .lockbtn, .char, .node, .ico') : null;
+  if (el) sfx('click', {vol: 0.45});
+}, true);
+document.addEventListener('pointerover', function(e){
+  const el = e.target && e.target.closest ? e.target.closest('.btn') : null;
+  if (el) sfx('hover', {vol: 0.22, gap: 120});
+}, true);
+
 /* ---------- 按钮绑定 ---------- */
 document.getElementById('btn-play').onclick = () => go('charselect');
 document.getElementById('btn-howto').onclick = () => go('howto');
+document.getElementById('btn-mute').onclick = () => {
+  const m = toggleMute();
+  const el = document.getElementById('btn-mute');
+  el.innerHTML = m ? '&#128263;' : '&#128266;';   // 静音 / 有声
+  el.classList.toggle('off', m);
+};
 document.getElementById('btn-howtoback').onclick = () => go('menu');
 document.getElementById('btn-csback').onclick = () => go('menu');
 document.getElementById('btn-start').onclick = startRun;

@@ -68,7 +68,7 @@ function camera(){
 }
 
 /* ---------- 背景 ---------- */
-/* 背景铺在【世界空间】（在 scale(ZOOM) 之后调用） */
+/* 背景铺在【世界空间】（在 scale(ZOOM) 之后调用）—— 程序化棋盘（第一版做法） */
 function drawBg(cam){
   const T = 24;
   const x0 = Math.floor(cam.cx/T)*T, y0 = Math.floor(cam.cy/T)*T;
@@ -87,6 +87,13 @@ function drawBg(cam){
   }
   CX.strokeStyle = 'rgba(255,168,75,.35)'; CX.lineWidth = 2;
   CX.strokeRect(0, 0, ARENA.W, ARENA.H);
+}
+
+/* 单位影子：让所有单位"站在地上"而不是飘着 */
+function unitShadow(x, y, rx){
+  CX.save(); CX.globalAlpha = 0.26; CX.fillStyle = '#000';
+  CX.beginPath(); CX.ellipse(x, y + 8, rx, rx * 0.36, 0, 0, Math.PI*2); CX.fill();
+  CX.restore();
 }
 
 /* ---------- 动画状态选择 ---------- */
@@ -150,6 +157,7 @@ function render(){
     if (e.spawnT > 0){                            // 入场警示
       drawVFXStill('core/ring/zap-ring', 0.9 - e.spawnT, e.x, e.y, 1.6, {alpha: Math.min(1, e.spawnT/0.9)});
     }
+    unitShadow(e.x, e.y, (e.boss ? 22 : (e.elite ? 15 : 10)) * 0.9);
     if (e.dead) drawUnitOnce(e.unit, 'death', e.deathT * 12, e.x, e.y, sc, e.facing < 0);
     else drawUnit(e.unit, enemyAnim(e), e.animT, e.x, e.y, sc, e.facing < 0, e.flash, null);
     if (!e.dead && e.hp < e.maxhp){               // 血条
@@ -172,8 +180,7 @@ function render(){
     CX.globalAlpha = 0.16 + 0.10*pulse; CX.fillStyle = '#FFA84B';
     CX.beginPath(); CX.ellipse(p.x, p.y + 8, 19, 8, 0, 0, Math.PI*2); CX.fill();
     CX.restore();
-    CX.save(); CX.globalAlpha = 0.28; CX.fillStyle = '#000';
-    CX.beginPath(); CX.ellipse(p.x, p.y + 8, 13, 4.6, 0, 0, Math.PI*2); CX.fill(); CX.restore();
+    unitShadow(p.x, p.y, 12);
     if (p.dmgFlash > 0.02) drawVFX(FX.hurt, (1 - p.dmgFlash) * 0.4, p.x, p.y, 1, 0, false, {alpha: p.dmgFlash});
     drawUnit(G.char.unit, playerAnim(p), p.animT || 0, p.x, p.y, 1, p.face < 0, 0, null);
   }

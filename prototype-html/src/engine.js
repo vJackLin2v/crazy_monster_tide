@@ -163,6 +163,11 @@ function startWave(n){
   if (!G.player) G.player = {x: W/2, y: H/2, r:12, face:1, dmgFlash:0, inv:0};
   else { G.player.x = W/2; G.player.y = H/2; G.player.inv = 1.4; }
   G.stats.hp = Math.min(G.stats.hp, G.stats.maxhp);
+  if (typeof sfx === 'function'){
+    sfx('waveStart', {vol: 0.4});
+    if (G.isBossWave){ sfx('bossIn', {vol: 0.6}); if (typeof bgm === 'function') bgm('boss'); }
+    else if (typeof bgm === 'function') bgm('battle');
+  }
   if (G.isBossWave){
     // 生成距离必须在技能索敌半径(260)内，否则 BOSS 站着挨不到打，开局会干等
     const ba = G.rng.range(0, Math.PI*2), br = 180;
@@ -344,6 +349,14 @@ function dealDamage(e, base, c, sk){
   if (G.rng.chance(st.crit)){ dmg *= st.critdmg; crit = true; }
   dmg = Math.max(1, Math.round(dmg));
   e.hp -= dmg; e.flash = 0.12;
+  if (typeof sfx === 'function'){
+    if (crit) sfx('crit', {vol: 0.34, gap: 110});
+    else {
+      const tp = sk ? (SKILLS[sk.id] || {}).type : '';
+      sfx(tp === 'projectile' ? 'hitRanged' : (tp === 'pulse' || tp === 'area' ? 'hitHeavy' : 'hitLight'),
+          {vol: 0.20, gap: 60});
+    }
+  }
   ents.texts.push({x:e.x+G.rng.range(-4,4), y:e.y-12, vy:-26, t:0.75, life:0.75,
     txt:String(dmg), color: crit?'#FFD166':'#FFFFFF', big:crit});
   if (c && c.burn) e.burn = Math.max(e.burn, 2.0), e.burnDps = c.dmg*0.25;
@@ -357,7 +370,12 @@ function dealDamage(e, base, c, sk){
 function killEnemy(e){
   if (e.dead) return; e.dead = true; G.kills++; G.battleKilled++;
   if (G.flags && G.flags.harvest) G.stats.hp = Math.min(G.stats.maxhp, G.stats.hp + 1);
-  G.hitstop = Math.max(G.hitstop || 0, e.boss ? 0.34 : (e.kind === 'elite' ? 0.16 : 0.035));
+  if (typeof sfx === 'function'){
+    if (e.boss) sfx('special', {vol: 0.65});
+    else if (e.elite) sfx('hitMetal', {vol: 0.5});
+    else sfx('drop', {vol: 0.14, gap: 130});
+  }
+  G.hitstop = Math.max(G.hitstop || 0, e.boss ? 0.34 : (e.elite ? 0.16 : 0.035));
   G.shake = Math.max(G.shake || 0, e.boss ? 14 : (e.kind === 'elite' ? 8 : 1.2));
   ents.fx2 = ents.fx2 || [];
   ents.fx2.push({vfx: (e.boss || e.elite) ? FX.killBig : FX.killSmall,
@@ -399,6 +417,7 @@ function updateEnemies(dt){
       G.stats.hp -= dm; p.inv = 0.55; p.dmgFlash = 1; G.hudFlash = 0.3;
       G.shake = Math.max(G.shake || 0, 4);
       e.atkT = 0.34;                                 // 播放攻击动画
+      if (typeof sfx === 'function') sfx('hitMetal', {vol: 0.4, gap: 180});
       ents.fx2 = ents.fx2 || [];
       if (G.flags && G.flags.thornmail) dealDamage(e, G.flags.thornmail, null, null);
       ents.texts.push({x:p.x, y:p.y-14, vy:-24, t:0.6, life:0.6, txt:'-'+dm, color:'#FF8FA3', big:false});
@@ -513,8 +532,10 @@ function updateSummons(dt){
 }
 
 /* ---------- 掉落 / 经验 ---------- */
+let _pickAcc = 0;
 function updateGems(dt){
   const p = G.player, st = G.stats;
+  _pickAcc += dt;
   for (const g of ents.gems){
     // 掉落时的轻微弹开（看得见"掉了东西"）
     if (g.pop > 0){
@@ -529,7 +550,10 @@ function updateGems(dt){
       const sp = (170 + 430*pull) * dt;
       g.x += dx/d * sp; g.y += dy/d * sp;
     }
-    if (d < 17){ g.got = true; addExp(g.v); }
+    if (d < 17){
+      g.got = true; addExp(g.v);
+      if (_pickAcc > 0.16){ _pickAcc = 0; if (typeof sfx === 'function') sfx('pickup', {vol: 0.16, gap: 90}); }
+    }
   }
   ents.gems = ents.gems.filter(g => !g.got);
 }
