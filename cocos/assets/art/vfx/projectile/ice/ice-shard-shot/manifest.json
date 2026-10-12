@@ -1,0 +1,26 @@
+{
+  "id": "ice-shard-shot",
+  "group": "projectile/ice",
+  "role": "冰矛（含尾迹）",
+  "gap": [],
+  "frames": 11,
+  "native_size": "32x32",
+  "detected_pre_scale": 1,
+  "baseline_px": 32,
+  "display_scale": 1,
+  "display_size": "32x32",
+  "fps": null,
+  "source": {
+    "key": "IM",
+    "name": "Pixel VFX Essentials",
+    "author": "IceMaan",
+    "url": "https://icemaan.itch.io/pixel-vfx-essentials",
+    "license": "IceMaan Free VFX License",
+    "commercial_use": true,
+    "modification_allowed": true,
+    "attribution_required": false,
+    "restrictions": "禁止作为素材包转售/再分发；禁止上传到其他素材站或 AI 训练集",
+    "status": "approved",
+    "path": "Projectiles/Ice Shard Shot"
+  }
+}

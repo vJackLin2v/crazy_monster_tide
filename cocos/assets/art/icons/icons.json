@@ -1,0 +1,433 @@
+{
+  "generated_by": "tools/assets/build_icons.py",
+  "why": "字体画不出 emoji（16 个缺字形）→ UI 图标必须用像素图；同时收口主池散落的图标组",
+  "pool": "H:\\AI-game\\行囊守卫\\assets\\sprites",
+  "count": 53,
+  "note": "源为主池（SlotBound 解包，internal-use-only）→ 产物落 assets/internal/icons/（gitignore），仅本地使用",
+  "icons": {
+    "class-alchemist": {
+      "file": "class-alchemist.png",
+      "source": "icons/icons__imprinticons__shortsicons__poison.png",
+      "desc": "炼金师（毒）",
+      "size": "13x13",
+      "display_scale": 2,
+      "source_status": "internal-use-only"
+    },
+    "class-fire": {
+      "file": "class-fire.png",
+      "source": "icons/icons__imprinticons__shortsicons__fire.png",
+      "desc": "炎术士",
+      "size": "13x13",
+      "display_scale": 2,
+      "source_status": "internal-use-only"
+    },
+    "class-greedy": {
+      "file": "class-greedy.png",
+      "source": "icons/icons__relics icon__core icons__05 Coin Sack.png",
+      "desc": "贪财客（钱袋）",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "class-hunter": {
+      "file": "class-hunter.png",
+      "source": "icons/icons__skills__29GaleBow.png",
+      "desc": "游侠（疾风弓）",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "class-light": {
+      "file": "class-light.png",
+      "source": "icons/icons__skills__46OverloadDischarge.png",
+      "desc": "雷法师（过载放电）",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "class-tank": {
+      "file": "class-tank.png",
+      "source": "icons/icons__imprinticons__shortsicons__shield.png",
+      "desc": "重装（盾）",
+      "size": "13x13",
+      "display_scale": 2,
+      "source_status": "internal-use-only"
+    },
+    "enemy-basilisk": {
+      "file": "enemy-basilisk.png",
+      "source": "enemies/03CaveBasilisk/idle/01.png",
+      "desc": "洞穴蜥蜴",
+      "size": "40x40",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "enemy-boss": {
+      "file": "enemy-boss.png",
+      "source": "enemies/10Demon Lord/idle/01.png",
+      "desc": "Boss：恶魔领主",
+      "size": "40x40",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "enemy-eyebat": {
+      "file": "enemy-eyebat.png",
+      "source": "enemies/02EyeBat/idle/01.png",
+      "desc": "眼蝠",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "enemy-imp": {
+      "file": "enemy-imp.png",
+      "source": "enemies/01Imp/idle/01.png",
+      "desc": "小恶魔",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "enemy-orc": {
+      "file": "enemy-orc.png",
+      "source": "enemies/MiniOrc/idle/01.png",
+      "desc": "兽人",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "enemy-wolf": {
+      "file": "enemy-wolf.png",
+      "source": "enemies/Wolf/idle/01.png",
+      "desc": "狼",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "skill-arcane_missile": {
+      "file": "skill-arcane_missile.png",
+      "source": "icons/icons__skills__15ArcaneOrb.png",
+      "desc": "奥术飞弹：飞行的法球",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "skill-arcane_pulse": {
+      "file": "skill-arcane_pulse.png",
+      "source": "icons/icons__imprinticons__05Timeless.png",
+      "desc": "奥术冲击波：同心环",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "skill-arcane_turret": {
+      "file": "skill-arcane_turret.png",
+      "source": "icons/icons__menu__upgrade__29firstcorespin.png",
+      "desc": "奥术炮台：齿轮法阵",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "skill-chain_lightning": {
+      "file": "skill-chain_lightning.png",
+      "source": "icons/icons__imprinticons__03Chain.png",
+      "desc": "连锁闪电：蓝色电弧",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "skill-fireball": {
+      "file": "skill-fireball.png",
+      "source": "icons/icons__imprinticons__04Annihilation.png",
+      "desc": "火球：橙色火焰漩涡",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "skill-flame_bomb": {
+      "file": "skill-flame_bomb.png",
+      "source": "icons/icons__imprinticons__01Amplify.png",
+      "desc": "炽焰炸弹：放射状爆炸闪光",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "skill-flame_field": {
+      "file": "skill-flame_field.png",
+      "source": "icons/icons__skills__16ArcaneCore.png",
+      "desc": "烈焰领域：环形领域",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "skill-frost_ray": {
+      "file": "skill-frost_ray.png",
+      "source": "icons/icons__imprinticons__03Chill.png",
+      "desc": "霜冻射线：雪花",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "skill-ground_slash": {
+      "file": "skill-ground_slash.png",
+      "source": "icons/icons__imprinticons__04Earthquake.png",
+      "desc": "地裂斩：地面裂纹",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "skill-ice_spear": {
+      "file": "skill-ice_spear.png",
+      "source": "icons/icons__imprinticons__01Diffusion.png",
+      "desc": "冰晶矛：斜向尖刺",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "skill-meteor": {
+      "file": "skill-meteor.png",
+      "source": "icons/icons__imprinticons__04Meteor.png",
+      "desc": "陨石：拖着尾焰的彗星",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "skill-poison_mist": {
+      "file": "skill-poison_mist.png",
+      "source": "icons/icons__skills__41BindingCircle.png",
+      "desc": "毒雾：绿色环形领域",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "skill-poison_thorn": {
+      "file": "skill-poison_thorn.png",
+      "source": "icons/icons__imprinticons__02Poison.png",
+      "desc": "毒刺：毒药瓶",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "skill-returning_blade": {
+      "file": "skill-returning_blade.png",
+      "source": "icons/icons__imprinticons__01Pierce.png",
+      "desc": "回旋刃：刀刃",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "skill-thunder_beam": {
+      "file": "skill-thunder_beam.png",
+      "source": "icons/icons__imprinticons__03SelfDestruct.png",
+      "desc": "雷霆射线：放电爆发",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "skill-whirlwind": {
+      "file": "skill-whirlwind.png",
+      "source": "icons/icons__skills__04StormBlade.png",
+      "desc": "旋风斩：旋转斩",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "ui-arrow": {
+      "file": "ui-arrow.png",
+      "source": "icons/icons__menu__mouseright.png",
+      "desc": "箭头",
+      "size": "16x16",
+      "display_scale": 2,
+      "source_status": "internal-use-only"
+    },
+    "ui-aspd": {
+      "file": "ui-aspd.png",
+      "source": "icons/icons__tooltip__aspd.png",
+      "desc": "攻速",
+      "size": "10x10",
+      "display_scale": 3,
+      "source_status": "internal-use-only"
+    },
+    "ui-atk": {
+      "file": "ui-atk.png",
+      "source": "icons/icons__tooltip__atk.png",
+      "desc": "攻击",
+      "size": "10x10",
+      "display_scale": 3,
+      "source_status": "internal-use-only"
+    },
+    "ui-bad": {
+      "file": "ui-bad.png",
+      "source": "icons/icons__imprinticons__02Blind.png",
+      "desc": "负面天赋标记",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "ui-behavior": {
+      "file": "ui-behavior.png",
+      "source": "icons/icons__imprinticons__01Amplify.png",
+      "desc": "行为模块",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "ui-chest": {
+      "file": "ui-chest.png",
+      "source": "icons/icons__relics icon__item icons__01 Sturdy Fist.png",
+      "desc": "宝箱/奖励",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "ui-crit": {
+      "file": "ui-crit.png",
+      "source": "icons/icons__tooltip__pwr.png",
+      "desc": "属性：暴击",
+      "size": "11x10",
+      "display_scale": 2,
+      "source_status": "internal-use-only"
+    },
+    "ui-essence": {
+      "file": "ui-essence.png",
+      "source": "icons/icons__tooltip__essence.png",
+      "desc": "原石",
+      "size": "10x12",
+      "display_scale": 3,
+      "source_status": "internal-use-only"
+    },
+    "ui-gold": {
+      "file": "ui-gold.png",
+      "source": "icons/icons__tooltip__gold.png",
+      "desc": "金币",
+      "size": "10x10",
+      "display_scale": 3,
+      "source_status": "internal-use-only"
+    },
+    "ui-good": {
+      "file": "ui-good.png",
+      "source": "icons/icons__imprinticons__01Fortify.png",
+      "desc": "正面天赋标记",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "ui-hp": {
+      "file": "ui-hp.png",
+      "source": "icons/icons__battlefieldicons__heart.png",
+      "desc": "生命",
+      "size": "9x8",
+      "display_scale": 3,
+      "source_status": "internal-use-only"
+    },
+    "ui-item": {
+      "file": "ui-item.png",
+      "source": "icons/icons__relics icon__item icons__00 gear.png",
+      "desc": "道具/装备",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "ui-level": {
+      "file": "ui-level.png",
+      "source": "icons/icons__battlefieldicons__star.png",
+      "desc": "等级/星",
+      "size": "22x24",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "ui-maxHp": {
+      "file": "ui-maxHp.png",
+      "source": "icons/icons__tooltip__hp.png",
+      "desc": "属性：生命",
+      "size": "10x10",
+      "display_scale": 3,
+      "source_status": "internal-use-only"
+    },
+    "ui-move": {
+      "file": "ui-move.png",
+      "source": "icons/icons__tooltip__spd.png",
+      "desc": "属性：移速",
+      "size": "10x10",
+      "display_scale": 3,
+      "source_status": "internal-use-only"
+    },
+    "ui-node-battle": {
+      "file": "ui-node-battle.png",
+      "source": "icons/icons__battlefieldicons__battle_small.png",
+      "desc": "地图：战斗",
+      "size": "11x11",
+      "display_scale": 2,
+      "source_status": "internal-use-only"
+    },
+    "ui-node-boss": {
+      "file": "ui-node-boss.png",
+      "source": "icons/icons__battlefieldicons__bossicon.png",
+      "desc": "地图：Boss",
+      "size": "16x16",
+      "display_scale": 2,
+      "source_status": "internal-use-only"
+    },
+    "ui-node-elite": {
+      "file": "ui-node-elite.png",
+      "source": "icons/icons__battlefieldicons__alerticon.png",
+      "desc": "地图：精英",
+      "size": "12x14",
+      "display_scale": 2,
+      "source_status": "internal-use-only"
+    },
+    "ui-node-event": {
+      "file": "ui-node-event.png",
+      "source": "icons/icons__imprinticons__shortsicons__hourglass.png",
+      "desc": "地图：事件",
+      "size": "13x13",
+      "display_scale": 2,
+      "source_status": "internal-use-only"
+    },
+    "ui-node-shop": {
+      "file": "ui-node-shop.png",
+      "source": "icons/icons__tooltip__gold.png",
+      "desc": "地图：商店",
+      "size": "10x10",
+      "display_scale": 3,
+      "source_status": "internal-use-only"
+    },
+    "ui-pause": {
+      "file": "ui-pause.png",
+      "source": "icons/icons__battlereadyicon__battleclock01.png",
+      "desc": "暂停（沙漏）",
+      "size": "23x23",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    },
+    "ui-power": {
+      "file": "ui-power.png",
+      "source": "icons/icons__tooltip__pwr.png",
+      "desc": "战力",
+      "size": "11x10",
+      "display_scale": 2,
+      "source_status": "internal-use-only"
+    },
+    "ui-range": {
+      "file": "ui-range.png",
+      "source": "icons/icons__tooltip__dist.png",
+      "desc": "射程",
+      "size": "10x10",
+      "display_scale": 3,
+      "source_status": "internal-use-only"
+    },
+    "ui-speed": {
+      "file": "ui-speed.png",
+      "source": "icons/icons__tooltip__spd.png",
+      "desc": "移速",
+      "size": "10x10",
+      "display_scale": 3,
+      "source_status": "internal-use-only"
+    },
+    "unit-player": {
+      "file": "unit-player.png",
+      "source": "units/01PrismSwordMan/idle/01.png",
+      "desc": "玩家：棱镜剑士",
+      "size": "32x32",
+      "display_scale": 1,
+      "source_status": "internal-use-only"
+    }
+  }
+}

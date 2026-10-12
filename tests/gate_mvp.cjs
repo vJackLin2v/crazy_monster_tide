@@ -251,6 +251,29 @@ const noKitUi = await page.evaluate(() => {
 });
 ok(!noKitUi.hasKit && !noKitUi.hasBgImg, '★ CSS 里已无 UI 套件 / 背景图引用');
 
+console.log('');
+console.log('== 3j. 实体生命周期（KI-001 回归） ==');
+const kill = await page.evaluate(() => {
+  ents.enemies.length = 0;
+  for (let i = 0; i < 8; i++){
+    spawnEnemy('goblin', G.player.x + 60 + i*12, G.player.y + 40);
+    ents.enemies[ents.enemies.length-1].testTag = 1;      // 打标记，避免和波次新刷的怪混淆
+  }
+  const n0 = ents.enemies.filter(e => e.testTag === 1).length;
+  ents.enemies.slice().forEach(e => { e.hp = 1; killEnemy(e); });
+  return { n0, deadNow: ents.enemies.filter(e => e.dead).length, deathT: ents.enemies[0] ? ents.enemies[0].deathT : null };
+});
+ok(kill.n0 === 8 && kill.deadNow === 8, '注入 8 只并全部击杀（已死 ' + kill.deadNow + '）');
+await page.waitForTimeout(1300);            // 死亡动画 0.75s，留足余量
+const afterKill = await page.evaluate(() => ({
+  tagged: ents.enemies.filter(e => e.testTag === 1).length,      // 被打标记的"尸体"应全部消失
+  dead: ents.enemies.filter(e => e.dead).length,
+  fresh: ents.enemies.length                                     // 波次可能又刷了新怪，属正常
+}));
+ok(afterKill.tagged === 0, '★ 死亡单位会被移除（尸体不残留）：被打标记的剩余 ' + afterKill.tagged + ' 只');
+ok(afterKill.dead === 0, '数组里没有滞留的已死单位');
+
+console.log('== 4. 像素级可读性 ==');
 console.log('== 4. 像素级可读性 ==');
 
 console.log('\n== 4. 像素级可读性 ==');

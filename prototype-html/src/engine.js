@@ -391,11 +391,12 @@ function killEnemy(e){
 function updateEnemies(dt){
   const p = G.player;
   for (const e of ents.enemies){
-    if (e.dead) continue;
+    // ⚠️ 死亡单位必须先累加 deathT 再跳过（曾经把 `if (e.dead) continue;` 放在最前面，
+    //    导致下面那行 deathT 永远执行不到 → 尸体永不消失）
+    if (e.dead){ e.deathT += dt; continue; }
     if (e.flash > 0) e.flash -= dt;
     e.animT += dt;
     if (e.atkT > 0) e.atkT -= dt;
-    if (e.dead){ e.deathT += dt; continue; }        // 死亡动画期间不再移动/攻击
     if (e.slow > 0){ e.slow -= dt; }
     const spdMul = e.slow > 0 ? 0.65 : 1;
     const a = Math.atan2(p.y-e.y, p.x-e.x);

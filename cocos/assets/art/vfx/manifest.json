@@ -1,0 +1,1761 @@
+{
+  "generated_by": "tools/assets/build_skill_vfx.py",
+  "purpose": "VFX 组件清单：组件 → 帧文件列表 + 尺寸",
+  "note": "ui.js 用它做真实特效渲染；绝不允许退回'拿图标当弹幕/拿圆圈当领域'",
+  "base": "assets/approved/vfx",
+  "count": 90,
+  "components": {
+    "beam/body/laser-beam": {
+      "dir": "beam/body/laser-beam",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png"
+      ],
+      "count": 12,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "beam/body/lattice-beam": {
+      "dir": "beam/body/lattice-beam",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png",
+        "017.png",
+        "018.png",
+        "019.png",
+        "020.png"
+      ],
+      "count": 20,
+      "size": "96x96",
+      "w": 96,
+      "h": 96
+    },
+    "beam/cutoff/beam-cutoff": {
+      "dir": "beam/cutoff/beam-cutoff",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "beam/end/beam-end": {
+      "dir": "beam/end/beam-end",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png"
+      ],
+      "count": 15,
+      "size": "96x96",
+      "w": 96,
+      "h": 96
+    },
+    "beam/start/beam-start": {
+      "dir": "beam/start/beam-start",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png"
+      ],
+      "count": 15,
+      "size": "96x96",
+      "w": 96,
+      "h": 96
+    },
+    "chain/bolt-strike": {
+      "dir": "chain/bolt-strike",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "chain/chain-node": {
+      "dir": "chain/chain-node",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png"
+      ],
+      "count": 5,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "chain/electric-impact": {
+      "dir": "chain/electric-impact",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png"
+      ],
+      "count": 15,
+      "size": "96x96",
+      "w": 96,
+      "h": 96
+    },
+    "chain/electric-shock": {
+      "dir": "chain/electric-shock",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png"
+      ],
+      "count": 5,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "chain/tesla-arc": {
+      "dir": "chain/tesla-arc",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png"
+      ],
+      "count": 8,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/burst/big-boom": {
+      "dir": "core/burst/big-boom",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png"
+      ],
+      "count": 10,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/burst/blast": {
+      "dir": "core/burst/blast",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png"
+      ],
+      "count": 10,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/burst/small-pop": {
+      "dir": "core/burst/small-pop",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/burst/warm-explosion": {
+      "dir": "core/burst/warm-explosion",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png"
+      ],
+      "count": 15,
+      "size": "96x96",
+      "w": 96,
+      "h": 96
+    },
+    "core/dust/dirt-kick": {
+      "dir": "core/dust/dirt-kick",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png"
+      ],
+      "count": 8,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/dust/dust-cloud": {
+      "dir": "core/dust/dust-cloud",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png"
+      ],
+      "count": 9,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/dust/landing-dust": {
+      "dir": "core/dust/landing-dust",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png"
+      ],
+      "count": 8,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/flash/parry-flash": {
+      "dir": "core/flash/parry-flash",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/flash/storm-flash": {
+      "dir": "core/flash/storm-flash",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/ring/fire-ring": {
+      "dir": "core/ring/fire-ring",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/ring/shockwave": {
+      "dir": "core/ring/shockwave",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/ring/zap-ring": {
+      "dir": "core/ring/zap-ring",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png"
+      ],
+      "count": 5,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/smoke/fog-drift": {
+      "dir": "core/smoke/fog-drift",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/smoke/smoke-column": {
+      "dir": "core/smoke/smoke-column",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/smoke/smoke-puff": {
+      "dir": "core/smoke/smoke-puff",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png"
+      ],
+      "count": 8,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/smoke/steam": {
+      "dir": "core/smoke/steam",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/spark/block-spark": {
+      "dir": "core/spark/block-spark",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png"
+      ],
+      "count": 5,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/spark/hit-spark": {
+      "dir": "core/spark/hit-spark",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png"
+      ],
+      "count": 5,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/spark/pierce-spark": {
+      "dir": "core/spark/pierce-spark",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "core/spark/spark-burst": {
+      "dir": "core/spark/spark-burst",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png"
+      ],
+      "count": 5,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "defense/orbit/shock-aura": {
+      "dir": "defense/orbit/shock-aura",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "defense/orbit/static-loop": {
+      "dir": "defense/orbit/static-loop",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png",
+        "017.png",
+        "018.png"
+      ],
+      "count": 18,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "defense/shield/fire-shield": {
+      "dir": "defense/shield/fire-shield",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "defense/shield/shield-bubble": {
+      "dir": "defense/shield/shield-bubble",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "feedback/crit/critical-star": {
+      "dir": "feedback/crit/critical-star",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "feedback/crit/solar-shrapnel": {
+      "dir": "feedback/crit/solar-shrapnel",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png"
+      ],
+      "count": 15,
+      "size": "96x96",
+      "w": 96,
+      "h": 96
+    },
+    "feedback/hit/fire-hit": {
+      "dir": "feedback/hit/fire-hit",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png"
+      ],
+      "count": 11,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "feedback/hit/heavy-hit": {
+      "dir": "feedback/hit/heavy-hit",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "feedback/hit/ice-hit": {
+      "dir": "feedback/hit/ice-hit",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "feedback/hit/multi-hit": {
+      "dir": "feedback/hit/multi-hit",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png"
+      ],
+      "count": 9,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "feedback/hit/poison-hit": {
+      "dir": "feedback/hit/poison-hit",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png"
+      ],
+      "count": 10,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "feedback/hit/shock-hit": {
+      "dir": "feedback/hit/shock-hit",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png"
+      ],
+      "count": 5,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "feedback/hit/slash-hit": {
+      "dir": "feedback/hit/slash-hit",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "feedback/level_up/level-up-big": {
+      "dir": "feedback/level_up/level-up-big",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png"
+      ],
+      "count": 12,
+      "size": "128x128",
+      "w": 128,
+      "h": 128
+    },
+    "feedback/level_up/level-up-small": {
+      "dir": "feedback/level_up/level-up-small",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png"
+      ],
+      "count": 9,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "feedback/level_up/rank-up": {
+      "dir": "feedback/level_up/rank-up",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png"
+      ],
+      "count": 9,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "feedback/pickup/chest-open": {
+      "dir": "feedback/pickup/chest-open",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png"
+      ],
+      "count": 7,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "feedback/pickup/coin-sparkle": {
+      "dir": "feedback/pickup/coin-sparkle",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png"
+      ],
+      "count": 5,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "feedback/pickup/damage-pop": {
+      "dir": "feedback/pickup/damage-pop",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "feedback/pickup/exp-gain": {
+      "dir": "feedback/pickup/exp-gain",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png"
+      ],
+      "count": 7,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "feedback/pickup/item-glow": {
+      "dir": "feedback/pickup/item-glow",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "feedback/pickup/unlock": {
+      "dir": "feedback/pickup/unlock",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png"
+      ],
+      "count": 7,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "ground/fill/ground-fill-poison": {
+      "dir": "ground/fill/ground-fill-poison",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "ground/fill/magma-ground": {
+      "dir": "ground/fill/magma-ground",
+      "frames": [
+        "001.png"
+      ],
+      "count": 1,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "ground/fill/poison-cloud": {
+      "dir": "ground/fill/poison-cloud",
+      "frames": [
+        "001.png"
+      ],
+      "count": 1,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "ground/fill/venom-ward": {
+      "dir": "ground/fill/venom-ward",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png",
+        "017.png",
+        "018.png",
+        "019.png",
+        "020.png"
+      ],
+      "count": 20,
+      "size": "96x96",
+      "w": 96,
+      "h": 96
+    },
+    "ground/flame/campfire": {
+      "dir": "ground/flame/campfire",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "ground/flame/flame-loop": {
+      "dir": "ground/flame/flame-loop",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "ground/frost/frost-nova": {
+      "dir": "ground/frost/frost-nova",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "ground/frost/frost-nova-big": {
+      "dir": "ground/frost/frost-nova-big",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png"
+      ],
+      "count": 15,
+      "size": "96x96",
+      "w": 96,
+      "h": 96
+    },
+    "ground/poison/acid-splash": {
+      "dir": "ground/poison/acid-splash",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png"
+      ],
+      "count": 15,
+      "size": "96x96",
+      "w": 96,
+      "h": 96
+    },
+    "ground/poison/dripping-runoff": {
+      "dir": "ground/poison/dripping-runoff",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png",
+        "017.png",
+        "018.png",
+        "019.png",
+        "020.png"
+      ],
+      "count": 20,
+      "size": "96x96",
+      "w": 96,
+      "h": 96
+    },
+    "ground/ring/burning-ground": {
+      "dir": "ground/ring/burning-ground",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "ground/ring/cast-circle": {
+      "dir": "ground/ring/cast-circle",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "melee/slash/crescent-slash": {
+      "dir": "melee/slash/crescent-slash",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png"
+      ],
+      "count": 10,
+      "size": "96x96",
+      "w": 96,
+      "h": 96
+    },
+    "melee/slash/fire-slash": {
+      "dir": "melee/slash/fire-slash",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "melee/slash/ice-slash": {
+      "dir": "melee/slash/ice-slash",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "melee/slash/slash-right": {
+      "dir": "melee/slash/slash-right",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "melee/slash/spin-slash": {
+      "dir": "melee/slash/spin-slash",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "melee/slash/triple-claw": {
+      "dir": "melee/slash/triple-claw",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png"
+      ],
+      "count": 8,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "melee/slash/wide-cleave": {
+      "dir": "melee/slash/wide-cleave",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "projectile/arcane/arcane-orb": {
+      "dir": "projectile/arcane/arcane-orb",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "projectile/arcane/homing-orb": {
+      "dir": "projectile/arcane/homing-orb",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "projectile/arcane/magic-missile": {
+      "dir": "projectile/arcane/magic-missile",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png"
+      ],
+      "count": 11,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "projectile/fire/fire-trail": {
+      "dir": "projectile/fire/fire-trail",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "projectile/fire/fireball-shot": {
+      "dir": "projectile/fire/fireball-shot",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png"
+      ],
+      "count": 8,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "projectile/ice/ice-shard-shot": {
+      "dir": "projectile/ice/ice-shard-shot",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png"
+      ],
+      "count": 11,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "projectile/ice/ice-shatter": {
+      "dir": "projectile/ice/ice-shatter",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "projectile/lightning/energy-bolt": {
+      "dir": "projectile/lightning/energy-bolt",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png"
+      ],
+      "count": 12,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "projectile/lightning/plasma-shot": {
+      "dir": "projectile/lightning/plasma-shot",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png"
+      ],
+      "count": 8,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "projectile/poison/poison-dart": {
+      "dir": "projectile/poison/poison-dart",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png"
+      ],
+      "count": 11,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "summon/summon_fx/portal": {
+      "dir": "summon/summon_fx/portal",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "summon/summon_fx/rift-portal": {
+      "dir": "summon/summon_fx/rift-portal",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png",
+        "017.png",
+        "018.png",
+        "019.png",
+        "020.png"
+      ],
+      "count": 20,
+      "size": "96x96",
+      "w": 96,
+      "h": 96
+    },
+    "summon/summon_fx/summon": {
+      "dir": "summon/summon_fx/summon",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png",
+        "016.png"
+      ],
+      "count": 16,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "summon/summon_fx/teleport": {
+      "dir": "summon/summon_fx/teleport",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png"
+      ],
+      "count": 10,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "support/buff/buff-up": {
+      "dir": "support/buff/buff-up",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "support/buff/debuff-down": {
+      "dir": "support/buff/debuff-down",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png"
+      ],
+      "count": 6,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "support/heal/heal": {
+      "dir": "support/heal/heal",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png"
+      ],
+      "count": 7,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "support/heal/holy-light": {
+      "dir": "support/heal/holy-light",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png"
+      ],
+      "count": 8,
+      "size": "32x32",
+      "w": 32,
+      "h": 32
+    },
+    "support/heal/radiant-heal": {
+      "dir": "support/heal/radiant-heal",
+      "frames": [
+        "001.png",
+        "002.png",
+        "003.png",
+        "004.png",
+        "005.png",
+        "006.png",
+        "007.png",
+        "008.png",
+        "009.png",
+        "010.png",
+        "011.png",
+        "012.png",
+        "013.png",
+        "014.png",
+        "015.png"
+      ],
+      "count": 15,
+      "size": "96x96",
+      "w": 96,
+      "h": 96
+    }
+  }
+}

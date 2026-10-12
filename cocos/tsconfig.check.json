@@ -1,0 +1,28 @@
+{
+  "//": "独立类型检查：只覆盖不依赖 cc 引擎的纯逻辑层（core/data/game/tests）。Cocos 编辑器用的是 tsconfig.json。",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ES2020",
+    "moduleResolution": "node",
+    "lib": [
+      "ES2020",
+      "DOM"
+    ],
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": []
+  },
+  "include": [
+    "assets/scripts/core/**/*.ts",
+    "assets/scripts/data/**/*.ts",
+    "assets/scripts/game/**/*.ts",
+    "tests/**/*.ts"
+  ]
+}

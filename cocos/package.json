@@ -1,0 +1,14 @@
+{
+  "name": "crazy_monster_tide",
+  "uuid": "c7f1a3e2-5b64-4d8a-9e10-2f7c8b91d4a6",
+  "version": "3.8.6",
+  "creator": {
+    "version": "3.8.6"
+  },
+  "type": "3d",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.check.json",
+    "test": "tsx tests/run.ts"
+  }
+}
