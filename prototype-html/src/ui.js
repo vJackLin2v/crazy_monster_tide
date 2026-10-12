@@ -82,6 +82,7 @@ function startRun(){
   G.skills = [mkSkill(c.start)];
   G.items = []; G.modsBag = []; G.gold = 0; G.lv = 1; G.exp = 0; G.expNeed = 5;
   G.attrTaken = {}; G.shopStock = null; G.shopReroll = 0;
+  G.endless = false; G.hitstop = 0; G.shake = 0;
   startRunFlow();
 }
 
@@ -102,6 +103,31 @@ function syncHud(){
     else wt.textContent = '第 ' + G.wave + ' 波 · 剩 ' + Math.max(0, Math.ceil(waveLeft)) + 's · 击杀 ' + G.battleKilled;
   }
 }
+/* 逐帧刷新：BOSS 血条 / 技能冷却 / 顿帧屏震衰减（这些必须流畅，不能 10Hz） */
+function syncCombatUI(dt){
+  // BOSS 常驻血条
+  const bar = document.getElementById('bossbar');
+  const boss = (typeof ents !== 'undefined') ? ents.enemies.find(e => e.kind === 'boss' && !e.dead) : null;
+  if (boss){
+    bar.classList.add('on');
+    document.getElementById('bossname').textContent = 'BOSS · 第 ' + G.wave + ' 波';
+    document.getElementById('bossfill').style.width = Math.max(0, boss.hp/boss.maxhp*100) + '%';
+  } else if (bar.classList.contains('on')) bar.classList.remove('on');
+  // 技能冷却
+  for (let i = 0; i < 4; i++){
+    const el = document.getElementById('cd' + i);
+    if (!el) continue;
+    const sk = G.skills[i];
+    if (!sk){ el.style.transform = 'scaleY(0)'; continue; }
+    const c = calcSkill(sk);
+    const k = Math.max(0, Math.min(1, sk.t / c.cd));
+    el.style.transform = 'scaleY(' + k + ')';
+  }
+  // 顿帧 / 屏震衰减
+  if (G.hitstop > 0) G.hitstop = Math.max(0, G.hitstop - dt);
+  if (G.shake > 0){ G.shake *= Math.pow(0.0016, dt); if (G.shake < 0.15) G.shake = 0; }
+}
+
 function syncUI(){
   syncHud();
   const bar = document.getElementById('skillbar');
@@ -126,6 +152,7 @@ function syncUI(){
       slots += '<div class="slot' + (mid ? ' f' : '') + '"></div>';
     }
     d.innerHTML = '<div class="ico2">' + b.icon +
+      '<div class="cdmask" id="cd' + i + '"></div>' +
       (top ? '<div class="stack" style="display:block">x' + top[1] + '</div>' : '') +
       '</div><div class="slots">' + slots + '</div><div class="nm">' + b.name + ' Lv' + sk.lvl + '</div>';
     bar.appendChild(d);
@@ -149,7 +176,10 @@ function onLevelUp(){
     else if (r.kind === 'module'){ const m = MODULES[r.id]; icon = m.icon; name = m.name;
       desc = m.desc + '<br><span style="color:#FFA84B">' + m.requires.join(' / ') + '</span>'; }
     else if (r.kind === 'item'){ const it = ITEMS[r.id]; icon = it.icon; name = it.name; desc = it.desc; }
-    else { const a = ATTRS[r.id]; icon = a.icon; name = a.name; desc = a.fmt(G.stats[r.id] + a.step); }
+    else { const a = ATTRS[r.id]; icon = a.icon; name = a.name;
+      const cur = G.stats[r.id], nxt = (r.id === 'maxhp') ? cur + a.step : cur + a.step;
+      desc = a.fmt(cur) + ' <span style="color:#88D6BC">→</span> <b style="color:#FFA84B">' + a.fmt(nxt) + '</b>' +
+             '<br><span style="opacity:.7">本局已强化 ' + ((G.attrTaken && G.attrTaken[r.id]) || 0) + ' 次</span>'; }
     const d = document.createElement('div');
     d.className = 'card ' + (CLS[r.kind] || '');
     d.innerHTML = '<div class="ci">' + icon + '</div><div class="cn">' + name + '</div>' +
@@ -185,7 +215,9 @@ function openInstall(mid, from){
     const b = SKILLS[sk.id];
     const okTag = b.tags.some(t => m.requires.includes(t));
     const free = sk.mods.length < 3;
-    const can = okTag && free;
+    const cnt = sk.mods.filter(x => x === mid).length;
+    const capped = cnt >= m.max;                       // 该模块在此技能上已达叠加上限
+    const can = okTag && free && !capped;
     if (can) any = true;
     const d = document.createElement('div'); d.className = 'row';
     d.style.opacity = can ? '1' : '.42';
@@ -193,9 +225,11 @@ function openInstall(mid, from){
       const mm = sk.mods[s];
       return '<span class="tag ' + (mm ? 'n' : '') + '" style="margin-right:3px">' + (mm ? MODULES[mm].name : '空') + '</span>';
     }).join('');
-    d.innerHTML = '<div class="ri">' + b.icon + '</div><div class="rt"><b>' + b.name + '</b>' +
-      '<div class="rx">' + slotHtml + '</div></div><div class="ra">' +
-      (can ? '装上' : (okTag ? '槽位已满' : '不兼容')) + '</div>';
+    const stackTip = cnt > 0 ? ' <span class="tag n" style="margin-left:2px">已有 x' + cnt + '/' + m.max + '</span>' : '';
+    const label = capped ? '已满级' : (can ? '装上' : (okTag ? '槽位已满' : '不兼容'));
+    d.innerHTML = '<div class="ri">' + b.icon + '</div><div class="rt"><b>' + b.name + '</b>' + stackTip +
+      '<div class="rx">' + slotHtml + '</div></div><div class="ra"' +
+      (can ? '' : ' style="opacity:.5"') + '>' + label + '</div>';
     if (can) d.onclick = () => doInstall(si, mid);
     list.appendChild(d);
   });
@@ -214,6 +248,7 @@ function doInstall(si, mid){
     const k = G.modsBag.indexOf(mid); if (k >= 0) G.modsBag.splice(k, 1);
   }
   toast(MODULES[mid].name + ' → ' + SKILLS[sk.id].name);
+  resetFlags();
   finishInstall();
 }
 function finishInstall(){
@@ -300,23 +335,39 @@ function renderShop(){
   list.innerHTML = '';
   (G.shopStock || []).forEach(s => {
     if (s.sold) return;
-    let icon = '?', name = '', desc = '';
-    if (s.kind === 'item'){ icon = ITEMS[s.id].icon; name = ITEMS[s.id].name; desc = ITEMS[s.id].desc; }
-    else if (s.kind === 'module'){ icon = MODULES[s.id].icon; name = MODULES[s.id].name; desc = MODULES[s.id].desc; }
-    else if (s.kind === 'attr'){ icon = '★'; name = '随机属性'; desc = '立刻随机提升 1 项属性'; }
+    let icon = '?', name = '', desc = '', blocked = '', tagHtml = '';
+    if (s.kind === 'item'){
+      icon = ITEMS[s.id].icon; name = ITEMS[s.id].name; desc = ITEMS[s.id].desc;
+      if (G.items.some(i => i.id === s.id)){ blocked = '已拥有'; }
+    } else if (s.kind === 'module'){
+      icon = MODULES[s.id].icon; name = MODULES[s.id].name; desc = MODULES[s.id].desc;
+      const owned = G.modsBag.filter(x => x === s.id).length +
+        G.skills.reduce((n, sk) => n + sk.mods.filter(x => x === s.id).length, 0);
+      tagHtml = '<span class="tag n" style="margin-left:4px">持有 x' + owned + '/' + MODULES[s.id].max + '</span>';
+      if (owned >= MODULES[s.id].max) blocked = '已满级';
+    } else if (s.kind === 'attr'){ icon = '★'; name = '随机属性'; desc = '立刻随机提升 1 项属性'; }
     else { icon = '+'; name = '治疗包'; desc = '回复 40 点生命'; }
-    const afford = G.gold >= s.price;
+    const can = !blocked && G.gold >= s.price;
     const d = document.createElement('div'); d.className = 'row';
-    d.innerHTML = '<div class="ri">' + icon + '</div><div class="rt"><b>' + name + '</b>' +
+    if (blocked) d.style.opacity = '.45';
+    d.innerHTML = '<div class="ri">' + icon + '</div><div class="rt"><b>' + name + '</b>' + tagHtml +
       '<div class="rx">' + desc + '</div></div>' +
-      '<div class="ra" style="' + (afford ? '' : 'opacity:.45') + '">◆' + s.price + '</div>';
-    d.querySelector('.ra').onclick = () => buyShop(s, name);
+      '<div class="ra" style="' + (can ? '' : 'opacity:.45') + '">' + (blocked || ('◆' + s.price)) + '</div>';
+    if (!blocked) d.querySelector('.ra').onclick = () => buyShop(s, name);
     list.appendChild(d);
   });
   const tip = document.createElement('div');
   tip.className = 'sub'; tip.style.marginTop = '10px';
-  tip.textContent = G.wave >= RUN.waves ? '准备迎接 BOSS' : '下一波：' + waveTime(G.wave + 1) + ' 秒';
+  tip.textContent = '下一波：' + waveTime(G.wave + 1) + ' 秒' +
+    (isBossWave(G.wave + 1) ? ' · BOSS 波' : (isEliteWave(G.wave + 1) ? ' · 精英波' : ''));
   list.appendChild(tip);
+  // 打通 20 波后：可以选择继续或收工
+  const done = G.wave >= RUN.waves && !G.endless;
+  document.getElementById('endgamebox').classList.toggle('on', done);
+  const btnFinish = document.getElementById('btn-finish');
+  btnFinish.style.display = done ? 'block' : 'none';
+  document.getElementById('btn-nextwave').textContent =
+    done ? '继续挑战' : ('下一波' + (isBossWave(G.wave + 1) ? ' · BOSS' : ''));
 }
 function buyShop(s, name){
   if (G.gold < s.price){ toast('金币不足'); return; }
@@ -343,7 +394,7 @@ function renderResult(){
     ['存活时间', (r.time || 0).toFixed(1) + ' s'],
     ['击杀', r.kills || 0],
     ['等级', 'Lv.' + (r.lv || 1)],
-    ['推进到', '第 ' + Math.min(r.wave || 1, r.waves || RUN.waves) + ' / ' + (r.waves || RUN.waves) + ' 波'],
+    ['推进到', '第 ' + (r.wave || 1) + ' / ' + (r.waves || RUN.waves) + ' 波' + (r.endless ? '（无尽）' : '')],
     ['金币', r.gold || 0],
     ['seed', G.seed]
   ].map(([k, v]) => '<div class="stat"><span>' + k + '</span><b>' + v + '</b></div>').join('');
@@ -412,7 +463,11 @@ document.getElementById('btn-resume').onclick = () => { resumeBattle(); go('batt
 document.getElementById('btn-skip').onclick = () => { G.gold += 8; toast('+8 金币'); backToBattle(); };
 document.getElementById('btn-instback').onclick = () => finishInstall();
 document.getElementById('btn-reroll').onclick = () => rerollShop();
-document.getElementById('btn-nextwave').onclick = () => { G.shopStock = null; G.shopReroll = 0; nextWave(); };
+document.getElementById('btn-nextwave').onclick = () => {
+  if (G.wave >= RUN.waves && !G.endless){ G.endless = true; toast('进入无尽模式'); }
+  G.shopStock = null; G.shopReroll = 0; nextWave();
+};
+document.getElementById('btn-finish').onclick = () => showResult(true);
 document.getElementById('btn-again').onclick = () => { G.seed = (G.seed * 7919 + 13) % 2147483647; startRun(); };
 document.getElementById('btn-tomenu').onclick = () => go('menu');
 
@@ -421,7 +476,10 @@ let last = performance.now(), hudAcc = 0;
 function loop(now){
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   if (G.screen === 'battle' && !G.paused && G.player){
-    updateBattle(dt);
+    // 顿帧：命中/击杀瞬间把时间压慢，打击感来源之一
+    const scale = (G.hitstop > 0) ? 0.22 : 1;
+    updateBattle(dt * scale);
+    syncCombatUI(dt);
     hudAcc += dt;
     if (hudAcc > 0.1){ hudAcc = 0; syncUI(); }
     if (G.banner){ banner(G.banner); G.banner = ''; }

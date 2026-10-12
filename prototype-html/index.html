@@ -60,6 +60,11 @@
     <div class="expwrap"><div class="expbar" id="expbar"></div></div>
     <div class="goldline"><span>&#9670;</span><span id="goldtxt">0</span>
       <span id="wavetxt" style="margin-left:auto;color:var(--accent);font-weight:900">第 1 波</span></div>
+    <!-- BOSS 常驻血条（有 BOSS 时才出现） -->
+    <div id="bossbar" class="bossbar">
+      <div class="bnm" id="bossname">BOSS</div>
+      <div class="bwrap"><div class="bfill" id="bossfill"></div></div>
+    </div>
     <div style="flex:1"></div>
     <div id="skillbar"></div>
   </div>
@@ -122,8 +127,13 @@
     <div class="ttl" id="shopTitle">第 1 波 结束</div>
     <div class="sub" id="shopGold">金币 0</div>
     <div class="scroll" id="shoplist"></div>
+    <div id="endgamebox" class="endgamebox">
+      <div style="font-size:var(--ft-s);font-weight:900;color:var(--mint)">已打通全部 20 波！</div>
+      <div class="sub" style="margin:4px 0 8px">可以就此收工结算，也可以继续挑战无尽波次（敌人会越来越强）</div>
+    </div>
     <div class="footer" style="display:flex;gap:8px">
       <button class="btn ghost" id="btn-reroll" style="flex:0 0 112px;font-size:var(--ft-s)">刷新 ◆2</button>
+      <button class="btn ghost" id="btn-finish" style="flex:1;display:none">收工结算</button>
       <button class="btn" id="btn-nextwave" style="flex:1">下一波</button>
     </div>
   </div>

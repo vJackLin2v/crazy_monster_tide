@@ -68,7 +68,7 @@ function drawSprite(spr, x, y, scale, override, flip, flash){
   if (flip){ CX.translate(dx + c.width, dy); CX.scale(-1,1); CX.drawImage(c,0,0); }
   else CX.drawImage(c, dx, dy);
   CX.restore();
-  if (flash && flash > 0){                       // 受击白闪（需求 §7）
+  if (flash && flash > 0.001){                   // 受击白闪（需求 §7）
     CX.save(); CX.globalAlpha = Math.min(0.85, flash*6);
     CX.fillStyle = '#fff';
     CX.globalCompositeOperation = 'source-atop';
@@ -82,7 +82,10 @@ function render(){
   CX.setTransform(1,0,0,1,0,0);
   drawBg(cam);
   CX.save();
-  CX.translate(-Math.round(cam.cx), -Math.round(cam.cy));
+  const sh = G.shake || 0;
+  const shx = sh ? (Math.random()*2-1)*sh : 0;
+  const shy = sh ? (Math.random()*2-1)*sh : 0;
+  CX.translate(Math.round(-cam.cx + shx), Math.round(-cam.cy + shy));
 
   // 区域效果（画在最底层）
   for (const a of ents.areas){
@@ -103,7 +106,22 @@ function render(){
   }
   // 敌人
   for (const e of ents.enemies){
-    const sc = e.boss ? 3 : (e.kind==='elite' ? 2 : 2);
+    let sc = e.boss ? 3 : 2;
+    // 精英：常驻光环 + 入场放大
+    if (e.kind === 'elite' || e.boss){
+      const pulse = 0.5 + 0.5*Math.sin(performance.now()/200);
+      CX.save();
+      CX.globalAlpha = 0.20 + 0.16*pulse;
+      CX.fillStyle = e.boss ? '#FFA84B' : '#E04060';
+      CX.beginPath(); CX.ellipse(e.x, e.y+13, e.boss?28:17, e.boss?11:7, 0, 0, Math.PI*2); CX.fill();
+      CX.restore();
+    }
+    if (e.spawnT > 0){
+      const k = 1 - e.spawnT/0.9;
+      sc = sc * (0.55 + 0.45*k);
+      CX.save(); CX.globalAlpha = (1-k)*0.85; CX.strokeStyle = '#E04060'; CX.lineWidth = 3;
+      CX.beginPath(); CX.arc(e.x, e.y, 30 + 40*(1-k), 0, Math.PI*2); CX.stroke(); CX.restore();
+    }
     drawSprite(e.spr, e.x, e.y, sc, null, e.x > G.player.x, e.flash);
     if (e.hp < e.maxhp){
       const w = e.boss ? 44 : 20, hy = e.y - e.r - (e.boss?16:10);
@@ -153,6 +171,13 @@ function render(){
     } else if (f.type === 'ring'){
       CX.save(); CX.globalAlpha = Math.max(0,k)*0.8; CX.strokeStyle = f.color; CX.lineWidth = 3;
       CX.beginPath(); CX.arc(f.x, f.y, f.max*(1-k)+4, 0, Math.PI*2); CX.stroke(); CX.restore();
+    } else if (f.type === 'warn'){
+      const kk = f.t/f.life;
+      CX.save(); CX.globalAlpha = (1-kk)*0.9; CX.strokeStyle = f.color; CX.lineWidth = 4;
+      CX.beginPath(); CX.arc(f.x, f.y, f.max*(1-kk*k), 0, Math.PI*2); CX.stroke();
+      CX.globalAlpha = (1-kk)*0.35; CX.fillStyle = f.color;
+      CX.beginPath(); CX.arc(f.x, f.y, f.max*(1-kk)*0.6, 0, Math.PI*2); CX.fill();
+      CX.restore();
     } else if (f.type === 'chain'){
       CX.save(); CX.globalAlpha = Math.max(0,k); CX.strokeStyle = f.color; CX.lineWidth = 3;
       CX.beginPath();

@@ -171,7 +171,11 @@ const SKILLS = {
   frostnova:  {name:'霜爆',      icon:'✳',  type:'pulse',      tags:['ice','area','pulse','slow'],    cd:3.2,  dmg:8,  spd:0,   color:'#B6F0DC', size:34},
   blade_storm:{name:'刃暴',      icon:'🌀', type:'area',       tags:['physical','area','dot'],        cd:3.0,  dmg:6,  spd:0,   color:'#D9C7A0', size:26},
   holybolt:   {name:'圣光弹',    icon:'☀',  type:'projectile', tags:['holy','projectile','pierceable'],cd:1.4, dmg:9,  spd:210, color:'#FFF3C4', size:6},
-  thorn:      {name:'荆棘环',    icon:'✽',  type:'pulse',      tags:['nature','area','pulse'],        cd:2.6,  dmg:10, spd:0,   color:'#8FE07A', size:30}
+  thorn:      {name:'荆棘环',    icon:'✽',  type:'pulse',      tags:['nature','area','pulse'],        cd:2.6,  dmg:10, spd:0,   color:'#8FE07A', size:30},
+  orb:        {name:'雷球',      icon:'◉',  type:'projectile', tags:['lightning','projectile','homing'], cd:0.95, dmg:8, spd:175, color:'#9BE7FF', size:6},
+  spike:      {name:'地刺',      icon:'▲',  type:'area',       tags:['nature','area','dot'],           cd:2.9,  dmg:6, spd:0,   color:'#A8E06A', size:24},
+  frostring:  {name:'寒冰环',    icon:'❋',  type:'pulse',      tags:['ice','area','pulse','slow'],     cd:2.5,  dmg:9, spd:0,   color:'#CFEFFF', size:30},
+  spirit:     {name:'灵能箭',    icon:'➤',  type:'projectile', tags:['arcane','projectile','pierceable'], cd:0.9, dmg:9, spd:265, color:'#C3A8FF', size:5}
 };
 
 /* ---------- 行为模块（叠加规则按需求 §2；MVP 12 个） ---------- */
@@ -187,7 +191,13 @@ const MODULES = {
   echo:    {name:'回响',   icon:'↻', stack:'tier',     max:2, requires:['area','pulse'], desc:'施放后 0.4s 追加一次 60% 伤害'},
   burn:    {name:'灼烧',   icon:'✹', stack:'tier',     max:3, requires:['fire','lightning','holy'], desc:'命中附加持续伤害'},
   frost:   {name:'冰缓',   icon:'✽', stack:'tier',     max:2, requires:['ice'], desc:'命中减速 35%，持续 1.2s'},
-  vamp:    {name:'吸血',   icon:'♥', stack:'unique',   max:1, requires:['physical','poison'], desc:'伤害的 6% 回复自身生命'}
+  vamp:    {name:'吸血',   icon:'♥', stack:'unique',   max:1, requires:['physical','poison'], desc:'伤害的 6% 回复自身生命'},
+  chain:   {name:'连锁',   icon:'⛓', stack:'tier',   max:2, requires:['projectile','chain'],            desc:'命中后跳向附近另一个目标'},
+  snipe:   {name:'狙击',   icon:'⌖', stack:'tier',   max:2, requires:['projectile'],                     desc:'弹速 +40%，伤害 +15%'},
+  harvest: {name:'收割',   icon:'✂', stack:'unique', max:1, requires:['physical','fire','poison'],        desc:'每次击杀回复 1 点生命'},
+  thunder: {name:'雷鸣',   icon:'⚡', stack:'tier',   max:2, requires:['lightning','arcane','holy'],       desc:'命中时 15% 概率落雷，造成范围伤害'},
+  thornmail:{name:'荆棘',  icon:'✜', stack:'unique', max:1, requires:['nature','physical'],               desc:'受击时反弹 8 点伤害给攻击者'},
+  overload:{name:'超载',   icon:'⚠', stack:'tier',   max:2, requires:['projectile','area','pulse'],       desc:'伤害 +25%，但范围 -10%'}
 };
 
 /* ---------- 属性 ---------- */
@@ -215,7 +225,17 @@ const ITEMS = {
   heart:    {name:'生命护符', icon:'💗', tier:2, desc:'生命上限 +25 并立即回满',       apply:s=>{s.maxhp+=25;s.hp=s.maxhp}},
   ember:    {name:'余烬核心', icon:'🔥', tier:2, desc:'火/圣标签伤害 +25%',           apply:s=>{s.tagBonus=s.tagBonus||{};s.tagBonus.fire=(s.tagBonus.fire||0)+0.25}},
   shard:    {name:'寒霜碎片', icon:'🧊', tier:2, desc:'冰标签技能冷却 -18%',          apply:s=>{s.tagCdr=s.tagCdr||{};s.tagCdr.ice=(s.tagCdr.ice||0)+0.18}},
-  coin:     {name:'贪婪硬币', icon:'🪙', tier:2, desc:'金币获取 +30%',                apply:s=>{s.greed=(s.greed||0)+0.3}}
+  coin:     {name:'贪婪硬币', icon:'🪙', tier:2, desc:'金币获取 +30%',                apply:s=>{s.greed=(s.greed||0)+0.3}},
+  whet:     {name:'磨刀石',   icon:'🪨', tier:1, desc:'攻击力 +10%',             apply:s=>{s.power*=1.10}},
+  battery:  {name:'电池',     icon:'🔋', tier:1, desc:'攻速 +10%',               apply:s=>{s.haste*=1.10}},
+  biglens:  {name:'广角镜',   icon:'🔭', tier:1, desc:'范围 +10%',               apply:s=>{s.area*=1.10}},
+  boots2:   {name:'疾风靴',   icon:'👢', tier:1, desc:'移动速度 +8%',            apply:s=>{s.speed*=1.08}},
+  alloy:    {name:'合金板',   icon:'⬛', tier:1, desc:'减伤 +5%',                apply:s=>{s.armor+=0.05}},
+  fang:     {name:'獠牙',     icon:'🦷', tier:1, desc:'暴击率 +6%',              apply:s=>{s.crit+=0.06}},
+  scope:    {name:'瞄准镜',   icon:'🎯', tier:1, desc:'暴击伤害 +25%',           apply:s=>{s.critdmg+=0.25}},
+  magnet2:  {name:'强磁铁',   icon:'🧲', tier:1, desc:'拾取范围 +12',            apply:s=>{s.pickup+=12}},
+  medkit:   {name:'急救包',   icon:'🧰', tier:1, desc:'生命上限 +10 并立即回满', apply:s=>{s.maxhp+=10;s.hp=s.maxhp}},
+  prism:    {name:'棱镜',     icon:'🔮', tier:2, desc:'全部标签伤害 +8%',        apply:s=>{s.tagAll=(s.tagAll||0)+0.08}}
 };
 const ELITE_POOL = ['heart','ember','shard','coin'];
 
@@ -244,10 +264,16 @@ const CHARS = [
 /* ---------- 闯关配置（土豆兄弟式波次） ----------
    用户指令 2026-10-12：去掉树形地图，改为波次闯关（见 decisions.md D-11） */
 const RUN = {
-  waves: 5,           // 一局总波数
-  bossWave: 5,        // 哪一波是 BOSS 波
-  eliteWaves: [2,3,4],// 这些波中途会出精英
-  baseTime: 20,       // 第 1 波时长（秒）
-  timeStep: 4         // 每波递增时长
+  waves: 20,          // 一局总波数（土豆兄弟式）
+  bossEvery: 10,      // 每 N 波一个 BOSS 波（10、20、30…）
+  eliteEvery: 3,      // 每 N 波出精英（BOSS 波除外）
+  eliteDoubleFrom: 12,// 从第 N 波起精英出 2 只
+  baseTime: 18,       // 第 1 波时长（秒）
+  timeStep: 3,        // 每几个波加一次时长
+  timeEvery: 3,
+  canContinue: true   // 打通 20 波后可以选择继续（无限）
 };
-function waveTime(n){ return RUN.baseTime + (n-1)*RUN.timeStep; }
+function waveTime(n){ return RUN.baseTime + Math.floor((n-1)/RUN.timeEvery) * RUN.timeStep; }
+function isBossWave(n){ return n % RUN.bossEvery === 0; }
+function isEliteWave(n){ return !isBossWave(n) && n % RUN.eliteEvery === 0; }
+function eliteCount(n){ return n >= RUN.eliteDoubleFrom ? 2 : 1; }

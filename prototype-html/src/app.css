@@ -172,3 +172,19 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
   margin:8px auto 0;flex:0 0 auto}
 .sheethead{text-align:center;padding:4px 0 8px;border-bottom:1px solid var(--line)}
 .modalbody .cards{padding:0 4px}
+
+/* ============================================================
+   BOSS 常驻血条（有 BOSS 在场时出现）
+   ============================================================ */
+.bossbar{display:none;padding:0 12px 6px}
+.bossbar.on{display:block;animation:bossin .25s ease-out}
+@keyframes bossin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.bossbar .bnm{font-size:10px;font-weight:900;color:var(--accent);letter-spacing:1px;margin-bottom:2px}
+.bossbar .bwrap{height:9px;background:#0B1224;border:2px solid var(--accent-d);border-radius:99px;overflow:hidden}
+.bossbar .bfill{height:100%;width:100%;background:linear-gradient(90deg,#FF7A3C,var(--accent));
+  transition:width .15s}
+
+/* 打通 20 波后的选择提示 */
+.endgamebox{display:none;margin:0 12px 10px;padding:10px;border-radius:var(--r-m);text-align:center;
+  background:rgba(136,214,188,.10);border:2px solid var(--mint-d)}
+.endgamebox.on{display:block}

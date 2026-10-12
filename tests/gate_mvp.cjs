@@ -46,12 +46,34 @@ const pauseBox = await page.locator('#btn-pause').boundingBox();
 ok(pauseBox.width >= 30 && pauseBox.height >= 30, '暂停键 ' + pauseBox.width.toFixed(0) + 'x' + pauseBox.height.toFixed(0));
 
 console.log('\n== 3. 波次系统 ==');
-const wv = await page.evaluate(() => ({wave:G.wave, total:RUN.waves, t1:waveTime(1), t2:waveTime(2),
-                                       bossWave:RUN.bossWave, elite:RUN.eliteWaves.join(',')}));
-ok(wv.total === 5 && wv.wave === 1, '共 ' + wv.total + ' 波，当前第 ' + wv.wave + ' 波');
-ok(wv.t2 > wv.t1, '波次时长递增：' + wv.t1 + 's -> ' + wv.t2 + 's');
-ok(wv.bossWave === 5, '第 ' + wv.bossWave + ' 波是 BOSS');
-ok(wv.elite === '2,3,4', '精英出现在第 ' + wv.elite + ' 波');
+const wv = await page.evaluate(() => ({wave:G.wave, total:RUN.waves, t1:waveTime(1), t4:waveTime(4), t20:waveTime(20),
+                                       bossEvery:RUN.bossEvery, eliteEvery:RUN.eliteEvery,
+                                       boss10:isBossWave(10), boss20:isBossWave(20), elite6:isEliteWave(6),
+                                       canContinue:RUN.canContinue, doubleFrom:RUN.eliteDoubleFrom}));
+ok(wv.total === 20 && wv.wave === 1, '共 ' + wv.total + ' 波，当前第 ' + wv.wave + ' 波');
+ok(wv.t4 > wv.t1 && wv.t20 > wv.t4, '波次时长递增：' + wv.t1 + 's -> ' + wv.t4 + 's -> ' + wv.t20 + 's');
+ok(wv.boss10 && wv.boss20, 'BOSS 波在 10 / 20（bossEvery=' + wv.bossEvery + '）');
+ok(wv.elite6, '精英波：每 ' + wv.eliteEvery + ' 波一次（第 6 波=' + wv.elite6 + '）');
+ok(wv.canContinue, '打通 20 波后可继续（无尽模式）');
+ok(wv.doubleFrom === 12, '第 ' + wv.doubleFrom + ' 波起精英出 2 只');
+
+console.log('\n== 3b. 内容池规模 ==');
+const pool = await page.evaluate(() => ({
+  skills: Object.keys(SKILLS).length, modules: Object.keys(MODULES).length,
+  items: Object.keys(ITEMS).length, chars: CHARS.length
+}));
+ok(pool.skills === 16, '主动技能 ' + pool.skills + ' 个（需求 §10 目标 16）');
+ok(pool.modules === 18, '行为模块 ' + pool.modules + ' 个（需求 §10 目标约 18）');
+ok(pool.items === 20, '道具 ' + pool.items + ' 个（MVP 演示 20 / 首版目标 50）');
+ok(pool.chars === 6, '角色 ' + pool.chars + ' 个（需求 §6：6）');
+
+console.log('\n== 3c. 打击感机制 ==');
+await page.evaluate(() => { G.hitstop = 0.3; G.shake = 12; });
+await page.waitForTimeout(700);
+const feel = await page.evaluate(() => ({hitstop:G.hitstop, shake:G.shake}));
+ok(feel.hitstop < 0.3, '顿帧会衰减：0.3 -> ' + feel.hitstop.toFixed(3));
+ok(feel.shake < 12, '屏震会衰减：12 -> ' + feel.shake.toFixed(2));
+ok(await page.locator('#cd0').count() === 1, '技能冷却遮罩元素存在（CD 可视化）');
 
 console.log('\n== 4. 像素级可读性 ==');
 await page.waitForTimeout(2200);

@@ -11,14 +11,15 @@
 /* ---------- 开局 ---------- */
 function startRunFlow(){
   G.wave = 0; G.result = null; G.runTime = 0; G.kills = 0;
-  G.shopReroll = 0; G.shopStock = null;
+  G.shopReroll = 0; G.shopStock = null; G.endless = false;
   nextWave();
 }
 
 /* ---------- 进入下一波 ---------- */
 function nextWave(){
   const n = (G.wave || 0) + 1;
-  if (n > RUN.waves){ showResult(true); return; }
+  // 打通 20 波后：只有玩家选择「收工」才结算，否则进入无尽波次
+  if (n > RUN.waves && !G.endless){ showResult(true); return; }
   startWave(n);
   G.paused = false;
   go('battle');
@@ -32,7 +33,7 @@ function waveClear(){
   let bonus = 0;
   for (const e of ents.enemies){ if (!e.dead){ e.dead = true; G.kills++; bonus += e.gold || 0; } }
   ents.enemies = [];
-  const raw = 10 + G.wave*6 + bonus;
+  const raw = 10 + G.wave*6 + bonus;   // 波次越深金币越多
   const gain = Math.round(raw * (1 + (G.stats.greed || 0)));
   G.gold += gain;
   G.lastWaveGold = gain;
@@ -160,7 +161,8 @@ function showResult(win){
     kills: G.kills,
     lv: G.lv,
     wave: G.wave,
-    waves: RUN.waves,
+    waves: Math.max(RUN.waves, G.wave),
+    endless: !!G.endless,
     skills: G.skills.map(s => ({id:s.id, lv:s.lvl, mods:s.mods.slice()})),
     items: G.items.map(i => i.id),
     gold: G.gold

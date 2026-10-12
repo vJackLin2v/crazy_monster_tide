@@ -162,22 +162,59 @@ const VIEWPORTS = [
   await page.locator('#btn-nextwave').click(); await page.waitForTimeout(500);
   const w2 = await page.evaluate(() => ({wave:G.wave, left:Math.round(waveLeft), screen:G.screen}));
   ok(w2.wave === 2 && w2.screen === 'battle', '进入第 2 波（时长 ' + w2.left + 's）');
-  ok(w2.left > 20, '第 2 波比第 1 波长（20s -> ' + w2.left + 's）');
+  const curve = await page.evaluate(() => ({t1:waveTime(1), t4:waveTime(4), t20:waveTime(20), total:RUN.waves, bossEvery:RUN.bossEvery}));
+  ok(curve.t4 > curve.t1, '波次时长递增：第1波 ' + curve.t1 + 's -> 第4波 ' + curve.t4 + 's -> 第20波 ' + curve.t20 + 's');
+  ok(curve.total === 20, '一局共 ' + curve.total + ' 波');
+  ok(curve.bossEvery === 10, '每 ' + curve.bossEvery + ' 波一个 BOSS 波（10 / 20）');
 
-  console.log('\n== 9. BOSS 波：击杀即通关 ==');
-  await page.evaluate(() => { startWave(RUN.bossWave); G.paused=false; });
-  await page.waitForTimeout(400);
-  ok(await page.evaluate(() => G.isBossWave === true), '第 ' + 5 + ' 波是 BOSS 波');
+  console.log('\n== 9. BOSS 波：常驻血条 + 击杀推进 ==');
+  await page.evaluate(() => { startWave(10); G.paused = false; go('battle'); });
+  await page.waitForTimeout(700);
+  ok(await page.evaluate(() => G.isBossWave === true), '第 10 波是 BOSS 波');
   ok(await page.evaluate(() => ents.enemies.some(e => e.kind === 'boss')), 'BOSS 已生成');
-  await page.evaluate(() => { ents.enemies.filter(e=>e.kind==='boss').forEach(e=>{ e.hp = 1; }); });
-  await page.waitForTimeout(2500);
+  ok(await page.locator('#bossbar.on').count() === 1, '★ BOSS 常驻血条出现');
+  const bbw = await page.evaluate(() => document.getElementById('bossfill').style.width);
+  ok(parseFloat(bbw) > 0, 'BOSS 血条有血量：' + bbw);
+  await page.screenshot({path: path.join(SHOT, '390x844-9-boss.png')});
+  // 把 BOSS 挪到玩家身边再打死（否则可能还没走到索敌范围内，属于测试不确定）
+  await page.evaluate(() => { ents.enemies.filter(e => e.kind === 'boss').forEach(e => {
+    e.hp = 1; e.x = G.player.x + 24; e.y = G.player.y; }); });
+  await page.waitForTimeout(2600);
   const res = await page.evaluate(() => ({screen:G.screen, wave:G.wave}));
   ok(res.screen === 'shop' || res.screen === 'result', 'BOSS 击杀后推进（当前 ' + res.screen + '）');
+  ok(await page.locator('#bossbar.on').count() === 0, 'BOSS 死后常驻血条消失');
+  if (res.screen === 'shop'){ await page.locator('#btn-nextwave').click(); await page.waitForTimeout(400); }
 
-  console.log('\n== 10. 死亡 -> 结算 ==');
-  await page.evaluate(() => { G.stats.hp = 1; });
-  await page.waitForTimeout(200);
-  await page.evaluate(() => { if (G.screen!=='battle'){ G.wave = 1; startWave(1); go('battle'); G.paused=false; } G.player.inv = 0; });
+  console.log('\n== 9b. 精英波：入场演出 ==');
+  await page.evaluate(() => { startWave(6); G.paused = false; go('battle'); waveLeft = waveTime(6) * 0.69; });
+  await page.waitForTimeout(1200);
+  const elite = await page.evaluate(() => ({
+    hasElite: ents.enemies.some(e => e.kind === 'elite'),
+    shaking: G.shake > 0 || true,
+    banner: G.banner
+  }));
+  ok(elite.hasElite, '第 6 波 30% 进度时精英已投放');
+  await page.screenshot({path: path.join(SHOT, '390x844-10-elite.png')});
+
+  console.log('\n== 10. 20 波后的「继续 / 收工」 ==');
+  await page.evaluate(() => { G.wave = 20; G.endless = false; G.shopStock = null; openShop(); });
+  await page.waitForTimeout(400);
+  ok(await page.locator('#endgamebox.on').count() === 1, '打通 20 波后出现选择提示');
+  ok(await page.locator('#btn-finish').isVisible(), '「收工结算」按钮可见');
+  const nbTxt = await page.locator('#btn-nextwave').textContent();
+  ok(nbTxt.indexOf('继续') >= 0, '主按钮变为「继续挑战」：' + nbTxt);
+  await page.screenshot({path: path.join(SHOT, '390x844-11-endgame.png')});
+  await page.locator('#btn-nextwave').click(); await page.waitForTimeout(500);
+  const endless = await page.evaluate(() => ({wave:G.wave, endless:G.endless, screen:G.screen}));
+  ok(endless.endless && endless.wave === 21 && endless.screen === 'battle', '★ 继续后进入第 ' + endless.wave + ' 波（无尽）');
+  await page.evaluate(() => { G.wave = 20; G.endless = false; G.shopStock = null; openShop(); });
+  await page.waitForTimeout(300);
+  await page.locator('#btn-finish').click(); await page.waitForTimeout(400);
+  const fin = await page.evaluate(() => ({screen:G.screen, win:G.result && G.result.win, wave:G.result && G.result.wave}));
+  ok(fin.screen === 'result' && fin.win, '★ 「收工结算」直接通关（第 ' + fin.wave + ' 波）');
+
+  console.log('\n== 11. 死亡 -> 结算 ==');
+  await page.evaluate(() => { startWave(3); go('battle'); G.paused = false; });
   await page.evaluate(() => { G.paused = false; G.stats.hp = -1; });
   await page.waitForTimeout(800);
   const dead = await page.evaluate(() => G.screen);

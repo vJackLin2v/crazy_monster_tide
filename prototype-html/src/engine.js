@@ -22,7 +22,8 @@ const G = {
   char: null, map: null, layer: 0, nodeIdx: -1,
   skills: [], items: [], modsBag: [], gold: 0,
   lv: 1, exp: 0, expNeed: 5, runTime: 0, kills: 0,
-  paused: false, banner: '', stats: {}
+  paused: false, banner: '', stats: {},
+  hitstop: 0, shake: 0, flags: {harvest:false, thornmail:0, thunder:0}
 };
 
 function freshStats(char){
@@ -51,6 +52,7 @@ function calcSkill(sk){
   let dmg = b.dmg * (1 + 0.22*(sk.lvl-1));
   let count = 1, fan = 0, pierce = 0, bounce = 0, orbit = 0, split = 0;
   let sizeMul = 1, echo = 0, burn = 0, slow = 0, vamp = 0, rapid = 0;
+  let chain = 0, snipe = 0, overload = 0, harvest = 0, thunder = 0, thornmail = 0;
 
   for (const mid of sk.mods){
     switch(mid){
@@ -66,6 +68,12 @@ function calcSkill(sk){
       case 'burn':   burn  += 1; break;
       case 'frost':  slow  += 1; break;
       case 'vamp':   vamp  += 1; break;
+      case 'chain':  chain += 1; break;
+      case 'snipe':  snipe += 1; break;
+      case 'harvest':harvest+= 1; break;
+      case 'thunder':thunder+= 1; break;
+      case 'thornmail':thornmail += 1; break;
+      case 'overload':overload += 1; break;
     }
   }
   cd *= Math.pow(0.88, rapid);
@@ -76,16 +84,24 @@ function calcSkill(sk){
   // 标签伤害加成（来自道具）
   let tagMul = 1; const bo = st.tagBonus || {};
   for (const t of b.tags) if (bo[t]) tagMul *= (1 + bo[t]);
+  if (st.tagAll) tagMul *= (1 + st.tagAll);
   dmg *= st.power * tagMul;
+  // 新模块对基础数值的影响
+  if (snipe)    { dmg *= Math.pow(1.15, snipe); }
+  if (overload) { dmg *= Math.pow(1.25, overload); sizeMul *= Math.pow(0.90, overload); }
 
+  if (harvest) G.flags.harvest = true;
+  if (thornmail) G.flags.thornmail = thornmail * 8;
+  if (thunder) G.flags.thunder = thunder * 0.15;
   return {cd: Math.max(0.12, cd), dmg, count, fan, pierce, bounce, orbit, split,
-          size: b.size * sizeMul * (0.9 + 0.1*st.area) * st.area, echo, burn, slow, vamp,
-          color: b.color, type: b.type, spd: b.spd * (st.projSpd || 1)};
+          size: b.size * sizeMul * (0.9 + 0.1*st.area) * st.area, echo, burn, slow, vamp, chain,
+          color: b.color, type: b.type, spd: b.spd * (st.projSpd || 1) * (snipe ? Math.pow(1.4, snipe) : 1)};
 }
 
 /* ---------- 局内实体 ---------- */
 let ents = {enemies:[], bullets:[], areas:[], gems:[], texts:[], fx:[], summons:[]};
 function resetEnts(){ ents = {enemies:[], bullets:[], areas:[], gems:[], texts:[], fx:[], summons:[]}; G.areasOwned=[]; }
+function resetFlags(){ G.flags = {harvest:false, thornmail:0, thunder:0}; }
 
 /* ---------- 敌人生成 ---------- */
 const ENEMY_DEF = {
@@ -95,7 +111,7 @@ const ENEMY_DEF = {
   skel:  {spr:'skel',  hp:26, spd:40, dmg:10, r:9,  exp:2, gold:1},
   bat:   {spr:'bat',   hp:12, spd:58, dmg:7,  r:8,  exp:1, gold:0},
   elite: {spr:'elite', hp:150,spd:28, dmg:16, r:13, exp:8, gold:6},
-  boss:  {spr:'boss',  hp:900,spd:22, dmg:22, r:20, exp:40, gold:40}
+  boss:  {spr:'boss',  hp:900,spd:30, dmg:22, r:20, exp:40, gold:40}
 };
 
 function spawnEnemy(kind, x, y, scale){
@@ -106,19 +122,29 @@ function spawnEnemy(kind, x, y, scale){
 }
 
 /* ---------- 波次（土豆兄弟式闯关） ---------- */
-let waveT = 0, waveLeft = 0, spawnAcc = 0, eliteSpawned = false;
+let waveT = 0, waveLeft = 0, spawnAcc = 0, elitesSpawned = 0;
 function startWave(n){
-  resetEnts(); waveT = 0; spawnAcc = 0; eliteSpawned = false;
+  resetEnts(); resetFlags(); waveT = 0; spawnAcc = 0; elitesSpawned = 0;
   G.wave = n;
-  G.isBossWave = (n === RUN.bossWave);
+  G.isBossWave = isBossWave(n);
+  G.isEliteWave = isEliteWave(n);
   G.battleKilled = 0;
+  G.bossRef = null;
   waveLeft = G.isBossWave ? 0 : waveTime(n);
   if (!G.player) G.player = {x: W/2, y: H/2, r:9, face:1, dmgFlash:0, inv:0};
-  else { G.player.x = W/2; G.player.y = H/2; G.player.inv = 1.2; }
+  else { G.player.x = W/2; G.player.y = H/2; G.player.inv = 1.4; }
   G.stats.hp = Math.min(G.stats.hp, G.stats.maxhp);
   if (G.isBossWave){
-    spawnEnemy('boss', W/2, 110, 1);
+    // 生成距离必须在技能索敌半径(260)内，否则 BOSS 站着挨不到打，开局会干等
+    const ba = G.rng.range(0, Math.PI*2), br = 180;
+    const bx = Math.max(30, Math.min(W-30, G.player.x + Math.cos(ba)*br));
+    const by = Math.max(30, Math.min(H-30, G.player.y + Math.sin(ba)*br));
+    spawnEnemy('boss', bx, by, 1 + 0.35*Math.floor(n/RUN.bossEvery - 1));
+    G.bossRef = ents.enemies[ents.enemies.length-1];
     G.banner = 'BOSS 来了';
+    G.shake = 14;
+  } else {
+    G.banner = '第 ' + n + ' 波';
   }
 }
 function waveProgress(){ return G.isBossWave ? 1 : 1 - Math.max(0, waveLeft)/waveTime(G.wave); }
@@ -129,12 +155,18 @@ function updateBattle(dt){
   if (!G.isBossWave){
     waveLeft -= dt;
     if (waveLeft <= 0){ waveClear(); return; }
-    // 精英波：过半时投放一只精英
-    if (!eliteSpawned && RUN.eliteWaves.indexOf(G.wave) >= 0 && waveProgress() > 0.5){
-      eliteSpawned = true;
+    // 精英波：走到 30% 时投放（数量随波次增加）
+    const need = G.isEliteWave ? eliteCount(G.wave) : 0;
+    if (elitesSpawned < need && waveProgress() > 0.3){
+      elitesSpawned++;
       const a = G.rng.range(0, Math.PI*2);
-      spawnEnemy('elite', G.player.x + Math.cos(a)*250, G.player.y + Math.sin(a)*250, 1 + 0.15*G.wave);
+      const ex = G.player.x + Math.cos(a)*250, ey = G.player.y + Math.sin(a)*250;
+      spawnEnemy('elite', ex, ey, 1 + 0.2*G.wave);
+      const el = ents.enemies[ents.enemies.length-1];
+      el.spawnT = 0.9;                       // 入场动画（缩放 + 警示环）
+      ents.fx.push({type:'warn', x:ex, y:ey, r:0, max:64, t:0.6, life:0.6, color:'#E04060'});
       G.banner = '精英出现';
+      G.shake = 9;
     }
   }
   {
@@ -189,6 +221,12 @@ function nearestEnemy(x,y,maxD){
     const d=(e.x-x)**2+(e.y-y)**2; if (d<bd){bd=d;best=e} }
   return best;
 }
+function nearestEnemyExcluding(x, y, maxD, exclude){
+  let best = null, bd = maxD*maxD;
+  for (const e of ents.enemies){ if (e.dead || exclude.indexOf(e) >= 0) continue;
+    const d = (e.x-x)**2 + (e.y-y)**2; if (d < bd){ bd = d; best = e; } }
+  return best;
+}
 function densestEnemy(x,y){
   let best=null, bc=-1;
   for (const e of ents.enemies){ if (e.dead) continue;
@@ -199,6 +237,7 @@ function densestEnemy(x,y){
 
 /* ---------- 技能开火 ---------- */
 function updateSkills(dt){
+  resetFlags();               // 每帧重算模块 flag（卸下/搬家后立即生效）
   const p = G.player;
   for (const sk of G.skills){
     sk.t -= dt;
@@ -239,7 +278,7 @@ function fireSkill(sk, c, tgt, mul){
       const a = dir + (n>1 ? (i-(n-1)/2)*spread : 0);
       ents.bullets.push({x:p.x, y:p.y, vx:Math.cos(a)*c.spd, vy:Math.sin(a)*c.spd,
         r:c.size, dmg:c.dmg*M, color:c.color, pierce:c.pierce, bounce:c.bounce, split:c.split,
-        life:1.6, tags:b.tags, sk, hit:[], orbit:false, ret:!!b.tags.includes('return'), t:0});
+        chain:(c.chain||0), life:1.6, tags:b.tags, sk, hit:[], orbit:false, ret:!!b.tags.includes('return'), t:0});
     }
     for (let i=0;i<c.orbit;i++){
       const a = (i/c.orbit)*Math.PI*2;
@@ -279,6 +318,9 @@ function dealDamage(e, base, c, sk){
 }
 function killEnemy(e){
   if (e.dead) return; e.dead = true; G.kills++; G.battleKilled++;
+  if (G.flags && G.flags.harvest) G.stats.hp = Math.min(G.stats.maxhp, G.stats.hp + 1);
+  G.hitstop = Math.max(G.hitstop || 0, e.boss ? 0.34 : (e.kind === 'elite' ? 0.16 : 0.035));
+  G.shake = Math.max(G.shake || 0, e.boss ? 14 : (e.kind === 'elite' ? 8 : 1.2));
   ents.fx.push({type:'boom', x:e.x, y:e.y, r:e.r, t:0.22, life:0.22, color:'#FFFFFF'});
   ents.gems.push({x:e.x, y:e.y, v:e.exp, t:0});
   if (e.gold > 0) G.gold += Math.round(e.gold * (1 + (G.stats.greed||0)));
@@ -291,6 +333,7 @@ function updateEnemies(dt){
   for (const e of ents.enemies){
     if (e.dead) continue;
     if (e.flash > 0) e.flash -= dt;
+    if (e.spawnT > 0) e.spawnT -= dt;
     if (e.slow > 0){ e.slow -= dt; }
     const spdMul = e.slow > 0 ? 0.65 : 1;
     const a = Math.atan2(p.y-e.y, p.x-e.x);
@@ -308,6 +351,8 @@ function updateEnemies(dt){
       let dm = e.dmg * (1 - G.stats.armor);
       dm = Math.max(1, Math.round(dm * (G.char.negDmgMul||1)));
       G.stats.hp -= dm; p.inv = 0.55; p.dmgFlash = 1; G.hudFlash = 0.3;
+      G.shake = Math.max(G.shake || 0, 4);
+      if (G.flags && G.flags.thornmail) dealDamage(e, G.flags.thornmail, null, null);
       ents.texts.push({x:p.x, y:p.y-14, vy:-24, t:0.6, life:0.6, txt:'-'+dm, color:'#FF8FA3', big:false});
       if (e.boss){ const a2 = Math.atan2(p.y-e.y,p.x-e.x); p.x += Math.cos(a2)*10; p.y += Math.sin(a2)*10; }
     }
@@ -347,6 +392,21 @@ function updateBullets(dt){
       if (Math.hypot(e.x-b.x, e.y-b.y) < e.r + b.r){
         b.hit.push(e); dealDamage(e, b.dmg, b, b.sk);
         ents.fx.push({type:'hit', x:b.x, y:b.y, r:b.r*1.6, t:0.14, life:0.14, color:b.color});
+        // 连锁：命中后跳向附近另一个目标
+        if (b.chain > 0 && b.hit.length <= b.chain){
+          const o = nearestEnemyExcluding(b.x, b.y, 170, b.hit);
+          if (o){
+            const aa = Math.atan2(o.y-b.y, o.x-b.x), sp = Math.hypot(b.vx,b.vy)||190;
+            ents.bullets.push({x:b.x, y:b.y, vx:Math.cos(aa)*sp, vy:Math.sin(aa)*sp, r:b.r, dmg:b.dmg*0.75,
+              color:b.color, pierce:0, bounce:0, split:0, chain:0, life:0.8, tags:b.tags, sk:b.sk, hit:[]});
+          }
+        }
+        // 雷鸣：概率落雷
+        if (G.flags.thunder && G.rng.chance(G.flags.thunder)){
+          ents.areas.push({x:e.x, y:e.y, r:0, max:34, dmg:b.dmg*0.6, color:'#9BE7FF',
+            life:0.22, t:0, tags:['lightning'], sk:b.sk, kind:'pulse', hitOnce:true});
+          ents.fx.push({type:'ring', x:e.x, y:e.y, r:0, max:34, t:0.22, life:0.22, color:'#9BE7FF'});
+        }
         if (b.split > 0 && b.hit.length === 1){
           for (let i=0;i<2;i++){
             const a = Math.atan2(b.vy,b.vx) + (i? 0.7 : -0.7);
