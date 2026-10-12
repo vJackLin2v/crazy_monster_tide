@@ -5,7 +5,7 @@
 | 项目 | 《疯狂怪潮》 / `crazy-monster-tide` |
 | 工程 | `H:\AI-game\crazy_monster_tide` |
 | 阶段 | **M11 完成：进入 Cocos** —— 工程初始化（3.8.6）+ 逻辑层移植 + 48 项单测 |
-| 引擎 | **Cocos Creator 3.8.6**（与 `H:\AI-game\xingnang\cocos_port` 对齐）｜ D-02 |
+| 引擎 | **Cocos Creator 3.8.6**（与 `H:\AI-game\xingnang\cocos_port` 对齐）｜工程 `cocos/`（M11 已初始化）｜ D-02 / D-29 |
 | 世界观 | **像素奇幻** ｜ D-08 |
 | UI 参考 | Möbelmon（reference_only） ｜ D-09 |
 | 目标平台 | 微信小游戏（首发）→ 抖音小游戏 / Web 竖屏调试 |
