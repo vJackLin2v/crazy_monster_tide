@@ -4,7 +4,7 @@
 |---|---|
 | 项目 | 《疯狂怪潮》 / `crazy-monster-tide` |
 | 工程 | `H:\AI-game\crazy_monster_tide` |
-| 阶段 | **M10 完成：素材接入收窄** —— 只用角色/怪物/技能素材 + 音频；UI 回到第一版 |
+| 阶段 | **M11 完成：进入 Cocos** —— 工程初始化（3.8.6）+ 逻辑层移植 + 48 项单测 |
 | 引擎 | **Cocos Creator 3.8.6**（与 `H:\AI-game\xingnang\cocos_port` 对齐）｜ D-02 |
 | 世界观 | **像素奇幻** ｜ D-08 |
 | UI 参考 | Möbelmon（reference_only） ｜ D-09 |

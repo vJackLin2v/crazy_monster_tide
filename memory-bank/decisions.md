@@ -320,6 +320,35 @@
   `'UI 与背景素材已彻底移除（残留：无）'` 与 `'CSS 里已无 UI 套件 / 背景图引用'`，
   防止后续会话又把它们接回来。
 
+## D-29 进入 Cocos：工程初始化与分层
+
+- **用户指令**（2026-10-12）：「进入 cocos」。
+- **工程位置**：`H:\AI-game\crazy_monster_tide\cocos\`（Cocos Creator **3.8.6**，与 xingnang 对齐）。
+- **分层（关键决策）**：
+
+  | 层 | 路径 | 依赖 `cc` | 目的 |
+  |---|---|---|---|
+  | core | `assets/scripts/core/` | 否 | 常量 + 可复现随机 |
+  | data | `assets/scripts/data/` | 否 | 技能/模块/道具/角色/敌人/属性配置 |
+  | game | `assets/scripts/game/` | 否 | 属性计算 / 模块叠算 / 一局状态 |
+  | ui | `assets/scripts/ui/` | 是 | 画面与交互（待实现） |
+
+  **理由**：三层不 import `cc` → 可以**脱离编辑器**做类型检查与单测
+  （`tsconfig.check.json` + `tsx tests/run.ts`），把"玩法规则"和"引擎 API"解耦。
+  玩法逻辑的回归因此**不依赖打开编辑器**。
+
+- **配置**：设计分辨率 = **360x640 fitWidth**，与 `ui-spec-approved.md` v1.0 冻结规格一致
+  （且是微信官方基准 750x1334 的 0.48 倍，见参考案例③）。
+- **场景**：`Boot.scene` 由 xingnang 的可用场景裁剪而来（去掉其自定义脚本节点），
+  并做了**引用可达性清理**（删不可达对象、清指向被删对象的 `__id__`，避免悬空引用）。
+
+### 已验证（无需编辑器）
+
+```
+npx tsc -p tsconfig.check.json   -> 0 错误
+npx tsx tests/run.ts             -> 48 PASS / 0 FAIL
+```
+
 ## D-07 里程碑制
 
 - **决策**：一次只做一个里程碑，做完停下等用户确认；禁止连续推进多个里程碑。
