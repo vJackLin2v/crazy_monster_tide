@@ -54,7 +54,7 @@
 | 写测试 / 跑验收 | `docs/testing/protocol.md`、`seed_and_harness.md` | 分层测试与固定种子 |
 | 模拟玩家点一遍 | `docs/testing/player_simulation.md` | 人类式 E2E 规范 |
 | 看历史决策 | `memory-bank/decisions.md` | 已确认的 D-*，不得推翻 |
-| 做 UI 冻结 | `docs/ui/ui-spec-draft.md` | 冻结规格（DRAFT，需用户确认后才生效） |
+| 实现 UI（Cocos 侧） | `docs/ui/ui-spec-approved.md` | **已冻结 v1.0**：只实现，不得重新发明布局 |
 | 找设计参考 | `docs/ui/reference-library/` | 参考案例结构化分析（Möbelmon=视觉 / Brotato=结构） |
 | 看架构/技术选型 | `memory-bank/architecture.md` | 目录、引擎、模块边界 |
 | 看项目现状 | `memory-bank/project.md` | 阶段、完成度、风险 |

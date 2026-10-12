@@ -13,10 +13,16 @@ function fitStage(){
 window.addEventListener('resize', fitStage); fitStage();
 
 /* ---------- 屏幕切换 ---------- */
-const SCREENS = ['menu','howto','charselect','battle','levelup','install','build','shop','result'];
+const SCREENS = ['menu','howto','charselect','battle','levelup','install','replace','confirm','build','shop','result'];
+const CANVAS_SCREENS = ['battle','levelup','install','replace','confirm','build','shop','result'];
+function clearCanvas(){
+  CX.setTransform(1,0,0,1,0,0);
+  CX.fillStyle = '#131C36'; CX.fillRect(0,0,360,640);
+}
 function go(name){
   G.screen = name;
   SCREENS.forEach(s => document.getElementById('scr-' + s).classList.toggle('on', s === name));
+  if (CANVAS_SCREENS.indexOf(name) < 0) clearCanvas();
   document.getElementById('joyhint').style.opacity = (name === 'battle') ? '1' : '0';
   if (name === 'menu') renderMenu();
   if (name === 'charselect') renderCharSelect();
@@ -171,7 +177,13 @@ function onLevelUp(){
   const CLS = {skill:'c-skill', skillup:'c-skill', module:'c-module', item:'c-item', attr:'c-attr'};
   G.levelCards.forEach((r, i) => {
     let icon = '?', name = '', desc = '', tag = KINDNAME[r.kind];
-    if (r.kind === 'skill'){ const s = SKILLS[r.id]; icon = s.icon; name = s.name; desc = s.type + ' · ' + s.tags.join('/'); }
+    if (r.kind === 'skill'){
+      const s = SKILLS[r.id]; icon = s.icon; name = s.name;
+      desc = r.needReplace
+        ? s.type + ' · ' + s.tags.join('/') + '<br><span style="color:#FFA84B;font-weight:900">技能已满 4 个，需替换</span>'
+        : s.type + ' · ' + s.tags.join('/');
+      if (r.needReplace) tag = '技能（替换）';
+    }
     else if (r.kind === 'skillup'){ const s = SKILLS[r.id]; icon = '^'; name = s.name + ' 强化'; desc = '伤害 +22%，冷却 -6%'; }
     else if (r.kind === 'module'){ const m = MODULES[r.id]; icon = m.icon; name = m.name;
       desc = m.desc + '<br><span style="color:#FFA84B">' + m.requires.join(' / ') + '</span>'; }
@@ -191,6 +203,7 @@ function onLevelUp(){
 function chooseCard(i){
   const r = G.levelCards[i];
   if (r.kind === 'module'){ openInstall(r.id, 'levelup'); return; }
+  if (r.kind === 'skill' && G.skills.length >= 4){ openSkillReplace(r.id); return; }
   applyReward(r);
   backToBattle();
 }
@@ -211,46 +224,61 @@ function openInstall(mid, from){
   const list = document.getElementById('instlist');
   list.innerHTML = '';
   let any = false;
+  // 槽位级交互：空槽=直接装上；已占用的槽=点它就把原来那个换下来（换下的模块回背包，不损失）
   G.skills.forEach((sk, si) => {
     const b = SKILLS[sk.id];
-    const okTag = b.tags.some(t => m.requires.includes(t));
-    const free = sk.mods.length < 3;
+    const okTag = b.tags.some(x => m.requires.includes(x));
     const cnt = sk.mods.filter(x => x === mid).length;
-    const capped = cnt >= m.max;                       // 该模块在此技能上已达叠加上限
-    const can = okTag && free && !capped;
+    const capped = cnt >= m.max;
+    const can = okTag && !capped;
     if (can) any = true;
     const d = document.createElement('div'); d.className = 'row';
-    d.style.opacity = can ? '1' : '.42';
-    const slotHtml = [0,1,2].map(s => {
-      const mm = sk.mods[s];
-      return '<span class="tag ' + (mm ? 'n' : '') + '" style="margin-right:3px">' + (mm ? MODULES[mm].name : '空') + '</span>';
-    }).join('');
+    d.style.opacity = can ? '1' : '.45';
     const stackTip = cnt > 0 ? ' <span class="tag n" style="margin-left:2px">已有 x' + cnt + '/' + m.max + '</span>' : '';
-    const label = capped ? '已满级' : (can ? '装上' : (okTag ? '槽位已满' : '不兼容'));
+    let slotsHtml = '';
+    for (let s = 0; s < 3; s++){
+      const mm = sk.mods[s];
+      const ok = can && (s <= sk.mods.length);
+      slotsHtml += '<span class="slotbtn' + (mm ? ' full' : '') + (ok ? '' : ' off') + '" data-si="' + si + '" data-slot="' + s + '">' +
+        (mm ? MODULES[mm].name : '空槽') + (mm ? '<i>替换</i>' : '') + '</span>';
+    }
     d.innerHTML = '<div class="ri">' + b.icon + '</div><div class="rt"><b>' + b.name + '</b>' + stackTip +
-      '<div class="rx">' + slotHtml + '</div></div><div class="ra"' +
-      (can ? '' : ' style="opacity:.5"') + '>' + label + '</div>';
-    if (can) d.onclick = () => doInstall(si, mid);
+      '<div class="rx" style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">' + slotsHtml + '</div></div>' +
+      '<div class="ra"' + (can ? '' : ' style="opacity:.5"') + '>' +
+      (!okTag ? '不兼容' : (capped ? '已满级' : '选槽位')) + '</div>';
+    if (can) d.querySelectorAll('.slotbtn').forEach(el => {
+      if (el.classList.contains('off')) return;
+      el.onclick = () => doInstallAt(+el.dataset.si, +el.dataset.slot, mid);
+    });
     list.appendChild(d);
   });
   if (!any){
     G.modsBag.push(mid);
-    toast('没有兼容空槽位，模块已放入背包');
+    toast('没有兼容的槽位，模块已放入背包');
     finishInstall(); return;
   }
   go('install');
 }
-function doInstall(si, mid){
+/* 装到指定槽位：空槽=装上；占用=替换（被替换的模块回背包，不损失） */
+function doInstallAt(si, slot, mid){
   const sk = G.skills[si];
-  if (sk.mods.length >= 3) return;
-  sk.mods.push(mid);
+  if (slot < sk.mods.length){
+    const old = sk.mods[slot];
+    if (old === mid){ toast('这个槽位已经是它了'); return; }
+    G.modsBag.push(old);
+    sk.mods[slot] = mid;
+    toast(MODULES[mid].name + ' 替换 ' + MODULES[old].name + '（原模块已回背包）');
+  } else {
+    sk.mods.push(mid);
+    toast(MODULES[mid].name + ' → ' + SKILLS[sk.id].name);
+  }
   if (instState && instState.from === 'build'){
     const k = G.modsBag.indexOf(mid); if (k >= 0) G.modsBag.splice(k, 1);
   }
-  toast(MODULES[mid].name + ' → ' + SKILLS[sk.id].name);
   resetFlags();
   finishInstall();
 }
+function doInstall(si, mid){ doInstallAt(si, G.skills[si].mods.length, mid); }
 function finishInstall(){
   const from = instState ? instState.from : null;
   instState = null;
@@ -333,27 +361,39 @@ function renderShop(){
   btn.textContent = '刷新 ◆' + (2 + (G.shopReroll || 0));
   const list = document.getElementById('shoplist');
   list.innerHTML = '';
-  (G.shopStock || []).forEach(s => {
-    if (s.sold) return;
+  (G.shopStock || []).forEach((s, i) => {
+    if (!s){                                  // 空货位也占位显示，避免列表跳动
+      const e = document.createElement('div'); e.className = 'row shoprow empty';
+      e.textContent = '空货位';
+      list.appendChild(e); return;
+    }
     let icon = '?', name = '', desc = '', blocked = '', tagHtml = '';
     if (s.kind === 'item'){
       icon = ITEMS[s.id].icon; name = ITEMS[s.id].name; desc = ITEMS[s.id].desc;
-      if (G.items.some(i => i.id === s.id)){ blocked = '已拥有'; }
+      if (G.items.some(x => x.id === s.id)) blocked = '已拥有';
     } else if (s.kind === 'module'){
       icon = MODULES[s.id].icon; name = MODULES[s.id].name; desc = MODULES[s.id].desc;
       const owned = G.modsBag.filter(x => x === s.id).length +
         G.skills.reduce((n, sk) => n + sk.mods.filter(x => x === s.id).length, 0);
       tagHtml = '<span class="tag n" style="margin-left:4px">持有 x' + owned + '/' + MODULES[s.id].max + '</span>';
       if (owned >= MODULES[s.id].max) blocked = '已满级';
-    } else if (s.kind === 'attr'){ icon = '★'; name = '随机属性'; desc = '立刻随机提升 1 项属性'; }
+    } else if (s.kind === 'attr'){ icon = '&#9733;'; name = '随机属性'; desc = '立刻随机提升 1 项属性'; }
     else { icon = '+'; name = '治疗包'; desc = '回复 40 点生命'; }
-    const can = !blocked && G.gold >= s.price;
-    const d = document.createElement('div'); d.className = 'row';
-    if (blocked) d.style.opacity = '.45';
-    d.innerHTML = '<div class="ri">' + icon + '</div><div class="rt"><b>' + name + '</b>' + tagHtml +
-      '<div class="rx">' + desc + '</div></div>' +
-      '<div class="ra" style="' + (can ? '' : 'opacity:.45') + '">' + (blocked || ('◆' + s.price)) + '</div>';
-    if (!blocked) d.querySelector('.ra').onclick = () => buyShop(s, name);
+
+    const can = !s.sold && !blocked && G.gold >= s.price;
+    const d = document.createElement('div');
+    d.className = 'row shoprow' + (s.sold ? ' sold' : '');
+    // 购买后**不消失**：货位保留 + 盖「已购买」印记（用户反馈：买完东西消失很怪）
+    const stamp = s.sold ? '<div class="stamp">已购买</div>' : '';
+    const priceTxt = s.sold ? '已购' : (blocked || ('&#9670;' + s.price));
+    d.innerHTML = stamp +
+      '<div class="ri">' + icon + '</div>' +
+      '<div class="rt"><b>' + name + '</b>' + tagHtml + '<div class="rx">' + desc + '</div></div>' +
+      '<div class="ra" style="' + (can ? '' : 'opacity:.45') + '">' + priceTxt + '</div>' +
+      '<div class="lockbtn' + (s.locked ? ' on' : '') + '" title="锁定：刷新也不掉">' +
+        (s.locked ? '&#128274;' : '&#128275;') + '</div>';
+    if (!s.sold && !blocked) d.querySelector('.ra').onclick = () => buyShop(s, name, i);
+    if (!s.sold) d.querySelector('.lockbtn').onclick = (ev) => { ev.stopPropagation(); toggleLock(i); };
     list.appendChild(d);
   });
   const tip = document.createElement('div');
@@ -369,9 +409,9 @@ function renderShop(){
   document.getElementById('btn-nextwave').textContent =
     done ? '继续挑战' : ('下一波' + (isBossWave(G.wave + 1) ? ' · BOSS' : ''));
 }
-function buyShop(s, name){
+function buyShop(s, name, idx){
   if (G.gold < s.price){ toast('金币不足'); return; }
-  G.gold -= s.price; s.sold = true;
+  G.gold -= s.price; s.sold = true; s.locked = false;
   if (s.kind === 'item'){ ITEMS[s.id].apply(G.stats); G.items.push({id:s.id}); }
   else if (s.kind === 'module'){ G.modsBag.push(s.id); }
   else if (s.kind === 'attr'){
@@ -383,6 +423,62 @@ function buyShop(s, name){
   } else G.stats.hp = Math.min(G.stats.maxhp, G.stats.hp + 40);
   toast('买下：' + name);
   renderShop();
+}
+
+/* ---------- 技能替换（已有 4 技能时，抽到新技能要换掉一个） ---------- */
+let repState = null;
+function openSkillReplace(newId){
+  repState = {newId};
+  const s = SKILLS[newId];
+  document.getElementById('repIcon').textContent = s.icon;
+  document.getElementById('repName').textContent = s.name;
+  document.getElementById('repDesc').innerHTML = s.type + ' · ' + s.tags.join(' / ') + ' · CD ' + s.cd + 's';
+  const list = document.getElementById('replist');
+  list.innerHTML = '';
+  G.skills.forEach((sk, si) => {
+    const b = SKILLS[sk.id];
+    const modTxt = sk.mods.length ? sk.mods.map(m => MODULES[m].name).join(' · ') : '无行为模块';
+    const d = document.createElement('div'); d.className = 'row';
+    d.innerHTML = '<div class="ri">' + b.icon + '</div><div class="rt"><b>' + b.name + ' Lv' + sk.lvl + '</b>' +
+      '<div class="rx">' + modTxt + (sk.mods.length ? '（会退回背包）' : '') + '</div></div>' +
+      '<div class="ra">替换</div>';
+    // 整行可点（点击冒泡即可，不再依赖具体命中哪个子元素）
+    d.style.cursor = 'pointer';
+    d.onclick = () => doReplace(si, newId);
+    list.appendChild(d);
+  });
+  go('replace');
+}
+function doReplace(si, newId){
+  const sk = G.skills[si];
+  const back = sk.mods.slice();
+  if (back.length) G.modsBag.push.apply(G.modsBag, back);   // 模块不损失，回背包
+  G.skills[si] = mkSkill(newId);
+  resetFlags();
+  toast(SKILLS[newId].name + ' 上场' + (back.length ? '，' + back.length + ' 个模块已退回背包' : ''));
+  repState = null;
+  backToBattle();
+}
+
+/* ---------- 二次确认弹窗 ---------- */
+let cfmCb = null, cfmFrom = 'build';
+function confirmBox(title, text, okText, cb, from){
+  document.getElementById('cfmTitle').textContent = title;
+  document.getElementById('cfmText').textContent = text;
+  document.getElementById('cfmOk').textContent = okText || '确认';
+  cfmCb = cb; cfmFrom = from || 'build';
+  go('confirm');
+}
+function closeConfirm(ok){
+  const cb = cfmCb; cfmCb = null;
+  go(cfmFrom);
+  if (ok && cb) cb();
+}
+/* 彻底清掉本局状态，避免回主菜单后 canvas 还留着上一局的画面 */
+function hardResetRun(){
+  G.result = null; G.paused = true; G.levelPause = false;
+  G.player = null; G.endless = false; G.wave = 0; G.bossRef = null;
+  if (typeof resetEnts === 'function') resetEnts();
 }
 
 /* ---------- 结算 ---------- */
@@ -470,6 +566,17 @@ document.getElementById('btn-nextwave').onclick = () => {
 document.getElementById('btn-finish').onclick = () => showResult(true);
 document.getElementById('btn-again').onclick = () => { G.seed = (G.seed * 7919 + 13) % 2147483647; startRun(); };
 document.getElementById('btn-tomenu').onclick = () => go('menu');
+document.getElementById('btn-repback').onclick = () => { repState = null; backToBattle(); };
+document.getElementById('cfmOk').onclick = () => closeConfirm(true);
+document.getElementById('cfmCancel').onclick = () => closeConfirm(false);
+// 暂停面板 -> 返回主菜单（会丢进度，所以二次确认）
+document.getElementById('btn-tomenu2').onclick = () => {
+  G.paused = true;
+  confirmBox('返回主菜单？', '第 ' + (G.wave || 1) + ' 波的本局进度会丢失，主菜单不能继续这一局。', '放弃本局', () => {
+    hardResetRun();
+    go('menu');
+  }, 'build');
+};
 
 /* ---------- 主循环 ---------- */
 let last = performance.now(), hudAcc = 0;
@@ -484,7 +591,7 @@ function loop(now){
     if (hudAcc > 0.1){ hudAcc = 0; syncUI(); }
     if (G.banner){ banner(G.banner); G.banner = ''; }
   }
-  if (G.player) render();
+  if (G.player && CANVAS_SCREENS.indexOf(G.screen) >= 0) render();
   requestAnimationFrame(loop);
 }
 

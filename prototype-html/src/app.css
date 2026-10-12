@@ -188,3 +188,32 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .endgamebox{display:none;margin:0 12px 10px;padding:10px;border-radius:var(--r-m);text-align:center;
   background:rgba(136,214,188,.10);border:2px solid var(--mint-d)}
 .endgamebox.on{display:block}
+
+/* ============================================================
+   商店：固定货位 / 锁定 / 已购买印记
+   ============================================================ */
+.shoprow{position:relative;overflow:hidden}
+.shoprow .lockbtn{flex:0 0 30px;height:30px;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;font-size:14px;background:var(--bg-3);border:2px solid var(--line);
+  cursor:pointer;color:#8FA3C8}
+.shoprow .lockbtn.on{background:var(--accent);border-color:var(--accent-d);color:#20160A}
+.shoprow.sold{opacity:.55}
+.shoprow.sold .stamp{position:absolute;right:50px;top:50%;transform:translateY(-50%) rotate(-12deg);
+  border:2px solid var(--mint);color:var(--mint);font-size:10px;font-weight:900;letter-spacing:1px;
+  padding:1px 6px;border-radius:4px;opacity:.9}
+.shoprow.empty{justify-content:center;color:#5A6B8C;font-size:var(--ft-xs);border-style:dashed}
+
+/* 确认框 */
+.confirmbox{padding:16px;max-width:300px;margin:0 auto;text-align:center}
+
+/* 技能替换：新技能高亮卡 */
+#repIcon{font-size:22px}
+
+/* 安装屏：槽位按钮（空槽=装上，占用=点击替换） */
+.slotbtn{display:inline-flex;align-items:center;gap:3px;padding:3px 7px;border-radius:6px;
+  background:#0B1224;border:1px solid var(--line-2);font-size:10px;font-weight:800;color:#C3D0E8;
+  cursor:pointer;white-space:nowrap}
+.slotbtn.full{background:var(--bg-3);border-color:var(--accent-d);color:var(--accent)}
+.slotbtn.full i{font-style:normal;font-size:9px;opacity:.75;color:#8FA3C8}
+.slotbtn.off{opacity:.35;cursor:default}
+.slotbtn:not(.off):active{transform:scale(.95)}

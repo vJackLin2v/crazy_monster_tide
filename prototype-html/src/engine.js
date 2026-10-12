@@ -113,10 +113,10 @@ const ENEMY_DEF = {
   // from = 从第几波开始出现：新手期只出慢怪，避免第 2 波就被高速怪围死
   slime: {spr:'slime', hp:12, spd:50, dmg:6,  r:9,  exp:1, gold:1, from:1},
   bat:   {spr:'bat',   hp:12, spd:76, dmg:7,  r:8,  exp:1, gold:1, from:3},
-  goblin:{spr:'goblin',hp:20, spd:66, dmg:8,  r:9,  exp:1, gold:2, from:5},
+  goblin:{spr:'goblin',hp:20, spd:66, dmg:8,  r:9,  exp:1, gold:1, from:5},
   skel:  {spr:'skel',  hp:26, spd:58, dmg:10, r:9,  exp:2, gold:2, from:8},
-  elite: {spr:'elite', hp:150,spd:44, dmg:16, r:13, exp:8, gold:15},
-  boss:  {spr:'boss',  hp:900,spd:48, dmg:22, r:20, exp:40, gold:60}
+  elite: {spr:'elite', hp:150,spd:44, dmg:16, r:13, exp:8, gold:12},
+  boss:  {spr:'boss',  hp:900,spd:48, dmg:22, r:20, exp:40, gold:45}
 };
 
 function spawnEnemy(kind, x, y, scale){

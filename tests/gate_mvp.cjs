@@ -144,14 +144,45 @@ console.log('== 3f. 金币经济 ==');
 const gold = await page.evaluate(() => {
   const rows = [];
   for (const w of [1,3,5,10]) rows.push({w, clear: 16 + w*7, drop: ENEMY_DEF.slime.gold});
-  G.wave = 1; G.shopReroll = 0; G.shopStock = null;
-  const stock = makeShopStock().map(s => ({k:s.kind, p:s.price}));
+  G.wave = 1; G.shopReroll = 0; G.shopStock = null; G.carryOver = [];
+  refreshShop(false);
+  const stock = G.shopStock.map(s => ({k:s.kind, p:s.price}));
   return {rows, stock};
 });
 ok(gold.rows[0].clear >= 20, '第 1 波结算 ' + gold.rows[0].clear + ' 金币（旧版 16）');
 ok(gold.rows[2].clear >= 45, '第 5 波结算 ' + gold.rows[2].clear + ' 金币');
 const cheapest = Math.min(...gold.stock.map(s => s.p));
 ok(cheapest <= 20, '第 1 波商店最便宜 ' + cheapest + ' 金币（买得起）');
+ok(gold.stock.length === 4, '固定 4 个货位：' + gold.stock.length + '（参考 Brotato 的货架结构）');
+
+console.log('');
+console.log('== 3g. 商店购买反馈（不消失 / 已购买印记 / 锁定） ==');
+const shopFix = await page.evaluate(() => {
+  G.wave = 1; G.gold = 500; G.shopStock = null; G.carryOver = []; G.shopReroll = 0;
+  refreshShop(false);
+  const before = G.shopStock.length;
+  const t0 = G.shopStock.find(s => !s.sold);
+  buyShop(t0, ITEMS[t0.id] ? ITEMS[t0.id].name : 'x', G.shopStock.indexOf(t0));
+  return {before, after: G.shopStock.length, sold: G.shopStock.filter(s => s.sold).length,
+          locked: G.shopStock.filter(s => s.locked).length};
+});
+ok(shopFix.after === shopFix.before, '★ 购买后货位数量不变：' + shopFix.before + ' -> ' + shopFix.after + '（旧版整行消失）');
+ok(shopFix.sold === 1, '★ 已购买货位置为 sold 状态（UI 上盖「已购买」印记）');
+ok(shopFix.locked === 0, '购买后自动解锁（不再占锁定位）');
+
+const lockFix = await page.evaluate(() => {
+  G.gold = 500;
+  const target = G.shopStock.findIndex(s => !s.sold);
+  const id = G.shopStock[target].id;
+  toggleLock(target);
+  const lockedNow = G.shopStock[target].locked;
+  refreshShop(true);                       // 刷新（保留锁定）
+  return {target, id, lockedNow, after: G.shopStock[target] ? G.shopStock[target].id : null,
+          stillLocked: G.shopStock[target] ? G.shopStock[target].locked : false};
+});
+ok(lockFix.lockedNow, '货位可上锁');
+ok(lockFix.after === lockFix.id && lockFix.stillLocked, '★ 锁定的货位刷新后仍在：' + lockFix.id);
+await page.evaluate(() => { G.gold = 40; G.shopStock = null; G.carryOver = []; G.shopReroll = 0; });
 
 console.log('\n== 4. 像素级可读性 ==');
 await page.waitForTimeout(2200);
@@ -183,7 +214,8 @@ console.log('\n== 5. 因果链：模块 -> 安装 -> 数值 ==');
 await page.evaluate(() => { G.levelPause = true; openInstall('multi','levelup'); });
 await page.waitForTimeout(300);
 ok(await page.locator('#scr-install.on').count() === 1, '安装屏打开');
-await page.locator('#instlist .row').first().click(); await page.waitForTimeout(300);
+await page.locator('#instlist .row').first().locator('.slotbtn').first().click();
+await page.waitForTimeout(300);
 const aft = await page.evaluate(() => ({mods:G.skills[0].mods.slice(), count:calcSkill(G.skills[0]).count}));
 ok(aft.mods.length >= 1, '模块已装入：' + JSON.stringify(aft.mods));
 ok(aft.count >= 2, '「多重」生效：投射物 x' + aft.count);
@@ -201,10 +233,12 @@ ok(await page.evaluate(() => G.gold) < gA, '刷新扣金币');
 
 console.log('\n== 7. 确定性 ==');
 const det = await page.evaluate(() => {
-  G.shopReroll = 0; G.shopStock = null;
-  const a = makeShopStock().map(s => s.kind+':'+s.id).join(',');
-  G.shopStock = null;
-  const c = makeShopStock().map(s => s.kind+':'+s.id).join(',');
+  G.shopReroll = 0; G.shopStock = null; G.carryOver = [];
+  refreshShop(false);
+  const a = G.shopStock.map(s => s.kind+':'+s.id).join(',');
+  G.shopStock = null; G.carryOver = [];
+  refreshShop(false);
+  const c = G.shopStock.map(s => s.kind+':'+s.id).join(',');
   return {same: a === c, list: a};
 });
 ok(det.same, '同 seed 商店货架一致：' + det.list);
@@ -220,7 +254,8 @@ ok(hits.length === 0, '源码无赌博语义词' + (hits.length ? ' -> ' + hits.
 
 console.log('\n== 9. 旧系统已彻底移除 ==');
 const legacy = await page.evaluate(() => ({
-  genMap: typeof genMap, enterNode: typeof enterNode, renderMap: typeof renderMap, openEvent: typeof openEvent
+  genMap: typeof genMap, enterNode: typeof enterNode, renderMap: typeof renderMap, openEvent: typeof openEvent,
+  makeShopStock: typeof makeShopStock
 }));
 Object.entries(legacy).forEach(([k, v]) => ok(v === 'undefined', '旧函数 ' + k + ' 已移除'));
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');

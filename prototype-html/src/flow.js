@@ -18,6 +18,9 @@ function startRunFlow(){
 /* ---------- 进入下一波 ---------- */
 function nextWave(){
   const n = (G.wave || 0) + 1;
+  // Brotato 式：上锁且未购买的货位，可以留到下一波的商店
+  G.carryOver = (G.shopStock || []).filter(s => s && s.locked && !s.sold);
+  G.shopStock = null;
   // 打通 20 波后：只有玩家选择「收工」才结算，否则进入无尽波次
   if (n > RUN.waves && !G.endless){ showResult(true); return; }
   startWave(n);
@@ -33,7 +36,7 @@ function waveClear(){
   let bonus = 0;
   for (const e of ents.enemies){ if (!e.dead){ e.dead = true; G.kills++; bonus += e.gold || 0; } }
   ents.enemies = [];
-  const raw = 16 + G.wave*7 + bonus;   // 原 10+6/波，用户反馈「金币不够」→ 提高结算产出
+  const raw = 12 + G.wave*5 + bonus;   // 16+7/波 略多，回调（用户：够了，有点太多了）
   const gain = Math.round(raw * (1 + (G.stats.greed || 0)));
   G.gold += gain;
   G.lastWaveGold = gain;
@@ -47,38 +50,72 @@ function gameOver(){
   showResult(false);
 }
 
-/* ---------- 商店（波间准备） ---------- */
-function makeShopStock(){
-  const rng = makeRng((G.seed ^ (G.wave*7919) ^ 0x51ED ^ (G.shopReroll*104729)) >>> 0);
-  const itemPool = Object.keys(ITEMS).filter(k => !G.items.map(i => i.id).includes(k));
-  const modPool  = Object.keys(MODULES).filter(m => G.modsBag.filter(x => x===m).length < MODULES[m].max);
-  const out = [];
-  for (let i = 0; i < 4; i++){
-    const roll = rng.rnd();
-    if (roll < 0.45 && itemPool.length){
-      const id = itemPool.splice(rng.int(0, itemPool.length-1), 1)[0];
-      out.push({kind:'item', id, price: 13 + rng.int(0,6) + G.wave*2});
-    } else if (modPool.length){
-      const id = modPool.splice(rng.int(0, modPool.length-1), 1)[0];
-      out.push({kind:'module', id, price: 17 + rng.int(0,7) + G.wave*3});
-    } else if (itemPool.length){
-      const id = itemPool.splice(rng.int(0, itemPool.length-1), 1)[0];
-      out.push({kind:'item', id, price: 13 + rng.int(0,6) + G.wave*2});
-    }
+/* ---------- 商店（波间准备） ----------
+   参考 Brotato：固定 4 个货位 + 可锁定（锁住的刷新不掉，也留到下一波）+ 刷新价格递增。
+   购买后**货位不消失**，改为盖「已购买」印记并置灰 —— 避免玩家怀疑自己看错了。 */
+const SHOP_SLOTS = 4;
+
+function makeShopItem(usedIds){
+  const rng = makeRng((G.seed ^ (G.wave*7919) ^ (G.shopReroll*104729) ^ (usedIds.length*2654435761)) >>> 0);
+  const itemPool = Object.keys(ITEMS).filter(k => !G.items.some(i => i.id === k) && usedIds.indexOf(k) < 0);
+  const roll = rng.rnd();
+  if (roll < 0.5 && itemPool.length){
+    const id = itemPool.splice(rng.int(0, itemPool.length-1), 1)[0];
+    return {kind:'item', id, price: 12 + rng.int(0,6) + G.wave*2, sold:false, locked:false};
   }
-  out.push({kind:'heal', id:'heal', price: 8 + G.wave});
-  out.push({kind:'attr', id:'attr', price: 16 + G.wave*3});
-  return out;
+  const mods = Object.keys(MODULES).filter(m =>
+    G.modsBag.filter(x=>x===m).length + G.skills.reduce((n,s)=>n+s.mods.filter(x=>x===m).length,0) < MODULES[m].max);
+  if (mods.length){
+    const id = mods.splice(rng.int(0, mods.length-1), 1)[0];
+    return {kind:'module', id, price: 16 + rng.int(0,7) + G.wave*3, sold:false, locked:false};
+  }
+  if (itemPool.length){
+    const id = itemPool.splice(rng.int(0, itemPool.length-1), 1)[0];
+    return {kind:'item', id, price: 12 + rng.int(0,6) + G.wave*2, sold:false, locked:false};
+  }
+  return null;
+}
+
+/* 刷新货架：keepLocked=true 时保留已上锁且未购买的货位 */
+function refreshShop(keepLocked){
+  const prev = G.shopStock || [];
+  const carried = (G.carryOver || []).slice();
+  const used = [];
+  const out = [];
+  for (let i = 0; i < SHOP_SLOTS; i++){
+    const p = prev[i];
+    if (keepLocked && p && p.locked && !p.sold){ out.push(p); used.push(p.id); continue; }
+    const c = carried.shift();
+    if (c && !c.sold){ out.push(c); used.push(c.id); continue; }
+    let it = makeShopItem(used);
+    if (!it){                                   // 货品抽干时兜底：治疗 / 属性，货位不空
+      it = (i % 2 === 0)
+        ? {kind:'heal', id:'heal', price: 8 + G.wave, sold:false, locked:false}
+        : {kind:'attr', id:'attr', price: 16 + G.wave*3, sold:false, locked:false};
+    }
+    used.push(it.id);
+    out.push(it);
+  }
+  G.shopStock = out;
+  G.carryOver = [];
 }
 function openShop(){
-  if (!G.shopStock) G.shopStock = makeShopStock();
+  if (!G.shopStock) refreshShop(false);
   go('shop');
 }
 function rerollShop(){
   const cost = 2 + G.shopReroll;
   if (G.gold < cost){ toast('金币不足'); return; }
-  G.gold -= cost; G.shopReroll++; G.shopStock = makeShopStock();
+  G.gold -= cost; G.shopReroll++;
+  refreshShop(true);                            // 上锁的货位不会被刷掉
   toast('已刷新（-' + cost + ' 金币）');
+  renderShop();
+}
+function toggleLock(i){
+  const s = (G.shopStock || [])[i];
+  if (!s || s.sold) return;
+  s.locked = !s.locked;
+  toast(s.locked ? '已锁定：刷新也不会被刷掉' : '已解锁');
   renderShop();
 }
 
@@ -92,7 +129,18 @@ function rollRewards(){
     let r = null;
     if (kind === 'skill'){
       if (G.skills.length >= 4){
-        r = {kind:'skillup', id: G.rng.pick(G.skills).id};
+        // 4 个技能已满：一半概率给已有技能升级，一半概率给新技能（选中后走「替换」流程）
+        if (G.rng.chance(0.45)){
+          r = {kind:'skillup', id: G.rng.pick(G.skills).id};
+        } else {
+          const owned = G.skills.map(s => s.id);
+          const pool = Object.keys(SKILLS).filter(k => !owned.includes(k));
+          if (!pool.length) { r = {kind:'skillup', id: G.rng.pick(G.skills).id}; }
+          else r = {kind:'skill', id: G.rng.pick(pool), needReplace:true};
+        }
+        guard++;                                  // 防止死循环
+        if (r){ const key = r.kind+':'+(r.id||''); if (used.has(key)){ continue; } used.add(key); out.push(r); }
+        continue;
       } else {
         const owned = G.skills.map(s => s.id);
         const pool = Object.keys(SKILLS).filter(k => !owned.includes(k));

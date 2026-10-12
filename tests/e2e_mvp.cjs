@@ -169,17 +169,40 @@ const VIEWPORTS = [
   ok(shop.gold > 0, '波次结算给了金币 ' + shop.gold);
   ok(shop.items >= 3, '商店有 ' + shop.items + ' 件商品');
   await page.screenshot({path: path.join(SHOT, '390x844-7-shop.png')});
+  ok(shop.items === 4, '固定 4 个货位：' + shop.items + '（参考 Brotato）');
   const goldBefore = shop.gold;
   await page.locator('#btn-reroll').click(); await page.waitForTimeout(250);
   const goldAfter = await page.evaluate(() => G.gold);
   ok(goldAfter < goldBefore, '刷新消耗金币：' + goldBefore + ' -> ' + goldAfter);
-  await page.evaluate(() => { G.gold = 200; });
-  await page.locator('#btn-reroll').click(); await page.waitForTimeout(150);
+
+  console.log('   -- 购买后货位不消失（用户反馈：买完东西消失很怪） --');
+  await page.evaluate(() => { G.gold = 300; });
+  const rowsBefore = await page.locator('#shoplist .row.shoprow').count();
   const g0 = await page.evaluate(() => G.gold);
-  const rows = await page.locator('#shoplist .row .ra').count();
   await page.locator('#shoplist .row .ra').first().click(); await page.waitForTimeout(250);
   const g1 = await page.evaluate(() => G.gold);
-  ok(rows > 0 && g1 < g0, '购买消耗金币：' + g0 + ' -> ' + g1);
+  const rowsAfter = await page.locator('#shoplist .row.shoprow').count();
+  const soldCount = await page.locator('#shoplist .row.sold').count();
+  ok(g1 < g0, '购买消耗金币：' + g0 + ' -> ' + g1);
+  ok(rowsAfter === rowsBefore, '★ 购买后货位数量不变（' + rowsBefore + ' -> ' + rowsAfter + '），列表不跳动');
+  ok(soldCount === 1, '★ 已购买的那一格盖上「已购买」印记并置灰');
+  await page.screenshot({path: path.join(SHOT, '390x844-7b-shop-sold.png')});
+
+  console.log('   -- 锁定：刷新不会被刷掉 --');
+  const lockIdx = await page.evaluate(() => {
+    const i = G.shopStock.findIndex(s => !s.sold && s.kind === 'item');
+    const j = i >= 0 ? i : G.shopStock.findIndex(s => !s.sold);
+    toggleLock(j);
+    return {idx: j, id: G.shopStock[j].id, kind: G.shopStock[j].kind};
+  });
+  await page.waitForTimeout(150);
+  await page.locator('#btn-reroll').click(); await page.waitForTimeout(250);
+  const kept = await page.evaluate((i) => {
+    const s = G.shopStock[i];
+    return s ? {id: s.id, locked: s.locked} : null;
+  }, lockIdx.idx);
+  ok(kept && kept.id === lockIdx.id && kept.locked, '★ 锁定的货位刷新后仍在：' + lockIdx.kind + ':' + lockIdx.id);
+  ok(await page.locator('#shoplist .lockbtn.on').count() >= 1, '锁定状态在 UI 上有可视标识');
   await page.locator('#btn-nextwave').click(); await page.waitForTimeout(500);
   const w2 = await page.evaluate(() => ({wave:G.wave, left:Math.round(waveLeft), screen:G.screen}));
   ok(w2.wave === 2 && w2.screen === 'battle', '进入第 2 波（时长 ' + w2.left + 's）');
@@ -234,6 +257,64 @@ const VIEWPORTS = [
   const fin = await page.evaluate(() => ({screen:G.screen, win:G.result && G.result.win, wave:G.result && G.result.wave}));
   ok(fin.screen === 'result' && fin.win, '★ 「收工结算」直接通关（第 ' + fin.wave + ' 波）');
 
+console.log('');
+console.log('== 10b. ★ 技能替换（4 技能满了也能换） ==');
+const rep0 = await page.evaluate(() => {
+  startWave(3); go('battle'); G.paused = false;
+  G.skills = [mkSkill('fireball'), mkSkill('ice_spear'), mkSkill('arcane'), mkSkill('shockwave')];
+  G.skills[0].mods = ['multi', 'pierce'];
+  G.modsBag = [];
+  const newId = Object.keys(SKILLS).find(k => !G.skills.some(s => s.id === k));
+  openSkillReplace(newId);
+  return {count: G.skills.length, newId};
+});
+await page.waitForTimeout(300);
+ok(rep0.count === 4, '已有 4 个技能');
+ok(await page.locator('#scr-replace.on').count() === 1, '★ 打开「技能已满 → 替换」界面');
+ok(await page.locator('#replist .row').count() === 4, '列出 4 个待替换技能');
+await page.screenshot({path: path.join(SHOT, '390x844-12-replace-skill.png')});
+await page.locator('#replist .row').first().click(); await page.waitForTimeout(400);
+const rep1 = await page.evaluate(() => ({ids: G.skills.map(s => s.id), bag: G.modsBag.slice(), screen: G.screen}));
+ok(rep1.ids[0] === rep0.newId, '★ 第一个技能已换成 ' + rep0.newId);
+ok(rep1.bag.length === 2, '★ 被替换技能上的 2 个模块退回背包（实际 ' + rep1.bag.length + ' 个），不损失');
+ok(rep1.screen === 'battle', '替换后回到战斗');
+ok(await page.locator('#btn-repback').count() === 1, '有「放弃这个技能」的退出口');
+
+console.log('');
+console.log('== 10c. ★ 行为模块替换（槽位满了也能换） ==');
+await page.evaluate(() => {
+  G.skills[0].mods = ['multi', 'multi', 'pierce'];
+  G.modsBag = ['giant'];
+  openInstall('giant', 'levelup');
+});
+await page.waitForTimeout(300);
+ok(await page.locator('#scr-install.on').count() === 1, '安装屏打开（技能槽位已满）');
+ok(await page.locator('#instlist .slotbtn').count() >= 3, '显示可点槽位（空槽=装上 / 占用=替换）');
+await page.screenshot({path: path.join(SHOT, '390x844-14-install-slots.png')});
+await page.locator('#instlist .row').first().locator('.slotbtn').first().click();
+await page.waitForTimeout(350);
+const mi1 = await page.evaluate(() => ({mods: G.skills[0].mods.slice(), bag: G.modsBag.slice(), screen: G.screen}));
+ok(mi1.mods[0] === 'giant', '★ 第 1 槽被替换成 giant：' + JSON.stringify(mi1.mods));
+ok(mi1.bag.indexOf('multi') >= 0, '★ 被替换的 multi 退回背包：' + JSON.stringify(mi1.bag));
+ok(mi1.screen === 'battle', '替换后回到战斗');
+
+console.log('');
+console.log('== 10d. ★ 暂停 -> 返回主菜单（带二次确认） ==');
+await page.evaluate(() => { go('battle'); G.paused = false; });
+await page.locator('#btn-pause').click(); await page.waitForTimeout(250);
+ok(await page.locator('#scr-build.on').count() === 1, '暂停进入 Build 面板');
+ok(await page.locator('#btn-tomenu2').isVisible(), '★ Build 面板里有「主菜单」按钮');
+await page.locator('#btn-tomenu2').click(); await page.waitForTimeout(300);
+ok(await page.locator('#scr-confirm.on').count() === 1, '★ 弹出二次确认（防误点丢进度）');
+await page.screenshot({path: path.join(SHOT, '390x844-13-confirm.png')});
+await page.locator('#cfmCancel').click(); await page.waitForTimeout(250);
+ok(await page.locator('#scr-build.on').count() === 1, '取消 → 回 Build 面板，进度保留');
+await page.locator('#btn-tomenu2').click(); await page.waitForTimeout(250);
+await page.locator('#cfmOk').click(); await page.waitForTimeout(400);
+ok(await page.locator('#scr-menu.on').count() === 1, '★ 确认 → 回到主界面');
+const cleared = await page.evaluate(() => ({player: G.player, screen: G.screen}));
+ok(cleared.player === null, '★ 返回主菜单后本局状态已清空（canvas 不残留上一局画面）');
+
   console.log('\n== 11. 死亡 -> 结算 ==');
   await page.evaluate(() => { startWave(3); go('battle'); G.paused = false; });
   await page.evaluate(() => { G.paused = false; G.stats.hp = -1; });
@@ -284,10 +365,12 @@ for (const vp of VIEWPORTS){
     const a = rollRewards().map(r => r.kind + ':' + (r.id || '')).join(',');
     G.rng = makeRng(7);
     const b = rollRewards().map(r => r.kind + ':' + (r.id || '')).join(',');
-    G.shopReroll = 0; G.shopStock = null;
-    const s1 = makeShopStock().map(s => s.kind + ':' + s.id).join(',');
-    G.shopStock = null;
-    const s2 = makeShopStock().map(s => s.kind + ':' + s.id).join(',');
+    G.shopReroll = 0; G.shopStock = null; G.carryOver = [];
+    refreshShop(false);
+    const s1 = G.shopStock.map(s => s.kind + ':' + s.id).join(',');
+    G.shopStock = null; G.carryOver = [];
+    refreshShop(false);
+    const s2 = G.shopStock.map(s => s.kind + ':' + s.id).join(',');
     return {rewardSame: a === b, reward: a, shopSame: s1 === s2};
   });
   ok(det.rewardSame, '同 seed 奖励组一致：' + det.reward);
