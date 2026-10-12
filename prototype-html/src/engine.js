@@ -14,7 +14,12 @@ function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a
 function makeRng(seed){const f=mulberry32(seed);return{rnd:f,range:(a,b)=>a+f()*(b-a),int:(a,b)=>Math.floor(a+f()*(b-a+1)),pick:arr=>arr[Math.floor(f()*arr.length)],chance:p=>f()<p}}
 
 /* ---------- 世界 ---------- */
-const W = 540, H = 820;              // 竞技场（大于屏幕，摄像机跟随）
+/* ---------- 视野与缩放（观感基准） ----------
+   ZOOM=2：单位 32px 原生 → 屏幕上 64px，占屏高 10%（Brotato 一类的主角比例）
+   必须整数倍，否则像素会糊。可视世界因此变成 180x320，怪潮密度必须同步下调。 */
+const ZOOM = 2;
+const VIEW_W = 360 / ZOOM, VIEW_H = 640 / ZOOM;
+const W = 620, H = 940;              // 竞技场（世界坐标，比可视区大得多，留出风筝空间）
 const ARENA = {W, H};
 
 const G = {
@@ -111,19 +116,19 @@ function resetFlags(){ G.flags = {harvest:false, thornmail:0, thunder:0}; }
 const ENEMY_DEF = {
   // unit = assets/approved/units/<unit>；from = 从第几波解锁（新手期只出慢怪）
   // 速度标定：玩家 96 px/s 的 45%~75%；最快怪必须低于玩家速度（可躲是硬条件）
-  goblin:      {unit:'goblin',         hp:12, spd:50, dmg:6,  r:9,  exp:1, gold:1, from:1},
-  wolf:        {unit:'wolf',           hp:14, spd:60, dmg:7,  r:9,  exp:1, gold:1, from:3},
-  eyebat:      {unit:'eyebat',         hp:12, spd:70, dmg:7,  r:8,  exp:1, gold:1, from:4},
-  orc:         {unit:'orc',            hp:22, spd:46, dmg:9,  r:9,  exp:1, gold:2, from:5},
-  imp:         {unit:'imp',            hp:18, spd:56, dmg:8,  r:9,  exp:1, gold:1, from:7},
-  stingerbat:  {unit:'stingerbat',     hp:16, spd:66, dmg:8,  r:8,  exp:2, gold:2, from:8},
-  hyena:       {unit:'hyena',          hp:26, spd:62, dmg:10, r:9,  exp:2, gold:2, from:9},
-  axolizard:   {unit:'axolizard',      hp:34, spd:48, dmg:11, r:10, exp:2, gold:2, from:11},
-  lizardhunter:{unit:'lizardhunter',   hp:30, spd:58, dmg:11, r:9,  exp:2, gold:2, from:13},
-  succubus:    {unit:'succubus',       hp:38, spd:54, dmg:12, r:9,  exp:3, gold:3, from:15},
-  basilisk:    {unit:'basilisk',       hp:46, spd:44, dmg:13, r:11, exp:3, gold:3, from:17},
-  gnollberserker:{unit:'gnollberserker',hp:150,spd:44, dmg:16, r:13, exp:8, gold:12, elite:true},
-  boss:        {unit:'boss-demonlord', hp:900, spd:48, dmg:22, r:20, exp:40, gold:45, boss:true}
+  goblin:      {unit:'goblin',         hp:12, spd:50, dmg:6,  r:11, exp:1, gold:1, from:1},
+  wolf:        {unit:'wolf',           hp:14, spd:60, dmg:7,  r:11, exp:1, gold:1, from:3},
+  eyebat:      {unit:'eyebat',         hp:12, spd:70, dmg:7,  r:10, exp:1, gold:1, from:4},
+  orc:         {unit:'orc',            hp:22, spd:46, dmg:9,  r:12, exp:1, gold:2, from:5},
+  imp:         {unit:'imp',            hp:18, spd:56, dmg:8,  r:11, exp:1, gold:1, from:7},
+  stingerbat:  {unit:'stingerbat',     hp:16, spd:66, dmg:8,  r:10, exp:2, gold:2, from:8},
+  hyena:       {unit:'hyena',          hp:26, spd:62, dmg:10, r:12, exp:2, gold:2, from:9},
+  axolizard:   {unit:'axolizard',      hp:34, spd:48, dmg:11, r:13, exp:2, gold:2, from:11},
+  lizardhunter:{unit:'lizardhunter',   hp:30, spd:58, dmg:11, r:12, exp:2, gold:2, from:13},
+  succubus:    {unit:'succubus',       hp:38, spd:54, dmg:12, r:12, exp:3, gold:3, from:15},
+  basilisk:    {unit:'basilisk',       hp:46, spd:44, dmg:13, r:14, exp:3, gold:3, from:17},
+  gnollberserker:{unit:'gnollberserker',hp:150,spd:44, dmg:16, r:17, exp:8, gold:12, elite:true},
+  boss:        {unit:'boss-demonlord', hp:900, spd:48, dmg:22, r:26, exp:40, gold:45, boss:true}
 };
 /* BOSS 轮换：第 10 波恶魔领主 / 第 20 波地狱守望者 / 第 30 波起星光圣骑士 */
 const BOSS_UNITS = ['boss-demonlord', 'boss-hellwarden', 'boss-paladin'];
@@ -155,7 +160,7 @@ function startWave(n){
   G.battleKilled = 0;
   G.bossRef = null;
   waveLeft = G.isBossWave ? 0 : waveTime(n);
-  if (!G.player) G.player = {x: W/2, y: H/2, r:9, face:1, dmgFlash:0, inv:0};
+  if (!G.player) G.player = {x: W/2, y: H/2, r:12, face:1, dmgFlash:0, inv:0};
   else { G.player.x = W/2; G.player.y = H/2; G.player.inv = 1.4; }
   G.stats.hp = Math.min(G.stats.hp, G.stats.maxhp);
   if (G.isBossWave){
@@ -198,15 +203,16 @@ function updateBattle(dt){
     spawnAcc += dt;
     // 平滑曲线：之前用 1+floor(wave/2)，第 2 波直接从 1 只/次跳到 2 只/次（强度翻 2.3 倍），
     // 用户实测「第 2 波怪追得很凶」即由此而来。现在改为更缓的台阶。
-    const interval = Math.max(0.30, 0.95 - G.wave*0.04);
+    // 可视区只有 180x320（ZOOM=2），原来的怪量会糊成一片 → 批次与频率都下调
+    const interval = Math.max(0.40, 1.15 - G.wave*0.045);
     if (spawnAcc > interval){
       spawnAcc = 0;
       const pool = enemyPool(G.wave);
-      const n = Math.min(5, 1 + Math.floor(G.wave/4));
+      const n = Math.min(3, 1 + Math.floor(G.wave/6));
       for (let i=0;i<n;i++){
         // 围绕玩家、在可视区外一圈生成（否则慢速怪要走很久才到，节奏拖沓）
         const a = G.rng.range(0, Math.PI*2);
-        const rad = 235 + G.rng.range(0, 45);
+        const rad = 195 + G.rng.range(0, 40);   // 可视半对角线约 184 → 刚好在屏幕外
         const sx = Math.max(14, Math.min(W-14, G.player.x + Math.cos(a)*rad));
         const sy = Math.max(14, Math.min(H-14, G.player.y + Math.sin(a)*rad));
         spawnEnemy(G.rng.pick(pool), sx, sy);

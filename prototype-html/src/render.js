@@ -61,30 +61,32 @@ function drawUnitOnce(u, anim, idx, x, y, scale, flip){
 /* ---------- 摄像机 ---------- */
 function camera(){
   const p = G.player || {x:ARENA.W/2, y:ARENA.H/2};
-  let cx = p.x - 180, cy = p.y - 320;
-  cx = Math.max(0, Math.min(ARENA.W - 360, cx));
-  cy = Math.max(0, Math.min(ARENA.H - 640, cy));
+  let cx = p.x - VIEW_W/2, cy = p.y - VIEW_H/2;
+  cx = Math.max(0, Math.min(ARENA.W - VIEW_W, cx));
+  cy = Math.max(0, Math.min(ARENA.H - VIEW_H, cy));
   return {cx, cy};
 }
 
 /* ---------- 背景 ---------- */
+/* 背景铺在【世界空间】（在 scale(ZOOM) 之后调用） */
 function drawBg(cam){
-  CX.fillStyle = '#131C36'; CX.fillRect(0, 0, 360, 640);
   const T = 24;
   const x0 = Math.floor(cam.cx/T)*T, y0 = Math.floor(cam.cy/T)*T;
-  for (let y = y0; y < cam.cy + 640 + T; y += T){
-    for (let x = x0; x < cam.cx + 360 + T; x += T){
+  const x1 = cam.cx + VIEW_W + T, y1 = cam.cy + VIEW_H + T;
+  CX.fillStyle = '#131C36'; CX.fillRect(cam.cx - T, cam.cy - T, VIEW_W + T*2, VIEW_H + T*2);
+  for (let y = y0; y < y1; y += T){
+    for (let x = x0; x < x1; x += T){
       const odd = ((x/T + y/T) % 2) === 0;
       CX.fillStyle = odd ? '#17233D' : '#1A2846';
-      CX.fillRect(Math.round(x - cam.cx), Math.round(y - cam.cy), T, T);
+      CX.fillRect(x, y, T, T);
       if (odd){
         CX.fillStyle = 'rgba(255,255,255,.022)';
-        CX.fillRect(Math.round(x - cam.cx) + 3, Math.round(y - cam.cy) + 3, 3, 3);
+        CX.fillRect(x + 3, y + 3, 3, 3);
       }
     }
   }
-  CX.strokeStyle = 'rgba(255,168,75,.35)'; CX.lineWidth = 3;
-  CX.strokeRect(Math.round(-cam.cx), Math.round(-cam.cy), ARENA.W, ARENA.H);
+  CX.strokeStyle = 'rgba(255,168,75,.35)'; CX.lineWidth = 2;
+  CX.strokeRect(0, 0, ARENA.W, ARENA.H);
 }
 
 /* ---------- 动画状态选择 ---------- */
@@ -109,12 +111,15 @@ function playerAnim(p){
 function render(){
   const cam = camera();
   CX.setTransform(1,0,0,1,0,0);
-  drawBg(cam);
+  CX.fillStyle = '#131C36'; CX.fillRect(0, 0, 360, 640);
   CX.save();
   const sh = G.shake || 0;
   const shx = sh ? (Math.random()*2-1)*sh : 0;
   const shy = sh ? (Math.random()*2-1)*sh : 0;
-  CX.translate(Math.round(-cam.cx + shx), Math.round(-cam.cy + shy));
+  // 世界 → 屏幕：screen = ZOOM * (world - cam)
+  CX.translate(Math.round(-cam.cx*ZOOM + shx), Math.round(-cam.cy*ZOOM + shy));
+  CX.scale(ZOOM, ZOOM);
+  drawBg(cam);
 
   // ---- 地面区域（领域 / 范围技）----
   for (const a of ents.areas){
@@ -148,11 +153,11 @@ function render(){
     if (e.dead) drawUnitOnce(e.unit, 'death', e.deathT * 12, e.x, e.y, sc, e.facing < 0);
     else drawUnit(e.unit, enemyAnim(e), e.animT, e.x, e.y, sc, e.facing < 0, e.flash, null);
     if (!e.dead && e.hp < e.maxhp){               // 血条
-      const w = e.boss ? 44 : (e.elite ? 30 : 22);
-      const hy = e.y - e.r - (e.boss ? 18 : (e.elite ? 14 : 10));
-      CX.fillStyle = '#0B1224'; CX.fillRect(e.x - w/2 - 1, hy - 1, w + 2, 5);
+      const w = e.boss ? 30 : (e.elite ? 22 : 16);
+      const hy = e.y - e.r - (e.boss ? 12 : (e.elite ? 9 : 7));
+      CX.fillStyle = '#0B1224'; CX.fillRect(e.x - w/2 - 0.5, hy - 0.5, w + 1, 3);
       CX.fillStyle = e.boss ? '#FFA84B' : '#E04060';
-      CX.fillRect(e.x - w/2, hy, w * (e.hp/e.maxhp), 3);
+      CX.fillRect(e.x - w/2, hy, w * (e.hp/e.maxhp), 2);
     }
   }
   // ---- 玩家 ----
@@ -160,15 +165,15 @@ function render(){
     const p = G.player;
     const pulse = 0.5 + 0.5*Math.sin(performance.now()/260);
     CX.save();
-    CX.globalAlpha = 0.85; CX.strokeStyle = '#0A1020'; CX.lineWidth = 4;
-    CX.beginPath(); CX.ellipse(p.x, p.y + 12, 13, 5.5, 0, 0, Math.PI*2); CX.stroke();
-    CX.globalAlpha = 0.75 + 0.25*pulse; CX.strokeStyle = '#FFA84B'; CX.lineWidth = 2.5;
-    CX.beginPath(); CX.ellipse(p.x, p.y + 12, 13, 5.5, 0, 0, Math.PI*2); CX.stroke();
+    CX.globalAlpha = 0.85; CX.strokeStyle = '#0A1020'; CX.lineWidth = 2.5;
+    CX.beginPath(); CX.ellipse(p.x, p.y + 8, 19, 8, 0, 0, Math.PI*2); CX.stroke();
+    CX.globalAlpha = 0.75 + 0.25*pulse; CX.strokeStyle = '#FFA84B'; CX.lineWidth = 1.6;
+    CX.beginPath(); CX.ellipse(p.x, p.y + 8, 19, 8, 0, 0, Math.PI*2); CX.stroke();
     CX.globalAlpha = 0.16 + 0.10*pulse; CX.fillStyle = '#FFA84B';
-    CX.beginPath(); CX.ellipse(p.x, p.y + 12, 13, 5.5, 0, 0, Math.PI*2); CX.fill();
+    CX.beginPath(); CX.ellipse(p.x, p.y + 8, 19, 8, 0, 0, Math.PI*2); CX.fill();
     CX.restore();
     CX.save(); CX.globalAlpha = 0.28; CX.fillStyle = '#000';
-    CX.beginPath(); CX.ellipse(p.x, p.y + 13, 10, 3.6, 0, 0, Math.PI*2); CX.fill(); CX.restore();
+    CX.beginPath(); CX.ellipse(p.x, p.y + 8, 13, 4.6, 0, 0, Math.PI*2); CX.fill(); CX.restore();
     if (p.dmgFlash > 0.02) drawVFX(FX.hurt, (1 - p.dmgFlash) * 0.4, p.x, p.y, 1, 0, false, {alpha: p.dmgFlash});
     drawUnit(G.char.unit, playerAnim(p), p.animT || 0, p.x, p.y, 1, p.face < 0, 0, null);
   }
@@ -206,15 +211,18 @@ function render(){
   if (ents.fx2){
     for (const f of ents.fx2) drawVFX(f.vfx, f.t, f.x, f.y, f.scale || 1, f.rot || 0, false, {alpha: 1});
   }
-  // ---- 伤害数字 ----
+  CX.restore();          // 退出世界变换（含 ZOOM）
+  // ---- 伤害数字：屏幕空间绘制，字号恒定清晰（世界空间会被放大成糊字）----
   for (const t of ents.texts){
     const k = 1 - t.t/t.life;
+    if (k <= 0) continue;
+    const sx = (t.x - cam.cx) * ZOOM, sy = (t.y - cam.cy) * ZOOM;
+    if (sx < -40 || sx > 400 || sy < -20 || sy > 660) continue;
     CX.save(); CX.globalAlpha = Math.max(0, Math.min(1, k*1.8));
-    CX.font = (t.big ? 'bold 15px' : 'bold 11px') + ' system-ui, sans-serif';
+    CX.font = (t.big ? 'bold 15px' : 'bold 12px') + ' system-ui, sans-serif';
     CX.textAlign = 'center';
     CX.lineWidth = 3; CX.strokeStyle = '#0A1020';
-    CX.strokeText(t.txt, t.x, t.y); CX.fillStyle = t.color; CX.fillText(t.txt, t.x, t.y);
+    CX.strokeText(t.txt, sx, sy); CX.fillStyle = t.color; CX.fillText(t.txt, sx, sy);
     CX.restore();
   }
-  CX.restore();
 }

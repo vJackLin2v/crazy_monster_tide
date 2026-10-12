@@ -4,7 +4,7 @@
 |---|---|
 | 项目 | 《疯狂怪潮》 / `crazy-monster-tide` |
 | 工程 | `H:\AI-game\crazy_monster_tide` |
-| 阶段 | **M8 完成：美术资源接入** —— 单位 21 套 / VFX 85 组件 / 图标 129 / 立绘 270 已进原型 |
+| 阶段 | **M9 完成：观感调整** —— 渲染缩放 ZOOM=2x，镜头与怪潮密度联动 |
 | 引擎 | **Cocos Creator 3.8.6**（与 `H:\AI-game\xingnang\cocos_port` 对齐）｜ D-02 |
 | 世界观 | **像素奇幻** ｜ D-08 |
 | UI 参考 | Möbelmon（reference_only） ｜ D-09 |
@@ -16,7 +16,7 @@
 - M0：Agent 文档体系（地图 / 流程 / 系统规则 / UI / 素材 / 测试 / memory-bank）
 - M1：四大决策落盘；Möbelmon UI 素材采集与结构化分析；**可玩 HTML MVP**（`prototype-html/`）
   - Playwright E2E：**90 PASS / 0 FAIL，零控制台错误**（375x812 / 390x844 / 412x915 三档视口）
-  - 静态门禁：**67 PASS / 0 FAIL**（含商店交互 / 替换流程 / 难度曲线 / 性能 / 金币经济）
+  - 静态门禁：**72 PASS / 0 FAIL**（含商店交互 / 替换流程 / 难度曲线 / 性能 / 金币经济）
   - 固定 seed 可复现（同 seed → 同奖励组、同商店货架）
 
 ## 关卡结构（已变更）

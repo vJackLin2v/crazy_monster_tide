@@ -104,8 +104,8 @@ console.log('== 3e. 难度曲线（反断崖）与性能 ==');
 const curve = await page.evaluate(() => {
   const spawns = (w) => {
     const T = waveTime(w);
-    const interval = Math.max(0.30, 0.95 - w*0.04);
-    const n = Math.min(5, 1 + Math.floor(w/4));
+    const interval = Math.max(0.40, 1.15 - w*0.045);
+    const n = Math.min(3, 1 + Math.floor(w/6));
     return Math.round(T / interval * n);
   };
   const pool = (w) => enemyPool(w);
@@ -120,7 +120,7 @@ ok(curve.pool1 === 'goblin', '第 1 波只有最基础的哥布林（新手保�
 ok(curve.pool2 === 'goblin', '第 2 波仍只有哥布林：' + curve.pool2);
 ok(curve.pool3 === 'goblin,wolf', '第 3 波解锁狼：' + curve.pool3);
 ok(curve.fastest < curve.speedPlayer, '最快怪 ' + curve.fastestName + ' ' + curve.fastest + ' px/s < 玩家 ' + curve.speedPlayer + ' px/s（可躲是硬条件）');
-ok(curve.w20 < 800, '第 20 波总刷怪量 ' + curve.w20 + '（旧版 1800，已收敛）');
+ok(curve.w20 < 400, '第 20 波总刷怪量 ' + curve.w20 + '（ZOOM=2 后可视区缩小 4 倍，同步下调）');
 
 const perf = await page.evaluate(async () => {
   startWave(15); G.paused = false; go('battle');
@@ -137,7 +137,7 @@ const perf = await page.evaluate(async () => {
   });
   return {frames, alive: ents.enemies.filter(e => !e.dead).length};
 });
-ok(perf.frames >= 40, '130 只怪同屏：1 秒 ' + perf.frames + ' 帧（>=40 视为可接受）');
+ok(perf.frames >= 40, '130 只怪同屏（ZOOM=2）：1 秒 ' + perf.frames + ' 帧（>=40 视为可接受）');
 // 还原到正常第 1 波，后面的测试还要继续打怪
 await page.evaluate(() => { startWave(1); G.paused = false; go('battle'); });
 await page.waitForTimeout(300);
@@ -188,6 +188,22 @@ ok(lockFix.after === lockFix.id && lockFix.stillLocked, '★ 锁定的货位刷�
 await page.evaluate(() => { G.gold = 40; G.shopStock = null; G.carryOver = []; G.shopReroll = 0; });
 
 console.log('');
+console.log('');
+console.log('== 3g2. 观感基准（缩放 / 视野 / 单屏密度） ==');
+const look = await page.evaluate(() => ({
+  zoom: ZOOM, viewW: VIEW_W, viewH: VIEW_H, arenaW: ARENA.W, arenaH: ARENA.H,
+  playerR: G.player ? G.player.r : 12
+}));
+ok(look.zoom === 2, '渲染缩放 ZOOM=' + look.zoom + 'x（整数倍，像素不糊）');
+const spriteOnScreen = 32 * look.zoom;
+ok(spriteOnScreen / 640 >= 0.08 && spriteOnScreen / 640 <= 0.13,
+   '单位占屏高 ' + (spriteOnScreen/640*100).toFixed(1) + '%（参考区间 8~13%）');
+ok(look.viewW === 360/look.zoom && look.viewH === 640/look.zoom,
+   '可视世界 ' + look.viewW + 'x' + look.viewH + '（= 屏幕 / ZOOM）');
+ok(look.arenaW >= look.viewW*3 && look.arenaH >= look.viewH*2.5,
+   '竞技场 ' + look.arenaW + 'x' + look.arenaH + ' 是可视区的 ' + (look.arenaW/look.viewW).toFixed(1) + 'x' + (look.arenaH/look.viewH).toFixed(1) + ' 倍（留出风筝空间）');
+ok(look.playerR >= 11, '玩家碰撞半径 ' + look.playerR + '（随视觉放大同步上调，避免"明明撞上却没伤害"）');
+
 console.log('== 3h. 美术资源接入（单位 / 技能特效 / 图标） ==');
 const art = await page.evaluate(() => ({
   unitFrames: U_TOTAL, unitLoaded: U_LOADED, unitFail: U_FAIL,
@@ -205,14 +221,16 @@ console.log('\n== 4. 像素级可读性 ==');
 await page.waitForTimeout(2200);
 const pix = await page.evaluate(() => {
   const g = document.getElementById('cv').getContext('2d');
-  const cam = {cx: Math.max(0, Math.min(ARENA.W-360, G.player.x-180)),
-               cy: Math.max(0, Math.min(ARENA.H-640, G.player.y-320))};
-  const px = G.player.x - cam.cx, py = G.player.y - cam.cy;
+  // 世界 → 屏幕要考虑 ZOOM（定位环是世界空间的椭圆 19x8，锚点在玩家脚下 +8）
+  const cam = {cx: Math.max(0, Math.min(ARENA.W-VIEW_W, G.player.x-VIEW_W/2)),
+               cy: Math.max(0, Math.min(ARENA.H-VIEW_H, G.player.y-VIEW_H/2))};
+  const px = (G.player.x - cam.cx) * ZOOM, py = (G.player.y - cam.cy) * ZOOM;
   let warm = 0, ring = 0;
-  for (let a = 0; a < 64; a++){
-    const th = a/64*Math.PI*2;
-    for (const rr of [11,12,13,14]){
-      const x = Math.round(px + Math.cos(th)*rr), y = Math.round(py + 12 + Math.sin(th)*rr*0.42);
+  for (let a = 0; a < 96; a++){
+    const th = a/96*Math.PI*2;
+    for (const k of [0.88, 1.0, 1.12]){
+      const x = Math.round(px + Math.cos(th) * 19 * ZOOM * k);
+      const y = Math.round(py + 8*ZOOM + Math.sin(th) * 8 * ZOOM * k);
       if (x < 0 || y < 0 || x >= 360 || y >= 640) continue;
       const d = g.getImageData(x, y, 1, 1).data; ring++;
       if (d[0] > 115 && (d[0]-d[2]) > 50 && d[0] > d[1] && d[1] > d[2]) warm++;
