@@ -1,0 +1,13 @@
+# 统一换行：文本用 LF（避免 Windows 下 CRLF 反复改写）
+* text=auto eol=lf
+*.md text eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ogg binary
+*.wav binary
+*.mp3 binary
+*.xlsx binary
+*.zip binary

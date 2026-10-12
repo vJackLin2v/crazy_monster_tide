@@ -1,0 +1,25 @@
+# 依赖与构建产物
+node_modules/
+dist/
+build/
+temp/
+library/
+local/
+
+# 编辑器
+.vscode/settings.json
+.idea/
+
+# 系统
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# 测试与截图产物（保留结论文档，不保留体积大的中间产物）
+test-results/
+playwright-report/
+screenshots/**/tmp/
+
+# 本地临时
+*.log
+.cache/
