@@ -1,0 +1,29 @@
+{
+  "//": "命令行检查画面层（cc 相关）。用宽松桩替代真实 cc 类型，只做语法与标识符检查。",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ES2020",
+    "moduleResolution": "node",
+    "lib": [
+      "ES2020",
+      "DOM"
+    ],
+    "strict": false,
+    "noImplicitAny": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "experimentalDecorators": true,
+    "types": []
+  },
+  "include": [
+    "typings/**/*.d.ts",
+    "assets/scripts/**/*.ts"
+  ],
+  "exclude": [
+    "assets/scripts/core/Const.ts",
+    "assets/scripts/data/**/*",
+    "assets/scripts/game/**/*"
+  ]
+}

@@ -25,7 +25,7 @@
     "_globals": {
       "__id__": 8
     },
-    "_id": "5e318bb6-4fad-4b50-bee3-db4ac7cc77c7"
+    "_id": "ee3ee61d-d04c-4746-a754-4c10351bdf7e"
   },
   {
     "__type__": "cc.Node",
@@ -37,6 +37,9 @@
     "_children": [
       {
         "__id__": 3
+      },
+      {
+        "__id__": 15
       }
     ],
     "_active": true,
@@ -374,5 +377,84 @@
     "__type__": "cc.SkinInfo",
     "_enabled": false,
     "_scale": 5
+  },
+  {
+    "__type__": "cc.Node",
+    "_name": "Game",
+    "_objFlags": 0,
+    "_parent": {
+      "__id__": 2
+    },
+    "_children": [],
+    "_active": true,
+    "_components": [
+      {
+        "__id__": 16
+      },
+      {
+        "__id__": 17
+      }
+    ],
+    "_prefab": null,
+    "_lpos": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_lrot": {
+      "__type__": "cc.Quat",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "w": 1
+    },
+    "_lscale": {
+      "__type__": "cc.Vec3",
+      "x": 1,
+      "y": 1,
+      "z": 1
+    },
+    "_mobility": 0,
+    "_layer": 33554432,
+    "_euler": {
+      "__type__": "cc.Vec3",
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "_id": "ac6b7a5e-f823-4c66-b3aa-0e68e3986277"
+  },
+  {
+    "__type__": "cc.UITransform",
+    "_name": "",
+    "_objFlags": 0,
+    "node": {
+      "__id__": 15
+    },
+    "_enabled": true,
+    "__prefab": null,
+    "_contentSize": {
+      "__type__": "cc.Size",
+      "width": 360,
+      "height": 640
+    },
+    "_anchorPoint": {
+      "__type__": "cc.Vec2",
+      "x": 0.5,
+      "y": 0.5
+    },
+    "_id": "427df51c-b4fe-4aad-8f27-a35abd3dd08d"
+  },
+  {
+    "__type__": "a7c318gS25NGY8CXG0+mht0",
+    "_name": "",
+    "_objFlags": 0,
+    "node": {
+      "__id__": 15
+    },
+    "_enabled": true,
+    "__prefab": null,
+    "_id": "34296ba9-c345-4621-af30-e55f20a70aeb"
   }
 ]

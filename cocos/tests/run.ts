@@ -12,7 +12,7 @@
  *  7. 波次规则：BOSS 波 / 精英波 / 无尽
  */
 import { RunState } from '../assets/scripts/game/RunState';
-import { calcSkill, makeSkill, canInstall, MAX_SLOTS } from '../assets/scripts/game/SkillCalc';
+import { calcSkill, makeSkill, canInstall } from '../assets/scripts/game/SkillCalc';
 import { assertStatsSane, freshStats } from '../assets/scripts/game/Stats';
 import { CHARS } from '../assets/scripts/data/Chars';
 import { RUN, waveTime, isBossWave, isEliteWave, eliteCount, BASE_SPEED, SHOP_SLOTS } from '../assets/scripts/core/Const';
@@ -156,4 +156,4 @@ ok(enemyPool(3).includes('wolf'), '第 3 波解锁狼');
 
 console.log('\n================ 结果 ================');
 console.log(`PASS ${pass} / FAIL ${fail}`);
-process.exit(fail ? 1 : 0);
+if (fail) throw new Error(`有 ${fail} 项失败`);
