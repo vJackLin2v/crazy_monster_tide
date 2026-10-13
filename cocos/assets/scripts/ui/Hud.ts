@@ -44,7 +44,7 @@ export class Hud {
   private bossBar!: ReturnType<typeof gradBar>;
   private bossName!: Label;
   private slots: {
-    node: Node; cd: Graphics; lvl: Label; icon: Sprite; name: Label;
+    node: Node; cd: Graphics; lvl: Label; icon: Sprite;
     modDots: Graphics; w: number;
   }[] = [];
 
@@ -64,12 +64,13 @@ export class Hud {
       dir: 'v', from: C_HP_TOP, to: COL.red, radius: 99, line: COL.line,
     });
     // HP 数字：叠在条上，9px 粗体白字 + 黑色下描边（用两个 Label 叠出来）
-    text(this.root, -41 - 129, ROW_Y - 1, '100/100', { size: 9, color: new Color(0, 0, 0, 210), align: 'left', width: 258 });
-    this.hpText = text(this.root, -41 - 129, ROW_Y, '100/100', { size: 9, color: new Color(255, 255, 255), align: 'left', width: 258, bold: true });
+    // 数值放大：9 -> 12（用户反馈"战斗界面数值看不清"）
+    text(this.root, -41 - 129, ROW_Y - 1.5, '100/100', { size: 12, color: new Color(0, 0, 0, 230), align: 'left', width: 258, bold: true });
+    this.hpText = text(this.root, -41 - 129, ROW_Y, '100/100', { size: 12, color: new Color(255, 255, 255), align: 'left', width: 258, bold: true });
 
     // 等级牌：min-width 36，中心 x = 114
-    const lvBox = panel(this.root, 114, ROW_Y, 36, 20, { bg: COL.bg3, line: COL.line, radius: R.s });
-    this.lvText = text(lvBox, 0, 0, 'Lv.1', { size: FS.xs, color: COL.cream, width: 32, bold: true });
+    const lvBox = panel(this.root, 114, ROW_Y, 42, 24, { bg: COL.bg3, line: COL.line, radius: R.s });
+    this.lvText = text(lvBox, 0, 0, 'Lv.1', { size: FS.s, color: COL.cream, width: 38, bold: true });
 
     // 暂停按钮：30x30，中心 x = 155
     const pause = panel(this.root, 155, ROW_Y, 30, 30, { bg: COL.bg3, line: COL.line, radius: R.s });
@@ -87,8 +88,8 @@ export class Hud {
 
     // ── 金币 + 波次行：padding 0 10px，字号 xs ──────────────────
     const GOLD_Y = EXP_Y - 3 - 3 - 7;
-    this.goldText = text(this.root, -170, GOLD_Y, '◆ 0', { size: FS.xs, color: C_GOLD, align: 'left', width: 150, bold: true });
-    this.waveText = text(this.root, 170, GOLD_Y, '第 1 波', { size: FS.xs, color: COL.accent, align: 'right', width: 200, bold: true });
+    this.goldText = text(this.root, -170, GOLD_Y, '◆ 0', { size: FS.s, color: C_GOLD, align: 'left', width: 150, bold: true });
+    this.waveText = text(this.root, 170, GOLD_Y, '第 1 波', { size: FS.s, color: COL.accent, align: 'right', width: 200, bold: true });
 
     // ── BOSS 血条（NAME 10px 900 橙 + 条 9 高、描边 accent-d）────
     this.bossBox = mkNode(this.root, 'bossBox', 340, 34, 0, GOLD_Y - 24);
@@ -99,39 +100,39 @@ export class Hud {
     this.bossBox.active = false;
 
     // ── 技能栏：4 x 52 + 3 x 8 = 232，底部 padding 8 ────────────
-    const SW = 52, GAP = 8;
+    const SW = 56, GAP = 8;
     const total = 4 * SW + 3 * GAP;
     for (let i = 0; i < 4; i++) {
       const x = -total / 2 + SW / 2 + i * (SW + GAP);
       // 技能栏贴着屏幕底：底 padding 8，元素高 68 -> 中心 = BOTY + 8 + 34
-      const slot = mkNode(this.root, 'sk' + i, SW, 68, x, BOTY + 8 + 34);
+      // 元素高度 = 图标 52 + 3 + 模块方块 9 = 64；贴底 padding 8
+      const slot = mkNode(this.root, 'sk' + i, SW, 64, x, BOTY + 8 + 32);
 
       // 图标 44x44（--bg-2 底 + 2px 描边 + r-m）
-      const ico = panel(slot, 0, 22, 44, 44, { bg: COL.bg2, line: COL.line, radius: R.m });
-      const ic = mkNode(ico, 'icon', 32, 32);
+      const ico = panel(slot, 0, 12, 52, 52, { bg: COL.bg2, line: COL.line, radius: R.m });
+      const ic = mkNode(ico, 'icon', 40, 40);
       const isp = ic.addComponent(Sprite);
       isp.sizeMode = Sprite.SizeMode.CUSTOM;
       isp.trim = false;
 
       // 冷却遮罩（rgba(0,0,0,.55)，从下往上）
-      const cd = mkNode(ico, 'cd', 44, 44);
+      const cd = mkNode(ico, 'cd', 52, 52);
       const g = cd.addComponent(Graphics);
 
       // 等级角标：右上角橙色胶囊
-      const badge = mkNode(ico, 'stack', 18, 14, 14, 16);
+      const badge = mkNode(ico, 'stack', 20, 15, 17, 19);
       const bg = badge.addComponent(Graphics);
       bg.fillColor = COL.accent;
       bg.roundRect(-9, -7, 18, 14, 7); bg.fill();
       const lv = text(badge, 0, 0, '', { size: 9, color: new Color(32, 22, 10), width: 18, bold: true });
 
       // 3 个模块小方块
-      const dots = mkNode(slot, 'mods', 32, 9, 0, -3);
+      const dots = mkNode(slot, 'mods', 32, 9, 0, -22);
       const dg = dots.addComponent(Graphics);
 
       // 技能名 8px
-      const nm = text(slot, -26, -16, '', { size: 8, color: C_SUB, width: 52 });
 
-      this.slots.push({ node: slot, cd: g, lvl: lv, icon: isp, name: nm, modDots: dg, w: 44 });
+      this.slots.push({ node: slot, cd: g, lvl: lv, icon: isp, modDots: dg, w: 52 });
     }
   }
 
@@ -155,7 +156,7 @@ export class Hud {
       const sk = d.skills[i];
       s.cd.clear();
       s.modDots.clear();
-      if (!sk) { s.icon.spriteFrame = null; s.name.string = ''; s.lvl.string = ''; continue; }
+      if (!sk) { s.icon.spriteFrame = null; s.lvl.string = ''; continue; }
 
       // 图标（整数倍放大，否则像素糊）
       if (sk.icon) {
@@ -164,7 +165,7 @@ export class Hud {
           if (s.icon.spriteFrame !== f) {
             s.icon.spriteFrame = f;
             const fw = f.rect.width || 32;
-            const k = Math.max(1, Math.floor(32 / fw));
+            const k = Math.max(1, Math.floor(40 / fw));
             const ut = s.icon.node.getComponent(UITransform);
             if (ut) ut.setContentSize(fw * k, fw * k);
           }
@@ -172,9 +173,6 @@ export class Hud {
           void loadIcon(sk.icon).then(() => { const g2 = iconFrame(sk.icon); if (g2) s.icon.spriteFrame = g2; });
         }
       }
-
-      // 技能名
-      s.name.string = sk.name;
 
       // 等级角标（只有 >1 才显示，和 DEMO 的 .stack 一致）
       s.lvl.string = sk.lvl > 1 ? String(sk.lvl) : '';
@@ -195,8 +193,8 @@ export class Hud {
       // 冷却遮罩：rgba(0,0,0,.55)，从底部往上盖
       if (sk.cdPct > 0.001) {
         s.cd.fillColor = new Color(0, 0, 0, 140);
-        const hh = 44 * Math.min(1, sk.cdPct);
-        s.cd.roundRect(-22, -22, 44, hh, R.s);
+        const hh = 52 * Math.min(1, sk.cdPct);
+        s.cd.roundRect(-26, -26, 52, hh, R.s);
         s.cd.fill();
       }
     }

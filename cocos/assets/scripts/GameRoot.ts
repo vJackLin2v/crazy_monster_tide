@@ -18,12 +18,13 @@ import { mkNode } from './ui/UIKit';
 import { Hud, type HudData } from './ui/Hud';
 import { buildMenu, buildHowto, buildCharSelect, buildResult } from './ui/MenuScreens';
 import { buildLevelUp, buildShop, buildBuildDrawer, buildConfirm, type CardData, type ShopSlotView } from './ui/Modals';
+import { buildInstall, buildReplace } from './ui/ManageScreens';
 import { CHARS } from './data/Chars';
 import { SKILLS } from './data/Skills';
 import { MODULES } from './data/Modules';
 import { ITEMS } from './data/Items';
 import { ATTRS } from './data/Attrs';
-import { calcSkill } from './game/SkillCalc';
+import { calcSkill, isCompatible, MAX_SLOTS } from './game/SkillCalc';
 import type { Reward } from './game/RunState';
 const { ccclass } = _decorator;
 
@@ -114,12 +115,73 @@ export class GameRoot extends Component {
 
   private pickReward(i: number) {
     const r = i >= 0 ? this.pendingRewards[i] : null;
-    if (r) {
-      if (r.kind === 'module') this.battle.rs.modsBag.push(r.id);
-      else this.battle.rs.applyReward(r);
+    if (r && r.kind === 'module') {
+      // ⚠️ 模块必须**进安装屏真的装上**，不能只丢进背包。
+      //    之前就是只 push 进背包、没有安装入口 —— 用户报"无法安装模块"。
+      this.battle.rs.modsBag.push(r.id);
+      this.installSel = r.id;
+      this.showInstall('levelup');
+      return;
     }
+    if (r) this.battle.rs.applyReward(r);
     this.closeModal();
     this.battle.resumeFromModal();
+  }
+
+  // ---------- 6. 模块安装（槽位级交互，规格 §3.3）----------
+  private installSel: string | null = null;
+  private installReturn: 'levelup' | 'pause' = 'levelup';
+
+  private showInstall(returnTo: 'levelup' | 'pause') {
+    this.installReturn = returnTo;
+    const rs = this.battle.rs;
+    if (!this.installSel || rs.modsBag.indexOf(this.installSel) < 0) {
+      this.installSel = rs.modsBag.length ? rs.modsBag[0] : null;
+    }
+    this.battle.paused = true;
+    this.renderInstall();
+  }
+
+  private renderInstall() {
+    this.closeModal();
+    const rs = this.battle.rs;
+    this.curModal = buildInstall(this.uiRoot, {
+      skills: rs.skills.map(s => ({
+        name: SKILLS[s.id] ? SKILLS[s.id].name : s.id,
+        lvl: s.lvl,
+        mods: s.mods.map(m => (MODULES[m] ? MODULES[m].name : m).slice(0, 2)),
+      })),
+      bag: rs.modsBag.map(id => ({ id, name: (MODULES[id] ? MODULES[id].name : id).slice(0, 4) })),
+      selModule: this.installSel,
+      compatible: (si, modId) => {
+        const sk = rs.skills[si];
+        if (!sk) return false;
+        return isCompatible(sk.id, modId) && (sk.mods.length < MAX_SLOTS || sk.mods.indexOf(modId) >= 0 || true);
+      },
+    }, {
+      onSelectModule: (id) => { this.installSel = id; this.renderInstall(); },
+      onPickSlot: (si, sl) => this.doInstall(si, sl),
+      onBack: () => {
+        this.closeModal();
+        if (this.installReturn === 'pause') this.showPause();
+        else this.battle.resumeFromModal();
+      },
+    });
+  }
+
+  private doInstall(si: number, sl: number) {
+    const rs = this.battle.rs;
+    const sk = rs.skills[si];
+    const modId = this.installSel;
+    if (!sk || !modId) return;
+    if (!isCompatible(sk.id, modId)) return;
+    try {
+      rs.installAt(si, sl, modId);          // RunState 负责：装上去 + 被顶掉的退回背包
+    } catch (e) {
+      console.warn('[Install] 安装失败:', e);
+    }
+    this.installSel = rs.modsBag.length ? rs.modsBag[0] : null;
+    this.renderInstall();
   }
 
   private toCard(r: Reward): CardData {
@@ -218,7 +280,9 @@ export class GameRoot extends Component {
     this.battle.paused = true;
     this.curModal = buildBuildDrawer(this.uiRoot, pages,
       () => { this.closeModal(); this.confirmQuit(); },
-      () => { this.closeModal(); this.battle.paused = false; });
+      () => { this.closeModal(); this.battle.paused = false; },
+      () => { this.showInstall('pause'); },
+      this.battle.rs.modsBag.length);
   }
 
   private confirmQuit() {

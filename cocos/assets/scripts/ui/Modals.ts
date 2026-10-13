@@ -112,7 +112,8 @@ export interface BuildPageData { tab: string; lines: string[]; }
 
 /** 9. Build 面板：遮罩 + 底部抽屉 + 4 页签 + [主菜单][继续] */
 export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
-                                 onMenu: () => void, onResume: () => void): Node {
+                                 onMenu: () => void, onResume: () => void,
+                                 onInstall?: () => void, bagCount = 0): Node {
   const root = mkNode(parent, 'scr-build', 360, 640);
   mask(root, 360, 640);
   text(root, 0, 250, '暂停', { size: FS.l, color: COL.accent, bold: true, width: 320 });
@@ -157,9 +158,17 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
   });
   refresh();
 
-  const m = button(root, -84, -288, 140, 48, '主菜单', { size: FS.s });
+  // ⚠️ 按钮必须落在抽屉范围内（抽屉 -280..140）。
+  //    原来放在 -288，底边到 -312，比抽屉底边低 32px —— 用户报"按钮错位"。
+  const IY = -244;
+  const m = button(root, -110, IY, 104, 46, '主菜单', { size: FS.s });
   onTap(m.node, onMenu);
-  const r = button(root, 84, -288, 140, 48, '继续', { primary: true, size: FS.s });
+  if (onInstall) {
+    const label = bagCount > 0 ? '装模块 (' + bagCount + ')' : '装模块';
+    const ins = button(root, 0, IY, 116, 46, label, { size: FS.s, primary: bagCount > 0 });
+    onTap(ins.node, onInstall);
+  }
+  const r = button(root, 110, IY, 104, 46, '继续', { size: FS.s, primary: true });
   onTap(r.node, onResume);
   return root;
 }
