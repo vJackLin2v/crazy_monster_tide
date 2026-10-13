@@ -96,13 +96,25 @@ export function bar(parent: Node, x: number, y: number, w: number, h: number, fi
 export interface TextOpts { size?: number; color?: Color; align?: 'left' | 'center' | 'right'; bold?: boolean; width?: number; }
 
 export function text(parent: Node, x: number, y: number, str: string, o: TextOpts = {}): Label {
-  const n = mkNode(parent, 'text', o.width ?? 300, (o.size ?? FS.s) + 6, x, y);
+  // ⚠️ (x, y) 的语义按对齐方式解释：
+  //    左对齐 -> x 是**文字左边界**；右对齐 -> x 是右边界；居中 -> x 是中心。
+  //    踩过的坑：一开始把 x 当成节点中心，结果左对齐的文字从「节点左边」开始画，
+  //    起点跑到 x - width/2，直接出屏 —— 视觉模型读到「始技能：火球」（少了"初"），
+  //    才发现每行开头都被裁掉了。
+  const w = o.width ?? 300;
+  const cx = o.align === 'left' ? x + w / 2 : o.align === 'right' ? x - w / 2 : x;
+  const n = mkNode(parent, 'text', w, (o.size ?? FS.s) + 6, cx, y);
   const l = n.addComponent(Label);
   l.string = str;
   l.fontSize = o.size ?? FS.s;
   l.lineHeight = (o.size ?? FS.s) + 4;
   l.color = o.color ?? COL.cream;
   l.isBold = !!o.bold;
+  // CLAMP：节点尺寸**保持我传的 width**，文字在其中按对齐方式排。
+  // 若用 NONE，Label 会按文字实际宽度自动撑缩节点，定位就不可预测了
+  //（出屏 bug 就是这里来的）。CLAMP 下过长会截断，但我们的文案都留了余量。
+  l.overflow = Label.Overflow.CLAMP;
+  l.enableWrapText = true;
   l.horizontalAlign = o.align === 'left' ? Label.HorizontalAlign.LEFT
     : o.align === 'right' ? Label.HorizontalAlign.RIGHT
     : Label.HorizontalAlign.CENTER;

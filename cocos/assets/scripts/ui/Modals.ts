@@ -120,7 +120,8 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
   // 页签
   let cur = 0;
   const tabNodes: { n: Node; i: number }[] = [];
-  const body = text(drawer, 0, -140, '', { size: FS.s, color: COL.cream, align: 'left', width: 300 });
+  // 左对齐时 x 是文字左边界（抽屉内边界 -170）-> 取 -150，宽 300 则右端 +150 ✓
+  const body = text(drawer, -150, -140, '', { size: FS.s, color: COL.cream, align: 'left', width: 300 });
   const TW = 76, TX = 4;
   const refresh = () => {
     const p = pages[cur];
@@ -136,9 +137,9 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
   });
   refresh();
 
-  const m = button(root, -84, -300, 140, 48, '主菜单', { size: FS.s });
+  const m = button(root, -84, -288, 140, 48, '主菜单', { size: FS.s });
   onTap(m.node, onMenu);
-  const r = button(root, 84, -300, 140, 48, '继续', { primary: true, size: FS.s });
+  const r = button(root, 84, -288, 140, 48, '继续', { primary: true, size: FS.s });
   onTap(r.node, onResume);
   return root;
 }
