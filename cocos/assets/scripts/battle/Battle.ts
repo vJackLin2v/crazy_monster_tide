@@ -79,6 +79,12 @@ export class Battle extends Component {
   private fx: Fx[] = [];
 
   private spawnAcc = 0;
+
+  /** 生成点：把"当前真实可视尺寸"传给纯逻辑层（相机缩放会随屏幕变） */
+  private spawnPt() {
+    return spawnPointAround(this.rs.rng, this.px, this.py, ARENA_W, ARENA_H,
+      this.cam ? this.cam.viewW : 180, this.cam ? this.cam.viewH : 320);
+  }
   private waveLeft = 0;
   private elitesSpawned = 0;
   private bossRef: Enemy | null = null;
@@ -223,6 +229,18 @@ export class Battle extends Component {
     this.place(this.playerNode, this.px, this.py);
     this.inv = 1.4;
 
+    // 开场先铺几只（否则开局几秒屏幕是空的，没有"怪潮"感）
+    if (!isBossWave(n)) {
+      const pool0 = this.rs.spawnPool;
+      if (pool0.length) {
+        const open = Math.min(4, 2 + Math.floor(n / 5));
+        for (let i = 0; i < open; i++) {
+          const p = this.spawnPt();
+          this.spawnEnemy(this.rs.rng.pick(pool0), p.x, p.y);
+        }
+        this.spawnAcc = -0.9;   // 稍等再进常规节奏
+      }
+    }
     if (isBossWave(n)) {
       this.spawnEnemy('boss', this.px + 150, this.py - 110,
         1 + 0.35 * Math.floor(n / RUN.bossEvery - 1), bossUnitFor(n));
@@ -456,14 +474,14 @@ export class Battle extends Component {
     const pool = this.rs.spawnPool;
     if (!pool.length) return;
     for (let i = 0; i < plan.batch; i++) {
-      const p = spawnPointAround(this.rs.rng, this.px, this.py, ARENA_W, ARENA_H);
+      const p = this.spawnPt();
       this.spawnEnemy(this.rs.rng.pick(pool), p.x, p.y);
     }
     if (this.rs.wave > 1 && this.waveLeft > 0) {
       const prog = 1 - this.waveLeft / waveTime(this.rs.wave);
       if (prog > 0.3 && this.elitesSpawned < this.rs.elitesThisWave) {
         this.elitesSpawned++;
-        const p = spawnPointAround(this.rs.rng, this.px, this.py, ARENA_W, ARENA_H);
+        const p = this.spawnPt();
         this.spawnEnemy('gnollberserker', p.x, p.y, 1 + 0.2 * this.rs.wave);
         this.cam.addShake(SHAKE.elite);
       }

@@ -20,7 +20,7 @@
  * ────────────────────────────────────────────────────────────
  */
 import { _decorator, Component, Node, Vec3, view } from 'cc';
-import { ZOOM, VIEW_W, VIEW_H, ARENA_W, ARENA_H } from '../core/Const';
+import { ZOOM, ZOOM_MUL, VIEW_W, VIEW_H, ARENA_W, ARENA_H } from '../core/Const';
 const { ccclass, property } = _decorator;
 
 @ccclass('Camera2D')
@@ -54,7 +54,7 @@ export class Camera2D extends Component {
 
   update(dt: number) {
     const vs = view.getVisibleSize();
-    const s = Math.max(vs.width / VIEW_W, vs.height / VIEW_H);
+    const s = Math.max(vs.width / VIEW_W, vs.height / VIEW_H) * ZOOM_MUL;
     this.scale = s;
     this.vw = vs.width / s;
     this.vh = vs.height / s;

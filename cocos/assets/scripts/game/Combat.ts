@@ -25,18 +25,25 @@ export function spawnPlan(wave: number): SpawnPlan {
   };
 }
 
-/** 生成半径：可视半对角线约 184（ZOOM=2 时 180x320）→ 195~235 刚好落在屏幕外 */
-export const SPAWN_RADIUS_MIN = 195;
-export const SPAWN_RADIUS_MAX = 235;
-
 export interface Vec2Like { x: number; y: number; }
 
-/** 在玩家周围的屏幕外一圈取一个刷新点，并夹在竞技场边界内 */
+/**
+ * 在玩家周围的**屏幕外一圈**取刷新点。
+ *
+ * ⚠️ 半径必须由**真实可视尺寸**推导，不能写死。
+ *    踩过的坑（KI-004）：写死 195~235 时，若相机把可视世界缩到 157x278
+ *    （半对角线只有 159），怪就等于刷在 1.2~1.5 个屏幕之外 —— 走 2~5 秒才进画面，
+ *    屏幕长时间是空的，完全没有"怪潮"感。
+ *
+ * 取 1.02~1.22 倍半对角线：刚好在画面外，几步就进来。
+ */
 export function spawnPointAround(
   rng: Rng, px: number, py: number, arenaW: number, arenaH: number,
+  viewW: number, viewH: number,
 ): Vec2Like {
+  const halfDiag = Math.hypot(viewW / 2, viewH / 2);
   const a = rng.range(0, Math.PI * 2);
-  const r = rng.range(SPAWN_RADIUS_MIN, SPAWN_RADIUS_MAX);
+  const r = rng.range(halfDiag * 1.02, halfDiag * 1.22);
   return {
     x: Math.max(14, Math.min(arenaW - 14, px + Math.cos(a) * r)),
     y: Math.max(14, Math.min(arenaH - 14, py + Math.sin(a) * r)),
