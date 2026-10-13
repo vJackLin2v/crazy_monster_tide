@@ -12,17 +12,18 @@
 // ---------- 屏幕与视野 ----------
 export const SCREEN_W = 360;
 export const SCREEN_H = 640;
-/** 渲染缩放：整数倍，单位 32px -> 屏幕 96px（占屏高 15%）
- *  2026-10-13 用户反馈：2x 下"角色/怪物/技能特别小，根本看不清" → 调到 3x。
- *  ⚠️ 改这个值必须连带改下面三项，否则会挤爆屏幕或节奏崩掉（见 decisions.md D-27）：
- *     ① 竞技场尺寸 ② 生成半径 ③ 刷怪密度 */
-export const ZOOM = 3;
+/** 渲染缩放：整数倍，单位 32px -> 屏幕 64px（占屏高 10%）
+ *  ⚠️ 这是**与 HTML 原型完全一致**的值（原型 ZOOM=2）。
+ *     关键在于「适配方式」也必须一致：工程用 fitWidth+fitHeight（完整容纳），
+ *     保证可视设计高度正好 640 —— 否则同样的 64px 会显得更小（见 D-31）。
+ *  改这个值必须连带改 ①竞技场 ②生成半径 ③刷怪密度（D-27）。 */
+export const ZOOM = 2;
 export const VIEW_W = SCREEN_W / ZOOM;   // 180
 export const VIEW_H = SCREEN_H / ZOOM;   // 320
 
 /** 竞技场（世界坐标）：可视区的 3.4 x 2.9 倍，留出风筝空间 */
-export const ARENA_W = 420;
-export const ARENA_H = 720;
+export const ARENA_W = 620;
+export const ARENA_H = 940;
 
 // ---------- 单位 ----------
 export const UNIT_NATIVE = 32;           // 单位精灵原生尺寸（像素）

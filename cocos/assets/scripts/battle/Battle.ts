@@ -13,7 +13,7 @@
  *   ✅ KI-001：死亡动画播完即回收节点（先累加计时，再跳过逻辑）
  *   ⬜ 12 屏 UI（按 docs/ui/ui-spec-approved.md v1.0）
  */
-import { _decorator, Component, Node, Sprite, UITransform, Color, Graphics, Label } from 'cc';
+import { _decorator, Component, Node, Sprite, UITransform, Color, Graphics, Label, view } from 'cc';
 import { ZOOM, ARENA_W, ARENA_H, SCREEN_W, SCREEN_H, HITSTOP, HITSTOP_SCALE, SHAKE, DEATH_ANIM_TIME,
          TARGET_RANGE, RUN, waveTime, isBossWave } from '../core/Const';
 import { Assets, makeSolidFrame, type UnitClips } from '../engine/Assets';
@@ -120,8 +120,12 @@ export class Battle extends Component {
   }
   private updateDebug() {
     if (!this.debugLabel) return;
-    const s = Assets.stats();
-    this.debugLabel.string = `缩放 x${ZOOM}（单位 ${32 * ZOOM}px）· 素材 ${s.loaded}/失败 ${s.failed} · 敌 ${this.enemies.length} · 波 ${this.rs.wave} · 画布 ${SCREEN_W}x${SCREEN_H}`;
+    const vs = view.getVisibleSize();
+    const s = this.cam ? this.cam.worldScale : ZOOM;
+    this.debugLabel.string =
+      `自适应 x${s.toFixed(2)}（原型 x2）· 单位 ${(32 * s).toFixed(0)}px = 屏高 ${(32 * s / vs.height * 100).toFixed(1)}%（原型 10%）` +
+      ` · 可视世界 ${Math.round(vs.width / s)}x${Math.round(vs.height / s)}（原型 180x320）` +
+      ` · 素材 ${Assets.stats().loaded}/失败 ${Assets.stats().failed} · 敌 ${this.enemies.length} · 波 ${this.rs.wave}`;
   }
 
   private buildTree() {
@@ -131,7 +135,7 @@ export class Battle extends Component {
 
     const mk = (n: string) => { const x = new Node(n); x.parent = this.world; return x; };
 
-    // 竞技场底色：用 Graphics 画纯色，不引入任何素材
+    // 竞技场底色：Graphics 画纯色，不引入任何素材
     const ground = new Node('Ground');
     ground.parent = this.world;
     const g = ground.addComponent(Graphics);
@@ -220,12 +224,11 @@ export class Battle extends Component {
     this.inv = 1.4;
 
     if (isBossWave(n)) {
-      // 生成距离随 ZOOM 缩小（可视半对角线只有 122，太远会让 BOSS 走很久才露面）
-      this.spawnEnemy('boss', this.px + 110, this.py - 80,
+      this.spawnEnemy('boss', this.px + 150, this.py - 110,
         1 + 0.35 * Math.floor(n / RUN.bossEvery - 1), bossUnitFor(n));
       this.bossRef = this.enemies[this.enemies.length - 1] ?? null;
       this.cam.addShake(SHAKE.boss);
-      this.addVfx(FX.killBig, this.px + 110, this.py - 80, 0.9, 2);
+      this.addVfx(FX.killBig, this.px + 150, this.py - 110, 0.9, 2);
     }
   }
 

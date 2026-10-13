@@ -1,22 +1,26 @@
 /**
- * 相机（不移动引擎相机，改移动 World 容器 —— 2D 里这样最可控）
+ * 相机（不移动引擎相机，改移动 World 容器）
  *
- * ── 坐标约定（必须理解这一段，否则画面会错位）────────────────────
- * 世界坐标（与 HTML 原型一致，方便对照移植）：
- *     原点 = 竞技场左上角，x 向右、**y 向下**，范围 ARENA_W x ARENA_H
- * Cocos：y 向上。所以世界点 (wx, wy) 放进 World 节点时用 (wx, ARENA_H - wy)。
- * Canvas：设计分辨率 360x640，**原点在屏幕中心**（y 向上）——
- *     屏幕左上角 = Canvas 本地 (-180, +320)。
+ * ── 目标：**与 HTML 原型逐项同比例**，且在任何屏幕上自动成立 ────────────
+ * 原型：stage 固定 360x640（完整容纳），ZOOM=2 → 可视世界 180x320，单位占屏高 10%。
+ * 若这里写死 scale = ZOOM，长屏（390x844）下 fitWidth 会多露出竖向世界
+ * （可见 779 设计单位 = 390 世界单位，比原型的 320 多 22%），同一个 64px 单位看起来就"小"。
+ * 用户 2026-10-13 反馈的正是这个。
  *
- * ── 推导 ────────────────────────────────────────────────────
- * 设 World 节点 scale = ZOOM、position = P，则
- *     canvasLocal = P + ZOOM * (wx, ARENA_H - wy)
- * 让可视区左上角 (camX, camY) 落在屏幕左上角：
- *     P = (-180 - ZOOM*camX ,  320 - ZOOM*(ARENA_H - camY))
+ * 解法：**自适应 cover 缩放**
+ *     s = max(visW / VIEW_W, visH / VIEW_H)
+ *   → 可视世界不小于 VIEW_W x VIEW_H（不露边），长屏上 s 自动变大，
+ *     单位占比反而与原型一致（390x844 下 s=2.43，单位占屏高 10.0%）。
+ *
+ * ── 坐标约定 ────────────────────────────────────────────────
+ * 世界：原点 = 竞技场左上角，x 右、**y 下**，范围 ARENA_W x ARENA_H
+ * Cocos：y 上 → 世界点 (wx,wy) 放进 World 用 (wx, ARENA_H - wy)
+ * Canvas：原点在屏幕中心 → 可视区左上角 = (-visW/2, +visH/2)
+ *     P = ( -visW/2 - s*camX ,  +visH/2 - s*(ARENA_H - camY) )
  * ────────────────────────────────────────────────────────────
  */
-import { _decorator, Component, Node, Vec3 } from 'cc';
-import { ZOOM, VIEW_W, VIEW_H, ARENA_W, ARENA_H, SCREEN_W, SCREEN_H } from '../core/Const';
+import { _decorator, Component, Node, Vec3, view } from 'cc';
+import { ZOOM, VIEW_W, VIEW_H, ARENA_W, ARENA_H } from '../core/Const';
 const { ccclass, property } = _decorator;
 
 @ccclass('Camera2D')
@@ -28,34 +32,47 @@ export class Camera2D extends Component {
   private shake = 0;
   private camX = 0;
   private camY = 0;
+  private scale = ZOOM;
+  private vw = VIEW_W;
+  private vh = VIEW_H;
 
-  /** 世界坐标(y 向下) -> World 节点下的本地坐标(y 向上) */
   static toLocal(wx: number, wy: number): Vec3 { return new Vec3(wx, ARENA_H - wy, 0); }
-
-  /** 屏幕像素 -> Canvas 本地坐标（原点在屏幕中心，y 向上）—— 摇杆等 UI 用 */
-  static screenToCanvas(sx: number, sy: number): Vec3 {
-    return new Vec3(sx - SCREEN_W / 2, SCREEN_H / 2 - sy, 0);
-  }
 
   addShake(v: number) { this.shake = Math.max(this.shake, v); }
   get viewLeft(): number { return this.camX; }
   get viewTop(): number { return this.camY; }
-  /** 世界坐标是否在可视区内（用于剔除） */
+  /** 当前实际缩放（自适应后，原型基准是 ZOOM） */
+  get worldScale(): number { return this.scale; }
+  /** 当前实际可视世界尺寸 */
+  get viewW(): number { return this.vw; }
+  get viewH(): number { return this.vh; }
+
   visible(wx: number, wy: number, pad = 24): boolean {
-    return wx >= this.camX - pad && wx <= this.camX + VIEW_W + pad &&
-           wy >= this.camY - pad && wy <= this.camY + VIEW_H + pad;
+    return wx >= this.camX - pad && wx <= this.camX + this.vw + pad &&
+           wy >= this.camY - pad && wy <= this.camY + this.vh + pad;
   }
 
   update(dt: number) {
-    if (!this.target) return;
-    const p = this.target.position;
-    const wx = p.x;                       // 目标在 World 下的本地 x == 世界 x
-    const wy = ARENA_H - p.y;             // 本地 y -> 世界 y（翻转）
+    const vs = view.getVisibleSize();
+    const s = Math.max(vs.width / VIEW_W, vs.height / VIEW_H);
+    this.scale = s;
+    this.vw = vs.width / s;
+    this.vh = vs.height / s;
 
-    let cx = wx - VIEW_W / 2;
-    let cy = wy - VIEW_H / 2;
-    cx = Math.max(0, Math.min(ARENA_W - VIEW_W, cx));
-    cy = Math.max(0, Math.min(ARENA_H - VIEW_H, cy));
+    if (!this.target) {
+      // 目标还没建好也要先把缩放定下来，避免"先小后大"的跳变
+      this.node.setScale(s, s, 1);
+      this.node.setPosition(-(vs.width / 2) - s * this.camX, (vs.height / 2) - s * (ARENA_H - this.camY), 0);
+      return;
+    }
+
+    const p = this.target.position;
+    const wx = p.x, wy = ARENA_H - p.y;
+
+    let cx = wx - this.vw / 2;
+    let cy = wy - this.vh / 2;
+    cx = Math.max(0, Math.min(Math.max(0, ARENA_W - this.vw), cx));
+    cy = Math.max(0, Math.min(Math.max(0, ARENA_H - this.vh), cy));
 
     if (this.followLerp > 0) {
       const k = Math.min(1, this.followLerp * dt);
@@ -70,10 +87,10 @@ export class Camera2D extends Component {
       this.shake *= Math.pow(0.0016, dt);
     } else this.shake = 0;
 
-    this.node.setScale(ZOOM, ZOOM, 1);
+    this.node.setScale(s, s, 1);
     this.node.setPosition(
-      Math.round(-(SCREEN_W / 2) - ZOOM * this.camX + ox),
-      Math.round((SCREEN_H / 2) - ZOOM * (ARENA_H - this.camY) + oy),
+      Math.round(-(vs.width / 2) - s * this.camX + ox),
+      Math.round((vs.height / 2) - s * (ARENA_H - this.camY) + oy),
       0,
     );
   }

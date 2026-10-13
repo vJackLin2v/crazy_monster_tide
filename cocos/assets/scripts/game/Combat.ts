@@ -20,16 +20,14 @@ export interface SpawnPlan { batch: number; interval: number; }
  */
 export function spawnPlan(wave: number): SpawnPlan {
   return {
-    // ZOOM=3 后可视面积又小了 2.25 倍 → 间隔再放宽
-    interval: Math.max(0.55, 1.45 - wave * 0.05),
-    batch: Math.min(3, 1 + Math.floor(wave / 7)),
+    interval: Math.max(0.40, 1.15 - wave * 0.045),
+    batch: Math.min(3, 1 + Math.floor(wave / 6)),
   };
 }
 
-/** 生成半径：可视半对角线约 hypot(60,107)=122 → 130~165 刚好落在屏幕外
- *  （跟着 ZOOM 走：ZOOM 变大 → 视野变小 → 生成半径必须同步缩小，否则怪要走很久才进画面） */
-export const SPAWN_RADIUS_MIN = 130;
-export const SPAWN_RADIUS_MAX = 165;
+/** 生成半径：可视半对角线约 184（ZOOM=2 时 180x320）→ 195~235 刚好落在屏幕外 */
+export const SPAWN_RADIUS_MIN = 195;
+export const SPAWN_RADIUS_MAX = 235;
 
 export interface Vec2Like { x: number; y: number; }
 

@@ -50,7 +50,7 @@ declare module 'cc' {
   export const resources: { load(p: string, t: any, cb: (err: any, a: any) => void): void };
   export const assetManager: any;
   export const director: any;
-  export const view: any;
+  export const view: { getVisibleSize(): { width: number; height: number }; setDesignResolutionSize(...a: any[]): void; };
   export const game: any;
   export const math: any;
   export const tween: any;
