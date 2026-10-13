@@ -161,22 +161,46 @@ export class Battle extends Component {
 
     // 竞技场底色：Graphics 画纯色，不引入任何素材
     // 地面：棋盘格（原型就是格子底，比纯色丰富很多。用 Graphics 画，零素材）
+    // 地面 —— 逐项照抄 DEMO 的 render.js:drawBg()
+    //   底色 #131C36；格子 24px；两色 #17233D / #1A2846（**差异要小**，我之前给大了导致整体偏亮）；
+    //   每格左上角 3x3 的 rgba(255,255,255,.022) 高光点；竞技场 2px 橙色半透明边框
     const ground = new Node('Ground');
     ground.parent = this.world;
     const g = ground.addComponent(Graphics);
-    g.fillColor = new Color(23, 35, 61, 255);
+    const CELL = 24;
+    const C_BASE = new Color(0x13, 0x1C, 0x36, 255);
+    const C_ODD = new Color(0x17, 0x23, 0x3D, 255);
+    const C_EVEN = new Color(0x1A, 0x28, 0x46, 255);
+    const C_DOT = new Color(255, 255, 255, 6);          // .022 * 255 ≈ 6
+
+    g.fillColor = C_BASE;
     g.rect(0, -ARENA_H, ARENA_W, ARENA_H);
     g.fill();
-    const CELL = 32;
-    g.fillColor = new Color(29, 43, 74, 255);
-    for (let yy = 0; yy * CELL < ARENA_H; yy++) {
-      for (let xx = 0; xx * CELL < ARENA_W; xx++) {
-        if ((xx + yy) % 2) continue;
-        // 世界 y 向下 → 节点本地 y 向上：格子的底部 = -(yy+1)*CELL
-        g.rect(xx * CELL, -(yy + 1) * CELL, CELL - 1, CELL - 1);
+
+    const NX = Math.ceil(ARENA_W / CELL), NY = Math.ceil(ARENA_H / CELL);
+    for (let yy = 0; yy < NY; yy++) {
+      for (let xx = 0; xx < NX; xx++) {
+        const odd = ((xx + yy) % 2) === 0;
+        // 世界 y 向下 → 节点本地 y 向上：格子底部 = -(yy+1)*CELL
+        const lx = xx * CELL, ly = -(yy + 1) * CELL;
+        g.fillColor = odd ? C_ODD : C_EVEN;
+        g.rect(lx, ly, CELL + 0.5, CELL + 0.5);
       }
     }
     g.fill();
+    for (let yy = 0; yy < NY; yy++) {
+      for (let xx = 0; xx < NX; xx++) {
+        if (((xx + yy) % 2) !== 0) continue;
+        g.fillColor = C_DOT;
+        g.rect(xx * CELL + 3, -(yy + 1) * CELL + 3, 3, 3);
+      }
+    }
+    g.fill();
+    // 竞技场边框：橙色半透明 2px（DEMO 是 strokeRect(0,0,ARENA.W,ARENA.H)）
+    g.lineWidth = 2;
+    g.strokeColor = new Color(255, 168, 75, 90);        // .35 * 255 ≈ 90
+    g.rect(0, -ARENA_H, ARENA_W, ARENA_H);
+    g.stroke();
     ground.setPosition(0, ARENA_H, 0);
 
     this.layerArea = mk('Area');

@@ -256,6 +256,7 @@ export class GameRoot extends Component {
           name: def ? def.name : '',
           icon: def ? (def.icon || '') : '',
           cdPct: this.battle.skillCdPct[i] || 0, lvl: s ? s.lvl : 0,
+          modCount: s ? s.mods.length : 0,
         };
       }),
     };

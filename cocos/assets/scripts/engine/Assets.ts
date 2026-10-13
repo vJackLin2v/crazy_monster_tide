@@ -160,7 +160,8 @@ export function shadowFrame(): SpriteFrame {
       const dx = (x - cx) / r, dy = (y - cy) / r;
       const d = Math.sqrt(dx * dx + dy * dy);
       // 中心最实，边缘平滑淡出
-      const a = d >= 1 ? 0 : Math.round(150 * Math.pow(1 - d, 1.6));
+      // DEMO 的 unitShadow 是 globalAlpha 0.26 —— 我之前用了 150/255≈0.59，重了 2.3 倍
+      const a = d >= 1 ? 0 : Math.round(66 * Math.pow(1 - d, 1.6));
       const i = (y * N + x) * 4;
       data[i] = 0; data[i + 1] = 0; data[i + 2] = 0; data[i + 3] = a;
     }

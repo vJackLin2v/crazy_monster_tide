@@ -191,3 +191,77 @@ export function screen(parent: Node, name: string, bg?: Color): Node {
 export function onTap(node: Node, cb: () => void) {
   node.on(Node.EventType.TOUCH_END, () => cb(), node);
 }
+
+// ---------- 渐变进度条（DEMO 的血条/经验条都是渐变）----------
+function lerpColor(a: Color, b: Color, k: number): Color {
+  return new Color(
+    Math.round(a.r + (b.r - a.r) * k),
+    Math.round(a.g + (b.g - a.g) * k),
+    Math.round(a.b + (b.b - a.b) * k),
+    Math.round(a.a + (b.a - a.a) * k),
+  );
+}
+
+export interface GradBarOpts {
+  /** 渐变方向：v = 从上到下（血条），h = 从左到右（经验条） */
+  dir?: 'v' | 'h';
+  from: Color;
+  to: Color;
+  /** 圆角；99 表示胶囊（= 高度的一半） */
+  radius?: number;
+  /** 描边颜色；不传则无描边 */
+  line?: Color;
+}
+
+/**
+ * 渐变进度条 —— 对应 DEMO 的 `.hpbar{linear-gradient(180deg,#FF6E86,red)}`
+ * 与 `.expbar{linear-gradient(90deg,mint,#B6F0DC)}`
+ *
+ * Cocos 的 Graphics 没有渐变填充，所以**拆成若干条带**逐条上色（16 段足够平滑）。
+ */
+export function gradBar(parent: Node, x: number, y: number, w: number, h: number,
+                        o: GradBarOpts): { node: Node; set: (v: number) => void } {
+  const r = o.radius === 99 ? h / 2 : (o.radius ?? R.s);
+  const n = mkNode(parent, 'gradbar', w, h, x, y);
+  const g = n.addComponent(Graphics);
+
+  // 底槽
+  g.fillColor = new Color(11, 18, 36, 255);      // #0B1224
+  g.roundRect(-w / 2, -h / 2, w, h, r); g.fill();
+  if (o.line) {
+    g.lineWidth = BORDER; g.strokeColor = o.line;
+    g.roundRect(-w / 2, -h / 2, w, h, r); g.stroke();
+  }
+
+  const inner = mkNode(n, 'fill', w, h);
+  const fg = inner.addComponent(Graphics);
+  const PAD = o.line ? BORDER : 0;
+  const iw = w - PAD * 2, ih = h - PAD * 2;
+  const STEPS = o.dir === 'h' ? 18 : 10;
+
+  const redraw = (v: number) => {
+    fg.clear();
+    const k = Math.max(0, Math.min(1, v));
+    if (k <= 0.001) return;
+    // ⚠️ 每条带必须**单独 rect + fill**：Graphics 的 fillColor 是在 fill() 时才作用于
+    //    整条路径的，设 N 次颜色只 fill 一次 -> 只有最后一个颜色生效（渐变会退化成纯色）。
+    if (o.dir === 'h') {
+      const seg = iw * k / STEPS;
+      for (let i = 0; i < STEPS; i++) {
+        fg.fillColor = lerpColor(o.from, o.to, i / (STEPS - 1));
+        fg.rect(-w / 2 + PAD + i * seg, -h / 2 + PAD, seg + 0.5, ih);
+        fg.fill();
+      }
+    } else {
+      const seg = ih / STEPS;
+      for (let i = 0; i < STEPS; i++) {
+        fg.fillColor = lerpColor(o.from, o.to, i / (STEPS - 1));
+        // 横条带：装满填充宽度 iw*k，竖直方向逐段
+        fg.rect(-w / 2 + PAD, -h / 2 + PAD + (STEPS - 1 - i) * seg, iw * k, seg + 0.5);
+        fg.fill();
+      }
+    }
+  };
+  redraw(1);
+  return { node: n, set: redraw };
+}
