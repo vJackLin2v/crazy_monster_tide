@@ -275,7 +275,7 @@ export class Battle extends Component {
     if (!isBossWave(n)) {
       const pool0 = this.rs.spawnPool;
       if (pool0.length) {
-        const open = Math.min(9, 3 + Math.floor(n / 2));
+        const open = Math.min(12, 5 + Math.floor(n / 2));   // 开场铺怪（6 只在第1波太多，改成 5）
         for (let i = 0; i < open; i++) {
           const p = this.spawnPt();
           this.spawnEnemy(this.rs.rng.pick(pool0), p.x, p.y);
@@ -562,7 +562,10 @@ export class Battle extends Component {
       if (d < e.r + 12 && this.inv <= 0) {
         const dm = playerTakenDamage(e.dmg, this.rs.stats);
         this.rs.stats.hp -= dm;
-        this.inv = 0.55; this.dmgFlash = 1;
+        // 受击无敌帧 0.55 -> 0.80（2026-10-13 实测标定）
+        // 原来 0.55s 把承伤封顶在 ~11 伤害/秒，120 血只够撑 11 秒，而一波 18 秒 ——
+        // 密度一提上来就必死。放宽到 0.80 秒后封顶 ~7.5/秒，才留得出走位空间。
+        this.inv = 0.80; this.dmgFlash = 1;
         e.atkT = 0.34;
         this.cam.addShake(SHAKE.hurt);
         if (this.rs.stats.hp <= 0 && this.running) { this.running = false; this.paused = true; console.log('[Battle] 玩家阵亡'); this.hooks.onDead?.(); }

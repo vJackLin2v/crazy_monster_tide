@@ -27,8 +27,20 @@ export function spawnPlan(wave: number): SpawnPlan {
     // ⚠️ 早期不能太猛：第 1 波玩家只有 1 个技能，DPS ≈ 0.6 只/秒，
     //    刷得比杀得快会直接崩盘。所以**低位靠开场铺怪制造"扑面感"，
     //    速率随玩家技能数一起涨**。
-    interval: Math.max(0.24, 0.95 - wave * 0.042),
-    batch: Math.min(4, 1 + Math.floor(wave / 4)),
+    // 2026-10-13 用"屏幕上的怪"实测标定（不是估算）：
+    //   旧参数(interval 0.95-w*0.042) 实测在屏怪 **平均 0.75 只 / 最多 2 只** —— 玩家反馈「怪都看不到」。
+    //   修正缩放后可视世界 152x320（比修正前小很多），屏幕上"能装下的怪"本来就少，
+    //   所以必须显著提高刷新率才能有"怪潮"感。
+    // 第二轮标定：上一版(0.40-w*0.013)实测在屏怪平均 6.7 只 —— 密度对了，但**玩家第 1 波就死**。
+    // 原因：第 1 波玩家只有 1 个技能，DPS≈0.8 只/秒，而刷怪 2.6 只/秒 -> 净积累 1.8 只/秒，
+    //       18 秒攒 30+ 只，必死。
+    // 现在按「**刷怪率略高于玩家 DPS**」标定：早期缓，随技能数增长而加速。
+    // 第三轮标定（前两轮实测数据）：
+    //   1.4只/秒 -> 在屏 2.6 只，玩家活（HP 84/120）
+    //   2.6只/秒 -> 在屏 6.7 只，玩家**第 1 波就死**
+    // 取中间：第 1 波约 2.0 只/秒（在屏 4~5 只），随技能数增长加速。
+    interval: Math.max(0.18, 0.53 - wave * 0.022),
+    batch: Math.min(5, 1 + Math.floor(wave / 3)),
   };
 }
 
@@ -48,12 +60,20 @@ export function spawnPointAround(
   rng: Rng, px: number, py: number, arenaW: number, arenaH: number,
   viewW: number, viewH: number,
 ): Vec2Like {
-  const halfDiag = Math.hypot(viewW / 2, viewH / 2);
+  // ⚠️ 必须沿**可视矩形的外扩边框**取点，不能沿圆取半径。
+  //    踩过的坑：按半对角线(hypot(78,139)=159)取圆，横向刷出的怪离画面边缘
+  //    有 159-78=81 世界单位，50px/s 要走 1.6 秒才露面 —— 用户反馈「怪都看不到」。
+  //    沿矩形边框外扩，则**任何方向都是"刚出画面"**，0.4~1 秒就能走进来。
+  const hw = viewW / 2, hh = viewH / 2;
   const a = rng.range(0, Math.PI * 2);
-  const r = rng.range(halfDiag * 1.02, halfDiag * 1.22);
+  const ca = Math.cos(a), sa = Math.sin(a);
+  // 沿方向 a 到矩形边界的距离
+  const tx = Math.abs(ca) < 1e-6 ? 1e9 : hw / Math.abs(ca);
+  const ty = Math.abs(sa) < 1e-6 ? 1e9 : hh / Math.abs(sa);
+  const r = Math.min(tx, ty) + rng.range(18, 55);   // 刚出边框一点
   return {
-    x: Math.max(14, Math.min(arenaW - 14, px + Math.cos(a) * r)),
-    y: Math.max(14, Math.min(arenaH - 14, py + Math.sin(a) * r)),
+    x: Math.max(14, Math.min(arenaW - 14, px + ca * r)),
+    y: Math.max(14, Math.min(arenaH - 14, py + sa * r)),
   };
 }
 
