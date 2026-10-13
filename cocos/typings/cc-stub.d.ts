@@ -24,7 +24,7 @@ declare module 'cc' {
     addComponent(t: any): any; getComponent(t: any): any; getChildByName(n: string): any;
     destroy(): void; setSiblingIndex(i: number): void; getSiblingIndex(): number;
   }
-  export class Sprite { color: any; static SizeMode: any; spriteFrame: any; sizeMode: any; trim: boolean; }
+  export class Sprite { node: any; color: any; static SizeMode: any; spriteFrame: any; sizeMode: any; trim: boolean; }
   export class SpriteFrame { texture: any; rect: any; originalSize: any; packable: boolean; }
   export class ImageAsset { constructor(src?: any); }
   export class Texture2D { static Filter: any; static PixelFormat: any; image: any; width: number; height: number; setFilters(a: any, b: any): void; }
@@ -34,7 +34,7 @@ declare module 'cc' {
     rect(...a: any[]): void; circle(...a: any[]): void; ellipse(...a: any[]): void; roundRect(...a: any[]): void;
     fill(): void; stroke(): void; clear(): void; moveTo(...a: any[]): void; lineTo(...a: any[]): void;
   }
-  export class Label { static HorizontalAlign: any; static VerticalAlign: any; static Overflow: any;
+  export class Label { node: any; static HorizontalAlign: any; static VerticalAlign: any; static Overflow: any;
     string: string; fontSize: number; lineHeight: number; color: any; isBold: boolean;
     horizontalAlign: any; verticalAlign: any; overflow: any; enableWrapText: boolean; }
   export class Color { constructor(r?: number, g?: number, b?: number, a?: number); r: number; g: number; b: number; a: number; }

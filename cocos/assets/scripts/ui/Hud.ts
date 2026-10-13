@@ -8,6 +8,7 @@
  */
 import { Node, Label, Color } from 'cc';
 import { panel, bar, text, mkNode, onTap, whiteFrame } from './UIKit';
+import { iconFrame, loadIcon } from '../engine/Assets';
 import { COL, FS, R, BORDER, SP, SAFE_TOP, SHADOW_OFF } from './Tokens';
 import { Sprite, UITransform, Graphics } from 'cc';
 
@@ -29,7 +30,7 @@ export class Hud {
   private bossBox!: Node;
   private bossBar!: ReturnType<typeof bar>;
   private bossName!: Label;
-  private slots: { node: Node; cd: Graphics; lvl: Label; w: number }[] = [];
+  private slots: { node: Node; cd: Graphics; lvl: Label; w: number; icon: Sprite }[] = [];
 
   constructor(parent: Node, onPause?: () => void) {
     this.root = mkNode(parent, 'Hud', 360, 640);
@@ -66,10 +67,15 @@ export class Hud {
       const x = -total / 2 + bw / 2 + i * (bw + gap);
       const y = -320 + 14 + bw / 2;
       const n = panel(this.root, x, y, bw, bw, { bg: COL.bg2, line: COL.line, radius: R.s });
-      const cd = mkNode(n, 'cd', bw, bw);
+      // 技能图标：32x32（16px 图标整数 2 倍），NEAREST 由 loadSF 保证
+      const ic = mkNode(n, 'icon', 32, 32);
+      const isp = ic.addComponent(Sprite);
+      isp.sizeMode = Sprite.SizeMode.CUSTOM;
+      isp.trim = false;
+      const cd = mkNode(n, 'cd', bw, bw);          // 冷却遮罩在图标之上
       const g = cd.addComponent(Graphics);
       const lv = text(n, bw / 2 - 8, -bw / 2 + 8, '', { size: FS.xs, color: COL.mint, align: 'right', width: 20 });
-      this.slots.push({ node: n, cd: g, lvl: lv, w: bw });
+      this.slots.push({ node: n, cd: g, lvl: lv, w: bw, icon: isp });
     }
   }
 
@@ -90,7 +96,22 @@ export class Hud {
       const s = this.slots[i];
       const sk = d.skills[i];
       s.cd.clear();
-      if (!sk) continue;
+      if (!sk) { s.icon.spriteFrame = null; continue; }
+      // 图标按需加载（第一次为空，加载完自动补上）
+      if (sk.icon) {
+        const f = iconFrame(sk.icon);
+        if (f) {
+          if (s.icon.spriteFrame !== f) {
+            s.icon.spriteFrame = f;
+            // 图标原生 13~32px，必须**整数倍**放大才不糊
+            const fw = f.rect.width || 32;
+            const k = Math.max(1, Math.floor(32 / fw));
+            const ut = s.icon.node.getComponent(UITransform);
+            if (ut) ut.setContentSize(fw * k, fw * k);
+          }
+        }
+        else { void loadIcon(sk.icon).then(() => { const g2 = iconFrame(sk.icon); if (g2) s.icon.spriteFrame = g2; }); }
+      }
       // 冷却遮罩：从底部往上盖
       if (sk.cdPct > 0.001) {
         s.cd.fillColor = new Color(5, 8, 15, 170);

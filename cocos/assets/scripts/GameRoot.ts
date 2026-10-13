@@ -196,11 +196,15 @@ export class GameRoot extends Component {
   private showPause() {
     const rs = this.battle.rs;
     const pages = [
-      { tab: '技能', lines: rs.skills.map((s, i) => {
+      { tab: '技能', lines: rs.skills.flatMap((s, i) => {
           const def = SKILLS[s.id];
           const rt = calcSkill(s, rs.stats);
           const mods = s.mods.map(m => MODULES[m] ? MODULES[m].name : m).join('/');
-          return (i + 1) + '. ' + (def ? def.name : s.id) + ' Lv.' + s.lvl + '  [' + (mods || '空') + ']\n   伤害 ' + Math.round(rt.dmg) + '  冷却 ' + rt.cd.toFixed(2) + 's';
+          // NOTE: each entry must be a SINGLE line -- the drawer body renders one Label per line,
+          //       so embedding a newline here would make one entry occupy two rows and overlap.
+          const head = (i + 1) + '. ' + (def ? def.name : s.id) + '  Lv.' + s.lvl + '  [' + (mods || '空') + ']';
+          const sub = '    ' + '伤害 ' + Math.round(rt.dmg) + '   冷却 ' + rt.cd.toFixed(2) + 's';
+          return [head, sub];
         }) },
       { tab: '模块', lines: rs.modsBag.length ? rs.modsBag.map(m => '· ' + (MODULES[m] ? MODULES[m].name : m) + '：' + (MODULES[m] ? MODULES[m].desc : '')) : ['（背包为空）'] },
       { tab: '道具', lines: rs.items.length ? rs.items.map(i => '· ' + (ITEMS[i.id] ? ITEMS[i.id].name : i.id) + '：' + (ITEMS[i.id] ? ITEMS[i.id].desc : '')) : ['（没有道具）'] },
@@ -247,9 +251,11 @@ export class GameRoot extends Component {
       bossName: boss ? 'BOSS' : null, bossHp: boss ? boss.hp : 0, bossMax: boss ? boss.maxhp : 0,
       skills: [0, 1, 2, 3].map(i => {
         const s = rs.skills[i];
+        const def = s ? SKILLS[s.id] : null;
         return {
-          name: s ? (SKILLS[s.id] ? SKILLS[s.id].name : s.id) : '',
-          icon: '', cdPct: this.battle.skillCdPct[i] || 0, lvl: s ? s.lvl : 0,
+          name: def ? def.name : '',
+          icon: def ? (def.icon || '') : '',
+          cdPct: this.battle.skillCdPct[i] || 0, lvl: s ? s.lvl : 0,
         };
       }),
     };

@@ -179,3 +179,20 @@ export function shadowFrame(): SpriteFrame {
   _shadow = sf;
   return sf;
 }
+
+/**
+ * 载入 UI / 技能图标（assets/resources/art/icons/<名字>.png）
+ * 图标很小（13~16px），必须 NEAREST + 整数倍缩放，否则糊。
+ */
+const _iconCache = new Map<string, SpriteFrame | null>();
+export function loadIcon(name: string): Promise<SpriteFrame | null> {
+  if (_iconCache.has(name)) return Promise.resolve(_iconCache.get(name) ?? null);
+  return loadSF('art/icons/' + name.replace(/\.png$/, '')).then(sf => {
+    _iconCache.set(name, sf);
+    return sf;
+  });
+}
+export function iconFrame(name: string): SpriteFrame | null { return _iconCache.get(name) ?? null; }
+export function preloadIcons(names: string[]): Promise<void> {
+  return Promise.all(names.map(n => loadIcon(n))).then(() => undefined);
+}

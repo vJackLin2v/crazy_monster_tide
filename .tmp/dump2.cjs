@@ -1,0 +1,31 @@
+const { chromium } = require('playwright');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+(async () => {
+  const b = await chromium.launch();
+  const page = await b.newPage({ viewport: { width: 900, height: 1000 } });
+  await page.goto('http://127.0.0.1:7456/', { waitUntil:'domcontentloaded', timeout:60000 });
+  await page.waitForSelector('canvas', { timeout:60000 });
+  await sleep(18000);
+  const box = await page.locator('canvas').boundingBox();
+  const vs = await page.evaluate(() => { const v=window.cc.view.getVisibleSize(); return {w:v.width,h:v.height}; });
+  const toPage=(gx,gy)=>({x:box.x+(gx+vs.w/2)/vs.w*box.width, y:box.y+(vs.h/2-gy)/vs.h*box.height});
+  const tap=async(gx,gy)=>{const p=toPage(gx,gy); await page.mouse.click(p.x,p.y); await sleep(600);};
+  await tap(0,-40); await tap(76,-272); await sleep(3000);
+  await tap(152,286); await sleep(900);
+  const r = await page.evaluate(()=>{
+    const cc=window.cc,sc=cc.director.getScene();
+    const find=(n,p,d=0)=>{if(d>10||!n)return null;if(p(n))return n;for(const c of n.children){const t=find(c,p,d+1);if(t)return t;}return null;};
+    const ui=find(sc,n=>n.name==='UiRoot');
+    const d=ui&&ui.getChildByName('scr-build');
+    if(!d) return {err:'no scr-build'};
+    const out=[];
+    const walk=(n,depth=0)=>{ const l=n.getComponent&&n.getComponent('cc.Label');
+      if(l&&l.string) out.push({y:Math.round(n.position.y), x:Math.round(n.position.x), active:n.active, s:l.string.slice(0,42)});
+      for(const c of n.children) walk(c,depth+1); };
+    walk(d);
+    return {count:out.length, labels: out.sort((a,b)=>b.y-a.y)};
+  });
+  console.log('scr-build 里的文字节点:', r.count);
+  for (const l of (r.labels||[])) console.log('   y=' + String(l.y).padStart(5) + ' x=' + String(l.x).padStart(5) + (l.active?'':' [隐藏]') + '  "' + l.s + '"');
+  await b.close();
+})();

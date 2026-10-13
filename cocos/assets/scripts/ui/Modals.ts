@@ -122,11 +122,30 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
   let cur = 0;
   const tabNodes: { n: Node; i: number }[] = [];
   // 左对齐时 x 是文字左边界（抽屉内边界 -170）-> 取 -150，宽 300 则右端 +150 ✓
-  const body = text(drawer, -150, -140, '', { size: FS.s, color: COL.cream, align: 'left', width: 300 });
+  // ⚠️ 正文必须**逐行**建 Label。原来用一整块带换行的 Label，
+  //    配合 CLAMP + 自动换行，长短不一的行走位完全不可控 —— 用户反馈"暂停面板许多内容都是错位的"。
+  const LINE_H = 19, MAX_LINES = 13;
+  const bodyLines: Label[] = [];
+  for (let i = 0; i < MAX_LINES; i++) {
+    const l = text(drawer, -150, 132 - i * LINE_H, '', { size: FS.s, color: COL.cream, align: 'left', width: 300 });
+    l.node.active = false;
+    bodyLines.push(l);
+  }
   const TW = 76, TX = 4;
   const refresh = () => {
     const p = pages[cur];
-    body.string = p ? p.lines.join('\n') : '';
+    const src = (p ? p.lines : []).slice(0, MAX_LINES);
+    for (let i = 0; i < bodyLines.length; i++) {
+      const l = bodyLines[i];
+      if (i < src.length) { l.node.active = true; l.string = src[i]; l.color = COL.cream; }
+      else l.node.active = false;
+    }
+    if (p && p.lines.length > MAX_LINES) {
+      const last = bodyLines[bodyLines.length - 1];
+      last.node.active = true;
+      last.string = '… 还有 ' + (p.lines.length - MAX_LINES + 1) + ' 行';
+      last.color = COL.line2;
+    }
     for (const t of tabNodes) paintTab(t.n, t.i === cur);
   };
   pages.slice(0, 4).forEach((p, i) => {
