@@ -12,17 +12,21 @@
 // ---------- 屏幕与视野 ----------
 export const SCREEN_W = 360;
 export const SCREEN_H = 640;
-/** 渲染缩放：整数倍，单位 32px -> 屏幕 64px（占屏高 10%，Brotato 一类的主角比例） */
-export const ZOOM = 2;
+/** 渲染缩放：整数倍，单位 32px -> 屏幕 96px（占屏高 15%）
+ *  2026-10-13 用户反馈：2x 下"角色/怪物/技能特别小，根本看不清" → 调到 3x。
+ *  ⚠️ 改这个值必须连带改下面三项，否则会挤爆屏幕或节奏崩掉（见 decisions.md D-27）：
+ *     ① 竞技场尺寸 ② 生成半径 ③ 刷怪密度 */
+export const ZOOM = 3;
 export const VIEW_W = SCREEN_W / ZOOM;   // 180
 export const VIEW_H = SCREEN_H / ZOOM;   // 320
 
 /** 竞技场（世界坐标）：可视区的 3.4 x 2.9 倍，留出风筝空间 */
-export const ARENA_W = 620;
-export const ARENA_H = 940;
+export const ARENA_W = 420;
+export const ARENA_H = 720;
 
 // ---------- 单位 ----------
 export const UNIT_NATIVE = 32;           // 单位精灵原生尺寸（像素）
+export const UNIT_NATIVE_BIG = 40;       // 大体型单位（basilisk / boss-demonlord）
 export const BASE_SPEED = 96;            // 基础移速 px/s（横穿 360px 屏约 3.8s）
 export const BASE_PICKUP = 85;           // 经验拾取半径（靠近即吸，不必踩上去）
 export const PLAYER_RADIUS = 12;         // 随 ZOOM 同步上调，避免"撞上却没伤害"

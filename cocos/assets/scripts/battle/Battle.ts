@@ -14,7 +14,7 @@
  *   ⬜ 12 屏 UI（按 docs/ui/ui-spec-approved.md v1.0）
  */
 import { _decorator, Component, Node, Sprite, UITransform, Color, Graphics, Label } from 'cc';
-import { ZOOM, ARENA_W, ARENA_H, HITSTOP, HITSTOP_SCALE, SHAKE, DEATH_ANIM_TIME,
+import { ZOOM, ARENA_W, ARENA_H, SCREEN_W, SCREEN_H, HITSTOP, HITSTOP_SCALE, SHAKE, DEATH_ANIM_TIME,
          TARGET_RANGE, RUN, waveTime, isBossWave } from '../core/Const';
 import { Assets, makeSolidFrame, type UnitClips } from '../engine/Assets';
 import { FrameAnim } from '../engine/FrameAnim';
@@ -121,7 +121,7 @@ export class Battle extends Component {
   private updateDebug() {
     if (!this.debugLabel) return;
     const s = Assets.stats();
-    this.debugLabel.string = `素材 ${s.loaded} 张 / 失败 ${s.failed}  ·  敌人 ${this.enemies.length}  ·  波 ${this.rs.wave}`;
+    this.debugLabel.string = `缩放 x${ZOOM}（单位 ${32 * ZOOM}px）· 素材 ${s.loaded}/失败 ${s.failed} · 敌 ${this.enemies.length} · 波 ${this.rs.wave} · 画布 ${SCREEN_W}x${SCREEN_H}`;
   }
 
   private buildTree() {
@@ -220,11 +220,12 @@ export class Battle extends Component {
     this.inv = 1.4;
 
     if (isBossWave(n)) {
-      this.spawnEnemy('boss', this.px + 150, this.py - 110,
+      // 生成距离随 ZOOM 缩小（可视半对角线只有 122，太远会让 BOSS 走很久才露面）
+      this.spawnEnemy('boss', this.px + 110, this.py - 80,
         1 + 0.35 * Math.floor(n / RUN.bossEvery - 1), bossUnitFor(n));
       this.bossRef = this.enemies[this.enemies.length - 1] ?? null;
       this.cam.addShake(SHAKE.boss);
-      this.addVfx(FX.killBig, this.px + 150, this.py - 110, 0.9, 2);
+      this.addVfx(FX.killBig, this.px + 110, this.py - 80, 0.9, 2);
     }
   }
 
@@ -234,7 +235,8 @@ export class Battle extends Component {
     const ws = waveScale(this.rs.wave);
     const hp = Math.round(def.hp * ws.hp * scale);
     const unit = unitOverride ?? def.unit;
-    const { node, anim } = this.mkSpriteNode('enemy:' + unit, this.layerUnit, def.r * 2, def.r * 2, new Color(224, 64, 96));
+    // 尺寸交给 FrameAnim.autoSize（按帧原生像素），这里只给兜底色块尺寸
+    const { node, anim } = this.mkSpriteNode('enemy:' + unit, this.layerUnit, 32, 32, new Color(224, 64, 96));
     this.place(node, wx, wy);
     const e: Enemy = {
       node, anim, unit, x: wx, y: wy,
@@ -294,6 +296,7 @@ export class Battle extends Component {
     const frames = Assets.vfxFrames(key);
     const sc = Math.max(1, Math.round(rt.size / 5));
     const { node, anim } = this.mkSpriteNode('bullet', this.layerBullet, 32 * sc, 32 * sc, new Color(255, 209, 102));
+    anim.autoSize = false;   // 子弹按技能 size 缩放，不跟随帧原生尺寸
     if (frames.length) { anim.setClips({ play: frames }); anim.play('play', true); }
     node.setPosition(x, ARENA_H - y, 0);
     this.bullets.push({

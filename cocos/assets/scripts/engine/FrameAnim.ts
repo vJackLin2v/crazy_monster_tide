@@ -29,14 +29,22 @@ export class FrameAnim extends Component {
     this.sprite.trim = false;
   }
 
+  /** 是否按帧的原生像素自动设定节点尺寸（默认开） */
+  autoSize = true;
+
   setClips(clips: Record<string, SpriteFrame[]>) {
     this.clips = clips;
     const first = clips.idle ? 'idle' : Object.keys(clips)[0];
     if (first) this.play(first);
-    // 防御：Sprite 若把尺寸重置成 0，这里补回来（否则精灵不显示）
     const ut = this.node.getComponent(UITransform);
-    if (ut && (ut.contentSize.width <= 0 || ut.contentSize.height <= 0)) {
-      ut.setContentSize(32, 32);
+    if (!ut) return;
+    // 按帧的原生像素设尺寸：单位 32（大体型 40）、VFX 32/96/128 —— 全部自动对齐，
+    // 不靠调用方手写数字（手写过一次 22×22，结果怪比玩家小一圈）
+    const f = this.frames[0];
+    if (this.autoSize && f && f.rect && f.rect.width > 0) {
+      ut.setContentSize(f.rect.width, f.rect.height);
+    } else if (ut.contentSize.width <= 0 || ut.contentSize.height <= 0) {
+      ut.setContentSize(32, 32);   // 兜底：Sprite 把尺寸重置成 0 时补回来
     }
   }
 
