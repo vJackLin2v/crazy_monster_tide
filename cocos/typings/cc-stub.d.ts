@@ -23,8 +23,9 @@ declare module 'cc' {
     destroy(): void;
   }
   export class Sprite { static SizeMode: any; spriteFrame: any; sizeMode: any; trim: boolean; }
-  export class SpriteFrame { texture: any; }
-  export class Texture2D { static Filter: any; static PixelFormat: any; setFilters(a: any, b: any): void; }
+  export class SpriteFrame { texture: any; rect: any; originalSize: any; packable: boolean; }
+  export class ImageAsset { constructor(src?: any); }
+  export class Texture2D { static Filter: any; static PixelFormat: any; image: any; width: number; height: number; setFilters(a: any, b: any): void; }
   export class UITransform { setContentSize(a: any, b?: any): void; contentSize: any; }
   export class Graphics {
     fillColor: any; strokeColor: any; lineWidth: number;
@@ -32,9 +33,11 @@ declare module 'cc' {
     fill(): void; stroke(): void; clear(): void; moveTo(...a: any[]): void; lineTo(...a: any[]): void;
   }
   export class Label { string: string; fontSize: number; lineHeight: number; color: any; }
-  export class Color { constructor(r?: number, g?: number, b?: number, a?: number); }
+  export class Color { constructor(r?: number, g?: number, b?: number, a?: number); r: number; g: number; b: number; a: number; }
   export class Vec2 { constructor(x?: number, y?: number); x: number; y: number; }
   export class Vec3 { constructor(x?: number, y?: number, z?: number); x: number; y: number; z: number; }
+  export class Rect { constructor(x?: number, y?: number, w?: number, h?: number); x: number; y: number; width: number; height: number; }
+  export class Size { constructor(w?: number, h?: number); width: number; height: number; }
   export class Quat {}
   export class Canvas {}
   export class AudioSource { clip: any; play(): void; }

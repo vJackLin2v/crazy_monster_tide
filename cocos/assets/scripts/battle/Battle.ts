@@ -16,7 +16,7 @@
 import { _decorator, Component, Node, Sprite, UITransform, Color, Graphics, Label } from 'cc';
 import { ZOOM, ARENA_W, ARENA_H, HITSTOP, HITSTOP_SCALE, SHAKE, DEATH_ANIM_TIME,
          TARGET_RANGE, RUN, waveTime, isBossWave } from '../core/Const';
-import { Assets, type UnitClips } from '../engine/Assets';
+import { Assets, makeSolidFrame, type UnitClips } from '../engine/Assets';
 import { FrameAnim } from '../engine/FrameAnim';
 import { Camera2D } from '../engine/Camera2D';
 import { RunState } from '../game/RunState';
@@ -103,6 +103,25 @@ export class Battle extends Component {
     this.createPlayer(charDef.unit);
     await this.startWave(1);
     this.running = true;
+    this.refreshDebug();
+  }
+
+  /** 屏上调试行：素材加载统计（确认资源路径是否正确最直观的方式） */
+  private debugLabel: Label | null = null;
+  private refreshDebug() {
+    const n = new Node('debug'); n.parent = this.node;
+    const l = n.addComponent(Label);
+    l.fontSize = 13; l.lineHeight = 16;
+    l.color = new Color(180, 220, 255);
+    const ut = n.addComponent(UITransform); ut.setContentSize(340, 60);
+    n.setPosition(0, -260, 0);
+    this.debugLabel = l;
+    this.updateDebug();
+  }
+  private updateDebug() {
+    if (!this.debugLabel) return;
+    const s = Assets.stats();
+    this.debugLabel.string = `素材 ${s.loaded} 张 / 失败 ${s.failed}  ·  敌人 ${this.enemies.length}  ·  波 ${this.rs.wave}`;
   }
 
   private buildTree() {
@@ -139,14 +158,19 @@ export class Battle extends Component {
     const cy = this.cam ? this.cam.viewTop : 0;
     return { x: cx + sx / ZOOM, y: cy + sy / ZOOM };
   }
-  private mkSpriteNode(name: string, parent: Node, w = 32, h = 32): { node: Node; anim: FrameAnim } {
+  private mkSpriteNode(name: string, parent: Node, w = 32, h = 32, fallbackColor?: Color): { node: Node; anim: FrameAnim } {
     const node = new Node(name);
     node.parent = parent;
-    const ut = node.addComponent(UITransform);
-    ut.setContentSize(w, h);
     const sp = node.addComponent(Sprite);
     sp.sizeMode = Sprite.SizeMode.CUSTOM;
     sp.trim = false;
+    // 兜底：素材还没加载出来时先显示纯色块 —— 绝不"静默变透明"
+    if (fallbackColor) sp.spriteFrame = makeSolidFrame(fallbackColor.r, fallbackColor.g, fallbackColor.b);
+    // ⚠️ 顺序很重要：contentSize 必须在 addComponent(Sprite) **之后**设。
+    //    Sprite 初始化时会按当时的 spriteFrame（当时可能为空）重置 contentSize，
+    //    先设会被覆盖成 0x0 —— 结果就是"精灵什么都看不见"（Graphics 和 Label 不受影响，所以症状很迷惑）。
+    const ut = node.getComponent(UITransform) ?? node.addComponent(UITransform);
+    ut.setContentSize(w, h);
     const anim = node.addComponent(FrameAnim);
     return { node, anim };
   }
@@ -167,7 +191,7 @@ export class Battle extends Component {
   //  实体
   // ============================================================
   private createPlayer(unit: string) {
-    const { node, anim } = this.mkSpriteNode('player:' + unit, this.layerUnit);
+    const { node, anim } = this.mkSpriteNode('player:' + unit, this.layerUnit, 32, 32, new Color(255, 168, 75));
     anim.setClips(this.playerClips);
     this.playerNode = node;
     this.playerAnim = anim;
@@ -210,7 +234,7 @@ export class Battle extends Component {
     const ws = waveScale(this.rs.wave);
     const hp = Math.round(def.hp * ws.hp * scale);
     const unit = unitOverride ?? def.unit;
-    const { node, anim } = this.mkSpriteNode('enemy:' + unit, this.layerUnit, def.r * 2, def.r * 2);
+    const { node, anim } = this.mkSpriteNode('enemy:' + unit, this.layerUnit, def.r * 2, def.r * 2, new Color(224, 64, 96));
     this.place(node, wx, wy);
     const e: Enemy = {
       node, anim, unit, x: wx, y: wy,
@@ -269,7 +293,7 @@ export class Battle extends Component {
     const key = vfxKey ?? FX.killSmall;
     const frames = Assets.vfxFrames(key);
     const sc = Math.max(1, Math.round(rt.size / 5));
-    const { node, anim } = this.mkSpriteNode('bullet', this.layerBullet, 32 * sc, 32 * sc);
+    const { node, anim } = this.mkSpriteNode('bullet', this.layerBullet, 32 * sc, 32 * sc, new Color(255, 209, 102));
     if (frames.length) { anim.setClips({ play: frames }); anim.play('play', true); }
     node.setPosition(x, ARENA_H - y, 0);
     this.bullets.push({
@@ -377,6 +401,7 @@ export class Battle extends Component {
     this.updateGems(dt);
     this.updateFx(dtRaw);
     this.checkWaveEnd(dt);
+    this.updateDebug();
   }
 
   private updatePlayer(dt: number) {

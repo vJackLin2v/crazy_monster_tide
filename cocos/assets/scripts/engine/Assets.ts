@@ -8,7 +8,7 @@
  *
  * ⚠️ 像素风硬要求：加载后必须把纹理过滤设成 NEAREST，否则会被线性插值糊掉。
  */
-import { resources, SpriteFrame, AudioClip, Texture2D } from 'cc';
+import { resources, SpriteFrame, AudioClip, Texture2D, ImageAsset, Rect, Size } from 'cc';
 import { UNIT_FRAMES, ANIM_FPS } from '../data/UnitFrames';
 import { VFX_FRAMES } from '../data/VfxFrames';
 
@@ -20,13 +20,57 @@ function nearest(sf: SpriteFrame): SpriteFrame {
   return sf;
 }
 
+/**
+ * 载入一张图 -> SpriteFrame
+ *
+ * ⚠️ 这里踩过一个坑（2026-10-13）：本工程的图片被导入成 **texture**（只有 `texture` 子资源），
+ *    而代码找的是 `spriteFrame` 子资源 → 全部加载失败，画面上"除了底色什么都没有"。
+ *    所以这里**两条路都走**：先试 spriteFrame，失败则从 texture 现场构造 SpriteFrame。
+ *    好处：不管工程以后把图片导成哪种类型，都能跑。
+ *    另外：meta 里过滤器是 linear，像素风必须在这里强制成 NEAREST。
+ */
 function loadSF(path: string): Promise<SpriteFrame | null> {
   return new Promise(res => {
     resources.load(path + '/spriteFrame', SpriteFrame, (err, sf) => {
-      if (err || !sf) { res(null); return; }
-      res(nearest(sf));
+      if (sf) { Assets.loadedCount++; res(nearest(sf)); return; }
+      // 回退：从 texture 子资源构造
+      resources.load(path + '/texture', Texture2D, (err2, tex) => {
+        if (err2 || !tex) {
+          if (Assets.firstFailLogged < 5) {
+            Assets.firstFailLogged++;
+            console.error('[Assets] 加载失败：' + path + '（spriteFrame 与 texture 都取不到）',
+              (err && (err as Error).message) || err, (err2 && (err2 as Error).message) || err2);
+          }
+          Assets.failedCount++;
+          res(null); return;
+        }
+        tex.setFilters(Texture2D.Filter.NEAREST, Texture2D.Filter.NEAREST);
+        const frame = new SpriteFrame();
+        frame.texture = tex;
+        frame.rect = new Rect(0, 0, tex.width, tex.height);
+        frame.originalSize = new Size(tex.width, tex.height);
+        frame.packable = false;
+        Assets.loadedCount++;
+        res(frame);
+      });
     });
   });
+}
+
+/** 纯色 SpriteFrame（运行时生成，不依赖任何外部素材）—— 素材加载失败时的兜底，保证"看得见" */
+export function makeSolidFrame(r: number, g: number, b: number, a = 255, size = 8): SpriteFrame {
+  const data = new Uint8Array(size * size * 4);
+  for (let i = 0; i < size * size; i++) {
+    data[i * 4] = r; data[i * 4 + 1] = g; data[i * 4 + 2] = b; data[i * 4 + 3] = a;
+  }
+  const img = new ImageAsset({
+    _data: data, width: size, height: size, format: Texture2D.PixelFormat.RGBA8888, _compressed: false,
+  } as never);
+  const tex = new Texture2D();
+  tex.image = img;
+  const sf = new SpriteFrame();
+  sf.texture = tex;
+  return nearest(sf);
 }
 
 export class Assets {
@@ -35,6 +79,7 @@ export class Assets {
   private static audioCache = new Map<string, AudioClip | null>();
   static loadedCount = 0;
   static failedCount = 0;
+  static firstFailLogged = 0;
 
   /** 载入一个单位的全部动画帧（同一单位会被缓存） */
   static async loadUnit(unit: string): Promise<UnitClips> {
@@ -52,8 +97,6 @@ export class Assets {
         jobs.push(loadSF(`art/units/${unit}/${anim}/${String(i).padStart(2, '0')}`));
       }
       const frames = (await Promise.all(jobs)).filter((f): f is SpriteFrame => !!f);
-      this.loadedCount += frames.length;
-      this.failedCount += jobs.length - frames.length;
       if (frames.length) out[anim] = frames;
     }
     this.unitCache.set(unit, out);
@@ -72,8 +115,6 @@ export class Assets {
       jobs.push(loadSF(`art/vfx/${key}/${String(i).padStart(3, '0')}`));
     }
     const frames = (await Promise.all(jobs)).filter((f): f is SpriteFrame => !!f);
-    this.loadedCount += frames.length;
-    this.failedCount += jobs.length - frames.length;
     this.vfxCache.set(key, frames);
     return frames;
   }

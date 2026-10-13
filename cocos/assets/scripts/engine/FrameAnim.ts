@@ -7,7 +7,7 @@
  *   anim.play('walk');           // 循环
  *   anim.playOnce('death');      // 播一次并停在最后一帧（死亡动画用，KI-001）
  */
-import { _decorator, Component, Sprite, SpriteFrame } from 'cc';
+import { _decorator, Component, Sprite, SpriteFrame, UITransform } from 'cc';
 import { Assets } from './Assets';
 const { ccclass } = _decorator;
 
@@ -33,6 +33,11 @@ export class FrameAnim extends Component {
     this.clips = clips;
     const first = clips.idle ? 'idle' : Object.keys(clips)[0];
     if (first) this.play(first);
+    // 防御：Sprite 若把尺寸重置成 0，这里补回来（否则精灵不显示）
+    const ut = this.node.getComponent(UITransform);
+    if (ut && (ut.contentSize.width <= 0 || ut.contentSize.height <= 0)) {
+      ut.setContentSize(32, 32);
+    }
   }
 
   get current(): string { return this.cur; }

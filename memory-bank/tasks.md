@@ -33,6 +33,15 @@
 - **美术走 resources/**：Cocos 只有 `assets/resources/` 能在运行时 `resources.load`。
   9.3MB 会超微信主包 4MB 限制 → **构建阶段必须改成 Asset Bundle / 分包**（已记为待办）
 
+### 实机调试（2026-10-13）
+
+用户首次预览：**无报错，但只有蓝色底 + 跳动数字，单位全不可见** → 查出 **KI-002**：
+
+- **根因**：图片被导成 `texture`（无 `spriteFrame` 子资源），代码在找 `spriteFrame` → 全部静默失败
+- **顺带查出第二个同源 bug**：`contentSize` 在 `addComponent(Sprite)` **之前**设置 → 被重置为 0×0
+- **修法**：双路加载（spriteFrame → texture 现场构造）+ 强制 NEAREST + 失败必须报错 + 纯色兜底 + 尺寸防御
+- **新增**：屏幕底部调试行 `素材 N 张 / 失败 M · 敌人 X · 波 Y`（"少东西没报错"时第一眼就能定位）
+
 ### 验证（不依赖编辑器）
 
 ```
