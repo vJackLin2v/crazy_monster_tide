@@ -95,11 +95,29 @@ export class Battle extends Component {
   /** 输入方向（-1..1），由 Joystick 或键盘写入 */
   inputX = 0; inputY = 0;
 
+  /** 暂停（开商店/升级弹窗时置 true，战斗逻辑整个停住） */
+  paused = false;
+  /** 当前是否 BOSS 波 */
+  bossAlive: Enemy | null = null;
+
+  /** 流程钩子：Battle 只负责"打"，什么时候弹什么屏由 GameRoot 决定 */
+  hooks: {
+    onWaveCleared?: () => void;
+    onLevelUp?: (cards: import('../game/RunState').Reward[]) => void;
+    onDead?: () => void;
+    onClear?: () => void;
+  } = {};
+
   // ---------- 启动 ----------
   async start() {
     this.buildTree();
-    const charDef = CHARS[0];
-    this.rs = new RunState(charDef.id, 20261012);
+    this.refreshDebug();
+  }
+
+  /** 开一局（角色选择屏点"开始闯关"时调用） */
+  async startRun(charId: string, seed: number) {
+    const charDef = CHARS.find(c => c.id === charId) ?? CHARS[0];
+    this.rs = new RunState(charDef.id, seed);
     // 预载：玩家单位 + 初始技能的投射物/命中特效
     this.playerClips = await Assets.loadUnit(charDef.unit);
     const vfxKeys = new Set<string>([FX.killSmall, FX.killBig, FX.spawnWarn, FX.crit]);
@@ -109,7 +127,7 @@ export class Battle extends Component {
     this.createPlayer(charDef.unit);
     await this.startWave(1);
     this.running = true;
-    this.refreshDebug();
+    this.paused = false;
   }
 
   /** 屏上调试行：素材加载统计（确认资源路径是否正确最直观的方式） */
@@ -269,6 +287,7 @@ export class Battle extends Component {
       this.spawnEnemy('boss', this.px + 150, this.py - 110,
         1 + 0.35 * Math.floor(n / RUN.bossEvery - 1), bossUnitFor(n));
       this.bossRef = this.enemies[this.enemies.length - 1] ?? null;
+      this.bossAlive = this.bossRef;
       this.cam.addShake(SHAKE.boss);
       this.addVfx(FX.killBig, this.px + 150, this.py - 110, 0.9, 2);
     }
@@ -435,7 +454,7 @@ export class Battle extends Component {
   //  主循环
   // ============================================================
   update(dtRaw: number) {
-    if (!this.running || !this.rs) return;
+    if (!this.running || !this.rs || this.paused) return;
     let dt = dtRaw;
     if (this.hitstop > 0) { dt = dtRaw * HITSTOP_SCALE; this.hitstop = Math.max(0, this.hitstop - dtRaw); }
 
@@ -546,7 +565,7 @@ export class Battle extends Component {
         this.inv = 0.55; this.dmgFlash = 1;
         e.atkT = 0.34;
         this.cam.addShake(SHAKE.hurt);
-        if (this.rs.stats.hp <= 0) { this.running = false; console.log('[Battle] 玩家阵亡'); }
+        if (this.rs.stats.hp <= 0 && this.running) { this.running = false; this.paused = true; console.log('[Battle] 玩家阵亡'); this.hooks.onDead?.(); }
       }
     }
   }
@@ -672,7 +691,7 @@ export class Battle extends Component {
     this.enemies = this.enemies.filter(e => {
       if (!e.dead || e.deathT < DEATH_ANIM_TIME) return true;
       if (e.node && e.node.isValid) e.node.destroy();
-      if (e === this.bossRef) { this.bossRef = null; this.bossDefeated = true; }
+      if (e === this.bossRef) { this.bossRef = null; this.bossAlive = null; this.bossDefeated = true; }
       return false;
     });
   }
@@ -686,25 +705,49 @@ export class Battle extends Component {
     for (const e of this.enemies) { if (!e.dead) this.killEnemy(e); }
     const gain = this.rs.waveClearGold();
     console.log(`[Battle] 第 ${this.rs.wave} 波通过  +${gain} 金币  总计 ${this.rs.gold}  Lv${this.rs.lv}`);
-    this.advanceWave();
+    this.paused = true;
+    this.hooks.onWaveCleared?.();
   }
 
-  private advanceWave() {
+  /** 由 GameRoot 在商店点"下一波"时调用 */
+  advanceWave() {
     const next = this.rs.wave + 1;
-    if (next > RUN.waves && !this.rs.endless) { this.running = false; console.log('[Battle] 通关'); return; }
+    if (next > RUN.waves && !this.rs.endless) { this.running = false; this.hooks.onClear?.(); return; }
     console.log('[Battle] 进入第 ' + next + ' 波');
+    this.paused = false;
     void this.startWave(next);
   }
 
-  private onLevelUp(ups: number) {
-    // 最简实现：自动拿第一张卡。3 选 1 的 UI 在下一里程碑按冻结规格做。
-    for (let i = 0; i < ups; i++) {
-      const cards = this.rs.rollRewards();
-      if (!cards.length) break;
-      const pick = cards[0];
-      if (pick.kind === 'module') this.rs.modsBag.push(pick.id);
-      else this.rs.applyReward(pick);
-      console.log('[Battle] 升级 Lv' + this.rs.lv + ' 自动选：' + pick.kind + ':' + pick.id);
+  private onLevelUp(_ups: number) {
+    // 交给 UI：暂停战斗 + 弹 3 选 1；选完由 GameRoot 调 resumeFromModal()
+    this.pendingUps = _ups;
+    this.paused = true;
+    this.hooks.onLevelUp?.(this.rs.rollRewards());
+  }
+
+  private pendingUps = 0;
+  /** UI 选完卡后调用；若还有未消化的升级，继续弹 */
+  resumeFromModal() {
+    this.pendingUps--;
+    if (this.pendingUps > 0) {
+      this.hooks.onLevelUp?.(this.rs.rollRewards());
+      return;
     }
+    this.pendingUps = 0;
+    this.paused = false;
+  }
+  /** UI 直接取当前待选卡（重开弹窗时用） */
+  peekCards() { return this.rs.rollRewards(); }
+
+  // ---------- 给 HUD 的查询接口 ----------
+  get waveLeftSec(): number { return Math.max(0, this.waveLeft); }
+  /** 每个技能槽的冷却进度 0~1（1 = 刚放完，0 = 就绪） */
+  get skillCdPct(): number[] {
+    return [0, 1, 2, 3].map(i => {
+      const sk = this.rs.skills[i];
+      if (!sk) return 0;
+      const cd = calcSkill(sk, this.rs.stats).cd;
+      return cd > 0 ? Math.max(0, Math.min(1, this.skillT[i] / cd)) : 0;
+    });
   }
 }

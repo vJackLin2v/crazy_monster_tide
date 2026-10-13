@@ -18,8 +18,10 @@ declare module 'cc' {
     constructor(name?: string);
     name: string; parent: any; children: any[]; active: boolean; angle: number;
     position: any; scale: any; layer: number; isValid: boolean;
+    static EventType: any;
     setPosition(...a: any[]): void; setScale(...a: any[]): void;
-    addComponent(t: any): any; getComponent(t: any): any;
+    on(t: any, cb: any, target?: any): void; off(t: any, cb: any, target?: any): void;
+    addComponent(t: any): any; getComponent(t: any): any; getChildByName(n: string): any;
     destroy(): void; setSiblingIndex(i: number): void; getSiblingIndex(): number;
   }
   export class Sprite { color: any; static SizeMode: any; spriteFrame: any; sizeMode: any; trim: boolean; }
@@ -29,10 +31,12 @@ declare module 'cc' {
   export class UITransform { setContentSize(a: any, b?: any): void; contentSize: any; }
   export class Graphics {
     fillColor: any; strokeColor: any; lineWidth: number;
-    rect(...a: any[]): void; circle(...a: any[]): void; ellipse(...a: any[]): void;
+    rect(...a: any[]): void; circle(...a: any[]): void; ellipse(...a: any[]): void; roundRect(...a: any[]): void;
     fill(): void; stroke(): void; clear(): void; moveTo(...a: any[]): void; lineTo(...a: any[]): void;
   }
-  export class Label { string: string; fontSize: number; lineHeight: number; color: any; }
+  export class Label { static HorizontalAlign: any; static VerticalAlign: any; static Overflow: any;
+    string: string; fontSize: number; lineHeight: number; color: any; isBold: boolean;
+    horizontalAlign: any; verticalAlign: any; overflow: any; enableWrapText: boolean; }
   export class Color { constructor(r?: number, g?: number, b?: number, a?: number); r: number; g: number; b: number; a: number; }
   export class Vec2 { constructor(x?: number, y?: number); x: number; y: number; }
   export class Vec3 { constructor(x?: number, y?: number, z?: number); x: number; y: number; z: number; }

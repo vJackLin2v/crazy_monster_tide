@@ -419,6 +419,30 @@ this.node.setScale(s, s, 1);                            // World 容器
 
 **"复刻"= 让比例关系在任何条件下都成立，而不是在某一台设备上凑出一个看起来差不多的数字。**
 
+## D-32 UI 全部用 Graphics 画：不引入任何 UI 素材
+
+- **背景**：D-28 定死「UI 只用第一版（Möbelmon 扁平风），不用 ui/kit 素材」。
+- **实现选择**：11 屏 UI **全部用 `Graphics` 程序绘制**（圆角/描边/硬投影/进度条），
+  **一个 UI 素材都不引**。理由：
+  1. 与 D-28 天然一致（没有"又用错素材"的可能）
+  2. 规格里的"2px 硬描边 + `0 Npx 0` 硬投影"本来就是 Graphics 最擅长的事
+     （**硬投影 = 再画一个偏移的深色圆角块，不模糊** —— 这正是原型 CSS 的做法）
+  3. 不依赖导入器行为（本项目图片被导成 texture 而不是 sprite-frame，见 KI-002）
+- **分层**：
+  | 文件 | 职责 |
+  |---|---|
+  | `ui/Tokens.ts` | 设计令牌，逐项抄自冻结规格（**改这里等于改规格**） |
+  | `ui/UIKit.ts` | 绘制原语：panel / bar / text / button / mask / onTap |
+  | `ui/Hud.ts` | 战斗 HUD（HP/等级/经验条/金币波次/BOSS条/技能栏） |
+  | `ui/MenuScreens.ts` | 主界面 / 玩法说明 / 角色选择(3x2) / 结算 |
+  | `ui/Modals.ts` | 升级3选1 / 商店 / 二次确认 / Build 抽屉 |
+  | `ui/ManageScreens.ts` | 模块安装（3 槽位）/ 技能替换 |
+  | `GameRoot.ts` | 流程控制：什么时候弹什么屏 |
+
+- **Battle 与 UI 解耦**：Battle 只暴露 `hooks{onWaveCleared,onLevelUp,onDead,onClear}`
+  和几个查询接口（`waveLeftSec` / `skillCdPct` / `bossAlive`），
+  **再由 GameRoot 决定弹什么屏**。这样以后换流程不用动战斗代码。
+
 ## D-07 里程碑制
 
 - **决策**：一次只做一个里程碑，做完停下等用户确认；禁止连续推进多个里程碑。

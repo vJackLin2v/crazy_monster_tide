@@ -2,7 +2,43 @@
 
 ## 当前阶段
 
-**M12 已完成：Cocos 渲染层 + 战斗系统**（战斗可跑）。**下一步待用户确认。**
+**M13 已完成：11 屏 UI + 流程打通**（按冻结规格实现）。**下一步待用户确认。**
+
+---
+
+## M13 交付物：11 屏 UI（按 `ui-spec-approved.md` v1.0 冻结规格）
+
+| # | 屏幕 | 状态 |
+|---|---|---|
+| 1 | 主界面 `scr-menu` | 完成 |
+| 2 | 玩法说明 `scr-howto` | 完成 |
+| 3 | 角色选择 `scr-charselect`（**3x2 网格换行**） | 完成 |
+| 4 | 战斗 HUD `scr-battle` | 完成 |
+| 5 | 升级 3 选 1 `scr-levelup` | 完成 |
+| 6 | 模块安装 `scr-install`（每技能 3 槽位） | 完成 |
+| 7 | 技能替换 `scr-replace` | 完成 |
+| 8 | 二次确认 `scr-confirm` | 完成 |
+| 9 | Build 面板 `scr-build`（底部抽屉+4页签） | 完成 |
+| 10 | 波间商店 `scr-shop`（4 固定货位+锁定） | 完成 |
+| 11 | 结算 `scr-result` | 完成 |
+
+### 关键决策：全部用 Graphics 画（D-32）
+
+一个 UI 素材都不引 —— 规格的"2px 硬描边 + `0 Npx 0` 硬投影"就是 Graphics 最擅长的
+（硬投影 = 再画一个偏移的深色圆角块，不模糊，正是原型 CSS 的做法）。
+
+### 流程打通（这是重点，否则屏幕只是画出来没人用）
+
+Battle 只暴露 `hooks{onWaveCleared,onLevelUp,onDead,onClear}` + 查询接口，
+由 `GameRoot` 决定弹什么屏。**战斗与 UI 解耦**，以后改流程不用动战斗代码。
+
+### 验证
+
+```
+tsc -p tsconfig.check.json -> 0 错误（纯逻辑层）
+tsc -p tsconfig.cc.json    -> 0 错误（画面 + UI 层）
+tsx tests/run.ts           -> 48 PASS / 0 FAIL
+```
 
 ---
 
