@@ -93,3 +93,33 @@
 | `dsh-tool-see-image` 插件 | ⚪ **已装未启用** | `H:/dsh-plugins/dsh-tool-see-image`，走智谱 GLM-4V-Flash（免费），**需要 ZHIPU_API_KEY 且编进 profile** |
 
 **建议**：把 `dsh-tool-see-image` 启用（免费且秒级返回），就不用每次烧 GPU 跑 3B 模型。
+
+---
+
+## KI-005 【真凶】运行时设计分辨率是 1280x720，不是 360x640 → 单位只占屏高 3.6%
+
+| 项 | 内容 |
+|---|---|
+| **发现方式** | 2026-10-13 用 **Playwright 连上 Cocos 预览服务（127.0.0.1:7456）** 直接查运行时状态 |
+| **实测数据** | `cc.view.getDesignResolutionSize()` = **[1280, 720]**（！）<br>`cc.view.getVisibleSize()` = **[1280, 2702]**<br>`World.scale` = [3,3]（旧代码的写死值） |
+| **现象** | 单位 = 32 世界单位 × 3 = 96 设计px，而可视高度是 **2702 设计px** → **占屏高 3.6%**（原型是 10%）—— 小了近 3 倍 |
+| **根因** | 我写在 `settings/v2/packages/project.json` 的 `designResolution: 360x640` **没有被编辑器采用**；预览的 `settings.js` 里生成的是 `1280x720` |
+| **第二个问题** | 预览跑的是**旧编译产物**（worldScale=3 是 D-30 那版代码），编辑器没有重编译我之后的改动 |
+| **修法** | ① **在代码里强制设定**：`GameRoot.onLoad()` 里 `view.setDesignResolutionSize(360, 640, ResolutionPolicy.FIXED_WIDTH)` —— 不再依赖编辑器设置；<br>② 相机自适应 cover（D-31）**本身就能治这个病**：它是从 `getVisibleSize()` 反推的，设计分辨率错了也照样把单位算成屏高 10% |
+| **状态** | 代码已改；**需要编辑器重编译**（切到编辑器窗口 / 预览点刷新）才能生效 |
+
+### 新增的验证能力（重要）
+
+**可以直接连 Cocos 预览查状态 + 截图了**：
+
+```js
+// Playwright 连 127.0.0.1:7456（Cocos 预览服务）
+cc.view.getDesignResolutionSize()   // 运行时真实设计分辨率
+cc.view.getVisibleSize()            // 实际可视设计尺寸
+world.scale / world.position        // 相机是否按预期工作
+unit.children.length                // 场上单位数
++ page.screenshot()                 // 真实画面
+```
+
+**闭环**：Playwright 截图 → 本地 VLM 读图 → 我据此判断"看起来对不对"。
+以后不用再靠猜。
