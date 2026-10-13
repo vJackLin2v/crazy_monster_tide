@@ -33,10 +33,11 @@ export function buildLevelUp(parent: Node, lv: number, cards: CardData[], onPick
     const x = -total / 2 + CW / 2 + i * (CW + GAP);
     const col = c.color ?? KIND_COLOR[c.kind] ?? COL.cream;
     const n = panel(root, x, 40, CW, CHe, { bg: COL.bg2, line: col, radius: R.m });
-    text(n, 0, CHe / 2 - 20, KIND_LABEL[c.kind] ?? c.kind, { size: FS.xs, color: col, width: CW - 10 });
-    text(n, 0, CHe / 2 - 44, c.title, { size: FS.m, color: COL.cream, bold: true, width: CW - 10 });
-    text(n, 0, CHe / 2 - 74, c.sub, { size: FS.xs, color: COL.mint, width: CW - 10 });
-    text(n, 0, -30, c.desc, { size: FS.xs, color: COL.line2, width: CW - 14 });
+    // 四行内容在卡片里**纵向均匀分布**（原来挤在上半，下半空一大块）
+    text(n, 0, 62, KIND_LABEL[c.kind] ?? c.kind, { size: FS.xs, color: col, width: CW - 10 });
+    text(n, 0, 30, c.title, { size: FS.m, color: COL.cream, bold: true, width: CW - 10 });
+    text(n, 0, 2, c.sub, { size: FS.xs, color: COL.mint, width: CW - 10 });
+    text(n, 0, -38, c.desc, { size: FS.xs, color: COL.line2, width: CW - 14 });
     onTap(n, () => onPick(i));
   });
 
