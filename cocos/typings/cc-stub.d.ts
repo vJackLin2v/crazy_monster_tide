@@ -20,9 +20,9 @@ declare module 'cc' {
     position: any; scale: any; layer: number; isValid: boolean;
     setPosition(...a: any[]): void; setScale(...a: any[]): void;
     addComponent(t: any): any; getComponent(t: any): any;
-    destroy(): void;
+    destroy(): void; setSiblingIndex(i: number): void; getSiblingIndex(): number;
   }
-  export class Sprite { static SizeMode: any; spriteFrame: any; sizeMode: any; trim: boolean; }
+  export class Sprite { color: any; static SizeMode: any; spriteFrame: any; sizeMode: any; trim: boolean; }
   export class SpriteFrame { texture: any; rect: any; originalSize: any; packable: boolean; }
   export class ImageAsset { constructor(src?: any); }
   export class Texture2D { static Filter: any; static PixelFormat: any; image: any; width: number; height: number; setFilters(a: any, b: any): void; }

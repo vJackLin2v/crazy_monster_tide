@@ -141,3 +141,41 @@ export class Assets {
 
   static stats() { return { loaded: this.loadedCount, failed: this.failedCount }; }
 }
+
+/**
+ * 程序生成一张椭圆软阴影贴图（零素材）
+ *
+ * 为什么不用素材：阴影是纯图形，用 16x16 的 alpha 渐变就够了，
+ * 比给每个单位挂一个 Graphics 组件便宜得多（那是每帧都要提交渲染的）。
+ * 全场景共用这一张，SpriteFrame 只生成一次。
+ */
+let _shadow: SpriteFrame | null = null;
+export function shadowFrame(): SpriteFrame {
+  if (_shadow) return _shadow;
+  const N = 16;
+  const data = new Uint8Array(N * N * 4);
+  const cx = (N - 1) / 2, cy = (N - 1) / 2, r = N / 2 - 0.5;
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      const dx = (x - cx) / r, dy = (y - cy) / r;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      // 中心最实，边缘平滑淡出
+      const a = d >= 1 ? 0 : Math.round(150 * Math.pow(1 - d, 1.6));
+      const i = (y * N + x) * 4;
+      data[i] = 0; data[i + 1] = 0; data[i + 2] = 0; data[i + 3] = a;
+    }
+  }
+  const img = new ImageAsset({
+    _data: data, width: N, height: N, format: Texture2D.PixelFormat.RGBA8888, _compressed: false,
+  } as never);
+  const tex = new Texture2D();
+  tex.image = img;
+  tex.setFilters(Texture2D.Filter.LINEAR, Texture2D.Filter.LINEAR);   // 阴影要柔，用 LINEAR
+  const sf = new SpriteFrame();
+  sf.texture = tex;
+  sf.rect = new Rect(0, 0, N, N);
+  sf.originalSize = new Size(N, N);
+  sf.packable = false;
+  _shadow = sf;
+  return sf;
+}

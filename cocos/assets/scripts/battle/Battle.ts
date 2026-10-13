@@ -16,7 +16,7 @@
 import { _decorator, Component, Node, Sprite, UITransform, Color, Graphics, Label, view } from 'cc';
 import { ZOOM, ARENA_W, ARENA_H, SCREEN_W, SCREEN_H, HITSTOP, HITSTOP_SCALE, SHAKE, DEATH_ANIM_TIME,
          TARGET_RANGE, RUN, waveTime, isBossWave } from '../core/Const';
-import { Assets, makeSolidFrame, type UnitClips } from '../engine/Assets';
+import { Assets, makeSolidFrame, shadowFrame, type UnitClips } from '../engine/Assets';
 import { FrameAnim } from '../engine/FrameAnim';
 import { Camera2D } from '../engine/Camera2D';
 import { RunState } from '../game/RunState';
@@ -142,11 +142,22 @@ export class Battle extends Component {
     const mk = (n: string) => { const x = new Node(n); x.parent = this.world; return x; };
 
     // 竞技场底色：Graphics 画纯色，不引入任何素材
+    // 地面：棋盘格（原型就是格子底，比纯色丰富很多。用 Graphics 画，零素材）
     const ground = new Node('Ground');
     ground.parent = this.world;
     const g = ground.addComponent(Graphics);
     g.fillColor = new Color(23, 35, 61, 255);
-    g.rect(0, -ARENA_H, ARENA_W, ARENA_H);      // 世界 y 向下 → 节点本地 y 向上
+    g.rect(0, -ARENA_H, ARENA_W, ARENA_H);
+    g.fill();
+    const CELL = 32;
+    g.fillColor = new Color(29, 43, 74, 255);
+    for (let yy = 0; yy * CELL < ARENA_H; yy++) {
+      for (let xx = 0; xx * CELL < ARENA_W; xx++) {
+        if ((xx + yy) % 2) continue;
+        // 世界 y 向下 → 节点本地 y 向上：格子的底部 = -(yy+1)*CELL
+        g.rect(xx * CELL, -(yy + 1) * CELL, CELL - 1, CELL - 1);
+      }
+    }
     g.fill();
     ground.setPosition(0, ARENA_H, 0);
 
@@ -168,7 +179,7 @@ export class Battle extends Component {
     const cy = this.cam ? this.cam.viewTop : 0;
     return { x: cx + sx / ZOOM, y: cy + sy / ZOOM };
   }
-  private mkSpriteNode(name: string, parent: Node, w = 32, h = 32, fallbackColor?: Color): { node: Node; anim: FrameAnim } {
+  private mkSpriteNode(name: string, parent: Node, w = 32, h = 32, fallbackColor?: Color, withShadow = false): { node: Node; anim: FrameAnim } {
     const node = new Node(name);
     node.parent = parent;
     const sp = node.addComponent(Sprite);
@@ -182,6 +193,19 @@ export class Battle extends Component {
     const ut = node.getComponent(UITransform) ?? node.addComponent(UITransform);
     ut.setContentSize(w, h);
     const anim = node.addComponent(FrameAnim);
+    if (withShadow) {
+      // 脚下软阴影：全场景共用一张运行时生成的椭圆贴图（零素材）
+      const sh = new Node('shadow');
+      sh.parent = node;
+      const sut = sh.addComponent(UITransform);
+      sut.setContentSize(w * 1.05, w * 0.42);
+      const ss = sh.addComponent(Sprite);
+      ss.spriteFrame = shadowFrame();
+      ss.sizeMode = Sprite.SizeMode.CUSTOM;
+      ss.trim = false;
+      sh.setPosition(0, -h / 2 + 2, 0);
+      sh.setSiblingIndex(0);          // 垫在精灵下面
+    }
     return { node, anim };
   }
   private addVfx(key: string, x: number, y: number, life: number, scale = 1): Fx | null {
@@ -201,7 +225,7 @@ export class Battle extends Component {
   //  实体
   // ============================================================
   private createPlayer(unit: string) {
-    const { node, anim } = this.mkSpriteNode('player:' + unit, this.layerUnit, 32, 32, new Color(255, 168, 75));
+    const { node, anim } = this.mkSpriteNode('player:' + unit, this.layerUnit, 32, 32, new Color(255, 168, 75), true);
     anim.setClips(this.playerClips);
     this.playerNode = node;
     this.playerAnim = anim;
@@ -233,7 +257,7 @@ export class Battle extends Component {
     if (!isBossWave(n)) {
       const pool0 = this.rs.spawnPool;
       if (pool0.length) {
-        const open = Math.min(4, 2 + Math.floor(n / 5));
+        const open = Math.min(9, 3 + Math.floor(n / 2));
         for (let i = 0; i < open; i++) {
           const p = this.spawnPt();
           this.spawnEnemy(this.rs.rng.pick(pool0), p.x, p.y);
@@ -257,7 +281,7 @@ export class Battle extends Component {
     const hp = Math.round(def.hp * ws.hp * scale);
     const unit = unitOverride ?? def.unit;
     // 尺寸交给 FrameAnim.autoSize（按帧原生像素），这里只给兜底色块尺寸
-    const { node, anim } = this.mkSpriteNode('enemy:' + unit, this.layerUnit, 32, 32, new Color(224, 64, 96));
+    const { node, anim } = this.mkSpriteNode('enemy:' + unit, this.layerUnit, 32, 32, new Color(224, 64, 96), true);
     this.place(node, wx, wy);
     const e: Enemy = {
       node, anim, unit, x: wx, y: wy,
@@ -508,7 +532,12 @@ export class Battle extends Component {
       this.place(e.node, e.x, e.y);
       const s = e.node.scale;
       e.node.setScale(e.facing < 0 ? -Math.abs(s.x) : Math.abs(s.x), s.y, 1);
-      if (e.flash > 0 && e.node) e.node.setScale(e.node.scale);
+      // 受击闪白：直接改 Sprite.color（乘算），比换贴图便宜
+      const sp = e.node.getComponent(Sprite);
+      if (sp) {
+        if (e.flash > 0) sp.color = new Color(255, 150, 150, 255);
+        else if (sp.color.r !== 255 || sp.color.g !== 255) sp.color = new Color(255, 255, 255, 255);
+      }
 
       const d = Math.hypot(this.px - e.x, this.py - e.y);
       if (d < e.r + 12 && this.inv <= 0) {

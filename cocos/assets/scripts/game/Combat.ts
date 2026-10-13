@@ -20,8 +20,15 @@ export interface SpawnPlan { batch: number; interval: number; }
  */
 export function spawnPlan(wave: number): SpawnPlan {
   return {
-    interval: Math.max(0.40, 1.15 - wave * 0.045),
-    batch: Math.min(3, 1 + Math.floor(wave / 6)),
+    // 2026-10-13 用户要求"把密度调起来"（视觉模型反馈"怪物不多"）。
+    // 关键前提变了：修正缩放后可视世界只有约 157x278，屏幕"能装下"的怪比以前少很多，
+    // 所以同样的间隔会显得很空。这里按"屏幕上的怪"来标定，而不是按抽象数字。
+    // 按"屏幕上的怪"标定（可视世界约 157x278，能装下的怪比修正缩放前少很多）。
+    // ⚠️ 早期不能太猛：第 1 波玩家只有 1 个技能，DPS ≈ 0.6 只/秒，
+    //    刷得比杀得快会直接崩盘。所以**低位靠开场铺怪制造"扑面感"，
+    //    速率随玩家技能数一起涨**。
+    interval: Math.max(0.24, 0.95 - wave * 0.042),
+    batch: Math.min(4, 1 + Math.floor(wave / 4)),
   };
 }
 
