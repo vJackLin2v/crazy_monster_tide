@@ -120,7 +120,10 @@ export class Battle extends Component {
     this.rs = new RunState(charDef.id, seed);
     // 预载：玩家单位 + 初始技能的投射物/命中特效
     this.playerClips = await Assets.loadUnit(charDef.unit);
-    const vfxKeys = new Set<string>([FX.killSmall, FX.killBig, FX.spawnWarn, FX.crit]);
+    // NOTE: every layered VFX must be preloaded -- addVfx() looks frames up SYNCHRONOUSLY,
+    //       so an unloaded key silently renders nothing (looks like "the layer is broken").
+    const vfxKeys = new Set<string>([FX.killSmall, FX.killBig, FX.spawnWarn, FX.crit,
+      FX.hitSpark, FX.critFlash, FX.killSpark, FX.killDust, FX.killRing]);
     for (const k of Object.keys(SKILL_ART)) { const a = SKILL_ART[k]; if (a.proj) vfxKeys.add(a.proj); if (a.hit) vfxKeys.add(a.hit); }
     for (const k of vfxKeys) await Assets.loadVfx(k);
 
@@ -529,8 +532,18 @@ export class Battle extends Component {
     e.hp -= dmg;
     e.flash = 0.12;
     this.addDamageText(e.x, e.y - 10, dmg, crit);
-    if (crit) this.addVfx(FX.crit, e.x, e.y, 0.5, 1);
+    // ── 特效分层（参考作品的手法：闪光 + 粒子 + 碎片）──────────
+    //   原来每次命中只有 1 层，看着"单薄"。现在：
+    //   L1 技能专属命中特效（火/冰/雷…）
+    //   L2 通用火星（更小更快，每次都有，增加"打击感"）
+    //   L3 暴击时额外闪光
+    //   每层给不同的尺寸/寿命/微偏移，避免完全重叠显得假
     if (hitVfx) this.addVfx(hitVfx, e.x, e.y, 0.45, 1);
+    this.addVfx(FX.hitSpark, e.x + this.rs.rng.range(-4, 4), e.y + this.rs.rng.range(-4, 4), 0.24, 0.7);
+    if (crit) {
+      this.addVfx(FX.crit, e.x, e.y, 0.5, 1);
+      this.addVfx(FX.critFlash, e.x, e.y, 0.30, 1.5);
+    }
     if (rt.burn) e.hp -= Math.max(1, Math.round(dmg * 0.12));      // 灼烧：简化为附加一次伤害
     if (rt.slow) e.slow = 1.2;
     if (rt.vamp) this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + dmg * 0.06);
@@ -554,7 +567,12 @@ export class Battle extends Component {
     this.rs.addKill(e.exp, e.gold);
     this.hitstop = Math.max(this.hitstop, e.boss ? HITSTOP.boss : (e.elite ? HITSTOP.elite : HITSTOP.normal));
     this.cam.addShake(e.boss ? SHAKE.boss : (e.elite ? SHAKE.elite : SHAKE.kill));
-    this.addVfx(e.boss || e.elite ? FX.killBig : FX.killSmall, e.x, e.y, e.boss ? 0.9 : 0.5, e.boss || e.elite ? 2 : 1);
+    // 击杀分层：爆发 + 碎片 + 尘土（+ 精英/BOSS 额外冲击波）
+    const big = e.boss || e.elite;
+    this.addVfx(big ? FX.killBig : FX.killSmall, e.x, e.y, e.boss ? 0.9 : 0.5, big ? 2 : 1);
+    this.addVfx(FX.killSpark, e.x, e.y, 0.42, big ? 1.8 : 1.1);
+    this.addVfx(FX.killDust, e.x, e.y + 4, 0.55, big ? 2.2 : 1.2);
+    if (big) this.addVfx(FX.killRing, e.x, e.y, 0.55, e.boss ? 3.2 : 2.2);
     if (rt && rt.harvest) this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + 1);
     const g = new Node('gem'); g.parent = this.layerUnit;
     const ut = g.addComponent(UITransform); ut.setContentSize(8, 8);

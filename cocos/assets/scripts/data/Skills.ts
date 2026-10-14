@@ -52,6 +52,12 @@ export const FX = {
   summon:    'summon/summon_fx/portal',
   orbit:     'defense/orbit/shock-aura',
   heal:      'support/heal/heal',
+  // 特效分层的通用层（见 Battle.hitEnemy / killEnemy）
+  hitSpark:  'core/spark/hit-spark',
+  critFlash: 'core/flash/storm-flash',
+  killSpark: 'core/spark/spark-burst',
+  killDust:  'core/dust/dust-cloud',
+  killRing:  'core/ring/shockwave',
 } as const;
 
 export const SKILL_IDS = Object.keys(SKILLS);
