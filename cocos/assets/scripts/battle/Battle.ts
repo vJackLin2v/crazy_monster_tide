@@ -220,14 +220,14 @@ export class Battle extends Component {
     for (let yy = 0; yy < NY; yy++) {
       for (let xx = 0; xx < NX; xx++) {
         const lx = xx * CELL, ly = -(yy + 1) * CELL;
-        const n = 4 + Math.floor(hash(xx, yy) * 4);
+        const n = 7 + Math.floor(hash(xx, yy) * 5);
         for (let k = 0; k < n; k++) {
           const r1 = hash(xx * 31 + k, yy * 17 + k);
           const r2 = hash(xx * 13 + k * 7, yy * 23 + k * 3);
           const r3 = hash(xx + k * 101, yy + k * 57);
-          const px = lx + 1 + r1 * (CELL - 6);
-          const py = ly + 1 + r2 * (CELL - 6);
-          const s = 2 + Math.floor(r3 * 4);
+          const px = lx + 1 + r1 * (CELL - 8);
+          const py = ly + 1 + r2 * (CELL - 8);
+          const s = 3 + Math.floor(r3 * 5);
           g.fillColor = r3 < 0.14 ? CRACK : (r3 < 0.60 ? GRAVEL : (r3 < 0.86 ? GRAVEL2 : GRASS));
           g.rect(Math.round(px), Math.round(py), s, s);
         }
@@ -240,11 +240,11 @@ export class Battle extends Component {
     const BUSH = new Color(0x2E, 0x52, 0x44, 255);
     for (let yy = 0; yy < NY; yy += 2) {
       for (let xx = 0; xx < NX; xx += 2) {
-        if (hash(xx * 3 + 11, yy * 5 + 7) > 0.24) continue;   // 约 24% 的 2x2 块
+        if (hash(xx * 3 + 11, yy * 5 + 7) > 0.40) continue;   // 约 40% 的 2x2 块
         const lx = xx * CELL, ly = -(yy + 1) * CELL;
         const r1 = hash(xx * 19, yy * 29), r2 = hash(xx * 41 + 3, yy * 13 + 5), r3 = hash(xx + yy * 97, yy + 31);
-        const w = 8 + Math.floor(r1 * 11);
-        const h = 6 + Math.floor(r2 * 8);
+        const w = 10 + Math.floor(r1 * 14);
+        const h = 8 + Math.floor(r2 * 10);
         const px = lx + 2 + r1 * (CELL * 2 - w - 4);
         const py = ly + 2 + r2 * (CELL * 2 - h - 4) - CELL;
         // 先画暗底（阴影），再画亮面 —— 有立体感
@@ -293,22 +293,52 @@ export class Battle extends Component {
     const cy = this.cam ? this.cam.viewTop : 0;
     return { x: cx + sx / ZOOM, y: cy + sy / ZOOM };
   }
-  private mkSpriteNode(name: string, parent: Node, w = 32, h = 32, fallbackColor?: Color, withShadow = false): { node: Node; anim: FrameAnim } {
+  /**
+   * 建一个精灵节点。
+   *
+   * ⚠️ 单位的结构是「容器 + 三层子节点」：
+   *      node（容器，Battle 定位/翻转它）
+   *        ├─ outline  黑色剪影（放大 1.14，垫在最下面）→ 单位才从地面细节里跳出来
+   *        ├─ shadow   脚下软阴影
+   *        └─ body     真正的动画精灵（FrameAnim 挂这里）
+   *    **必须这样分层**：Cocos 里"节点自身的 Sprite 会先于子节点渲染"，
+   *    如果把描边做成子节点、精灵挂在容器上，描边就盖到精灵上面去了。
+   */
+  private mkSpriteNode(name: string, parent: Node, w = 32, h = 32, fallbackColor?: Color, withShadow = false): { node: Node; anim: FrameAnim; body: Node } {
     const node = new Node(name);
     node.parent = parent;
-    const sp = node.addComponent(Sprite);
+    const ut = node.addComponent(UITransform);
+    ut.setContentSize(w, h);
+
+    let body = node;
+    let outline: Sprite | null = null;
+    if (withShadow) {
+      const ol = new Node('outline');
+      ol.parent = node;
+      const out = ol.addComponent(UITransform);
+      out.setContentSize(w * 1.14, h * 1.14);   // 放大才有描边效果
+      outline = ol.addComponent(Sprite);
+      outline.sizeMode = Sprite.SizeMode.CUSTOM;
+      outline.trim = false;
+      outline.color = new Color(6, 8, 16, 235);
+
+      body = new Node('body');
+      body.parent = node;
+      const but = body.addComponent(UITransform);
+      but.setContentSize(w, h);
+    }
+
+    const sp = body.addComponent(Sprite);
     sp.sizeMode = Sprite.SizeMode.CUSTOM;
     sp.trim = false;
-    // 兜底：素材还没加载出来时先显示纯色块 —— 绝不"静默变透明"
     if (fallbackColor) sp.spriteFrame = makeSolidFrame(fallbackColor.r, fallbackColor.g, fallbackColor.b);
-    // ⚠️ 顺序很重要：contentSize 必须在 addComponent(Sprite) **之后**设。
-    //    Sprite 初始化时会按当时的 spriteFrame（当时可能为空）重置 contentSize，
-    //    先设会被覆盖成 0x0 —— 结果就是"精灵什么都看不见"（Graphics 和 Label 不受影响，所以症状很迷惑）。
-    const ut = node.getComponent(UITransform) ?? node.addComponent(UITransform);
-    ut.setContentSize(w, h);
-    const anim = node.addComponent(FrameAnim);
+    // contentSize 必须在 addComponent(Sprite) 之后设（Sprite 初始化会按空 spriteFrame 重置尺寸）
+    const but2 = body.getComponent(UITransform) ?? body.addComponent(UITransform);
+    but2.setContentSize(w, h);
+    const anim = body.addComponent(FrameAnim);
+    if (outline) (node as unknown as { _outline: Sprite })._outline = outline;
+
     if (withShadow) {
-      // 脚下软阴影：全场景共用一张运行时生成的椭圆贴图（零素材）
       const sh = new Node('shadow');
       sh.parent = node;
       const sut = sh.addComponent(UITransform);
@@ -318,10 +348,13 @@ export class Battle extends Component {
       ss.sizeMode = Sprite.SizeMode.CUSTOM;
       ss.trim = false;
       sh.setPosition(0, -h / 2 + 2, 0);
-      sh.setSiblingIndex(0);          // 垫在精灵下面
+      sh.setSiblingIndex(1);
+      body.setSiblingIndex(2);
+      body.getComponent(UITransform)!.setContentSize(w, h);
     }
-    return { node, anim };
+    return { node, anim, body };
   }
+
   private addVfx(key: string, x: number, y: number, life: number, scale = 1): Fx | null {
     const frames = Assets.vfxFrames(key);
     if (!frames || !frames.length) return null;
@@ -648,7 +681,8 @@ export class Battle extends Component {
       const s = e.node.scale;
       e.node.setScale(e.facing < 0 ? -Math.abs(s.x) : Math.abs(s.x), s.y, 1);
       // 受击闪白：直接改 Sprite.color（乘算），比换贴图便宜
-      const sp = e.node.getComponent(Sprite);
+      const bodyNode = e.node.getChildByName('body') ?? e.node;
+      const sp = bodyNode.getComponent(Sprite);
       if (sp) {
         if (e.flash > 0) sp.color = new Color(255, 150, 150, 255);
         else if (sp.color.r !== 255 || sp.color.g !== 255) sp.color = new Color(255, 255, 255, 255);

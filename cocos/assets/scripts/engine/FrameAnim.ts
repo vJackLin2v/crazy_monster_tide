@@ -70,7 +70,12 @@ export class FrameAnim extends Component {
 
   private apply() {
     const f = this.frames[this.frame];
-    if (f && this.sprite) this.sprite.spriteFrame = f;
+    if (f && this.sprite) {
+      this.sprite.spriteFrame = f;
+      // 黑色描边层（Battle 里给单位垫的剪影）要同步换帧，否则描边会停在第 1 帧
+      const ol = (this.node as unknown as { _outline?: Sprite })._outline;
+      if (ol) ol.spriteFrame = f;
+    }
   }
 
   update(dt: number) {
