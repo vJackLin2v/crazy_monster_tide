@@ -14,16 +14,24 @@ import { COL, FS, R, BAND, SAFE_TOP } from './Tokens';
 import { CHARS } from '../data/Chars';
 import { SKILLS } from '../data/Skills';
 
-/** 顶部横幅：返回 (节点, 横幅底边的 design y) */
+/**
+ * 顶部横幅：返回 (节点, 横幅底边的 design y)
+ *
+ * ⚠️ 坐标陷阱：`text()` 的 y 是**相对父节点**的。
+ *    横幅节点本身在 `top - h/2`，所以传进去的文字 y 必须先减去这个偏移 ——
+ *    否则文字会被额外抬高 h/2，直接跑出屏幕（主界面标题丢失就是这个原因）。
+ */
 function heroBanner(root: Node, ratio: number, color: Color, title: string, sub?: string) {
   const vs = view.getVisibleSize();
   const top = vs.height / 2;
   const h = Math.round(vs.height * ratio);
   const b = banner(root, top, h, color);
-  const ty = top - h / 2 + (sub ? 10 : 0);
-  text(b, 0, ty, title, { size: FS.xl, color: BAND.ink, bold: true, width: 340 });
-  if (sub) text(b, 0, ty - 30, sub, { size: FS.s, color: new Color(32, 22, 10, 190), width: 340 });
-  return { node: b, bottomY: top - h };
+  const cy = top - h / 2;                      // 横幅中心（绝对坐标）
+  const L = (absY: number) => absY - cy;       // 绝对 -> 横幅局部
+  const ty = cy + (sub ? 10 : 0);
+  text(b, 0, L(ty), title, { size: FS.xl, color: BAND.ink, bold: true, width: 340 });
+  if (sub) text(b, 0, L(ty - 30), sub, { size: FS.s, color: new Color(32, 22, 10, 190), width: 340 });
+  return { node: b, bottomY: top - h, toLocal: L };
 }
 
 /** 1. 主界面：橙色背景 + 标题 + 按钮 */
@@ -35,7 +43,7 @@ export function buildMenu(parent: Node, seed: number, onStart: () => void, onHow
   // 顶部 36% 橙色横幅（参考 screen-13/15：35.6%）
   // 横幅加大到 40%（参考 screen-07 是 40.4%）
   const hb = heroBanner(root, 0.40, BAND.top, '疯狂怪潮', 'CRAZY MONSTER TIDE');
-  text(hb.node, 0, hb.bottomY + 40, '像素肉鸽 · 割草 · 行为模块', { size: FS.s, color: BAND.ink, width: 340 });
+  text(hb.node, 0, hb.toLocal(hb.bottomY + 40), '像素肉鸽 · 割草 · 行为模块', { size: FS.s, color: BAND.ink, width: 340 });
 
   // 内容**紧贴横幅往下排**（参考 screen-13 内容从横幅下沿立刻开始，不是垂直居中）
   const by = hb.bottomY - 52;
