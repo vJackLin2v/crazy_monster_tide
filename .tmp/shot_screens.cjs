@@ -1,0 +1,21 @@
+const { chromium } = require('playwright');
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+(async()=>{
+  const b=await chromium.launch(); const page=await b.newPage({viewport:{width:900,height:1000}});
+  const errs=[]; page.on('pageerror',e=>errs.push(String(e.message).slice(0,160)));
+  await page.goto('http://127.0.0.1:7456/',{waitUntil:'domcontentloaded',timeout:60000});
+  await page.waitForSelector('canvas',{timeout:60000}); await sleep(18000);
+  const box=await page.locator('canvas').boundingBox();
+  const vs=await page.evaluate(()=>{const v=window.cc.view.getVisibleSize();return {w:v.width,h:v.height};});
+  const top=vs.h/2, bot=-vs.h/2;
+  const toPage=(gx,gy)=>({x:box.x+(gx+vs.w/2)/vs.w*box.width, y:box.y+(vs.h/2-gy)/vs.h*box.height});
+  const tap=async(gx,gy,l)=>{const p=toPage(gx,gy); await page.mouse.click(p.x,p.y); await sleep(650); if(l)console.log('  点 '+l);};
+  const shot=n=>page.locator('canvas').screenshot({path:'screenshots/band-'+n+'.png'});
+  await shot('1-menu'); console.log('  截 主界面');
+  await tap(0, 24, '开始游戏');
+  await shot('2-charselect'); console.log('  截 角色选择');
+  await tap(82, -331, '开始闯关'); await sleep(2500);
+  await shot('3-battle');
+  console.log('  错误:', errs.length?errs.slice(0,3).join(' | '):'无');
+  await b.close();
+})();

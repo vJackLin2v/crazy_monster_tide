@@ -265,3 +265,39 @@ export function gradBar(parent: Node, x: number, y: number, w: number, h: number
   redraw(1);
   return { node: n, set: redraw };
 }
+
+// ---------- 彩色横幅 ----------
+/**
+ * 整块彩色横幅（参考 Möbelmon 的签名元素）
+ *
+ * @param topDesignY 横幅**上边缘**在 design 坐标里的 y（通常 = vs.height/2）
+ * @param h 横幅高度
+ */
+export function banner(parent: Node, topDesignY: number, h: number, color: Color,
+                       opt: { hairline?: boolean } = {}): Node {
+  const n = mkNode(parent, 'banner', 360, h, 0, topDesignY - h / 2);
+  const g = n.addComponent(Graphics);
+  g.fillColor = color;
+  g.rect(-180, -h / 2, 360, h);
+  g.fill();
+  if (opt.hairline !== false) {
+    // 参考里横幅底部有一条细装饰线
+    g.fillColor = new Color(255, 255, 255, 46);
+    g.rect(-180, -h / 2, 360, 2);
+    g.fill();
+  }
+  return n;
+}
+
+/** 底部彩色按钮栏（参考 screen-08 底部 6.8% 高的整条橙栏） */
+export function bottomBar(parent: Node, botDesignY: number, h: number, color: Color): Node {
+  const n = mkNode(parent, 'bottomBar', 360, h, 0, botDesignY + h / 2);
+  const g = n.addComponent(Graphics);
+  g.fillColor = color;
+  g.rect(-180, -h / 2, 360, h);
+  g.fill();
+  g.fillColor = new Color(0, 0, 0, 40);
+  g.rect(-180, h / 2 - 2, 360, 2);
+  g.fill();
+  return n;
+}

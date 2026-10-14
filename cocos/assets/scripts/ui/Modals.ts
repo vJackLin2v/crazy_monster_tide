@@ -6,8 +6,9 @@
  * 统一样式：遮罩 `rgba(5,8,15,.74)` + 面板 2px 硬描边 + `0 3px 0` 硬投影。
  */
 import { Node, Label, Color, Graphics, UITransform } from 'cc';
-import { panel, text, button, onTap, mkNode, mask, screen } from './UIKit';
-import { COL, FS, R, SP, SAFE_TOP } from './Tokens';
+import { panel, text, button, onTap, mkNode, mask, screen, banner, bottomBar } from './UIKit';
+import { view } from 'cc';
+import { COL, FS, R, SP, SAFE_TOP, BAND } from './Tokens';
 
 // ---------- 卡片（升级 3 选 1 用）----------
 export interface CardData { kind: string; title: string; sub: string; desc: string; color?: Color; }
@@ -53,28 +54,31 @@ export interface ShopSlotView { title: string; sub: string; price: number; sold:
 export function buildShop(parent: Node, wave: number, gold: number, slots: ShopSlotView[],
                           onBuy: (i: number) => void, onLock: (i: number) => void,
                           onReroll: () => void, rerollCost: number, onNext: () => void): Node {
-  const root = screen(parent, 'scr-shop', COL.bg0);
-  text(root, 0, 288, '波间商店', { size: FS.l, color: COL.accent, bold: true, width: 320 });
-  text(root, 0, 258, `第 ${wave} 波结束`, { size: FS.xs, color: COL.line2, width: 320 });
-  text(root, 0, 228, '◎ ' + gold, { size: FS.m, color: COL.accent, bold: true, width: 320 });
+  const root = screen(parent, 'scr-shop', COL.bg1);
+  const vs = view.getVisibleSize();
+  const top = vs.height / 2, bot = -vs.height / 2;
 
-  // 4 个固定货位，2x2
-  const CW = 150, CH = 110, GX = 160, GY = 122;
+  // 顶部橙色横幅（参考 screen-08：18.6%）—— 标题 + 金币 + 波次
+  const bh = Math.round(vs.height * BAND.hList);
+  const bar = banner(root, top, bh, BAND.top);
+  text(bar, -160, 12, '波间商店', { size: FS.l, color: BAND.ink, align: 'left', width: 200, bold: true });
+  text(bar, -160, -14, '第 ' + wave + ' 波结束', { size: FS.xs, color: new Color(32, 22, 10, 180), align: 'left', width: 200 });
+  text(bar, 160, 0, '◆ ' + gold, { size: FS.m, color: BAND.ink, align: 'right', width: 150, bold: true });
+
+  // 4 个固定货位 2x2
+  const gridTop = top - bh - 16;
+  const CW = 158, CH = 116, GX = 166, GY = 128;
   slots.slice(0, 4).forEach((s, i) => {
     const col = i % 2, row = Math.floor(i / 2);
-    const x = (col - 0.5) * GX, y = 90 - row * GY;
+    const x = (col - 0.5) * GX, y = gridTop - CH / 2 - row * GY;
     const col2 = KIND_COLOR[s.kind] ?? COL.cream;
     const n = panel(root, x, y, CW, CH, { bg: s.sold ? COL.bg1 : COL.bg2, line: s.sold ? COL.line : col2, radius: R.m });
-    text(n, -CW / 2 + 10, 30, s.title, { size: FS.s, color: s.sold ? COL.line2 : COL.cream, align: 'left', width: CW - 46 });
-    text(n, -CW / 2 + 10, 6, s.sub, { size: FS.xs, color: COL.line2, align: 'left', width: CW - 20 });
+    text(n, -CW / 2 + 10, 32, s.title, { size: FS.s, color: s.sold ? COL.line2 : COL.cream, align: 'left', width: CW - 48, bold: true });
+    text(n, -CW / 2 + 10, 8, s.sub, { size: FS.xs, color: COL.line2, align: 'left', width: CW - 20 });
+    if (!s.sold) text(n, -CW / 2 + 10, -36, '◆ ' + s.price, { size: FS.s, color: gold >= s.price ? COL.accent : COL.red, align: 'left', width: 90, bold: true });
+    else text(n, 0, -36, '已购买', { size: FS.xs, color: COL.line2, width: CW - 20 });
     if (!s.sold) {
-      text(n, -CW / 2 + 10, -34, '◎ ' + s.price, { size: FS.s, color: gold >= s.price ? COL.accent : COL.red, align: 'left', width: 80 });
-    } else {
-      text(n, 0, -34, '已购买', { size: FS.xs, color: COL.line2, width: CW - 20 });
-    }
-    // 锁定小按钮（右上角）
-    if (!s.sold) {
-      const lk = mkNode(n, 'lock', 26, 26, CW / 2 - 16, CH / 2 - 16);
+      const lk = mkNode(n, 'lock', 28, 28, CW / 2 - 16, CH / 2 - 16);
       const lg = lk.addComponent(Graphics);
       lg.lineWidth = 2;
       lg.strokeColor = s.locked ? COL.accent : COL.line2;
@@ -85,10 +89,13 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
     if (!s.sold) onTap(n, () => onBuy(i));
   });
 
-  const rf = button(root, -76, -200, 140, 48, `刷新 ◎${rerollCost}`, { size: FS.s });
-  onTap(rf.node, onReroll);
-  const nx = button(root, 82, -200, 150, 50, '下一波', { primary: true, size: FS.m });
-  onTap(nx.node, onNext);
+  // 底部整条橙色按钮栏（参考 screen-08：6.8%）—— 左刷新 右下一波
+  const bh2 = Math.round(vs.height * BAND.hBottom);
+  const bb = bottomBar(root, bot, bh2, BAND.bottom);
+  text(bb, -110, 0, '刷新 ◆' + rerollCost, { size: FS.s, color: BAND.ink, width: 180, bold: true });
+  text(bb, 105, 0, '下一波 ▶', { size: FS.m, color: BAND.ink, width: 180, bold: true });
+  const rf = mkNode(bb, 'rf', 200, bh2, -110, 0); onTap(rf, onReroll);
+  const nx = mkNode(bb, 'nx', 200, bh2, 105, 0); onTap(nx, onNext);
   return root;
 }
 
