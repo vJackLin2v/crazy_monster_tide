@@ -201,7 +201,79 @@ export class Battle extends Component {
     g.strokeColor = new Color(255, 168, 75, 90);        // .35 * 255 ≈ 90
     g.rect(0, -ARENA_H, ARENA_W, ARENA_H);
     g.stroke();
+
+    // ── 地面层次（2026-10-13 加）──────────────────────────────
+    // 参考分析（docs/ui/reference-library/video-ref-analysis.md）：
+    //   热门作品画面"中调像素"占 27~37%，而我们只有 **4%**（94% 是纯暗色）——
+    //   看着像"在一块黑布上放几个精灵"。这里用程序生成的碎石/草簇把中调补上来。
+    // 全部用确定性哈希，不依赖 Rng，网格永远长一样（不会每帧闪）。
+    const hash = (x: number, y: number) => {
+      let h = (x * 374761393 + y * 668265263) | 0;
+      h = (h ^ (h >> 13)) * 1274126177;
+      return ((h ^ (h >> 16)) >>> 0) / 4294967296;
+    };
+    const GRAVEL = new Color(0x2A, 0x3E, 0x60, 255);     // 碎石（比底亮一档）
+    const GRAVEL2 = new Color(0x35, 0x4C, 0x72, 255);    // 亮碎石
+    const GRASS = new Color(0x2C, 0x4A, 0x4A, 255);      // 草簇（带一点绿）
+    const CRACK = new Color(0x12, 0x1B, 0x2E, 255);      // 裂缝（比底暗一档）
+    // 第一层：密集小碎石（每格 4~7 个 2~5px）—— 覆盖率要够才有"地面质感"
+    for (let yy = 0; yy < NY; yy++) {
+      for (let xx = 0; xx < NX; xx++) {
+        const lx = xx * CELL, ly = -(yy + 1) * CELL;
+        const n = 4 + Math.floor(hash(xx, yy) * 4);
+        for (let k = 0; k < n; k++) {
+          const r1 = hash(xx * 31 + k, yy * 17 + k);
+          const r2 = hash(xx * 13 + k * 7, yy * 23 + k * 3);
+          const r3 = hash(xx + k * 101, yy + k * 57);
+          const px = lx + 1 + r1 * (CELL - 6);
+          const py = ly + 1 + r2 * (CELL - 6);
+          const s = 2 + Math.floor(r3 * 4);
+          g.fillColor = r3 < 0.14 ? CRACK : (r3 < 0.60 ? GRAVEL : (r3 < 0.86 ? GRAVEL2 : GRASS));
+          g.rect(Math.round(px), Math.round(py), s, s);
+        }
+      }
+    }
+    g.fill();
+    // 第二层：中大型物件（石头/草丛/残骸，8~18px）—— 约 12% 的格子
+    const ROCK = new Color(0x3B, 0x52, 0x78, 255);
+    const ROCK_D = new Color(0x24, 0x35, 0x52, 255);
+    const BUSH = new Color(0x2E, 0x52, 0x44, 255);
+    for (let yy = 0; yy < NY; yy += 2) {
+      for (let xx = 0; xx < NX; xx += 2) {
+        if (hash(xx * 3 + 11, yy * 5 + 7) > 0.24) continue;   // 约 24% 的 2x2 块
+        const lx = xx * CELL, ly = -(yy + 1) * CELL;
+        const r1 = hash(xx * 19, yy * 29), r2 = hash(xx * 41 + 3, yy * 13 + 5), r3 = hash(xx + yy * 97, yy + 31);
+        const w = 8 + Math.floor(r1 * 11);
+        const h = 6 + Math.floor(r2 * 8);
+        const px = lx + 2 + r1 * (CELL * 2 - w - 4);
+        const py = ly + 2 + r2 * (CELL * 2 - h - 4) - CELL;
+        // 先画暗底（阴影），再画亮面 —— 有立体感
+        g.fillColor = ROCK_D;
+        g.rect(Math.round(px), Math.round(py - 2), w, h);
+        g.fill();
+        g.fillColor = r3 < 0.3 ? BUSH : ROCK;
+        g.rect(Math.round(px), Math.round(py), w, h - 2);
+        g.fill();
+      }
+    }
     ground.setPosition(0, ARENA_H, 0);
+
+    // 边缘暗角：四周压暗，把注意力聚焦到战斗中心
+    const vig = new Node('Vignette');
+    vig.parent = this.world;
+    const vg = vig.addComponent(Graphics);
+    const EDGE = 90;
+    for (let i = 0; i < 14; i++) {
+      const a = Math.round(70 * Math.pow(1 - i / 14, 2.0));   // 边缘最暗 -> 向内淡出
+      vg.fillColor = new Color(0, 0, 0, a);
+      const t0 = (EDGE / 14) * i;
+      vg.rect(0, -ARENA_H + t0, ARENA_W, EDGE / 14);          // 上
+      vg.rect(0, -t0 - EDGE / 14, ARENA_W, EDGE / 14);        // 下
+      vg.rect(t0, -ARENA_H, EDGE / 14, ARENA_H);              // 左
+      vg.rect(ARENA_W - t0 - EDGE / 14, -ARENA_H, EDGE / 14, ARENA_H);  // 右
+      vg.fill();
+    }
+    vig.setPosition(0, ARENA_H, 0);
 
     this.layerArea = mk('Area');
     this.layerUnit = mk('Unit');

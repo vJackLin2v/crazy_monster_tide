@@ -11,7 +11,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const vs = await page.evaluate(()=>{const v=window.cc.view.getVisibleSize();return {w:v.width,h:v.height};});
   const toPage=(gx,gy)=>({x:box.x+(gx+vs.w/2)/vs.w*box.width, y:box.y+(vs.h/2-gy)/vs.h*box.height});
   const tap=async(gx,gy)=>{const p=toPage(gx,gy); await page.mouse.click(p.x,p.y); await sleep(500);};
-  await tap(0,-40); await tap(76,-272); await sleep(2500);
+  await tap(0,24); await tap(82,-331); await sleep(2500);
   // 注入满配 build，让画面接近"中期战斗"
   await page.evaluate(()=>{
     const cc=window.cc,sc=cc.director.getScene();
