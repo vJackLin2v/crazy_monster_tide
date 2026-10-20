@@ -19,8 +19,16 @@ export const ENEMIES: Record<string, EnemyDef> = {
   boss:          { unit: 'boss-demonlord',hp: 900,spd: 48, dmg: 22, r: 26, exp: 40, gold: 45, boss: true },
 };
 
-/** BOSS 轮换：第 10 波恶魔领主 / 第 20 波地狱守望者 / 第 30 波起星光圣骑士 */
-export const BOSS_UNITS = ['boss-demonlord', 'boss-hellwarden', 'boss-paladin'] as const;
+/**
+ * BOSS 轮换 —— **6 个**（需求 §10：5~6 个，现已补齐）
+ *
+ * 一轮 20 波里只有第 10 / 20 波是 BOSS 波，所以单局通常只见前两个；
+ * 第 30 波起（无尽）与不同局会轮到后面几个。
+ * 素材来源：行囊守卫主池（09Hell Enforcer / 10CaveDevourer / 08Crystal Guard），
+ * 授权口径同 D-26（用户决定使用，上架前需重新裁决）。
+ */
+export const BOSS_UNITS = ['boss-demonlord', 'boss-hellwarden', 'boss-paladin',
+                           'boss-infernal', 'boss-devourer', 'boss-crystal'] as const;
 
 export function bossUnitFor(wave: number): string {
   const i = Math.max(0, Math.floor(wave / 10) - 1) % BOSS_UNITS.length;

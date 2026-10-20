@@ -44,7 +44,10 @@ declare module 'cc' {
   export class Size { constructor(w?: number, h?: number); width: number; height: number; }
   export class Quat {}
   export class Canvas {}
-  export class AudioSource { clip: any; play(): void; }
+  export class LabelOutline { color: any; width: number; }
+  export class UIOpacity { opacity: number; }
+  export class AudioSource { clip: any; loop: boolean; volume: number; playing: boolean;
+    play(): void; pause(): void; stop(): void; playOneShot(clip: any, vol?: number): void; }
   export class AudioClip {}
   export class EventTouch { getUILocation(): { x: number; y: number }; }
   export class EventKeyboard { keyCode: number; }

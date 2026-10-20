@@ -13,10 +13,13 @@
  */
 import { RunState } from '../assets/scripts/game/RunState';
 import { calcSkill, makeSkill, canInstall } from '../assets/scripts/game/SkillCalc';
-import { assertStatsSane, freshStats } from '../assets/scripts/game/Stats';
+import { assertStatsSane, freshStats, emptyStats } from '../assets/scripts/game/Stats';
 import { CHARS } from '../assets/scripts/data/Chars';
 import { RUN, waveTime, isBossWave, isEliteWave, eliteCount, BASE_SPEED, SHOP_SLOTS } from '../assets/scripts/core/Const';
-import { ENEMIES, enemyPool } from '../assets/scripts/data/Enemies';
+import { ENEMIES, enemyPool, BOSS_UNITS, bossUnitFor } from '../assets/scripts/data/Enemies';
+import { ATTRS } from '../assets/scripts/data/Attrs';
+import { UNIT_FRAMES } from '../assets/scripts/data/UnitFrames';
+import { ITEMS, ELITE_POOL } from '../assets/scripts/data/Items';
 
 let pass = 0, fail = 0;
 const ok = (c: boolean, m: string) => { c ? (pass++, console.log('  PASS ' + m)) : (fail++, console.log('  FAIL ' + m)); };
@@ -98,6 +101,48 @@ console.log('\n== 4. 替换不让玩家损失 ==');
   ok(!rs.modsBag.includes('giant'), '装上去的 giant 从背包移除');
 }
 
+console.log('')
+console.log('== 4b. 属性数量 + 是否真的进结算（需求 §10） ==')
+{
+  ok(Object.keys(ATTRS).length === 24, '核心属性 24 个（实际 ' + Object.keys(ATTRS).length + '）');
+  ok(ATTRS.pierce !== undefined && ATTRS.cdr !== undefined && ATTRS.lifesteal !== undefined,
+     '新增属性已在数据表里');
+  const st = emptyStats();
+  const c0 = calcSkill(makeSkill('fireball'), st);
+  st.cdr = 0.3; st.count = 2; st.pierce = 2;
+  const c1 = calcSkill(makeSkill('fireball'), st);
+  ok(c1.cd < c0.cd, '★ 冷却缩减生效（' + c0.cd.toFixed(2) + 's → ' + c1.cd.toFixed(2) + 's）');
+  ok(c1.count === c0.count + 2, '★ 多重生效（' + c0.count + ' → ' + c1.count + '）');
+  ok(c1.pierce === c0.pierce + 2, '★ 穿透生效（' + c0.pierce + ' → ' + c1.pierce + '）');
+}
+
+console.log('')
+console.log('')
+console.log('== 4d. BOSS 数量 + 帧清单 ==')
+{
+  ok(BOSS_UNITS.length >= 5 && BOSS_UNITS.length <= 6, 'BOSS 数量 5~6（实际 ' + BOSS_UNITS.length + '）');
+  ok(BOSS_UNITS.every(u => !!UNIT_FRAMES[u]), '每个 BOSS 都在帧清单里');
+  ok(BOSS_UNITS.every(u => (UNIT_FRAMES[u].idle ?? 0) > 0 && (UNIT_FRAMES[u].death ?? 0) > 0),
+     '每个 BOSS 都有 idle + death 帧');
+  ok(bossUnitFor(10) !== bossUnitFor(20), '第 10 / 20 波是不同 BOSS');
+}
+
+console.log('== 4c. 道具数量（需求 §10：50 普通 + 20 高级） ==')
+{
+  const ids = Object.keys(ITEMS);
+  const t1 = ids.filter(k => ITEMS[k].tier === 1).length;
+  const t2 = ids.filter(k => ITEMS[k].tier === 2).length;
+  ok(ids.length === 70, '道具共 70 个（实际 ' + ids.length + '）');
+  ok(t1 === 50, '普通道具 50 个（实际 ' + t1 + '）');
+  ok(t2 === 20, '高级道具 20 个（实际 ' + t2 + '）');
+  ok(ELITE_POOL.every(k => ITEMS[k] && ITEMS[k].tier === 2), '精英掉落池里全是高级道具');
+  // 抽一个道具验证它真的改属性
+  const st = emptyStats();
+  const before = st.power;
+  ITEMS.power_l.apply(st);
+  ok(st.power > before, '★ 道具生效（攻击力 ' + before.toFixed(2) + ' → ' + st.power.toFixed(2) + '）');
+}
+
 console.log('\n== 5. 商店（固定货位 / 购买不消失 / 锁定） ==');
 {
   const rs = new RunState('knight', 99);
@@ -105,6 +150,9 @@ console.log('\n== 5. 商店（固定货位 / 购买不消失 / 锁定） ==');
   rs.refreshShop(false);
   ok(rs.shopStock?.length === SHOP_SLOTS, `固定 ${SHOP_SLOTS} 个货位`);
   ok(rs.shopStock!.every(s => s.price > 0), '每个货位都有价格');
+  // 回归：refreshShop 漏了把抽到的 id 记进 used → 4 个货位会刷成同一件商品
+  const slotIds = rs.shopStock!.map(s => s.kind + ':' + s.id);
+  ok(new Set(slotIds).size === slotIds.length, '★ 4 个货位互不重复（' + slotIds.join(' / ') + '）');
 
   rs.gold = 500;
   const before = rs.shopStock!.length;

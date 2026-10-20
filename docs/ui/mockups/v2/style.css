@@ -1,0 +1,39 @@
+
+:root{
+  --bg:#262636; --bg2:#1b1b24; --bg3:#33333f; --bg4:#43434f;
+  --acc:#f5a623; --accd:#b8790c; --green:#8bd63a; --greend:#4f9416;
+  --red:#e8452f; --redd:#a81f10; --blue:#4a8fd6; --purple:#9b63d6;
+  --txt:#ffffff; --dim:#b9c0cf; --dim2:#7c8496;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#0e0e14;font-family:"Microsoft YaHei","PingFang SC",sans-serif;color:var(--txt);
+     display:flex;justify-content:center;padding:24px}
+.row{display:flex;flex-wrap:wrap;gap:18px;padding:18px;align-items:flex-start;justify-content:center}
+.wrap{text-align:center}
+.tag{color:#FFD166;font-weight:bold;font-size:16px;padding:4px 0 8px}
+.ph{position:relative;width:360px;height:640px;background:var(--bg);overflow:hidden;
+    border:3px solid #000;border-radius:6px}
+/* 粗黑描边文字（Brotato 的招牌） */
+.ol{text-shadow:-2px 0 0 #000,2px 0 0 #000,0 -2px 0 #000,0 2px 0 #000,0 4px 0 #000}
+.panel{background:var(--bg2);border:3px solid #000;border-radius:8px;box-shadow:0 4px 0 #000}
+.btn{border:3px solid #000;border-radius:8px;background:var(--bg3);color:#fff;font-weight:bold;
+     text-align:center;box-shadow:0 5px 0 #000;line-height:1.1}
+.btn.pri{background:var(--acc);color:#2b1d00;box-shadow:0 5px 0 var(--accd),0 5px 0 3px #000}
+.btn.grn{background:var(--green);color:#1d2a05}
+.btn.red{background:var(--red);color:#2a0703}
+.btn.sm{border-radius:6px}
+.ttl{font-size:25px;font-weight:bold}
+.sub{font-size:12px;color:var(--dim)}
+.mask{position:absolute;inset:0;background:rgba(4,6,12,.72)}
+.slot{background:var(--bg2);border:3px solid #000;border-radius:8px;display:flex;align-items:center;
+      justify-content:center;font-size:26px}
+.dot{width:9px;height:9px;background:var(--bg3);border:2px solid #000;border-radius:2px}
+.dot.on{background:var(--acc)}
+.ico{position:relative;border-radius:50%;background:#f2ecdc;border:3px solid #000}
+/* 通用小元件 */
+.chip{display:inline-block;background:var(--bg3);border:2px solid #000;border-radius:6px;
+      font-size:11px;font-weight:bold;padding:2px 7px}
+.rowitem{display:flex;align-items:center;gap:8px;background:var(--bg2);border:3px solid #000;
+      border-radius:8px;padding:6px 8px}
+.plus{color:var(--green);font-weight:bold}
+.minus{color:var(--red);font-weight:bold}

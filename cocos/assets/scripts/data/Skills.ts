@@ -16,8 +16,8 @@ export const SKILLS: Record<string, SkillDef> = {
   thorn:       { name: '荆棘环',   icon: 'skill-poison_thorn.png',    type: 'pulse',      tags: ['nature','area','pulse'],           cd: 2.6,  dmg: 10, spd: 0,   color: '#8FE07A', size: 30 },
   orb:         { name: '雷球',     icon: 'skill-thunder_beam.png',    type: 'projectile', tags: ['lightning','projectile','homing'], cd: 0.95, dmg: 8,  spd: 175, color: '#9BE7FF', size: 6 },
   spike:       { name: '地刺',     icon: 'skill-flame_field.png',     type: 'area',       tags: ['nature','area','dot'],             cd: 2.9,  dmg: 6,  spd: 0,   color: '#A8E06A', size: 24 },
-  frostring:   { name: '寒冰环',   icon: 'skill-frost_ray.png',       type: 'pulse',      tags: ['ice','area','pulse','slow'],       cd: 2.5,  dmg: 9,  spd: 0,   color: '#CFEFFF', size: 30 },
-  spirit:      { name: '灵能箭',   icon: 'skill-arcane_pulse.png',    type: 'projectile', tags: ['arcane','projectile','pierceable'], cd: 0.9, dmg: 9,  spd: 265, color: '#C3A8FF', size: 5 },
+  frostring:   { name: '寒冰环',   icon: 'sk-ring.png',       type: 'pulse',      tags: ['ice','area','pulse','slow'],       cd: 2.5,  dmg: 9,  spd: 0,   color: '#CFEFFF', size: 30 },
+  spirit:      { name: '灵能箭',   icon: 'sk-bolt.png',    type: 'projectile', tags: ['arcane','projectile','pierceable'], cd: 0.9, dmg: 9,  spd: 265, color: '#C3A8FF', size: 5 },
 };
 
 /** 技能 -> 美术资源（VFX 路径：assets/art/vfx/<组>/<子组>/<组件>/） */
@@ -36,8 +36,8 @@ export const SKILL_ART: Record<string, SkillArt> = {
   thorn:       { icon: 'skill-poison_thorn.png',    aoe: 'ground/ring/cast-circle',           hit: 'core/spark/block-spark' },
   orb:         { icon: 'skill-thunder_beam.png',    proj: 'projectile/lightning/plasma-shot', hit: 'feedback/hit/shock-hit' },
   spike:       { icon: 'skill-flame_field.png',     zone: 'ground/flame/flame-loop',          hit: 'feedback/hit/slash-hit' },
-  frostring:   { icon: 'skill-frost_ray.png',       aoe: 'ground/frost/frost-nova',           hit: 'feedback/hit/ice-hit' },
-  spirit:      { icon: 'skill-arcane_pulse.png',    proj: 'projectile/arcane/arcane-orb',     hit: 'core/spark/pierce-spark' },
+  frostring:   { icon: 'sk-ring.png',       aoe: 'ground/frost/frost-nova',           hit: 'feedback/hit/ice-hit' },
+  spirit:      { icon: 'sk-bolt.png',    proj: 'projectile/arcane/arcane-orb',     hit: 'core/spark/pierce-spark' },
 };
 
 /** 通用特效（不绑定技能） */

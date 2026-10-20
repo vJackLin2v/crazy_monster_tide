@@ -58,3 +58,12 @@
 ## 5. 未登记即不存在
 
 任何新规则、新系统、新依赖、新素材，未进 `docs/` 或 `memory-bank/` 的，视为不存在，不得在代码里偷偷引入。
+
+| 5 | 用**旧字符串**当编译标记 → 工具立刻返回 OK，其实没编译 | 触发编辑器编译时，标记必须是**新代码独有**的（改了才有的词）；工具说 0s 通过就要怀疑 |
+| 6 | 预览可视高度是 **760**，不是设计稿的 640 | 所有"贴底"的元素（技能栏/底部按钮）必须**按底部换算** `VH - 离底距离`，不能写设计稿的绝对 y，否则会悬空 120px |
+| 7 | 同一个节点加两个 `Graphics` → 图标画不出来 | `panel()` 内部已建 Graphics；要再画图标必须新建**子节点** |
+| 8 | `text()` 是单行高节点，开了自动换行会把第二行裁掉 | 单行标签要么限宽截断（`fit()`），要么显式加高 |
+| 9 | **`Battle.start()` 不保证在 `startRun` 之前跑** | 菜单里 Battle 节点是 inactive，Cocos 不会调 `start()` → `cam/world` 都没建。`startRun` 必须**自保** `if (!this.cam) this.buildTree()`，且 `buildTree` 要**幂等**（重复调用会产生第二套 World/Camera，画面直接对不上） |
+| 10 | `Graphics.ellipse() + fill()` 会让 Cocos 卡死 | 椭圆填充改用 `circle + fill` + 节点 `setScale(1, 0.42, 1)` 压扁 |
+| 11 | `resources.load()` **不接受扩展名** | `'art/audio/battle.ogg'` 会报 "Bundle resources doesn't contain…"。必须去掉 `.ogg/.wav/.png` 再加载（图标那边早就这么做了，音频漏了） |
+| 12 | 「没载入就先记状态」导致功能永不生效 | BGM 的 `bgm()` 在 clip 未载入时就把 `curBgm` 记下了 → 之后同样调用被"同一首"挡掉，**永远不播**。要记"想要的状态"，等载入完补播 |

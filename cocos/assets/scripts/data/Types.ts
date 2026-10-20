@@ -33,9 +33,19 @@ export interface ModuleDef {
 }
 
 export interface CharStats {
+  // —— 基础 7 ——
   power: number; haste: number; area: number; maxhp: number; speed: number;
-  crit: number; critdmg: number; pickup: number; armor: number; regen: number;
-  projSpd: number; greed: number; tagAll: number;
+  crit: number; critdmg: number;
+  // —— 投射 5 ——
+  projSpd: number; pierce: number; bounce: number; count: number; sizeMul: number;
+  // —— 生存 4 ——
+  armor: number; regen: number; invuln: number; lifesteal: number;
+  // —— 收益 4 ——
+  pickup: number; greed: number; expGain: number; killHeal: number;
+  // —— 特效 4 ——
+  cdr: number; knockback: number; eliteDmg: number; summonPower: number;
+  // —— 标签联动（道具写入，不是可升级属性）——
+  tagAll: number;
   tagBonus: Record<string, number>;
   tagCdr: Record<string, number>;
   hp: number;

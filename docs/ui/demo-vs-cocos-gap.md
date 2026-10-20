@@ -1,5 +1,12 @@
 # DEMO vs COCOS 差异清单（**代码核对，非目测**）
 
+> ⚠️ **2026-10-17 起本文件已废弃，仅作历史留存。**
+>
+> 它记录的是「以 HTML DEMO 为基准逐项复刻」时期的差异清单（当时修完 P0+P1+P2）。
+> 但 **D-34 / D-35 已经改掉了基准**：UI 不再复刻 DEMO，改为按**土豆兄弟风的竖屏设计稿**重做
+> （`docs/ui/mockups/v2/` → 规格 `ui-spec-approved.md` v1.1）。
+>
+> **不要照本文件改 UI。** 当前基准见 `docs/ui/ui-spec-approved.md` v1.1。
 > 2026-10-13 用户要求：「用截图对比，先仔细列举差异，再做修复计划」
 > 方法：**直接读 DEMO 的源码规格**（`prototype-html/src/render.js` / `app.css` / `index.html`）
 > 与 `cocos/assets/scripts/ui/Hud.ts` 逐项对照 —— 比让 3B 视觉模型目测可靠得多。

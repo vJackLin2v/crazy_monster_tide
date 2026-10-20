@@ -36,6 +36,8 @@ export class RunState {
   expNeed = EXP_BASE;
   wave = 0;
   kills = 0;
+  /** 本波击杀数 —— DEMO 的 `G.battleKilled`，HUD 的「击杀 N」用它（不是总击杀） */
+  waveKills = 0;
   runTime = 0;
   endless = false;
   attrTaken: Record<string, number> = {};
@@ -56,7 +58,8 @@ export class RunState {
   get expProgress(): number { return Math.min(1, this.exp / this.expNeed); }
 
   addExp(v: number): number {
-    this.exp += v;
+    // ★ 经验获取属性
+    this.exp += v * (1 + (this.stats.expGain ?? 0));
     let ups = 0;
     while (this.exp >= this.expNeed) {
       this.exp -= this.expNeed;
@@ -66,16 +69,25 @@ export class RunState {
     return ups;
   }
 
-  addKill(exp: number, gold: number): void {
+  /**
+   * 击杀结算（**只给击杀数与金币**）
+   *
+   * ⚠️ 2026-10-17 用户反馈「怪物没有掉落经验值，拾取范围失去意义」：
+   *    原来这里直接 `addExp(exp)` —— 击杀瞬间经验就到账了，
+   *    地上的经验球纯装饰（而且捡起来还会再加一次 = 重复计算）。
+   *    现在**经验只在拾取时给**（见 `Battle.updateGems`），拾取范围才有意义。
+   */
+  addKill(_exp: number, gold: number): void {
     this.kills++;
+    this.waveKills++;
     this.gold += Math.round(gold * (1 + this.stats.greed));
-    this.addExp(exp);
   }
 
   nextWave(): number {
     const n = this.wave + 1;
     if (n > RUN.waves && !this.endless) return -1;
     this.wave = n;
+    this.waveKills = 0;          // DEMO 在 startWave 里重置 battleKilled
     return n;
   }
   get isBossWaveNow(): boolean { return isBossWave(this.wave); }
@@ -148,7 +160,12 @@ export class RunState {
   }
 
   applyReward(r: Reward): void {
-    if (r.kind === 'skill') this.skills.push(makeSkill(r.id));
+    if (r.kind === 'skill') {
+      // ⚠️ 保险：满 4 个时**必须走替换流程**，不能直接 push。
+      //    曾经 push 成第 5 个 —— 战斗循环只跑前 4 个，那个奖励等于白拿（且玩家看不见）。
+      if (this.skills.length >= MAX_SKILLS) return;
+      this.skills.push(makeSkill(r.id));
+    }
     else if (r.kind === 'skillup') {
       const sk = this.skills.find(s => s.id === r.id);
       if (sk) sk.lvl++;
@@ -203,7 +220,12 @@ export class RunState {
       if (keepLocked && p && p.locked && !p.sold) { out.push(p); used.push(p.id); continue; }
       const c = carried.shift();
       if (c && !c.sold) { out.push(c); used.push(c.id); continue; }
-      out.push(this.makeShopItem(used, i));
+      // ⚠️ 必须把抽到的 id 记进 used：否则 4 次抽样的 RNG 种子完全一样
+      //    （种子里有 used.length），4 个货位会刷成**同一件商品**。
+      //    DEMO 的 refreshShop 里有这一行，移植时漏了。
+      const it = this.makeShopItem(used, i);
+      used.push(it.id);
+      out.push(it);
     }
     this.shopStock = out;
     this.carryOver = [];

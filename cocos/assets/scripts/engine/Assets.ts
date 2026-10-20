@@ -122,7 +122,9 @@ export class Assets {
   static loadAudio(name: string): Promise<AudioClip | null> {
     if (this.audioCache.has(name)) return Promise.resolve(this.audioCache.get(name) ?? null);
     return new Promise(res => {
-      resources.load('art/audio/' + name, AudioClip, (err, clip) => {
+      // ⚠️ `resources.load` **不接受扩展名**（实测 'art/audio/battle.ogg' 会报
+      //    "Bundle resources doesn't contain ..."，去掉 .ogg/.wav 才能加载）
+      resources.load('art/audio/' + name.replace(/\.[a-z0-9]+$/i, ''), AudioClip, (err, clip) => {
         const v = (!err && clip) ? clip : null;
         if (!v) this.failedCount++;
         this.audioCache.set(name, v);

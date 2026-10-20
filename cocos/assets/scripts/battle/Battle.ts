@@ -17,6 +17,7 @@ import { _decorator, Component, Node, Sprite, UITransform, Color, Graphics, Labe
 import { ZOOM, ARENA_W, ARENA_H, SCREEN_W, SCREEN_H, HITSTOP, HITSTOP_SCALE, SHAKE, DEATH_ANIM_TIME,
          TARGET_RANGE, RUN, waveTime, isBossWave } from '../core/Const';
 import { Assets, makeSolidFrame, shadowFrame, type UnitClips } from '../engine/Assets';
+import { Sfx } from '../engine/Audio';
 import { FrameAnim } from '../engine/FrameAnim';
 import { Camera2D } from '../engine/Camera2D';
 import { RunState } from '../game/RunState';
@@ -27,6 +28,13 @@ import type { SkillArt } from '../data/Types';
 import { ENEMIES, bossUnitFor } from '../data/Enemies';
 import { CHARS } from '../data/Chars';
 const { ccclass } = _decorator;
+
+/**
+ * 屏上调试行开关 —— **默认关闭**。
+ * 打开后战斗画面底部会显示：自适应倍率 / 单位像素 / 可视世界 / 素材加载统计 / 敌数 / 波次。
+ * 只在排查「东西没显示出来」时临时打开（当初 KI-002 就是靠它定位的）。
+ */
+const DEBUG_HUD = false;
 
 // ---------- 实体 ----------
 interface Enemy {
@@ -50,6 +58,12 @@ interface Area {
 }
 interface Gem { node: Node; x: number; y: number; v: number; pop: number; vx: number; vy: number; }
 interface Fx { node: Node; anim: FrameAnim; t: number; life: number; }
+/** 召唤物（守卫图腾）：存在一段时间，自己定期朝最近敌人开火 */
+interface Summon {
+  node: Node; anim: FrameAnim;
+  x: number; y: number; t: number; life: number; cd: number;
+  dmg: number; rt: SkillRuntime;
+}
 
 @ccclass('Battle')
 export class Battle extends Component {
@@ -77,8 +91,18 @@ export class Battle extends Component {
   private areas: Area[] = [];
   private gems: Gem[] = [];
   private fx: Fx[] = [];
+  private summons: Summon[] = [];
+  /** 闪电线段（连锁闪电用）：画成折线，短暂淡出 */
+  private bolts: { node: Node; t: number; life: number }[] = [];
 
   private spawnAcc = 0;
+
+  // ---- 波次结束过渡（用户要求：不要立刻跳走，先吸干净全场经验再进奖励/商店）----
+  private waveEnding = false;      // 正在结算本波（吸收经验中）
+  private waveEndT = 0;
+  private waveEndPending = false;  // 经验收完了，但还有升级弹窗没处理完
+  /** 受击闪屏强度 0~1（Hud 读它做红色边框闪烁） */
+  hurtFlash = 0;
 
   /** 生成点：把"当前真实可视尺寸"传给纯逻辑层（相机缩放会随屏幕变） */
   private spawnPt() {
@@ -111,21 +135,25 @@ export class Battle extends Component {
   // ---------- 启动 ----------
   async start() {
     this.buildTree();
-    this.refreshDebug();
+    // ⚠️ 调试行**默认关闭**：它是排查素材加载问题时加的，玩家不该看到。
+    //    要排查时把 DEBUG_HUD 改成 true 即可（DOM 与 Cocos 其余布局不受影响）。
+    if (DEBUG_HUD) this.refreshDebug();
   }
 
   /** 开一局（角色选择屏点"开始闯关"时调用） */
   async startRun(charId: string, seed: number) {
+    // ⚠️ 必须自保：菜单界面里 Battle 节点是 **inactive**，Cocos 不会调 start()，
+    //    于是 cam / world 都没建。之前这里直接 this.cam.target = node 会抛 TypeError，
+    //    把整个 startRun 打断（表现出来就是"进战斗卡一下"+"看不到人"）。
+    if (!this.cam || !this.world) this.buildTree();
     const charDef = CHARS.find(c => c.id === charId) ?? CHARS[0];
     this.rs = new RunState(charDef.id, seed);
     // 预载：玩家单位 + 初始技能的投射物/命中特效
     this.playerClips = await Assets.loadUnit(charDef.unit);
-    // NOTE: every layered VFX must be preloaded -- addVfx() looks frames up SYNCHRONOUSLY,
-    //       so an unloaded key silently renders nothing (looks like "the layer is broken").
-    const vfxKeys = new Set<string>([FX.killSmall, FX.killBig, FX.spawnWarn, FX.crit,
-      FX.hitSpark, FX.critFlash, FX.killSpark, FX.killDust, FX.killRing]);
-    for (const k of Object.keys(SKILL_ART)) { const a = SKILL_ART[k]; if (a.proj) vfxKeys.add(a.proj); if (a.hit) vfxKeys.add(a.hit); }
-    for (const k of vfxKeys) await Assets.loadVfx(k);
+    // VFX **不再阻塞入场**（用户反馈「进入游戏时会先卡顿一下」）：
+    //   原来这里同步 await 了 20+ 个特效组件，实测 startRun 要 700ms+。
+    //   改成后台加载：前 1~2 秒的命中特效可能缺席，但不卡；GameRoot 开局也在预加载同一批。
+    void this.preloadVfx();
 
     this.createPlayer(charDef.unit);
     await this.startWave(1);
@@ -156,6 +184,9 @@ export class Battle extends Component {
   }
 
   private buildTree() {
+    // ⚠️ 幂等：startRun 里可能已经补建过一次（菜单里 Battle 节点是 inactive，
+    //    Cocos 不会调 start()）。再建一次会产生第二套 World/Camera，画面就对不上了。
+    if (this.world && this.cam) return;
     this.world = new Node('World');
     this.world.parent = this.node;
     this.cam = this.world.addComponent(Camera2D);
@@ -382,15 +413,24 @@ export class Battle extends Component {
     this.place(node, this.px, this.py);
     this.cam.target = node;
 
-    // 脚下定位环：怪潮里一眼找到自己（Graphics 画，无需素材）
-    const ring = new Node('ring');
-    ring.parent = node;
-    const g = ring.addComponent(Graphics);
-    g.lineWidth = 2;
-    g.strokeColor = new Color(255, 168, 75, 220);
-    g.ellipse(0, -8, 19, 8);
-    g.stroke();
-    ring.setPosition(0, 0, 0);
+    // 脚下阴影：用户要求**去掉**（"不需要区分，土豆兄弟也没有"）。
+    // 角色本身有黑描边（mkSpriteNode 的 withShadow 画的是精灵描边，不是地面影），
+    // 怪潮里依然能看清，所以这里不再画额外的东西。
+  }
+
+  /** 后台预加载本局可能用到的特效（不阻塞战斗开始） */
+  private async preloadVfx() {
+    const keys = new Set<string>([FX.killSmall, FX.killBig, FX.spawnWarn, FX.crit,
+      FX.hitSpark, FX.critFlash, FX.killSpark, FX.killDust, FX.killRing]);
+    for (const k of Object.keys(SKILL_ART)) {
+      const a = SKILL_ART[k];
+      if (a.proj) keys.add(a.proj);
+      if (a.hit) keys.add(a.hit);
+      if (a.aoe) keys.add(a.aoe);
+      if (a.zone) keys.add(a.zone);
+    }
+    keys.add('chain/chain-node');          // 连锁闪电的命中火花（原来每次跳都异步 load 一次）
+    for (const k of keys) await Assets.loadVfx(k);
   }
 
   private async startWave(n: number) {
@@ -399,9 +439,17 @@ export class Battle extends Component {
     this.elitesSpawned = 0;
     this.bossRef = null;
     this.waveLeft = isBossWave(n) ? 0 : waveTime(n);
+    for (const s of this.summons) { if (s.node && s.node.isValid) s.node.destroy(); }
+    this.summons = [];
+    for (const b of this.bolts) { if (b.node && b.node.isValid) b.node.destroy(); }
+    this.bolts = [];
     this.px = ARENA_W / 2; this.py = ARENA_H / 2;
     this.place(this.playerNode, this.px, this.py);
     this.inv = 1.4;
+
+    Sfx.sfx('waveStart', 0.4, 400);
+    if (isBossWave(n)) { Sfx.sfx('bossIn', 0.6, 600); Sfx.bgm('boss'); }
+    else Sfx.bgm('battle');
 
     // 开场先铺几只（否则开局几秒屏幕是空的，没有"怪潮"感）
     if (!isBossWave(n)) {
@@ -457,13 +505,20 @@ export class Battle extends Component {
     if (def.type === 'projectile' || def.type === 'chain') {
       if (def.type === 'chain') {
         if (!tgt) return;
+        // 用户要求：**从角色身上发出闪电**，先打到第一个目标，再逐跳连锁。
+        // 每一跳都画一段折线闪电（来源 → 目标），命中点再叠一个火花。
         let cur = tgt; const hit = new Set<Enemy>([cur]);
+        this.spawnBolt(this.px, this.py, cur.x, cur.y);          // ★ 玩家 → 第一个目标
         this.hitEnemy(cur, rt.dmg, rt, art.hit);
         for (let j = 0; j < 2 + rt.bounce; j++) {
-          const nx = this.nearestEnemy(cur.x, cur.y, 140, hit);
+          const from = cur;
+          const nx = this.nearestEnemy(from.x, from.y, 140, hit);
           if (!nx) break;
-          hit.add(nx); this.hitEnemy(nx, rt.dmg * 0.85, rt, art.hit); cur = nx;
-          void Assets.loadVfx('chain/chain-node').then(() => this.addVfx('chain/chain-node', cur.x, cur.y, 0.3, 1));
+          hit.add(nx);
+          this.spawnBolt(from.x, from.y, nx.x, nx.y);            // ★ 目标 → 下一个目标
+          this.hitEnemy(nx, rt.dmg * 0.85, rt, art.hit);
+          this.addVfx('chain/chain-node', nx.x, nx.y, 0.3, 1);
+          cur = nx;
         }
         return;
       }
@@ -481,8 +536,82 @@ export class Battle extends Component {
     } else if (def.type === 'area') {
       const ax = tgt ? tgt.x : this.px, ay = tgt ? tgt.y : this.py;
       this.spawnArea(ax, ay, rt.size, rt.dmg, 3.4, 'zone', art.zone ?? art.aoe, rt);
+    } else if (def.type === 'summon') {
+      // 守卫图腾：在玩家附近立一个图腾，存活 9 秒，自行开火（DEMO 的行为）
+      this.spawnSummon(rt, art.proj);
     }
-    // summon 暂未实现（守卫图腾），留到下一个里程碑
+  }
+
+  /**
+   * 一道闪电（从 A 到 B）：折线 + 淡出。
+   * 用户要求：「连锁闪电应该是**角色发出闪电**，击中后才进行连锁」——所以第一段必须从玩家身上发出去。
+   */
+  private spawnBolt(x1: number, y1: number, x2: number, y2: number, life = 0.20) {
+    const n = new Node('bolt');
+    n.parent = this.layerFx;
+    const g = n.addComponent(Graphics);
+    const SEG = 7;
+    g.lineWidth = 3;
+    g.strokeColor = new Color(155, 231, 255, 255);
+    let prevX = x1, prevY = ARENA_H - y1;
+    for (let i = 1; i <= SEG; i++) {
+      const t = i / SEG;
+      const jitter = i < SEG ? 7 : 0;   // 末端不抖，保证正好落在目标身上
+      const bx = x1 + (x2 - x1) * t + (jitter ? this.rs.rng.range(-jitter, jitter) : 0);
+      const by = y1 + (y2 - y1) * t + (jitter ? this.rs.rng.range(-jitter, jitter) : 0);
+      g.moveTo(prevX, prevY);
+      g.lineTo(bx, ARENA_H - by);
+      prevX = bx; prevY = ARENA_H - by;
+    }
+    g.stroke();
+    this.bolts.push({ node: n, t: 0, life });
+  }
+
+  private updateBolts(dt: number) {
+    for (const b of this.bolts) b.t += dt;
+    this.bolts = this.bolts.filter(b => {
+      if (b.t < b.life) return true;
+      if (b.node && b.node.isValid) b.node.destroy();
+      return false;
+    });
+  }
+
+  /** 立一个守卫图腾 */
+  private spawnSummon(rt: SkillRuntime, vfxKey?: string) {
+    const key = vfxKey ?? FX.summon;
+    const frames = Assets.vfxFrames(key);
+    const x = this.px + this.rs.rng.range(-22, 22);
+    const y = this.py + this.rs.rng.range(-12, 12);
+    const { node, anim } = this.mkSpriteNode('summon', this.layerUnit, 32, 32, new Color(255, 201, 138));
+    if (frames.length) { anim.setClips({ play: frames }); anim.play('play', true); }
+    node.setPosition(x, ARENA_H - y, 0);
+    // 落地提示
+    this.addVfx(FX.summon, x, y, 0.5, 1.4);
+    // ★ 召唤强化：加伤害 + 加存活时间
+    const sp = this.rs.stats.summonPower ?? 0;
+    this.summons.push({ node, anim, x, y, t: 0, life: 9 * (1 + sp * 0.5), cd: 0.35, dmg: rt.dmg * (1 + sp), rt });
+  }
+
+  /** 召唤物更新：定期朝最近敌人开火；到期回收 */
+  private updateSummons(dt: number) {
+    for (const s of this.summons) {
+      s.t += dt; s.cd -= dt;
+      if (s.cd <= 0) {
+        s.cd = 0.75;
+        const t = this.nearestEnemy(s.x, s.y, 180);
+        if (t) {
+          const a = Math.atan2(t.y - s.y, t.x - s.x);
+          this.spawnBullet(s.x, s.y, Math.cos(a) * 185, Math.sin(a) * 185,
+            { ...s.rt, dmg: s.dmg, size: 5, pierce: 0, bounce: 0, chain: 0, split: 0, orbit: 0 },
+            'projectile/arcane/magic-missile', 'core/spark/hit-spark', false);
+        }
+      }
+    }
+    this.summons = this.summons.filter(s => {
+      if (s.t < s.life) return true;
+      if (s.node && s.node.isValid) s.node.destroy();
+      return false;
+    });
   }
 
   private spawnBullet(x: number, y: number, vx: number, vy: number, rt: SkillRuntime,
@@ -506,9 +635,15 @@ export class Battle extends Component {
   private spawnArea(x: number, y: number, r: number, dmg: number, life: number,
                     kind: 'pulse' | 'zone', vfxKey: string | undefined, _rt: SkillRuntime) {
     const frames = vfxKey ? Assets.vfxFrames(vfxKey) : [];
+    // 地面持续区域（zone）本身只是个"环/地面贴图"，很安静 —— 用户反馈「刃爆看不出特效」。
+    // 这里补一发**起手爆发**：落下瞬间的冲击环 + 闪光，让"打出去了"这件事有明确反馈。
     const { node, anim } = this.mkSpriteNode('area', this.layerArea, r * 2, r * 2);
     if (frames.length) { anim.setClips({ play: frames }); anim.play('play', true); }
     node.setPosition(x, ARENA_H - y, 0);
+    if (kind === 'zone') {
+      this.addVfx('core/ring/shockwave', x, y, 0.35, Math.max(1.2, r / 18));
+      this.addVfx(FX.killBig, x, y, 0.3, Math.max(1, r / 26));
+    }
     this.areas.push({
       node, anim, x, y, r: kind === 'pulse' ? 0 : r, maxR: r, dmg,
       life, t: 0, tick: 0, tickRate: 0.45, kind, done: false,
@@ -528,8 +663,14 @@ export class Battle extends Component {
   /** 一次伤害结算（走 Combat.rollDamage，暴击也吃同一个 Rng） */
   private hitEnemy(e: Enemy, base: number, rt: SkillRuntime, hitVfx?: string) {
     if (e.dead) return;
-    const { dmg, crit } = rollDamage(base, this.rs.stats, this.rs.rng);
+    let { dmg, crit } = rollDamage(base, this.rs.stats, this.rs.rng);
+    // ★ 精英伤害：对精英/BOSS 额外加成
+    if ((e.elite || e.boss) && this.rs.stats.eliteDmg) dmg = Math.round(dmg * (1 + this.rs.stats.eliteDmg));
     e.hp -= dmg;
+    // ★ 吸血：按伤害比例回血
+    if (this.rs.stats.lifesteal > 0) {
+      this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + dmg * this.rs.stats.lifesteal);
+    }
     e.flash = 0.12;
     this.addDamageText(e.x, e.y - 10, dmg, crit);
     // ── 特效分层（参考作品的手法：闪光 + 粒子 + 碎片）──────────
@@ -538,6 +679,9 @@ export class Battle extends Component {
     //   L2 通用火星（更小更快，每次都有，增加"打击感"）
     //   L3 暴击时额外闪光
     //   每层给不同的尺寸/寿命/微偏移，避免完全重叠显得假
+    // 音效：暴击单独一个；投射物 / 范围各用不同打击音（照 DEMO 的映射）
+    if (crit) Sfx.sfx('crit', 0.34, 110);
+    else Sfx.sfx(rt.spd > 0 ? 'hitRanged' : 'hitHeavy', 0.20, 60);
     if (hitVfx) this.addVfx(hitVfx, e.x, e.y, 0.45, 1);
     this.addVfx(FX.hitSpark, e.x + this.rs.rng.range(-4, 4), e.y + this.rs.rng.range(-4, 4), 0.24, 0.7);
     if (crit) {
@@ -551,7 +695,8 @@ export class Battle extends Component {
     // 击退
     if (!e.boss) {
       const a = Math.atan2(e.y - this.py, e.x - this.px);
-      e.kx += Math.cos(a) * 26; e.ky += Math.sin(a) * 26;
+      const kb = this.rs.stats.knockback ?? 26;                  // ★ 击退强度 = 属性
+      e.kx += Math.cos(a) * kb; e.ky += Math.sin(a) * kb;
     }
     if (e.hp <= 0) this.killEnemy(e, rt);
   }
@@ -565,10 +710,16 @@ export class Battle extends Component {
     if (e.dead) return;
     e.dead = true; e.deathT = 0;
     this.rs.addKill(e.exp, e.gold);
+    // ★ 击杀回血属性
+    const kh = this.rs.stats.killHeal ?? 0;
+    if (kh > 0) this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + kh);
     this.hitstop = Math.max(this.hitstop, e.boss ? HITSTOP.boss : (e.elite ? HITSTOP.elite : HITSTOP.normal));
     this.cam.addShake(e.boss ? SHAKE.boss : (e.elite ? SHAKE.elite : SHAKE.kill));
     // 击杀分层：爆发 + 碎片 + 尘土（+ 精英/BOSS 额外冲击波）
     const big = e.boss || e.elite;
+    if (e.boss) Sfx.sfx('special', 0.65, 200);
+    else if (e.elite) Sfx.sfx('hitMetal', 0.5, 200);
+    else Sfx.sfx('drop', 0.14, 130);
     this.addVfx(big ? FX.killBig : FX.killSmall, e.x, e.y, e.boss ? 0.9 : 0.5, big ? 2 : 1);
     this.addVfx(FX.killSpark, e.x, e.y, 0.42, big ? 1.8 : 1.1);
     this.addVfx(FX.killDust, e.x, e.y + 4, 0.55, big ? 2.2 : 1.2);
@@ -613,8 +764,18 @@ export class Battle extends Component {
     this.updateBullets(dt);
     this.updateAreas(dt);
     this.updateGems(dt);
+    this.updateSummons(dt);
+    this.updateBolts(dt);
     this.updateFx(dtRaw);
     this.checkWaveEnd(dt);
+    if (this.hurtFlash > 0) this.hurtFlash = Math.max(0, this.hurtFlash - dtRaw * 2.2);
+    if (this.waveEnding) {
+      this.waveEndT += dtRaw;
+      if (this.gems.length === 0 || this.waveEndT > 2.6) {   // 吸完 或 超时兜底
+        this.waveEnding = false;
+        this.finishWave();
+      }
+    }
     this.updateDebug();
   }
 
@@ -713,8 +874,11 @@ export class Battle extends Component {
         // 受击无敌帧 0.55 -> 0.80（2026-10-13 实测标定）
         // 原来 0.55s 把承伤封顶在 ~11 伤害/秒，120 血只够撑 11 秒，而一波 18 秒 ——
         // 密度一提上来就必死。放宽到 0.80 秒后封顶 ~7.5/秒，才留得出走位空间。
-        this.inv = 0.80; this.dmgFlash = 1;
+        this.inv = Math.max(0.2, this.rs.stats.invuln ?? 0.80);   // ★ 受击无敌帧 = 属性
+        this.dmgFlash = 1;
         e.atkT = 0.34;
+        this.hurtFlash = 1;                 // HUD 用它做"屏幕边缘红光一闪"
+        Sfx.sfx('hitMetal', 0.4, 180);      // 玩家挨打
         this.cam.addShake(SHAKE.hurt);
         if (this.rs.stats.hp <= 0 && this.running) { this.running = false; this.paused = true; console.log('[Battle] 玩家阵亡'); this.hooks.onDead?.(); }
       }
@@ -811,14 +975,20 @@ export class Battle extends Component {
       if (g.pop > 0) { g.x += g.vx * dt; g.y += g.vy * dt; g.vx *= 0.88; g.vy *= 0.88; g.pop -= dt; }
       const dx = this.px - g.x, dy = this.py - g.y;
       const d = Math.hypot(dx, dy) || 0.01;
-      if (d < st.pickup) {
-        const pull = 1 - d / st.pickup;
-        const sp = (170 + 430 * pull) * dt;
+      // 波次结算期：等待 0.5 秒"吸收感"之后，全场宝石无视拾取半径直接飞向玩家
+      const vacuum = this.waveEnding && this.waveEndT > 0.5;
+      const pick = vacuum ? 1e9 : st.pickup;
+      if (d < pick) {
+        const pull = vacuum ? 1 : 1 - d / pick;
+        const sp = (170 + 430 * pull) * (vacuum ? 3.4 : 1) * dt;
         g.x += dx / d * sp; g.y += dy / d * sp;
       }
       if (d < 17) {
         g.node.destroy();
-        const ups = this.rs.addExp(g.v);
+        Sfx.sfx('pickup', 0.16, 90);
+        // 用户要求：波次结束的**全屏吸取经验减半**（原地捡是全额）
+        const gain = this.waveEnding ? g.v * 0.5 : g.v;
+        const ups = this.rs.addExp(gain);
         if (ups > 0) this.onLevelUp(ups);
       } else {
         g.node.setPosition(g.x, ARENA_H - g.y, 0);
@@ -848,14 +1018,35 @@ export class Battle extends Component {
   }
 
   private checkWaveEnd(dt: number) {
+    if (this.waveEnding) return;                    // 结算中：走 updateGems 收经验，别重复触发
     // BOSS 波没有倒计时，靠击杀推进（bossDefeated 在回收 BOSS 节点时置位）
-    if (this.bossDefeated) { this.bossDefeated = false; this.advanceWave(); return; }
+    if (this.bossDefeated) { this.bossDefeated = false; this.beginWaveEnd(); return; }
     if (this.waveLeft <= 0) return;
     this.waveLeft -= dt;
     if (this.waveLeft > 0) return;
+    this.beginWaveEnd();
+  }
+
+  /**
+   * 本波结束 —— 用户要求（2026-10-17）：
+   *   「结束不要立刻跳下一关，等一会、把全场经验吸干净，再进奖励选择，类似土豆兄弟」
+   * 所以这里只做三件事：清场 / 结算金币 / 进入"吸收经验"状态，
+   * 界面切换交给 finishWave()（经验吸完、升级弹窗也处理完之后）。
+   *
+   * ⚠️ 顺带修了一个 bug：BOSS 波此前走的是 `advanceWave()` —— **直接开下一波、跳过了商店**。
+   *    现在和普通波走同一条结束路径，商店正常出现。
+   */
+  private beginWaveEnd() {
     for (const e of this.enemies) { if (!e.dead) this.killEnemy(e); }
     const gain = this.rs.waveClearGold();
     console.log(`[Battle] 第 ${this.rs.wave} 波通过  +${gain} 金币  总计 ${this.rs.gold}  Lv${this.rs.lv}`);
+    this.waveEnding = true;
+    this.waveEndT = 0;
+  }
+
+  /** 经验吸完（且升级弹窗处理完）才真正切屏 */
+  private finishWave() {
+    if (this.pendingUps > 0) { this.waveEndPending = true; return; }   // 还有升级卡要选
     this.paused = true;
     this.hooks.onWaveCleared?.();
   }
@@ -870,6 +1061,7 @@ export class Battle extends Component {
   }
 
   private onLevelUp(_ups: number) {
+    Sfx.sfx('levelUp', 0.6, 300);
     // 交给 UI：暂停战斗 + 弹 3 选 1；选完由 GameRoot 调 resumeFromModal()
     this.pendingUps = _ups;
     this.paused = true;
@@ -885,6 +1077,8 @@ export class Battle extends Component {
       return;
     }
     this.pendingUps = 0;
+    // 若本波已结束、经验也吸完了，只是卡在升级弹窗上 -> 现在把波次收尾（进商店）
+    if (this.waveEndPending) { this.waveEndPending = false; this.finishWave(); return; }
     this.paused = false;
   }
   /** UI 直接取当前待选卡（重开弹窗时用） */

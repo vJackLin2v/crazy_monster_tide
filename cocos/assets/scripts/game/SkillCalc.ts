@@ -101,6 +101,7 @@ export function calcSkill(sk: SkillInst, stats: CharStats): SkillRuntime {
     if (v) cd *= (1 - v);
   }
   cd = cd / stats.haste;                          // 攻速属性
+  cd *= (1 - Math.min(0.6, stats.cdr ?? 0));      // ★ 冷却缩减属性（封顶 60%，防 Build 失控）
   cd = Math.max(0.12, cd);                        // 冷却下限，防止 Build 失控
 
   // 伤害：角色攻击力 x 标签加成 x 全局标签加成
@@ -115,11 +116,17 @@ export function calcSkill(sk: SkillInst, stats: CharStats): SkillRuntime {
   if (snipe)    dmg *= Math.pow(1.15, snipe);
   if (overload) { dmg *= Math.pow(1.25, overload); sizeMul *= Math.pow(0.90, overload); }
 
+  // ★ 属性追加在模块之后（属性是全局被动，模块是技能专属）
+  //   全部设上限，避免"多重/穿透"叠到失控
+  count = Math.min(5, count + Math.min(3, stats.count ?? 0));
+  pierce = Math.min(6, pierce + Math.min(4, stats.pierce ?? 0));
+  bounce = Math.min(5, bounce + Math.min(3, stats.bounce ?? 0));
+
   return {
     cd,
     dmg,
     spd: b.spd * (stats.projSpd ?? 1) * (snipe ? Math.pow(1.4, snipe) : 1),
-    size: b.size * sizeMul * (0.9 + 0.1 * stats.area) * stats.area,
+    size: b.size * sizeMul * (0.9 + 0.1 * stats.area) * stats.area * (stats.sizeMul ?? 1),
     count, fan, pierce, bounce, orbit, split, chain,
     echo, burn, slow, vamp, thunder, thornmail,
     harvest: harvest > 0,

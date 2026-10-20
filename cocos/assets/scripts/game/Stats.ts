@@ -5,8 +5,12 @@ import type { CharDef, CharStats } from '../data/Types';
 export function emptyStats(): CharStats {
   return {
     power: 1, haste: 1, area: 1, maxhp: 100, speed: BASE_SPEED,
-    crit: 0.05, critdmg: 1.5, pickup: BASE_PICKUP, armor: 0, regen: 0,
-    projSpd: 1, greed: 0, tagAll: 0,
+    crit: 0.05, critdmg: 1.5,
+    projSpd: 1, pierce: 0, bounce: 0, count: 0, sizeMul: 1,
+    armor: 0, regen: 0, invuln: 0.80, lifesteal: 0,
+    pickup: BASE_PICKUP, greed: 0, expGain: 0, killHeal: 0,
+    cdr: 0, knockback: 26, eliteDmg: 0, summonPower: 0,
+    tagAll: 0,
     tagBonus: {}, tagCdr: {}, hp: 100,
   };
 }

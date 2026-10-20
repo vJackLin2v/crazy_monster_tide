@@ -1,0 +1,35 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<title>levelup</title><link rel="stylesheet" href="style.css"></head><body>
+<div class="ph">
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,#33333f 0 26px,#2f2f3a 26px 52px)"></div>
+  <div class="mask"></div>
+  <div class="ttl ol" style="position:absolute;left:0;right:0;top:96px;text-align:center;font-size:26px">升级！ Lv.4</div>
+  <div class="sub" style="position:absolute;left:0;right:0;top:134px;text-align:center">选一个带走</div>
+  <!-- 三张卡结构完全一致：标签 / 图标 / 名称 / 介绍(flex:1 撑满剩余高度)
+       属性数值已并入介绍文案，不再单列 -->
+  <div style="position:absolute;left:0;right:0;top:166px;display:flex;justify-content:center;gap:12px">
+    <div class="panel" style="width:104px;height:252px;border-color:#f5a623;padding:10px 7px;display:flex;flex-direction:column">
+      <div class="chip ol" style="border-color:#f5a623;color:#f5a623;font-size:10px;padding:2px 5px;align-self:center">新技能</div>
+      <img src="../../../../assets/approved/icons/skill-frost_ray.png" style="width:44px;height:44px;image-rendering:pixelated;display:block;margin:10px auto 0">
+      <div class="ol" style="font-size:16px;font-weight:bold;margin-top:8px;text-align:center">霜爆</div>
+      <div class="sub" style="font-size:11px;line-height:1.6;margin-top:8px;flex:1;overflow:hidden;text-align:left;padding:0 2px">
+        自身中心爆发寒霜，造成 <span style="color:#8bd63a;font-weight:bold">8 点伤害</span> 并<b>减速</b>。冷却 <span style="color:#8bd63a;font-weight:bold">3.2s</span>。</div>
+    </div>
+    <div class="panel" style="width:104px;height:252px;border-color:#8bd63a;padding:10px 7px;display:flex;flex-direction:column">
+      <div class="chip ol" style="border-color:#8bd63a;color:#8bd63a;font-size:10px;padding:2px 5px;align-self:center">行为模块</div>
+      <div class="slot" style="width:44px;height:44px;display:block;margin:10px auto 0;font-size:22px">⇢</div>
+      <div class="ol" style="font-size:16px;font-weight:bold;margin-top:8px;text-align:center">穿透</div>
+      <div class="sub" style="font-size:11px;line-height:1.6;margin-top:8px;flex:1;overflow:hidden;text-align:left;padding:0 2px">
+        命中后可额外穿透 <span style="color:#8bd63a;font-weight:bold">+1 个目标</span>。同一模块最多装 <span style="color:#8bd63a;font-weight:bold">3 个</span>。</div>
+    </div>
+    <div class="panel" style="width:104px;height:252px;border-color:#b9c0cf;padding:10px 7px;display:flex;flex-direction:column">
+      <div class="chip ol" style="font-size:10px;padding:2px 5px;align-self:center">属性</div>
+      <div class="slot" style="width:44px;height:44px;display:block;margin:10px auto 0;font-size:22px">⚔</div>
+      <div class="ol" style="font-size:16px;font-weight:bold;margin-top:8px;text-align:center">攻击力</div>
+      <div class="sub" style="font-size:11px;line-height:1.6;margin-top:8px;flex:1;overflow:hidden;text-align:left;padding:0 2px">
+        你所有技能的伤害提升 <span style="color:#8bd63a;font-weight:bold">8%</span>。可重复获取，效果叠加。</div>
+    </div>
+  </div>
+  <div class="btn" style="position:absolute;left:60px;right:60px;bottom:44px;padding:13px 0;font-size:15px">跳过（+8 金币）</div>
+</div>
+</body></html>
