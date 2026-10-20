@@ -5,12 +5,13 @@
  * 坐标全部来自规格 §2.2~§2.4、§2.9（在设计稿 HTML 上实测）。
  * ⚠️ 位置锚定 `view.getVisibleSize()`，不得写死 640（KI-009）。
  */
-import { Node, Label, Color, Graphics, UITransform, view, Sprite } from 'cc';
+import { Node, Label, Color, Graphics, UITransform, view, Sprite, SpriteFrame } from 'cc';
 import { panel, text, title, button, onTap, mkNode, screen, radialGlow, paintPanel } from './UIKit';
 import { COL, FS, R, BORDER } from './Tokens';
 import { CHARS } from '../data/Chars';
 import { SKILLS, SKILL_ART } from '../data/Skills';
 import { Assets, iconFrame, loadIcon } from '../engine/Assets';
+import { CS, pageCount, cellPos, cellPosPaged, pageRowCount, detailBox, detailRows, pagerPos, portraitFit } from './CharLayout';
 
 const C_MENU_EDGE = new Color(30, 30, 42);    // #1e1e2a
 const C_MENU_MID = new Color(58, 58, 82);     // #3a3a52
@@ -100,7 +101,7 @@ export function buildHowto(parent: Node, onBack: () => void): Node {
   return root;
 }
 
-/** 3. 角色选择 —— 规格 §2.4（3x2 网格 + 详情 + 底部双按钮） */
+/** 3. 角色选择 —— 规格 §2.4 v1.2（2x2 网格 + 翻页 + 详情 + 底部双按钮） */
 export function buildCharSelect(parent: Node, onBack: () => void, onStart: (id: string) => void): Node {
   const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
   const at2 = (x: number, y: number) => at(VW, VH, x, y);
@@ -108,62 +109,98 @@ export function buildCharSelect(parent: Node, onBack: () => void, onStart: (id: 
 
   const tt = at2(180, 12 + 16);
   title(root, tt.y, '选择角色');
-  const st = at2(180, 46 + 8);
-  text(root, st.x, st.y, '每个角色都有正向天赋，也有明显的负面代价', { size: 12, color: COL.dim, width: 354 });
+  const st = at2(CS.MARGIN_X, 50);
+  text(root, st.x, st.y, '每个角色都有正向天赋与负面代价', { size: 11, color: COL.dim, align: 'left', width: 228 });
 
+  // 每屏 4 个（2 列 × 2 行），6 个角色 → 2 页；布局数学在 CharLayout.ts（纯函数，可单测）
+  const pages = pageCount(CHARS.length);
+  let page = 0;
   let picked = CHARS[0].id;
-  const cells: { node: Node; id: string; label: Label }[] = [];
-  // 网格：左右各 12，3 列，间距 8 → 单元宽 = (336-16)/3
-  // 立绘放大到 96px（32px 源 × 3 倍整数缩放）：格子相应加高到 124
-  const GAP = 8, CW = (336 - GAP * 2) / 3, CHh = 124, X0 = 12;
-  CHARS.forEach((ch, i) => {
-    const col = i % 3, row = Math.floor(i / 3);
-    const cx = X0 + CW / 2 + col * (CW + GAP);
-    const cy = 70 + CHh / 2 + row * (CHh + GAP);
-    const c = at2(cx, cy);
-    const n = panel(root, c.x, c.y, CW, CHh, { bg: COL.bg2, line: COL.line, radius: R.m });
 
-    // 用户反馈「角色立绘太小」：46 → 96（3 倍整数缩放，占格子宽约 92%）
-    const pn = mkNode(n, 'portrait', 96, 96, 0, 14);
+  // 翻页按钮：右上角，96x44 热区；左边留出副标题的位置
+  const pp = pagerPos();
+  const pgc = at2(pp.x, pp.y);
+  const pgBtn = button(root, pgc.x, pgc.y, pp.w, pp.h, '', { size: 13 });
+  onTap(pgBtn.node, () => {
+    page = (page + 1) % pages;
+    applyPage();
+    // 切页后如果当前选中的人不在本页，自动选本页第一个 —— 否则详情面板里显示的是看不见的角色
+    const first = page * CS.PER_PAGE;
+    if (!CHARS.slice(first, first + CS.PER_PAGE).some(c => c.id === picked)) {
+      picked = CHARS[first].id;
+      refresh();
+    }
+  });
+
+  const cells: { node: Node; id: string; label: Label }[] = [];
+  CHARS.forEach((ch, i) => {
+    const p = cellPos(i % CS.PER_PAGE);
+    const c = at2(p.x, p.cy);
+    const n = panel(root, c.x, c.y, CS.CARD_W, CS.CARD_H, { bg: COL.bg2, line: COL.line, radius: R.m });
+    n.active = false;      // 由 applyPage() 决定哪 4 个上场
+
+    // 用户反馈「立绘还是小」：96 → 128 的框只是第一步；单位帧里角色本体只占 13×15，
+    // 真正变大的关键是用**裁掉透明留白的 portrait.png**，再按整数倍放大（见 Assets.loadPortrait）。
+    const P = CS.PORTRAIT;
+    const pn = mkNode(n, 'portrait', P, P, 0, CS.PORTRAIT_DY);
     const sp = pn.addComponent(Sprite);
     sp.sizeMode = Sprite.SizeMode.CUSTOM; sp.trim = false;
-    Assets.loadUnit(ch.unit).then(clips => {
-      const f = (clips.idle && clips.idle[0]) || (clips.walk && clips.walk[0]);
+    const ut = pn.getComponent(UITransform);
+    const apply = (f: SpriteFrame | null) => {
       if (!f || !sp.isValid) return;
       sp.spriteFrame = f;
-      const fw = f.rect.width || 32;
-      const k = Math.max(1, Math.floor(96 / fw));
-      const ut = pn.getComponent(UITransform);
-      if (ut) ut.setContentSize(fw * k, fw * k);
+      const fit = portraitFit(f.rect.width || 32, f.rect.height || 32);
+      if (ut) ut.setContentSize(fit.w, fit.h);
+    };
+    Assets.loadPortrait(ch.unit).then(f => {
+      if (f) { apply(f); return; }
+      // 兜底：立绘缺失时退回 idle 首帧（未裁切，会小一些，但至少能看见）
+      return Assets.loadUnit(ch.unit).then(c => {
+        apply((c.idle && c.idle[0]) || (c.walk && c.walk[0]) || null);
+      });
     }).catch(() => { /* 人像失败不影响选角 */ });
 
-    const l = text(n, 0, -50, ch.name, { size: FS.xs, color: COL.cream, width: CW - 4, bold: true, outline: true });
+    const l = text(n, 0, CS.NAME_DY, ch.name, { size: FS.xs, color: COL.cream, width: CS.CARD_W - 6, bold: true, outline: true });
     cells.push({ node: n, id: ch.id, label: l });
     onTap(n, () => { picked = ch.id; refresh(); });
   });
 
-  // 详情面板：12,290 → 底 86
-  const dTop = 70 + 2 * (CHh + GAP) + 4;      // 跟着网格走，别写死（格子高度会变）
-  const dBot = VH - 86;
-  const DH = dBot - dTop;
-  const dc = at2(180, dTop + DH / 2);
-  const detail = panel(root, dc.x, dc.y, 336, DH, { bg: COL.bg2, line: COL.line, radius: R.m });
-  const half = DH / 2;
-  const dName = text(detail, -156, half - 26, '', { size: 20, color: COL.accent, align: 'left', width: 312, bold: true, outline: true, shadow: true });
-  const dPos = text(detail, -156, half - 62, '', { size: FS.s, color: COL.mint, align: 'left', width: 312, bold: true, outline: true });
-  const dNeg = text(detail, -156, half - 88, '', { size: FS.s, color: COL.red, align: 'left', width: 312, bold: true, outline: true });
+  /** 切页：把当前页的格子摆到网格上，其余隐藏（零星页垂直居中） */
+  function applyPage() {
+    const rowsUsed = pageRowCount(CHARS.length, page);
+    cells.forEach((c, i) => {
+      const onPage = Math.floor(i / CS.PER_PAGE) === page;
+      c.node.active = onPage;
+      if (onPage) {
+        const p = cellPosPaged(i - page * CS.PER_PAGE, rowsUsed);
+        const q = at2(p.x, p.cy);
+        c.node.setPosition(q.x, q.y, 0);
+      }
+    });
+    pgBtn.label.string = pages > 1 ? (page + 1) + '/' + pages + ' ›' : '';
+  }
+
+  // 详情面板：顶边跟网格走、底边跟屏幕底走 → 矮屏自动换紧凑排版
+  const dbox = detailBox(VH);
+  const dr = detailRows(dbox.height);
+  const dc = at2(180, dbox.top + dbox.height / 2);
+  const detail = panel(root, dc.x, dc.y, 336, dbox.height, { bg: COL.bg2, line: COL.line, radius: R.m });
+  const dName = text(detail, -156, dr.name.y, '', { size: dr.name.size, color: COL.accent, align: 'left', width: 312, bold: true, outline: true, shadow: true });
+  const dPos = text(detail, -156, dr.pos.y, '', { size: dr.pos.size, color: COL.mint, align: 'left', width: 312, bold: true, outline: true });
+  const dNeg = text(detail, -156, dr.neg.y, '', { size: dr.neg.size, color: COL.red, align: 'left', width: 312, bold: true, outline: true });
   // 初始技能行
-  const skBox = panel(detail, 0, half - 140, 304, 44, { bg: COL.bg3, line: COL.line, radius: R.m, shadow: false });
-  const skIcon = mkNode(skBox, 'skIcon', 30, 30, -130, 0);
+  const skBox = panel(detail, 0, dr.skill.y, 304, dr.skill.h, { bg: COL.bg3, line: COL.line, radius: R.m, shadow: false });
+  const skD = dr.compact ? 24 : 30;
+  const skIcon = mkNode(skBox, 'skIcon', skD, skD, -130, 0);
   const skSp = skIcon.addComponent(Sprite);
   skSp.sizeMode = Sprite.SizeMode.CUSTOM; skSp.trim = false;
-  const skTxt = text(skBox, -108, 1, '', { size: 14, color: COL.cream, align: 'left', width: 180, bold: true, outline: true });
-  const dStat = text(detail, 0, -half + 22, '', { size: FS.xs, color: COL.dim, width: 312 });
+  const skTxt = text(skBox, -108, 1, '', { size: dr.compact ? 12 : 14, color: COL.cream, align: 'left', width: 180, bold: true, outline: true });
+  const dStat = text(detail, 0, dr.stat.y, '', { size: dr.stat.size, color: COL.dim, width: 312 });
 
   function refresh() {
     for (const cell of cells) {
       const on = cell.id === picked;
-      paintPanel(cell.node, CW, CHh, { bg: on ? COL.bg3 : COL.bg2, line: on ? COL.accent : COL.line, radius: R.m });
+      paintPanel(cell.node, CS.CARD_W, CS.CARD_H, { bg: on ? COL.bg3 : COL.bg2, line: on ? COL.accent : COL.line, radius: R.m });
       cell.label.color = on ? COL.accent : COL.cream;
     }
     const ch = CHARS.find(x => x.id === picked)!;
@@ -200,6 +237,7 @@ export function buildCharSelect(parent: Node, onBack: () => void, onStart: (id: 
   onTap(back.node, onBack);
   const go = button(root, at2(116 + 116, 0).x, -VH / 2 + 16 + 26, 232, 52, '开始闯关', { primary: true, size: 17 });
   onTap(go.node, () => onStart(picked));
+  applyPage();
   refresh();
   return root;
 }

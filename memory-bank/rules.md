@@ -67,3 +67,4 @@
 | 10 | `Graphics.ellipse() + fill()` 会让 Cocos 卡死 | 椭圆填充改用 `circle + fill` + 节点 `setScale(1, 0.42, 1)` 压扁 |
 | 11 | `resources.load()` **不接受扩展名** | `'art/audio/battle.ogg'` 会报 "Bundle resources doesn't contain…"。必须去掉 `.ogg/.wav/.png` 再加载（图标那边早就这么做了，音频漏了） |
 | 12 | 「没载入就先记状态」导致功能永不生效 | BGM 的 `bgm()` 在 clip 未载入时就把 `curBgm` 记下了 → 之后同样调用被"同一首"挡掉，**永远不播**。要记"想要的状态"，等载入完补播 |
+| 13 | **放大像素角色 ≠ 放大帧框**：32×32 单位帧里角色本体只有 13×15（约 40%），把框从 96 加到 128 后角色本体仍只有 52×60 | 要真正变大必须**先裁掉透明留白**（`portrait.png`）再按整数倍放大；判断"够不够大"要量**角色本体的像素尺寸**，不是节点尺寸。见 D-36 / `ui/CharLayout.portraitFit()` |

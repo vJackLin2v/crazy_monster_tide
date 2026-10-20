@@ -20,6 +20,7 @@ import { ENEMIES, enemyPool, BOSS_UNITS, bossUnitFor } from '../assets/scripts/d
 import { ATTRS } from '../assets/scripts/data/Attrs';
 import { UNIT_FRAMES } from '../assets/scripts/data/UnitFrames';
 import { ITEMS, ELITE_POOL } from '../assets/scripts/data/Items';
+import { CS, pageCount, cellPos, gridBottom, detailBox, detailRows, pagerPos, portraitFit } from '../assets/scripts/ui/CharLayout';
 
 let pass = 0, fail = 0;
 const ok = (c: boolean, m: string) => { c ? (pass++, console.log('  PASS ' + m)) : (fail++, console.log('  FAIL ' + m)); };
@@ -141,6 +142,72 @@ console.log('== 4c. 道具数量（需求 §10：50 普通 + 20 高级） ==')
   const before = st.power;
   ITEMS.power_l.apply(st);
   ok(st.power > before, '★ 道具生效（攻击力 ' + before.toFixed(2) + ' → ' + st.power.toFixed(2) + '）');
+}
+
+console.log('\n== 4e. 角色选择布局（2 列 / 每屏 4 个 / 立绘 128） ==');
+{
+  ok(CHARS.length === 6, '角色 6 个（实际 ' + CHARS.length + '）');
+  ok(pageCount(CHARS.length) === 2, '6 个角色 → 2 页（每页 ' + CS.PER_PAGE + ' 个）');
+  ok(CS.PORTRAIT === 128 && CS.PORTRAIT % 32 === 0, '立绘 ' + CS.PORTRAIT + 'px = 32px 源 × 4（整数倍，不糊边）');
+
+  // 立绘 + 姓名必须在格子内，且互不压（3px 描边内缩）
+  const innerH = CS.CARD_H / 2 - 3;
+  const pTop = CS.PORTRAIT_DY + CS.PORTRAIT / 2;
+  const pBot = CS.PORTRAIT_DY - CS.PORTRAIT / 2;
+  const lTop = CS.NAME_DY + 10;
+  const lBot = CS.NAME_DY - 10;
+  ok(pTop <= innerH + 0.01 && pBot >= -innerH - 0.01, '立绘 128 在格子内（上下留白 ' + Math.round(innerH - pTop) + ' / ' + Math.round(pBot + innerH) + 'px）');
+  ok(pBot - lTop >= 1.5 && lBot >= -innerH - 0.01, '姓名在立绘下方且不出格子（间隔 ' + (pBot - lTop).toFixed(0) + 'px）');
+
+  // 立绘按「裁掉透明留白后的内容尺寸」整数倍放大：13×15 → 8 倍 = 104×120，17×25 → 5 倍 = 85×125
+  const k1 = portraitFit(13, 15), k2 = portraitFit(17, 25);
+  ok(k1.k === 8 && k1.w === 104 && k1.h === 120, '13×15 立绘 → 8 倍 = 104×120（原来 32×32 框里只有 52×60）');
+  ok(k2.k === 5 && k2.w === 85 && k2.h === 125, '17×25 立绘 → 5 倍 = 85×125');
+  const allFit = [[13, 15], [14, 15], [12, 14], [17, 25]].every(([w, h]) => {
+    const f = portraitFit(w, h);
+    return f.w <= CS.CARD_W - 12 && f.h <= CS.PORTRAIT && f.k >= 1;
+  });
+  ok(allFit, '所有立绘都在格子可用区（≤ ' + (CS.CARD_W - 12) + ' × ' + CS.PORTRAIT + '）');
+
+  let inX = true, inY = true;
+  for (let s = 0; s < CS.PER_PAGE; s++) {
+    const p = cellPos(s);
+    if (p.x - CS.CARD_W / 2 < CS.MARGIN_X - 0.01 || p.x + CS.CARD_W / 2 > 360 - CS.MARGIN_X + 0.01) inX = false;
+    if (p.cy + CS.CARD_H / 2 > gridBottom() + 0.01) inY = false;
+  }
+  ok(inX && inY, '每页 4 格都落在 12~348 的安全区内');
+  ok(cellPos(0).cy - CS.CARD_H / 2 >= CS.GRID_TOP - 0.01, '第一行格子不压标题（网格顶边 ' + CS.GRID_TOP + '）');
+  ok(Math.abs((cellPos(0).x + cellPos(1).x) / 2 - 180) < 0.01, '第 2 页的 2 个角色对称居中');
+
+  for (const vh of [640, 760, 844]) {
+    const box = detailBox(vh);
+    const dr = detailRows(box.height);
+    const half = box.height / 2;
+    const fits = (r: { y: number; h: number }) => Math.abs(r.y) + r.h / 2 <= half + 0.5;
+    ok(fits(dr.name) && fits(dr.pos) && fits(dr.neg) && fits(dr.skill) && fits(dr.stat),
+       'VH ' + vh + '：详情 ' + Math.round(box.height) + 'px ' + (dr.compact ? '紧凑' : '完整') + '排版，内容全在面板内');
+    ok(box.top > gridBottom() && box.top + box.height < vh - 65,
+       'VH ' + vh + '：详情面板夹在网格与底部按钮之间（' + box.top + ' → ' + Math.round(box.top + box.height) + '）');
+  }
+
+  const noOverlap = [640, 700, 760, 844].every(vh => {
+    const dr = detailRows(detailBox(vh).height);
+    const items = [
+      { y: dr.name.y, halfH: dr.name.size / 2 },
+      { y: dr.pos.y, halfH: dr.pos.size / 2 },
+      { y: dr.neg.y, halfH: dr.neg.size / 2 },
+      { y: dr.skill.y, halfH: dr.skill.h / 2 },
+      { y: dr.stat.y, halfH: dr.stat.size / 2 },
+    ];
+    for (let i = 0; i + 1 < items.length; i++) {
+      if (items[i].y - items[i + 1].y < items[i].halfH + items[i + 1].halfH - 0.6) return false;
+    }
+    return true;
+  });
+  ok(noOverlap, '详情五行互不压字（VH 640 / 700 / 760 / 844）');
+
+  const pp = pagerPos();
+  ok(pp.x - pp.w / 2 >= CS.MARGIN_X + 228, '翻页按钮在副标题右侧（' + (pp.x - pp.w / 2) + ' ≥ ' + (CS.MARGIN_X + 228) + '）');
 }
 
 console.log('\n== 5. 商店（固定货位 / 购买不消失 / 锁定） ==');

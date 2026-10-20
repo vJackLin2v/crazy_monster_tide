@@ -75,6 +75,7 @@ export function makeSolidFrame(r: number, g: number, b: number, a = 255, size = 
 
 export class Assets {
   private static unitCache = new Map<string, UnitClips>();
+  private static portraitCache = new Map<string, SpriteFrame | null>();
   private static vfxCache = new Map<string, SpriteFrame[]>();
   private static audioCache = new Map<string, AudioClip | null>();
   static loadedCount = 0;
@@ -101,6 +102,20 @@ export class Assets {
     }
     this.unitCache.set(unit, out);
     return out;
+  }
+
+  /**
+   * 载入**角色立绘**：`art/units/<单位>/portrait`（由 idle 首帧去掉透明留白后裁出）
+   *
+   * 为什么要单独的立绘素材：单位帧是 32×32，角色本体只占 13×15 左右，
+   * 直接把 32×32 放大 4 倍后，角色看起来还是只有 52×60 —— 这就是"立绘还是小"的真因。
+   * 裁掉透明边后按整数倍放大，角色本体能占到 100×120 以上。
+   */
+  static async loadPortrait(unit: string): Promise<SpriteFrame | null> {
+    if (this.portraitCache.has(unit)) return this.portraitCache.get(unit) ?? null;
+    const sf = await loadSF(`art/units/${unit}/portrait`);
+    this.portraitCache.set(unit, sf);
+    return sf;
   }
 
   /** 载入一个 VFX 组件（组件名形如 projectile/fire/fireball-shot） */
