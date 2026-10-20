@@ -393,12 +393,66 @@
         "attack": 15,
         "death": 12
       }
+    },
+    "boss-infernal": {
+      "pool_name": "09Hell Enforcer",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 6,
+        "death": 8
+      },
+      "dir": "boss-infernal",
+      "total_frames": 24,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "boss-devourer": {
+      "pool_name": "10CaveDevourer",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "walk": 5,
+        "attack": 4,
+        "death": 10
+      },
+      "dir": "boss-devourer",
+      "total_frames": 23,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
+    },
+    "boss-crystal": {
+      "pool_name": "08Crystal Guard",
+      "kind": "enemies",
+      "anims": {
+        "idle": 4,
+        "walk": 6,
+        "attack": 8,
+        "death": 6
+      },
+      "dir": "boss-crystal",
+      "total_frames": 24,
+      "fps": {
+        "idle": 12,
+        "walk": 12,
+        "attack": 15,
+        "death": 12
+      }
     }
   },
   "counts": {
     "players": 6,
     "enemies": 12,
-    "bosses": 3,
+    "bosses": 6,
     "animation_sets": 82,
     "files": 463
   }
