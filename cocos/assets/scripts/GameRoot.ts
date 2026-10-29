@@ -760,6 +760,29 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         note: it ? (it.tier === 2 ? '高级道具 · 精英 / BOSS 掉落' : '普通道具 · 商店或掉落获取') : '',
       };
     });
+    // 黑科技页的结构化数据：已装（按技能逐个列）+ 背包（按同名合并计数）
+    const modDetails = (() => {
+      const out: { name: string; icon?: string; count: number; desc: string; installed: boolean }[] = [];
+      rs.skills.forEach((s) => {
+        (s.mods || []).forEach((m) => {
+          const d = moduleDef(m);
+          out.push({
+            name: this.modName(m) + (s.mods.length > 1 ? '' : ''), icon: MODULE_ICON[baseOf(m)],
+            count: 1, desc: d ? d.desc : '', installed: true,
+          });
+        });
+      });
+      const bag = new Map<string, number>();
+      rs.modsBag.forEach((m) => bag.set(m, (bag.get(m) ?? 0) + 1));
+      bag.forEach((n, m) => {
+        const d = moduleDef(m);
+        out.push({
+          name: this.modName(m), icon: MODULE_ICON[baseOf(m)],
+          count: n, desc: d ? d.desc : '', installed: false,
+        });
+      });
+      return out;
+    })();
     this.battle.paused = true;
     this.curModal = buildBuildDrawer(this.uiRoot, pages,
       () => { this.closeModal(); this.confirmQuit(); },
@@ -781,7 +804,8 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       skillDetails,
       itemDetails,
       this.pauseTab,
-      (i) => { this.pauseTab = i; });
+      (i) => { this.pauseTab = i; },
+      modDetails);
   }
 
   private confirmQuit() {

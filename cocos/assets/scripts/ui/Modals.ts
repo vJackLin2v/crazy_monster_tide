@@ -344,6 +344,8 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
 
 
 // ---------- 暂停 / Build 面板（底部抽屉 + 4 页签）----------
+/** 黑科技页的结构化数据（图标 / 名称 / 数量 / 效果 / 是否已装） */
+export interface ModDetailView { name: string; icon?: string; count: number; desc: string; installed: boolean }
 export interface BuildPageData { tab: string; lines: string[]; }
 
 /** 技能页的详情（M33 #4：手风琴，能看到技能描述 + 已装模块描述） */
@@ -385,7 +387,8 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
                                  skillDetails?: SkillDetailView[],
                                  itemDetails?: ItemDetailView[],
                                  startTab = 0,
-                                 onTab?: (i: number) => void): Node {
+                                 onTab?: (i: number) => void,
+                                 modDetails?: ModDetailView[]): Node {
   const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
   const A = (x: number, y: number) => at(VW, VH, x, y);
   const root = mkNode(parent, 'scr-build', VW, VH);
@@ -540,6 +543,11 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
     if (!itemDetails) return;
     for (const c of itemRoot.children.slice()) c.destroy();
     const W = VW - 32;
+    if (!itemDetails.length) {
+      text(itemRoot, -W / 2 + 4, bodyY - 8, '（还没有道具：精英 / BOSS 会掉，商店也能买）',
+        { size: 11, color: COL.dim, align: 'left', width: W });
+      return;
+    }
     let y = bodyY - 6;
     const MAX = 5;                        // 一屏最多 5 行（展开后仍放得下）
     itemDetails.slice(0, MAX).forEach((it, i) => {
@@ -583,6 +591,58 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
     }
   }
 
+  // ── 黑科技页：结构化列表（图标 + 名称/数量 + 效果），**已装与背包分开** ──
+  const modRoot = mkNode(drawer, 'modDetail', VW, 1, 0, 0);
+  modRoot.active = false;
+  function renderMods() {
+    for (const c of modRoot.children.slice()) c.destroy();
+    const W = VW - 32;
+    const all = modDetails ?? [];
+    if (!all.length) {
+      text(modRoot, -W / 2 + 4, bodyY - 8, '（还没有黑科技：升级三选一 / 商店可以获得）',
+        { size: 11, color: COL.dim, align: 'left', width: W });
+      return;
+    }
+    let y = bodyY - 4;
+    const section = (label: string, arr: ModDetailView[]) => {
+      if (!arr.length) return;
+      y -= 8;                       // 段标题上方留白（贴太紧会压到上一行底边）
+      text(modRoot, -W / 2 + 4, y - 2, label + '（' + arr.length + '）',
+        { size: 11, color: COL.accent, align: 'left', width: W, bold: true, outline: false });
+      y -= 22;
+      arr.slice(0, 3).forEach((m) => {
+        const rowH = 40;
+        const card = panel(modRoot, 0, y - rowH / 2, W, rowH, {
+          bg: COL.bg3, line: COL.line2, radius: R.s, shadow: false,
+        });
+        if (m.icon) {
+          const ic = mkNode(card, 'ic', 18, 18, -W / 2 + 16, 0);
+          const isp = ic.addComponent(Sprite);
+          isp.sizeMode = Sprite.SizeMode.CUSTOM; isp.trim = false;
+          const f = iconFrame(m.icon);
+          if (f) isp.spriteFrame = f;
+          else void loadIcon(m.icon).then(() => {
+            const f2 = m.icon ? iconFrame(m.icon) : null;
+            if (f2 && isp.isValid) isp.spriteFrame = f2;
+          });
+        }
+        text(card, -W / 2 + 32, 8, m.name + (m.count > 1 ? ' ×' + m.count : ''),
+          { size: 12, color: COL.cream, align: 'left', width: W - 110, bold: true, outline: true });
+        text(card, -W / 2 + 32, -9, m.desc,
+          { size: 9, color: COL.dim, align: 'left', width: W - 100 });
+        if (m.installed) chip(card, W / 2 - 34, 0, '已装', { color: COL.mint, size: 9 });
+        y -= rowH + 4;
+      });
+      if (arr.length > 3) {
+        text(modRoot, -W / 2 + 4, y, '… 还有 ' + (arr.length - 3) + ' 个（去安装屏查看）',
+          { size: 9, color: COL.dim, align: 'left', width: W });
+        y -= 16;
+      }
+    };
+    section('已装', all.filter(m => m.installed));
+    section('背包', all.filter(m => !m.installed));
+  }
+
   function refresh() {
     tabNodes.forEach(t => {
       const on = t.i === cur;
@@ -599,7 +659,10 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
     const isItems = cur === 2 && !!itemDetails;
     itemRoot.active = isItems;
     if (isItems) renderItems();
-    const lines = (isAttr || isSkills || isItems) ? [] : (pages[cur]?.lines ?? []);
+    const isMods = cur === 1 && !!modDetails;
+    modRoot.active = isMods;
+    if (isMods) renderMods();
+    const lines = (isAttr || isSkills || isItems || isMods) ? [] : (pages[cur]?.lines ?? []);
     bodyLines.forEach((l, i) => {
       const has = i < lines.length && i < MAX_LINES;
       l.node.active = has;

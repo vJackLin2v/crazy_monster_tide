@@ -93,7 +93,7 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
   text(box, 0, TOPY - 50, d.selSlot ? '已拿起「' + holding + '」→ 点槽位：空槽=移动，占用=交换'
     : d.selBag !== null ? '已选中「' + holding + '」→ 点槽位：空槽=装上，占用=替换（满槽也能换）'
       : '点背包里的黑科技，或点技能上的黑科技把它拿起来',
-  { size: 10, color: picking ? COL.mint : COL.dim, width: 316, h: 26 });
+  { size: 11, color: picking ? COL.mint : COL.dim, width: 316, h: 28 });
 
   // ── 4 个技能行（行内：技能名 / 3 个模块槽）──
   // 矮屏（360x640 设计分辨率）必须压一档，否则 4 行技能 + 背包 + 合成 + 按钮会打架
@@ -112,9 +112,11 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
     const row = panel(box, 0, cy, ROW_W, ROW_H, { art: rowArt });
     if (picked && !compat) row.addComponent(UIOpacity).opacity = 110;
     text(row, -ROW_W / 2 + 10, 11, sk.name, { size: 13, color: COL.cream, align: 'left', width: 64, bold: true, outline: true });
-    // 槽位满：明确写「满」而不是把整行压暗（否则玩家以为装不上）
-    text(row, -ROW_W / 2 + 10, -10, 'Lv.' + sk.lvl + (full && picked ? ' · 满' : ''),
-      { size: 10, color: full && picked ? COL.accent : COL.dim, align: 'left', width: 64, bold: full && picked });
+    // 三种状态都要有**文字**证据：不兼容 / 已满 / 常规（不能只靠压暗）
+    const subTxt = picked && !compat ? '不兼容' : 'Lv.' + sk.lvl + (full && picked ? ' · 满' : '');
+    const subCol = picked && !compat ? COL.red : (full && picked ? COL.accent : COL.dim);
+    text(row, -ROW_W / 2 + 10, -10, subTxt,
+      { size: 10, color: subCol, align: 'left', width: 64, bold: picked });
     for (let k = 0; k < 3; k++) {
       const mod = sk.mods[k];
       const isSel = !!d.selSlot && d.selSlot.si === si && d.selSlot.sl === k;
@@ -142,7 +144,7 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
   const bagTop = bagTitleY - 12;
   if (!d.bag.length) {
     text(box, -158, bagTop - 14, '（空：黑科技都装在技能上了，或还没获得）',
-      { size: 10, color: COL.dim, align: 'left', width: 316 });
+      { size: 11, color: COL.dim, align: 'left', width: 316 });
   } else {
     d.bag.slice(0, BAG_MAX).forEach((m, i) => {
       const col = i % BCOLS, rowi = Math.floor(i / BCOLS);
@@ -163,32 +165,41 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
   const mergeTitleY = bagBottom - 12;
   text(box, -158, mergeTitleY, '合成：3 个同名 → 1 个 II（效果 ×2，只占 1 槽）',
     { size: 11, color: COL.accent, align: 'left', width: 316, bold: true, outline: true });
-  const ready = d.merges.filter(m => m.times >= 1);
   const descY = -PH / 2 + (d.pickedDesc ? 104 : 66);
   const mergeTop = mergeTitleY - 12;
   const maxRows = Math.max(1, Math.floor((mergeTop - descY - 10) / 34));
-  if (!ready.length) {
+  // 候选按"已有份数"排序：够 3 个给按钮，不够给"还差 N 个"（不拿灰按钮骗人）
+  const cands = d.merges
+    .filter(m => m.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, maxRows);
+  if (!cands.length) {
     text(box, -158, mergeTop - 14, '（同名黑科技凑满 3 个才能合成）',
-      { size: 10, color: COL.dim, align: 'left', width: 316 });
+      { size: 11, color: COL.dim, align: 'left', width: 316 });
   } else {
-    ready.slice(0, maxRows).forEach((m, i) => {
+    cands.forEach((m, i) => {
       const cy = mergeTop - 16 - i * 34;
       const row = panel(box, 0, cy, 316, 30, { art: 'panel_soft' });
       drawIcon(row, -146, 0, 18, m.resultIcon);
-      text(row, -128, 0, m.name + ' ×' + (m.times * 3) + ' → ' + m.resultName,
+      text(row, -128, 0, m.name + ' ×' + m.count + ' / 3 → ' + m.resultName,
         { size: 11, color: COL.cream, align: 'left', width: 208, outline: true });
-      const mb = panel(row, 132, 0, 48, 22, { art: 'btn_primary' });
-      text(mb, 0, 1, '合成', { size: 10, color: COL.ink, width: 44, bold: true, outline: false });
-      const hit = mkNode(row, 'mergeHit', 44, 34, 132, 0);
-      onTap(hit, () => cb.onMerge(m.baseId));
-      onTap(mb, () => cb.onMerge(m.baseId));
+      if (m.times >= 1) {
+        const mb = panel(row, 132, 0, 48, 22, { art: 'btn_primary' });
+        text(mb, 0, 1, '合成', { size: 10, color: COL.ink, width: 44, bold: true, outline: false });
+        const hit = mkNode(row, 'mergeHit', 44, 34, 132, 0);
+        onTap(hit, () => cb.onMerge(m.baseId));
+        onTap(mb, () => cb.onMerge(m.baseId));
+      } else {
+        text(row, 140, 0, '还差 ' + Math.max(1, 3 - m.count) + ' 个',
+          { size: 10, color: COL.dim, align: 'right', width: 76, outline: false });
+      }
     });
   }
 
   // ── 效果说明条 + 卸下 ──
   if (d.pickedDesc) {
     text(box, -158, descY, '「' + (d.selName ?? '') + '」' + d.pickedDesc,
-      { size: 10, color: COL.mint, align: 'left', width: d.selSlot ? 240 : 316, h: 30 });
+      { size: 11, color: COL.mint, align: 'left', width: d.selSlot ? 240 : 316, h: 32 });
   }
   if (d.selSlot) {
     const ub = panel(box, 132, descY, 80, 28, { art: 'btn_danger' });
@@ -226,17 +237,17 @@ export function buildReplace(parent: Node, newSkill: { name: string; desc: strin
   text(box, 0, TOPY - 50, '选择要替换掉的技能', { size: 11, color: COL.dim, width: 300 });
 
   // 新技能卡（拿到的新技能长什么样）
-  const card = panel(box, 0, TOPY - 96, 316, 64, { art: 'card_gold' });
+  const card = panel(box, 0, TOPY - 98, 316, 68, { art: 'card_gold' });
   const nb = slot(card, -128, 0, 40);
   if (newSkill.icon) drawIcon(nb, 0, 0, 34, newSkill.icon);
   else text(nb, 0, 1, '?', { size: 18, color: COL.cream, width: 38, outline: false });
-  text(card, -100, 11, newSkill.name, { size: 15, color: COL.cream, align: 'left', width: 160, bold: true, outline: true });
-  text(card, -100, -11, newSkill.desc, { size: 10, color: COL.dim, align: 'left', width: 170 });
-  chip(card, 128, 0, '新', { bg: COL.accent, color: COL.ink, size: 11, dark: true });
+  text(card, -100, 12, newSkill.name, { size: 16, color: COL.cream, align: 'left', width: 150, bold: true, outline: true });
+  text(card, -100, -12, newSkill.desc, { size: 11, color: COL.dim, align: 'left', width: 172, h: 26 });
+  chip(card, 124, 0, '新技能', { bg: COL.accent, color: COL.ink, size: 10, dark: true });
 
   // 4 个已拥有技能行
   const ROW_W = 316, ROW_H = 56, ROW_GAP = 8;
-  const rowsTop = TOPY - 136;
+  const rowsTop = TOPY - 140;
   owned.slice(0, 4).forEach((o, i) => {
     const cy = rowsTop - ROW_H / 2 - i * (ROW_H + ROW_GAP);
     const row = panel(box, 0, cy, ROW_W, ROW_H, { art: 'panel_soft' });
