@@ -13,7 +13,7 @@
  */
 import { RunState } from '../assets/scripts/game/RunState';
 import { calcSkill, makeSkill, canInstall, modCount } from '../assets/scripts/game/SkillCalc';
-import { MODULES, MODULE_IDS, MODULE_HOOKS, MODULE_NUMS } from '../assets/scripts/data/Modules';
+import { MODULES, MODULE_IDS, MODULE_HOOKS, MODULE_NUMS, modEffect, modPower, TIER2_EFFECT } from '../assets/scripts/data/Modules';
 import { assertStatsSane, freshStats, emptyStats } from '../assets/scripts/game/Stats';
 import { CHARS } from '../assets/scripts/data/Chars';
 import { RUN, waveTime, isBossWave, isEliteWave, eliteCount, BASE_SPEED, BASE_PICKUP, SHOP_SLOTS } from '../assets/scripts/core/Const';
@@ -488,6 +488,29 @@ console.log('\n== 5i. 模块份数真的更强（B8）+ 合成入口（B4） =='
   ok(notMergeable.every(id => MODULES[id].max <= 2), '不可合成组都是 max<=2（unique/稀有）');
   ok(mergeable.includes('split') && mergeable.includes('echo') && mergeable.includes('burn') && mergeable.includes('frost'),
     '四个"份数型"模块现在都能凑够 3 份（可合成）');
+}
+
+console.log('\n== 5j. 唯一模块可合成 + 合成收益递减 ==');
+{
+  ok(modEffect('vamp') === 1 && Math.abs(modEffect('vamp_2') - TIER2_EFFECT) < 1e-9,
+    '唯一模块普通=1 份效果、Ⅱ=1.6 份效果（不是 2 份）');
+  ok(modPower('vamp_2') === 2, 'Ⅱ 仍然按 2 份计入上限/合成（占位与效果分离）');
+  ok(TIER2_EFFECT < 2, '合成收益递减：Ⅱ 效果 < 2 份普通');
+
+  // 唯一模块现在都能凑够 3 份 → 出现在合成候选里
+  for (const id of ['vamp', 'harvest', 'thornmail']) {
+    ok(MODULES[id].max >= 3, id + ' 的 max >= 3（可以凑 3 个合成）');
+  }
+
+  // 数值确实被削弱：吸血 4%、刺猬 6
+  const s = makeSkill('blade');
+  s.mods = ['vamp'];
+  const ranger = CHARS.find(c => c.id === 'ranger')!;
+  const rt1 = calcSkill(s, freshStats(ranger));
+  s.mods = ['vamp_2'];
+  const rt2 = calcSkill(s, freshStats(ranger));
+  ok(rt1.vamp === 1 && Math.abs(rt2.vamp - 1.6) < 1e-9,
+    '装上之后 rt.vamp：普通 1、Ⅱ 1.6（吸血 = 伤害 × 4% × 该值）');
 }
 
 console.log('\n== 6. 确定性与波次规则 ==');

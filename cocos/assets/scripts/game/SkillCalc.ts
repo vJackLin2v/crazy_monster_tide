@@ -1,4 +1,4 @@
-import { moduleDef, baseOf, modPower } from '../data/Modules';
+import { moduleDef, baseOf, modPower, modEffect } from '../data/Modules';
 import { SKILLS } from '../data/Skills';
 import type { CharStats, SkillDef, Tag } from '../data/Types';
 
@@ -47,7 +47,7 @@ export interface SkillRuntime {
   count: number; fan: number; pierce: number; bounce: number;
   orbit: number; split: number; chain: number;
   echo: number; burn: number; slow: number; vamp: number;
-  thunder: number; thornmail: number; harvest: boolean;
+  thunder: number; thornmail: number; harvest: number;   // 效果份数（0 = 没装）
 }
 
 /**
@@ -74,7 +74,8 @@ export function calcSkill(sk: SkillInst, stats: CharStats, atkMul = 1): SkillRun
 
   for (const mid of sk.mods) {
     // 强化模块（`multi_2`）= 2 份效果，占 1 槽（M32 合成规则）
-    const n = modPower(mid);
+    const n = modPower(mid);      // 整数型（子弹/跳数）用"份数"
+    const e = modEffect(mid);     // 数值型（倍率/概率/DoT）用"效果份数"：Ⅱ = 1.6 而不是 2
     switch (baseOf(mid)) {
       case 'multi':     count += n; break;
       case 'fan':       fan += n; break;
@@ -82,18 +83,20 @@ export function calcSkill(sk: SkillInst, stats: CharStats, atkMul = 1): SkillRun
       case 'bounce':    bounce += n; break;
       case 'pierce':    pierce += n; break;
       case 'orbit':     orbit += n; break;
-      case 'giant':     sizeMul *= Math.pow(1.30, n); break;
-      case 'rapid':     rapid += n; break;
-      case 'echo':      echo += n; break;
-      case 'burn':      burn += n; break;
-      case 'frost':     slow += n; break;
-      case 'vamp':      vamp += n; break;
+      // —— 数值型：按"效果份数" e 累加，合成后收益递减 ——
+      case 'giant':     sizeMul *= Math.pow(1.30, e); break;
+      case 'rapid':     rapid += e; break;
+      case 'echo':      echo += e; break;
+      case 'burn':      burn += e; break;
+      case 'frost':     slow += e; break;
+      case 'vamp':      vamp += e; break;
+      case 'snipe':     snipe += e; break;
+      case 'harvest':   harvest += e; break;
+      case 'thunder':   thunder += e; break;
+      case 'thornmail': thornmail += e; break;
+      case 'overload':  overload += e; break;
+      // —— 整数型：只能整份（3 份 → 合成 2 份，本身就是递减）——
       case 'chain':     chain += n; break;
-      case 'snipe':     snipe += n; break;
-      case 'harvest':   harvest += n; break;
-      case 'thunder':   thunder += n; break;
-      case 'thornmail': thornmail += n; break;
-      case 'overload':  overload += n; break;
     }
   }
 
@@ -152,6 +155,6 @@ export function calcSkill(sk: SkillInst, stats: CharStats, atkMul = 1): SkillRun
   size: b.size * sizeMul * (0.9 + 0.1 * Math.min(2.2, stats.area)) * Math.min(2.2, stats.area) * (stats.sizeMul ?? 1),
     count, fan, pierce, bounce, orbit, split, chain,
     echo, burn, slow, vamp, thunder, thornmail,
-    harvest: harvest > 0,
+    harvest,
   };
 }

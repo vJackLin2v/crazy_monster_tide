@@ -14,16 +14,34 @@ export const MODULES: Record<string, ModuleDef> = {
   echo:      { name: '复读机', icon: '↻', stack: 'tier',     max: 3, requires: ['area','pulse','chain'],      desc: '施放后 0.4s 再放一次（60% 伤害）；每份 +1 次重放' },
   burn:      { name: '上火', icon: '✹', stack: 'tier',     max: 3, requires: ['fire','lightning','holy'],  desc: '命中挂灼烧：每 0.5s 掉 10% 伤害、持续 2s；每份 +10% 且 +0.6s' },
   frost:     { name: '冷静', icon: '✽', stack: 'tier',     max: 3, requires: ['ice'],                      desc: '命中减速 35%、1.2s；每份 +10% 减速、+0.4s' },
-  vamp:      { name: '吸血', icon: '♥', stack: 'unique',   max: 1, requires: ['physical','poison'],        desc: '伤害的 6% 回复自身生命' },
+  vamp:      { name: '吸血', icon: '♥', stack: 'unique',   max: 3, requires: ['physical','poison'],        desc: '伤害的 4% 回复自身生命（合成为 Ⅱ 后约 6.4%，低于两份普通）' },
   chain:     { name: '传染', icon: '⛓', stack: 'tier',     max: 3, requires: ['projectile','chain'],       desc: '命中后跳到附近另一只身上（不再穿过去）；每份 +1 跳' },
   snipe:     { name: '点名', icon: '⌖', stack: 'tier',     max: 3, requires: ['projectile'],               desc: '弹速 +40%，伤害 +15%（每份叠乘）' },
-  harvest:   { name: '割韭菜', icon: '✂', stack: 'unique',   max: 1, requires: ['physical','fire','poison'],  desc: '每次击杀回复 1 点生命' },
+  harvest:   { name: '割韭菜', icon: '✂', stack: 'unique',   max: 3, requires: ['physical','fire','poison'],  desc: '每次击杀回复 1 点生命（Ⅱ 约 1.6 点）' },
   thunder:   { name: '渡劫', icon: '⚡', stack: 'tier',     max: 3, requires: ['lightning','arcane','holy'], desc: '命中时 15%/份 概率落雷，对落点范围造成 50% 伤害' },
-  thornmail: { name: '刺猬', icon: '✜', stack: 'unique',   max: 1, requires: ['nature','physical'],        desc: '被咬时反弹 8 点伤害给攻击者' },
+  thornmail: { name: '刺猬', icon: '✜', stack: 'unique',   max: 3, requires: ['nature','physical'],        desc: '被咬时反弹 6 点伤害（Ⅱ 约 9.6 点）' },
   overload:  { name: '超载', icon: '⚠', stack: 'tier',     max: 3, requires: ['projectile','area','pulse','chain'], desc: '伤害 +25%、范围 -10%（每份叠乘）' },
 };
 
 export const MODULE_IDS = Object.keys(MODULES);
+
+/**
+ * 强化模块的"效果折算"：**越高级收益越低**（用户 2026-10-29 定则）。
+ *
+ * 三个概念要分清：
+ *   · 占位/合成计数 = `modPower()`：Ⅱ 仍算 **2 份**（占 1 槽、用于上限与合成判定）
+ *   · 实际效果     = `modEffect()`：Ⅱ 只给 **1.6 份**效果（2 × 0.8）
+ *   · 整数型模块（子弹数/跳数）无法出半份，因此它们的"递减"体现在
+ *     「3 份普通 → 合成后 2 份」这一步（本来就是 3 → 2）
+ *
+ * 结果：同投入下 Ⅱ 永远比"三份普通"弱，但省 2 个槽 —— 这才是合成的取舍。
+ */
+export const TIER2_EFFECT = 1.6;
+
+/** 该模块提供几"份"**实际效果**（普通 1，强化 1.6） */
+export function modEffect(id: string): number {
+  return id.endsWith('_2') ? TIER2_EFFECT : 1;
+}
 
 /**
  * 黑科技的**数值一句话**（M56）：升级卡片第二行用。

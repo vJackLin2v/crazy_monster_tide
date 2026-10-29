@@ -29,6 +29,7 @@ import { splitBullets, echoRepeats, echoDelay, burnDuration, burnTickMul, frostS
 import { SKILLS, SKILL_ART, FX } from '../data/Skills';
 import type { SkillArt } from '../data/Types';
 import { ENEMIES, bossUnitFor } from '../data/Enemies';
+import { baseOf, modEffect } from '../data/Modules';
 import { CHARS } from '../data/Chars';
 const { ccclass } = _decorator;
 
@@ -904,6 +905,13 @@ export class Battle extends Component {
     });
   }
 
+  /** 刺猬的实际效果份数（普通 1、Ⅱ 1.6，可跨技能叠加） */
+  private thornEffect(): number {
+    let sum = 0;
+    for (const sk of this.rs.skills) for (const m of sk.mods) if (baseOf(m) === 'thornmail') sum += modEffect(m);
+    return sum;
+  }
+
   /** 复读机：按份数排队重放（0.4s / 0.8s / 1.2s…），每份 +1 次 */
   private queueEcho(slot: number, n: number) {
     const reps = echoRepeats(n);
@@ -1070,7 +1078,8 @@ export class Battle extends Component {
       e.slow = frostDuration(rt.slow);       // 1.2 / 1.6 / 2.0 秒
       e.slowPct = frostSlowPct(rt.slow);     // 35 / 45 / 55%
     }
-    if (rt.vamp) this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + dmg * 0.06);
+    // 吸血：基础 4%/份（唯一模块可合成，Ⅱ = 1.6 份 → 6.4%，低于两份普通）
+    if (rt.vamp) this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + dmg * 0.04 * rt.vamp);
     // ★ B7：原来只有特效、**没有伤害**（描述写"造成范围伤害"）。
     //   现在按 15%×份数 触发，对落点 60 半径内的敌人结算 50% 伤害。
     //   ⚠️ 这两个数值（半径/倍率）在 docs/systems 里没有规定，是候选值，已列入审计报告待确认；
@@ -1125,7 +1134,8 @@ export class Battle extends Component {
     this.addVfx(FX.killSpark, e.x, e.y, 0.42, big ? 1.8 : 1.1);
     this.addVfx(FX.killDust, e.x, e.y + 4, 0.55, big ? 2.2 : 1.2);
     if (big) this.addVfx(FX.killRing, e.x, e.y, 0.55, e.boss ? 3.2 : 2.2);
-    if (rt && rt.harvest) this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + 1);
+    // 割韭菜：基础 1 点/份（Ⅱ = 1.6 点）
+    if (rt && rt.harvest) this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + rt.harvest);
     // ★ M41：经验球换成**素材动画**（Sunny Land 宝石，CC0，5 帧循环），按经验值分档大小：
     //   普通 1×、精英 1.12×、BOSS/大额 1.35×。不再用程序化绘制的菱形。
     const gemFrames = Assets.vfxFrames('pickup/gem');
@@ -1454,10 +1464,12 @@ export class Battle extends Component {
         if (this.rs.charId === 'knight') this.hurtBoostT = 2.0;   // 骑士受击强化 2s
         Sfx.sfx('hitMetal', 0.4, 180);      // 玩家挨打
         this.cam.addShake(SHAKE.hurt);
-        // ★ 刺猬（thornmail，M49）：把 8 点伤害反弹给咬你的怪
-        if (this.hasModule('thornmail')) {
-          e.hp -= 8;
-          this.addDamageText(e.x, e.y - 10, 8, false);
+        // ★ 刺猬：基础 6 点/份（Ⅱ = 1.6 份 → 9.6 点），按效果份数结算
+        const thorn = this.thornEffect();
+        if (thorn > 0) {
+          const back = Math.round(6 * thorn);
+          e.hp -= back;
+          this.addDamageText(e.x, e.y - 10, back, false);
           this.addVfx('core/spark/block-spark', e.x, e.y, 0.3, 1.2);
           if (e.hp <= 0) this.killEnemy(e);
         }
