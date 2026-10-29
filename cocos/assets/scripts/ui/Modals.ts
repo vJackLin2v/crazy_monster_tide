@@ -3,10 +3,11 @@
  *   05 升级3选1 / 08 二次确认 / 09 Build抽屉 / 10 波间商店
  * 统一样式：遮罩 `rgba(4,6,12,.72)` + 3px 纯黑描边 + 硬投影。
  */
-import { Node, Label, Color, Graphics, UITransform, UIOpacity, Sprite, view } from 'cc';
+import { Node, Label, Color, Graphics, UITransform, UIOpacity, Sprite, view, EventTouch } from 'cc';
 import { panel, text, title, button, onTap, mkNode, mask, screen, chip, slot, paintPanel, setOutline, screenHeader } from './UIKit';
 import { COL, FS, R, BORDER } from './Tokens';
 import { iconFrame, loadIcon } from '../engine/Assets';
+import { Sfx } from '../engine/Audio';
 import { safeTop, safeBottom } from './Safe';
 import type { UiArtName } from './Art';
 
@@ -111,17 +112,17 @@ export function buildLevelUp(parent: Node, lv: number, cards: CardData[],
     let cursor = CH / 2 - 50;
     if (c.nums) {
       const h = c.nums.length > 18 ? 26 : 14;
-      text(card, txtX, cursor - 6, c.nums, { size: 11, color: COL.cream, align: 'left', width: txtW, h, bold: true, outline: true });
+      text(card, txtX, cursor - 6, c.nums, { size: 12, color: COL.cream, align: 'left', width: txtW, h, bold: true, outline: true });
       cursor -= h + 2;
     }
-    // 效果描述：吃掉剩余高度，最多 3 行
-    const descH = Math.max(20, cursor - (-CH / 2 + (c.meta ? 26 : 10)));
+    // 效果描述：吃掉剩余高度（字号 11，符合"关键说明 ≥11px"；给足 h 不被裁）
+    const descH = Math.max(24, cursor - (-CH / 2 + (c.meta ? 28 : 10)));
     text(card, txtX, cursor - descH / 2, c.desc,
-      { size: 10, color: COL.dim, align: 'left', width: txtW, h: descH });
+      { size: 11, color: COL.dim, align: 'left', width: txtW, h: descH });
 
-    // 叠加 / 上限状态
+    // 叠加 / 上限状态（10px：属于元数据，不承担关键说明）
     if (c.meta) {
-      text(card, txtX, -CH / 2 + 15, c.meta, { size: 9, color: COL.dim, align: 'left', width: txtW, h: 12 });
+      text(card, txtX, -CH / 2 + 15, c.meta, { size: 10, color: COL.dim, align: 'left', width: txtW, h: 13 });
     }
 
     // 按下反馈：整卡压暗一档 + 点击
@@ -261,16 +262,16 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
     text(row, -106, nameY, fit(s.title, 12), {
       size: 14, color: s.sold ? COL.dim2 : COL.cream, align: 'left', width: 168, bold: true, outline: true,
     });
-    text(row, -106, nameY - 26, s.sub, { size: 10, color: COL.dim, align: 'left', width: 156, h: 30 });
+    text(row, -106, nameY - 27, s.sub, { size: 11, color: COL.dim, align: 'left', width: 156, h: 32 });
     if (s.owned && s.owned > 0 && !s.sold) {
-      chip(row, 64, nameY, '持有×' + s.owned, { color: COL.accent, size: 9 });
+      chip(row, 64, nameY, '持有×' + s.owned, { color: COL.accent, size: 10 });
     }
 
     if (s.sold) {
       text(row, 128, 0, '已购买', { size: 12, color: COL.red, align: 'right', width: 70, bold: true, outline: true });
     } else {
       const afford = gold >= s.price;
-      chip(row, 88, 0, '◆ ' + s.price, { color: afford ? COL.accent : COL.red, size: 11 });
+      chip(row, 88, 0, '◆ ' + s.price, { color: afford ? COL.accent : COL.red, size: 12 });
       // 锁定：视觉 32，热区 44（微信硬要求）
       const lockArt: UiArtName = s.locked ? 'btn_primary' : 'btn';
       const lk = panel(row, 144, 0, 32, 32, { art: lockArt });
@@ -281,8 +282,15 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
       // ⚠️ 锁体 + 锁梁必须**整体居中**（y 范围 -8..8）：之前画在 -2..14，整个图形偏高 6px
       lg.rect(-6, -8, 12, 10); lg.stroke();     // 锁体
       lg.rect(-4, 2, 8, 6); lg.stroke();        // 锁梁
+      // ⚠️ lockHit 是 row 的**子节点**：Cocos 的 TOUCH_END 默认冒泡到父节点，
+      //    只写 onTap(hit) 会让"点锁"同时触发整行购买（本轮实测复现）。
+      //    这里单独处理并 propagationStopped = true，保证「点锁只锁定、点主体才购买」。
       const hit = mkNode(row, 'lockHit', 44, 44, 144, 0);
-      onTap(hit, () => onLock(i));
+      hit.on(Node.EventType.TOUCH_END, (e: EventTouch) => {
+        e.propagationStopped = true;
+        Sfx.sfx('click', 0.45, 40);
+        onLock(i);
+      }, hit);
     }
     onTap(row, () => onBuy(i));
   });
@@ -304,7 +312,7 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
       const box = panel(root, cc.x, cc.y, CELL, CELL, { art: 'slot' });
       if (it.count && it.count > 1) {
         text(box, CELL / 2 - 3, -CELL / 2 + 7, '×' + it.count,
-          { size: 9, color: COL.accent, align: 'right', width: CELL - 6, bold: true, outline: false });
+          { size: 10, color: COL.accent, align: 'right', width: CELL - 6, bold: true, outline: false });
       }
       if (it.icon) {
         const inode = mkNode(box, 'icon', 28, 28);
@@ -322,7 +330,7 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
     });
     if (owned.length > COLS * MAXR) {
       text(root, A(12, gridTop - 12).x, A(12, gridTop - 12).y, '… 还有 ' + (owned.length - COLS * MAXR) + ' 件',
-        { size: 9, color: COL.dim, align: 'left', width: 320 });
+        { size: 10, color: COL.dim, align: 'left', width: 320 });
     }
   }
 

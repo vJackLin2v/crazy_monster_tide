@@ -93,7 +93,9 @@ export const ITEM_ICON: Record<string, string> = {
  *    w-bleed=双刀交叉 / w-deadly=死神剪影 / w-axe=战斧 / sh-eye=眼睛 / sh-pierce=靶心
  */
 export const MODULE_ICON: Record<string, string> = {
-  multi: 'sk-multishot.png',
+  // M3：原来指到 sk-multishot.png（那是**角色帧**，不是图标，卡片上像个人头）
+  // 换成"叠在一起的多支箭"，语义 = 一次多打一发；与 fan（扇射）/count_l 区分开
+  multi: 'sh-multihits.png',
   fan: 'sk-tripleshot.png',
   split: 'sk-overload.png',
   bounce: 'sh-diffusion.png',
