@@ -114,6 +114,10 @@ PASS 所有可点热区 ≥44×44、无越界、无意外重叠
 
 ## 3. 截图（`screenshots/ui-final/`，未覆盖旧基线）
 
+> 取证修正：第一轮 `charselect-sel` 是调用 `G.selectChar()` 生成的，但该方法**不存在**（返回 ERR 被忽略），
+> 导致三档的"已选"截图与"未选"**完全重复**（文件大小一致被发现）。已改为**真实点击第 6 张卡片**重拍，
+> 并用"选中徽标数 = 1"校验，现在两版文件大小不同、徽标只出现在被点的那张卡上。
+
 三档视口 × 20 种状态：`menu / howto / charselect / charselect-sel / settings / codex-1page / ach /
 hud-empty / hud-lowhp-boss / levelup / shop / drawer-skill / drawer-mod / drawer-item / drawer-attr /
 install / install-slot / replace / confirm / result-win / result-lose`
