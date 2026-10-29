@@ -17,7 +17,8 @@ import { COL, FS, R, BORDER } from './Tokens';
 import { CHARS } from '../data/Chars';
 import { SKILLS, SKILL_ART } from '../data/Skills';
 import { Assets, iconFrame, loadIcon } from '../engine/Assets';
-import { CS, pageCount, cellPos, cellPosPaged, pageRowCount, detailBox, detailRows, pagerPos, portraitFit } from './CharLayout';
+import { CS, pageCount, cellPos, cellPosPaged, pageRowCount, gridBottom, detailBox, detailRows, pagerPos, portraitFit } from './CharLayout';
+import { freshStats } from '../game/Stats';
 import { safeTop, safeBottom } from './Safe';
 
 const C_MENU_EDGE = new Color(30, 30, 42);    // #1e1e2a
@@ -58,9 +59,9 @@ export function buildMenu(parent: Node, seed: number, onStart: () => void, onHow
   const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
   const at2 = (x: number, y: number) => at(VW, VH, x, y);
   const S = safeTop(), B = safeBottom();
-  const root = screen(parent, 'scr-menu', C_MENU_EDGE);
+  const root = screen(parent, 'scr-menu', COL.bg1);
 
-  // 背景图：art/bg/home-bg-360x640（meta 是 type:texture，走 Assets.loadBg 的双路回退）
+  // ── 背景：cover 缩放（不拉伸），失败不阻塞 ──
   const bgNode = new Node('menu-bg');
   bgNode.parent = root;
   const bgUt = bgNode.addComponent(UITransform);
@@ -73,26 +74,79 @@ export function buildMenu(parent: Node, seed: number, onStart: () => void, onHow
     if (sf && bgSp.isValid) bgSp.spriteFrame = sf;
   });
 
-  radialGlow(root, 0, at2(180, 0.3 * VH).y, VH * 0.62, C_MENU_MID, 150, 16);
+  // ── 上下暗角：用等宽色带模拟渐变（像素风不用模糊阴影），把标题/按钮从背景里托出来 ──
+  const vig = mkNode(root, 'menu-vignette', VW, VH);
+  const vg = vig.addComponent(Graphics);
+  const VB = 8, vh0 = VH * 0.30 / VB;
+  for (let i = 0; i < VB; i++) {
+    const a = Math.round(160 * Math.pow(1 - i / VB, 2));
+    vg.fillColor = new Color(9, 14, 30, a);
+    vg.rect(-VW / 2, VH / 2 - (i + 1) * vh0, VW, vh0 + 0.5); vg.fill();   // 顶部
+    vg.fillColor = new Color(9, 14, 30, a);
+    vg.rect(-VW / 2, -VH / 2 + i * vh0, VW, vh0 + 0.5); vg.fill();        // 底部
+  }
 
-  // 标题（安全区下移；字号 44 / 副标题 12）
-  const t = at2(180, S + 74);
-  text(root, t.x, t.y, '疯狂怪潮', { size: 44, color: COL.cream, bold: true, width: 354, outline: true, shadow: true });
-  const s = at2(180, S + 120);
-  text(root, s.x, s.y, 'C R A Z Y   M O N S T E R   T I D E', { size: 12, color: COL.accent, width: 354, bold: true, outline: true });
+  // ── 标题区（从安全区往下排）──
+  text(root, 0, at2(180, S + 60).y, '疯狂怪潮',
+    { size: 40, color: COL.cream, bold: true, width: 354, outline: true, shadow: true });
+  text(root, 0, at2(180, S + 100).y, 'C R A Z Y   M O N S T E R   T I D E',
+    { size: 10, color: COL.accent, width: 354, bold: true, outline: true });
 
-  // 主 CTA（全页最醒目）+ 次按钮
-  const b1 = at2(180, S + 300);
-  const btn1 = button(root, b1.x, b1.y, 268, 58, '开始游戏', { primary: true, size: 21 });
+  // ── 底部块：以可视高度为基准（640 参考：卖点 362 / CTA 422 / 次按钮 482）──
+  const band = Math.max(320, VH - S - B);
+  const ctaY = S + band * 0.655;
+  const chipsY = ctaY - 60;
+  const subBtnY = ctaY + 60;
+
+  // ── 主视觉：现有 CHARS[0] 立绘（整数倍放大，失败静默隐藏，不放彩色占位块）──
+  const stageTop = S + 124;
+  const stageBot = chipsY - 15 - 14;
+  const stageH = Math.max(80, stageBot - stageTop);
+  const stageCY = (stageTop + stageBot) / 2;
+  radialGlow(root, 0, at2(180, stageCY).y, Math.min(VW * 0.46, stageH * 0.72), new Color(96, 146, 214), 62, 14);
+
+  // x 补偿 +7：立绘里剑在左侧，像素主体视觉重心比几何中心偏左
+  const hero = mkNode(root, 'menu-hero', 200, Math.max(80, stageH), 7, at2(180, stageCY).y);
+  const heroSp = hero.addComponent(Sprite);
+  heroSp.sizeMode = Sprite.SizeMode.CUSTOM;
+  heroSp.trim = false;
+  const heroUt = hero.getComponent(UITransform);
+  const applyHero = (f: SpriteFrame | null) => {
+    if (!f || !heroSp.isValid) return;
+    heroSp.spriteFrame = f;
+    const w = (f.rect && f.rect.width) || 32, h = (f.rect && f.rect.height) || 32;
+    // 目标高度 120~140：只允许整数倍（像素风硬规则），宽度不超过 200
+    const k = Math.max(1, Math.floor(Math.min(138 / h, 196 / w)));
+    if (heroUt) heroUt.setContentSize(w * k, h * k);
+  };
+  void Assets.loadPortrait(CHARS[0].unit).then((f) => {
+    if (f) { applyHero(f); return; }
+    return Assets.loadUnit(CHARS[0].unit).then((c) => {
+      applyHero((c.idle && c.idle[0]) || (c.walk && c.walk[0]) || null);
+    });
+  }).catch(() => { /* 立绘失败不影响进入游戏 */ });
+
+  // ── 卖点条：3 个信息块（不是按钮，不可点）──
+  const FEATURES = ['4 个主动技能', '黑科技构筑', '20 波挑战'];
+  const CW = 100, CGAP = 8;
+  FEATURES.forEach((label, i) => {
+    const cx = 180 - (CW + CGAP) + i * (CW + CGAP);
+    const c = at2(cx, chipsY);
+    const box = panel(root, c.x, c.y, CW, 30, { art: 'panel_soft' });
+    text(box, 0, 1, label, { size: 10, color: COL.dim, width: CW - 8, bold: true, outline: false });
+  });
+
+  // ── CTA：主按钮是全页唯一"橙" ──
+  const b1 = at2(180, ctaY);
+  const btn1 = button(root, b1.x, b1.y, 276, 56, '开始游戏', { primary: true, size: 21 });
   onTap(btn1.node, onStart);
-  const b2 = at2(180, S + 372);
-  const btn2 = button(root, b2.x, b2.y, 268, 52, '玩法说明', { size: 18 });
+  const b2 = at2(180, subBtnY);
+  const btn2 = button(root, b2.x, b2.y, 276, 46, '玩法说明', { size: 17 });
   onTap(btn2.node, onHowto);
 
-  // 页脚（版本信息 / 种子；按底部安全区定位）
-  const f1 = at2(180, VH - B - 48);
-  text(root, f1.x, f1.y, '4 技能 · 每技能 3 个黑科技槽 · 20 波闯关', { size: 10, color: COL.dim, width: 340 });
-  text(root, f1.x, f1.y - 17, '本局种子 ' + seed + ' · 同种子奖励相同', { size: 10, color: COL.dim, width: 340 });
+  // ── 页脚：只留 seed（玩法要点已上移成卖点条）──
+  text(root, 0, at2(180, VH - B - 26).y, '本局种子 ' + seed + ' · 同种子奖励相同',
+    { size: 10, color: COL.dim2, width: 340, outline: false });
   return root;
 }
 
@@ -131,19 +185,25 @@ export function buildHowto(parent: Node, onBack: () => void): Node {
   return root;
 }
 
-/** 3. 角色选择 —— 3 列 × 2 行网格 + 详情 + 底部双按钮 */
+/** 3. 角色选择 —— 3 列 × 2 行网格 + 四段式详情（M1 视觉升级） */
 export function buildCharSelect(parent: Node, onBack: () => void, onStart: (id: string) => void): Node {
   const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
   const at2 = (x: number, y: number) => at(VW, VH, x, y);
   const S = safeTop(), B = safeBottom();
   const root = screen(parent, 'scr-charselect', COL.bg1);
 
-  // 网格整体下移一个安全区（CharLayout 的坐标是"距屏幕顶"，这里统一加 S）
-  // titleBar 高 62，网格顶边 70 —— 两者只差 8，所以网格再补 6px，避免卡片压住标题条
-  const GRID_DY = S + 6;
+  // 网格 + 详情卡作为一个整体块；剩余高度对半分给上下 → 整块在"标题条 ~ 按钮"之间垂直居中
+  // （矮屏几乎不偏移；长屏不会把一大块空白全堆在按钮前面）
+  const baseDy = S + 6;
+  const dbox = detailBox(VH - baseDy - B);
+  const gridH = gridBottom() - CS.GRID_TOP;
+  const blockH = gridH + CS.DETAIL_GAP + dbox.height;
+  const buttonsTop = VH - B - 60;
+  const free = Math.max(0, buttonsTop - 12 - (baseDy + CS.GRID_TOP + blockH));
+  const GRID_DY = baseDy + free / 2;
   const A2 = (x: number, y: number) => at2(x, y + GRID_DY);
 
-  screenHeader(root, VW, S, '选择角色', 62, '每个角色都有正向天赋，也有明显的负面代价');
+  screenHeader(root, VW, S, '选择角色', 58, '选择你的战斗风格');
 
   const pages = pageCount(CHARS.length);
   let page = 0;
@@ -165,13 +225,14 @@ export function buildCharSelect(parent: Node, onBack: () => void, onStart: (id: 
     });
   }
 
-  const cells: { node: Node; id: string; label: Label }[] = [];
+  const cells: { node: Node; id: string; label: Label; badge: Node }[] = [];
   CHARS.forEach((ch, i) => {
     const p = cellPos(i % CS.PER_PAGE);
     const c = A2(p.x, p.cy);
     const n = panel(root, c.x, c.y, CS.CARD_W, CS.CARD_H, { art: 'panel' });
     n.active = false;
 
+    // 立绘：portrait.png（已裁透明留白）按整数倍放大，失败退回 idle 首帧
     const P = CS.PORTRAIT;
     const pn = mkNode(n, 'portrait', P, P, 0, CS.PORTRAIT_DY);
     const sp = pn.addComponent(Sprite);
@@ -190,8 +251,21 @@ export function buildCharSelect(parent: Node, onBack: () => void, onStart: (id: 
       });
     }).catch(() => { /* 人像失败不影响选角 */ });
 
-    const l = text(n, 0, CS.NAME_DY, ch.name, { size: FS.xs, color: COL.cream, width: CS.CARD_W - 6, bold: true, outline: true });
-    cells.push({ node: n, id: ch.id, label: l });
+    const l = text(n, 0, CS.NAME_DY, ch.name, {
+      size: 12, color: COL.cream, width: CS.CARD_W - 6, bold: true, outline: true,
+    });
+
+    // 选中徽标：青底 + 勾，形状与颜色双通道（不只靠描边色）
+    const badge = mkNode(n, 'selBadge', 18, 18, CS.CARD_W / 2 - 11, CS.CARD_H / 2 - 11);
+    const bg = badge.addComponent(Graphics);
+    bg.fillColor = COL.select;
+    bg.rect(-9, -9, 18, 18); bg.fill();
+    bg.lineWidth = 2; bg.strokeColor = COL.inkLine;
+    bg.rect(-9, -9, 18, 18); bg.stroke();
+    text(badge, 0, 1, '✓', { size: 11, color: COL.ink, width: 16, bold: true, outline: false });
+    badge.active = false;
+
+    cells.push({ node: n, id: ch.id, label: l, badge });
     onTap(n, () => { picked = ch.id; refresh(); });
   });
 
@@ -209,34 +283,63 @@ export function buildCharSelect(parent: Node, onBack: () => void, onStart: (id: 
     if (pgBtn) pgBtn.label.string = (page + 1) + '/' + pages + ' ›';
   }
 
-  // 详情面板：顶边跟网格走、底边让开安全区与底部按钮
-  const dbox = detailBox(VH - GRID_DY - B);
+  // ── 详情面板：名称 / 正负天赋 / 初始技能 / 属性网格（四段式）──
   const dr = detailRows(dbox.height);
   const dc = A2(180, dbox.top + dbox.height / 2);
   const detail = panel(root, dc.x, dc.y, 336, dbox.height, { art: 'panel' });
-  const dName = text(detail, -156, dr.name.y, '', { size: dr.name.size, color: COL.accent, align: 'left', width: 312, bold: true, outline: true, shadow: true });
-  const dPos = text(detail, -156, dr.pos.y, '', { size: dr.pos.size, color: COL.mint, align: 'left', width: 312, bold: true, outline: true });
-  const dNeg = text(detail, -156, dr.neg.y, '', { size: dr.neg.size, color: COL.red, align: 'left', width: 312, bold: true, outline: true });
-  const skBox = panel(detail, 0, dr.skill.y, 304, dr.skill.h, { art: 'well' });
-  const skD = dr.compact ? 24 : 30;
-  const skIcon = mkNode(skBox, 'skIcon', skD, skD, -130, 0);
+
+  const dName = text(detail, -158, dr.name.y, '', {
+    size: dr.name.size, color: COL.accent, align: 'left', width: 300, bold: true, outline: true, shadow: true,
+  });
+
+  // 天赋行：18×18 色标（＋/－）+ 文本 —— 颜色 + 形状双通道
+  const talentRow = (cy: number, mark: string, col: Color): Label => {
+    const b = mkNode(detail, 'talBadge', 18, 18, -150, cy);
+    const g = b.addComponent(Graphics);
+    g.fillColor = col;
+    g.rect(-9, -9, 18, 18); g.fill();
+    g.lineWidth = 2; g.strokeColor = COL.inkLine;
+    g.rect(-9, -9, 18, 18); g.stroke();
+    text(b, 0, 1, mark, { size: 12, color: COL.ink, width: 16, bold: true, outline: false });
+    return text(detail, -134, cy, '', { size: dr.pos.size, color: col, align: 'left', width: 286, bold: true, outline: true });
+  };
+  const dPos = talentRow(dr.pos.y, '＋', COL.mint);
+  const dNeg = talentRow(dr.neg.y, '－', COL.red);
+
+  // 初始技能行
+  const skBox = panel(detail, 0, dr.skill.y, 312, dr.skill.h, { art: 'well' });
+  const skIcon = mkNode(skBox, 'skIcon', 28, 28, -136, 0);
   const skSp = skIcon.addComponent(Sprite);
   skSp.sizeMode = Sprite.SizeMode.CUSTOM; skSp.trim = false;
-  const skTxt = text(skBox, -108, 1, '', { size: dr.compact ? 12 : 14, color: COL.cream, align: 'left', width: 180, bold: true, outline: true });
-  const dStat = text(detail, 0, dr.stat.y, '', { size: dr.stat.size, color: COL.dim, width: 312 });
+  const skTxt = text(skBox, -114, 0, '', { size: 13, color: COL.cream, align: 'left', width: 196, bold: true, outline: true });
+  text(skBox, 150, 0, '初始技能', { size: 10, color: COL.dim, align: 'right', width: 78, outline: false });
+
+  // 属性网格：3 列 × 2 行（数值用角色开局真实属性，只读，不改玩法）
+  const CELL_W = 100, CELL_H = 26, CGX = 6, CGY = 8;
+  const attrCells: { name: Label; val: Label }[] = [];
+  for (let i = 0; i < 6; i++) {
+    const col = i % 3, row = Math.floor(i / 3);
+    const cx = -156 + CELL_W / 2 + col * (CELL_W + CGX);
+    const cy = dr.stat.y + (CELL_H + CGY) / 2 - row * (CELL_H + CGY);
+    const cell = panel(detail, cx, cy, CELL_W, CELL_H, { art: 'panel_soft' });
+    const nm = text(cell, -CELL_W / 2 + 6, 0, '', { size: 10, color: COL.dim, align: 'left', width: 50, outline: false });
+    const vv = text(cell, CELL_W / 2 - 6, 0, '', { size: 12, color: COL.cream, align: 'right', width: 52, bold: true, outline: false });
+    attrCells.push({ name: nm, val: vv });
+  }
 
   function refresh() {
     for (const cell of cells) {
       const on = cell.id === picked;
-      // 选中态：青色描边 + 提亮底（不只靠文字颜色，缩小到 1/3 屏也能一眼看出）
+      // 选中：青色描边 + 提亮底 + 右上勾选徽标（三层证据）
       paintPanel(cell.node, CS.CARD_W, CS.CARD_H, { art: on ? 'card_sel' : 'panel' });
-      cell.label.color = on ? COL.accent : COL.cream;
+      cell.label.color = COL.cream;
+      cell.badge.active = on;
     }
     const ch = CHARS.find(x => x.id === picked)!;
     dName.string = ch.name;
-    dPos.string = '＋ ' + ch.pos;
-    dNeg.string = '－ ' + ch.neg;
-    skTxt.string = '初始技能：' + (SKILLS[ch.start] ? SKILLS[ch.start].name : ch.start);
+    dPos.string = ch.pos;
+    dNeg.string = ch.neg;
+    skTxt.string = SKILLS[ch.start] ? SKILLS[ch.start].name : ch.start;
     const art = SKILL_ART[ch.start];
     if (art && art.icon) {
       const setIt = () => {
@@ -246,20 +349,24 @@ export function buildCharSelect(parent: Node, onBack: () => void, onStart: (id: 
       };
       if (!setIt()) void loadIcon(art.icon).then(() => { setIt(); });
     } else skSp.spriteFrame = null;
-    const st2 = ch.stats || {};
-    const bits: string[] = [];
-    if (st2.power !== undefined) bits.push('攻击 ×' + st2.power.toFixed(1));
-    if (st2.speedMul !== undefined) bits.push('移速 ×' + st2.speedMul.toFixed(2));
-    if (st2.maxhp !== undefined) bits.push('生命 ' + st2.maxhp);
-    if (st2.crit !== undefined) bits.push('暴击 ' + Math.round(st2.crit * 100) + '%');
-    if (st2.regen !== undefined) bits.push('回血 ' + st2.regen + '/s');
-    if (st2.pickupMul !== undefined) bits.push('拾取 ×' + st2.pickupMul);
-    dStat.string = bits.join('   ');
+
+    // 六项核心属性：攻击 / 移速 / 生命 / 暴击 / 回血 / 拾取（角色开局真实值）
+    const st = freshStats(ch);
+    const names = ['攻击', '移速', '生命', '暴击', '回血', '拾取'];
+    const vals = [
+      '×' + st.power.toFixed(1),
+      String(Math.round(st.speed)),
+      String(Math.round(st.maxhp)),
+      Math.round(st.crit * 100) + '%',
+      st.regen.toFixed(1) + '/s',
+      String(Math.round(st.pickup)),
+    ];
+    attrCells.forEach((c, i) => { c.name.string = names[i]; c.val.string = vals[i]; });
   }
 
   // 底部：返回(96) + 开始闯关(232)，让开底部安全区
   const by = -VH / 2 + B + 25;
-  const back = button(root, at2(12 + 48, 0).x, by, 96, 50, '返回', { size: 15 });
+  const back = button(root, at2(12 + 48, 0).x, by, 96, 48, '返回', { size: 15 });
   onTap(back.node, onBack);
   const go = button(root, at2(116 + 116, 0).x, by, 232, 50, '开始闯关', { primary: true, size: 17 });
   onTap(go.node, () => onStart(picked));

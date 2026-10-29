@@ -223,8 +223,9 @@ console.log('\n== 4e. 角色选择布局（3 列 / 一页 6 个 / 立绘按格�
 
   // 立绘按「裁掉透明留白后的内容尺寸」整数倍放大：13×15 → 6 倍 = 78×90
   const k1 = portraitFit(13, 15), k2 = portraitFit(17, 25);
-  ok(k1.k === 6 && k1.w === 78 && k1.h === 90, '13×15 立绘 → 6 倍 = 78×90（比最初 32×32 框里的 52×60 大 50%）');
-  ok(k2.k === 3 && k2.w === 51 && k2.h === 75, '17×25 骑乘立绘 → 3 倍 = 51×75');
+  // M1 视觉升级：卡片 124→90 高，立绘目标高度 90→60（仍占卡高 2/3，把空间让给详情）
+  ok(k1.k === 4 && k1.w === 52 && k1.h === 60, '13×15 立绘 → 4 倍 = 52×60（卡高 90 的 2/3）');
+  ok(k2.k === 2 && k2.w === 34 && k2.h === 50, '17×25 骑乘立绘 → 2 倍 = 34×50');
   const allFit = [[13, 15], [14, 15], [12, 14], [17, 25]].every(([w, h]) => {
     const f = portraitFit(w, h);
     return f.w <= CS.CARD_W - 12 && f.h <= CS.PORTRAIT && f.k >= 1;
@@ -270,7 +271,7 @@ console.log('\n== 4e. 角色选择布局（3 列 / 一页 6 个 / 立绘按格�
       { y: dr.pos.y, halfH: dr.pos.size / 2 },
       { y: dr.neg.y, halfH: dr.neg.size / 2 },
       { y: dr.skill.y, halfH: dr.skill.h / 2 },
-      { y: dr.stat.y, halfH: dr.stat.size / 2 },
+      { y: dr.stat.y, halfH: dr.stat.h / 2 },   // stat 现在是 2×3 属性网格块
     ];
     for (let i = 0; i + 1 < items.length; i++) {
       if (items[i].y - items[i + 1].y < items[i].halfH + items[i + 1].halfH - 0.6) return false;

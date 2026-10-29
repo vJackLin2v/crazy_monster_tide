@@ -1,6 +1,12 @@
-# UI 规格 · v1.3（**已冻结**）
+# UI 规格 · v1.5（**已冻结**）
 
-> **状态：🔒 FROZEN v1.3** ｜ 冻结日期：2026-10-20（v1.2 同日微调）
+> **v1.5 变更（2026-10-29）**：视觉层升级。**颜色 / 字号 / 组件样式以
+> `docs/ui-redesign/ui_visual_upgrade_v1.md`（FROZEN v1.0）为唯一来源**，本文 §1.1/§1.2 的旧色板作废。
+> 页面布局仍按本文件 §2；其中 **§2.2 主菜单、§2.4 角色选择** 的布局已由 M1 视觉升级替代，
+> 以代码 `ui/MenuScreens.ts` + `ui/CharLayout.ts` 与 `docs/ui-redesign/ui_pages_v2.md` 为准。
+> 审查记录见 `docs/ui-redesign/ui_visual_audit.md`。
+
+> **状态：🔒 FROZEN v1.5** ｜ 冻结日期：2026-10-20（v1.2 同日微调；v1.5 仅换视觉层）
 > **对应设计稿**：`docs/ui/mockups/v2/*.html`（一屏一文件）+ `screenshots/ui-v2-design/*.png`（逐屏 360x640）
 > **v1.0 → v1.1 变更**：见 §7。
 > **v1.1 → v1.2 变更**：§2.4 角色选择（2 列 + 裁透明边立绘，D-36）。

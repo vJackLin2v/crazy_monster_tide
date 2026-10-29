@@ -105,7 +105,7 @@ function drawPanel(n: Node, w: number, h: number, o: PanelOpts): boolean {
   g.fill();
   if (o.border !== false) {
     g.lineWidth = PX_LINE;
-    g.strokeColor = o.line ?? COL.line;
+    g.strokeColor = o.line ?? COL.edge;
     g.rect(-w / 2, -h / 2, w, h);
     g.stroke();
     // 1px 顶部高光：像素面板的"斜面"感
@@ -183,7 +183,7 @@ export function text(parent: Node, x: number, y: number, str: string, o: TextOpt
   l.verticalAlign = Label.VerticalAlign.CENTER;
   if (o.outline !== false && (o.bold || size >= 13)) {
     const ol = n.addComponent(LabelOutline);
-    ol.color = COL.line;
+    ol.color = COL.inkLine;      // 文字描边与容器描边分开（规范 §2）
     ol.width = 2;
   }
   return l;
@@ -280,7 +280,7 @@ export function button(parent: Node, x: number, y: number, w: number, h: number,
       g.fillColor = col;
       g.rect(-w / 2, -hh / 2, w, hh);
       g.fill();
-      g.lineWidth = PX_LINE; g.strokeColor = COL.line;
+      g.lineWidth = PX_LINE; g.strokeColor = COL.edge;
       g.rect(-w / 2, -hh / 2, w, hh); g.stroke();
       g.fillColor = new Color(255, 255, 255, 22);
       g.rect(-w / 2 + PX_LINE, hh / 2 - PX_LINE - 2, w - PX_LINE * 2, 2); g.fill();

@@ -2,6 +2,20 @@
 
 ## 当前阶段
 
+**M67（2026-10-29）视觉升级 M1：视觉规范 + 主菜单 + 角色选择（已完成，等用户确认）**
+- 规范：新增 `docs/ui-redesign/ui_visual_upgrade_v1.md`（FROZEN v1.0：深蓝色板 / 字号阶梯 / 组件规则），
+  `ui-spec-approved.md` 升 v1.5 并声明**旧色板作废**；审查矩阵 `ui_visual_audit.md`。
+- 全局：`Tokens.ts` 换色板，**面板描边 edge 与文字描边 inkLine 拆成两个变量**；
+  `UIKit.ts` 同步；`gen_ui_kit.py` 按新色板重生成 19 张九宫格（meta/UUID 不变）。
+- 主菜单：主视觉改用 `CHARS[0]` 立绘（整数倍、失败退 idle、再失败静默）、3 个卖点信息块、
+  276×56 主 CTA + 46 次 CTA、页脚只留 seed、上下暗角。
+- 角色选择：卡片 106×124→**106×90**、立绘 78×90→**52×60**、选中态加**勾选徽标**、
+  详情改四段式 + **3×2 属性网格**（数据来自 `freshStats`，只读）、网格+详情整块垂直居中。
+- 测试：`tsc.check` 0；**111 PASS / 0 FAIL**（立绘断言同步改为 52×60 / 34×50）；构建 success；
+  三档视口 9 张截图在 `screenshots/ui-visual-upgrade/m1/`；立绘缺失回退实测通过。
+- 未验证：微信真机安全区；其它页面仅继承新色板、未重新验收（M2–M5）。
+- 记录：`docs/ui-redesign/ui_visual_m1.md`。
+
 **M66（2026-10-28）UI 专项改造：像素 UI 套件 + 11 屏重排（已完成，待用户验收）**
 - 素材：**Kenney Pixel UI Pack（CC0）** 19 张九宫格落地 `cocos/assets/resources/ui/kenney/`；
   原始包 + License.txt 存 `assets/ui/third_party/kenney_pixel_ui_pack/`；
