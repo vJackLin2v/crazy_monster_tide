@@ -211,20 +211,16 @@ export class Hud {
       this.hpText.color = warn ? C_HP_TEXT : COL.cream;
       this.hpWarn.clear();
       if (warn) {
-        // 血条外圈光晕：**窄一点、浓一点**（用户 2026-10-29 第二轮反馈：太淡且压到经验条）
-        //   · 横向最多外扩 ~9.5px、向上 ~11px
-        //   · 向下只扩 2.5px —— 经验条就在血条下方 3px 处，扩多了会盖住它
-        //   · 5 层，最内层 alpha 52 → 最外层 14（同一颜色叠加会更浓）
-        const W = 156, H = 18, LAYERS = 5;
-        for (let i = LAYERS; i >= 1; i--) {
-          const padX = 2 + i * 1.5;
-          const up = 2 + i * 1.8;
-          const down = 2.5;
-          const a = Math.round(14 + 38 * (1 - (i - 1) / LAYERS));
-          this.hpWarn.fillColor = new Color(214, 88, 106, a);
-          this.hpWarn.roundRect(-W / 2 - padX, -H / 2 - down, W + padX * 2, H + up + down, 6);
-          this.hpWarn.fill();
-        }
+        // 血条外圈光晕：**四边等宽**（用户 2026-10-29 第三轮反馈：上左右比下宽，看着不对齐）
+        //   · 宽度统一 2.5px —— 上限由经验条决定：血条底边到经验条顶边只有 3px
+        //   · 两层：外圈 2.5px（淡）+ 内圈 1.1px（浓），叠出"边缘实、往外化开"的效果
+        const W = 156, H = 18, GLOW = 2.5;
+        this.hpWarn.fillColor = new Color(214, 88, 106, 38);
+        this.hpWarn.roundRect(-W / 2 - GLOW, -H / 2 - GLOW, W + GLOW * 2, H + GLOW * 2, 7);
+        this.hpWarn.fill();
+        this.hpWarn.fillColor = new Color(224, 100, 116, 92);
+        this.hpWarn.roundRect(-W / 2 - 1.1, -H / 2 - 1.1, W + 2.2, H + 2.2, 5);
+        this.hpWarn.fill();
       }
     }
 
