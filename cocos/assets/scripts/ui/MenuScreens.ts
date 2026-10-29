@@ -92,22 +92,12 @@ export function buildMenu(parent: Node, seed: number, onStart: () => void, onHow
     { size: 40, color: COL.cream, bold: true, width: 354, outline: true, shadow: true });
   text(root, 0, at2(180, S + 100).y, 'C R A Z Y   M O N S T E R   T I D E',
     { size: 10, color: COL.accent, width: 354, bold: true, outline: true });
-
-  // ── 底部动作栈：固定间距、从底部安全区往上排（640 参考：卖点 356 / CTA 428 / 次按钮 496 / 图标行 574）──
-  const iconRowY = VH - B - 50;
+  // ── 底部动作栈：**底部留白 = 标题上方留白**（用户要求上下呼吸感一致）
+  //    640 参考：标题上沿 68 / CTA 398 / 次按钮 466 / 图标行 544 / 底部留白 68
+  const topGap = S + 40;                 // 标题上沿到屏幕顶的距离
+  const iconRowY = VH - topGap - 28;     // 图标行中心（高 56）
   const subBtnY = iconRowY - 78;
   const ctaY = subBtnY - 68;
-  const chipsY = ctaY - 72;
-
-  // ── 卖点条：3 个信息块（不是按钮，不可点）──
-  const FEATURES = ['4 个主动技能', '黑科技构筑', '20 波挑战'];
-  const CW = 100, CGAP = 8;
-  FEATURES.forEach((label, i) => {
-    const cx = 180 - (CW + CGAP) + i * (CW + CGAP);
-    const c = at2(cx, chipsY);
-    const box = panel(root, c.x, c.y, CW, 30, { art: 'panel_soft' });
-    text(box, 0, 1, label, { size: 10, color: COL.dim, width: CW - 8, bold: true, outline: false });
-  });
 
   // ── CTA：主按钮是全页唯一"橙" ──
   const b1 = at2(180, ctaY);
