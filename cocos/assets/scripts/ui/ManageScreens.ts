@@ -184,14 +184,16 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
       text(row, -128, 0, m.name + ' ×' + m.count + ' / 3 → ' + m.resultName,
         { size: 11, color: COL.cream, align: 'left', width: 208, outline: true });
       if (m.times >= 1) {
-        const mb = panel(row, 132, 0, 48, 22, { art: 'btn_primary' });
-        text(mb, 0, 1, '合成', { size: 10, color: COL.ink, width: 44, bold: true, outline: false });
-        const hit = mkNode(row, 'mergeHit', 44, 34, 132, 0);
+        // 按钮右边缘留 9px、上下各 5px（用户反馈：原来贴住行边框，右上都没空）
+        const mb = panel(row, 126, 0, 46, 20, { art: 'btn_primary' });
+        text(mb, 0, 1, '合成', { size: 10, color: COL.ink, width: 42, bold: true, outline: false });
+        const hit = mkNode(row, 'mergeHit', 46, 34, 126, 0);
         onTap(hit, () => cb.onMerge(m.baseId));
         onTap(mb, () => cb.onMerge(m.baseId));
       } else {
-        text(row, 140, 0, '还差 ' + Math.max(1, 3 - m.count) + ' 个',
-          { size: 10, color: COL.dim, align: 'right', width: 76, outline: false });
+        // 右对齐结束在 x=148（行半宽 158，留 10px）
+        text(row, 111, 0, '还差 ' + Math.max(1, 3 - m.count) + ' 个',
+          { size: 10, color: COL.dim, align: 'right', width: 74, outline: false });
       }
     });
   }
