@@ -143,13 +143,14 @@ export function buildHowto(parent: Node, onBack: () => void): Node {
   const box = panel(root, 0, at2(180, top + bodyH / 2).y, 336, bodyH, { art: 'panel' });
   steps.forEach(([head, desc], i) => {
     const cy = bodyH / 2 - PAD - CARD_H / 2 - i * (CARD_H + CARD_GAP);
-    const num = panel(box, -156 + 16, cy, 24, 24, { art: 'btn_primary' });
-    text(num, 0, 1, String(i + 1), { size: 13, color: COL.ink, width: 22, bold: true, outline: false });
-    text(box, -122, cy + 9, head, { size: 13, color: COL.cream, align: 'left', width: 296, bold: true, outline: true });
-    text(box, -122, cy - 9, desc, { size: 10, color: COL.dim, align: 'left', width: 296, outline: false });
+    // 序号 26（规格 26–28）、标题 15、解释 11
+    const num = panel(box, -156 + 17, cy, 26, 26, { art: 'btn_primary' });
+    text(num, 0, 1, String(i + 1), { size: 14, color: COL.ink, width: 24, bold: true, outline: false });
+    text(box, -120, cy + 9, head, { size: 15, color: COL.cream, align: 'left', width: 294, bold: true, outline: true });
+    text(box, -120, cy - 10, desc, { size: 11, color: COL.dim, align: 'left', width: 294, outline: false });
   });
-  text(root, 0, at2(0, S + 82 + bodyH + 22).y, '提示：3 个同名黑科技可合成 Ⅱ（效果 ×2，只占 1 槽）',
-    { size: 10, color: COL.mint, width: 336, outline: false });
+  text(root, 0, at2(0, S + 82 + bodyH + 24).y, '提示：3 个同名黑科技可合成 Ⅱ（效果 ×2，只占 1 槽）',
+    { size: 11, color: COL.mint, width: 336, outline: false });
 
   const btn = button(root, 0, -VH / 2 + B + 25, 336, 50, '返回', { size: FS.m });
   onTap(btn.node, onBack);
@@ -382,13 +383,13 @@ export function buildResult(parent: Node,
     ['最高等级', 'Lv.' + stats.lv],
     ['波次', waveLine],
   ];
-  const CW = 163, CH = 60, GAP = 10;
+  const CW = 158, CH = 58, GAP = 8;      // 规格：2×2 统计卡 158×58–64，间距 8
   cards.forEach(([k, v], i) => {
     const col = i % 2, row = Math.floor(i / 2);
     const c = at2(12 + CW / 2 + col * (CW + GAP), S + 152 + CH / 2 + row * (CH + GAP));
     const card = panel(root, c.x, c.y, CW, CH, { art: 'panel_soft' });
     text(card, 0, 14, k, { size: 10, color: COL.dim, width: CW - 16 });
-    text(card, 0, -10, v, { size: 18, color: COL.cream, width: CW - 16, bold: true, outline: true });
+    text(card, 0, -10, v, { size: 22, color: COL.cream, width: CW - 16, bold: true, outline: true });
   });
 
   // 金币 / 种子（小字，不抢统计卡）
@@ -417,7 +418,7 @@ export function buildResult(parent: Node,
         else { void loadIcon(r.icon).then(() => { const g2 = iconFrame(r.icon); if (g2 && isp.isValid) isp.spriteFrame = g2; }); }
       }
       text(row, -126, 0, r.name, { size: FS.s, color: COL.cream, align: 'left', width: 150, bold: true, outline: true });
-      text(row, 152, 0, r.sub, { size: FS.xs, color: COL.dim, align: 'right', width: 190 });
+      text(row, 152, 0, r.sub, { size: 10, color: COL.dim, align: 'right', width: 190 });
     });
   } else {
     text(root, at2(12, rowsTop + 10).x, at2(12, rowsTop + 10).y, '· 没有收获',

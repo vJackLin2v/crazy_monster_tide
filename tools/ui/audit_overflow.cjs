@@ -23,6 +23,10 @@
 const { chromium } = require('playwright');
 
 const BASE = process.argv[2] || 'http://127.0.0.1:8123/';
+// 视口：默认三档（规格要求 360×640 / 390×844 / 412×915 都过一遍）
+const VIEWPORTS = (process.env.VIEWPORTS || '360x640,390x844,412x915')
+  .split(',').map(s => s.trim()).filter(Boolean)
+  .map(s => { const [w, h] = s.split('x').map(Number); return { w, h, tag: s }; });
 const TOL = 1.5;
 
 const AUDIT_SRC = function () {
@@ -43,7 +47,10 @@ const AUDIT_SRC = function () {
       if (d > 14 || !n) return;
       let cur = pan;
       const ut = n.getComponent('cc.UITransform');
-      const skip = /hit$/i.test(n.name) || n.name === 'mask' || /^text/i.test(n.name) || n.name === 'p' || n.name === 'icon';
+      // 跳过：热区（故意比视觉大）、mask、纯文字 Label（宽是排版参数）、
+      //       以及**故意铺满/超出的背景图**（menu-bg 用 cover 缩放，本来就会溢出）
+      const skip = /hit$/i.test(n.name) || n.name === 'mask' || /^text/i.test(n.name)
+        || n.name === 'p' || n.name === 'icon' || /^menu-bg$/i.test(n.name) || /^bg/i.test(n.name);
       if (ut && n.name === 'panel' && ut.width >= 280) cur = n;
       const r = rectOf(n);
       if (r && cur && n !== cur && !skip) {
@@ -77,9 +84,9 @@ const AUDIT_SRC = function () {
   return JSON.stringify(report);
 }.toString();
 
-(async () => {
-  const b = await chromium.launch();
-  const page = await (await b.newContext({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 2 })).newPage();
+async function runViewport(b, vp) {
+  console.log('\n########## ' + vp.tag + ' ##########');
+  const page = await (await b.newContext({ viewport: { width: vp.w, height: vp.h }, deviceScaleFactor: 2 })).newPage();
   await page.goto(BASE, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('canvas');
   await new Promise(r => setTimeout(r, 9500));
@@ -149,9 +156,25 @@ const AUDIT_SRC = function () {
   await ev("(G.closeModal(), G.showResult(false), 1)");
   await new Promise(r => setTimeout(r, 900)); console.log('— result'); all.push(...await run('result'));
 
-  console.log('\n================ 结果 ================');
-  console.log(all.length ? 'FAIL ' + all.length + ' 处越界' : 'PASS 全部界面无越界');
-  console.log(controlOk ? 'PASS 负向对照（检测有效）' : 'FAIL 负向对照（检测失效）');
+  console.log('  => ' + (all.length ? 'FAIL ' + all.length + ' 处越界' : 'PASS 无越界')
+    + ' / ' + (controlOk ? 'PASS 对照有效' : 'FAIL 对照失效'));
+  return { fails: all, controlOk };
+}
+
+(async () => {
+  const b = await chromium.launch();
+  const summary = [];
+  for (const vp of VIEWPORTS) {
+    const r = await runViewport(b, vp);
+    summary.push({ tag: vp.tag, ...r });
+  }
   await b.close();
-  process.exit(all.length === 0 && controlOk ? 0 : 1);
+  console.log('\n================ 结果 ================');
+  for (const s of summary) {
+    console.log((s.fails.length === 0 && s.controlOk ? 'PASS ' : 'FAIL ') + s.tag
+      + (s.fails.length ? '  越界 ' + s.fails.length + ' 处：' + s.fails[0].slice(0, 160) : '  无越界')
+      + (s.controlOk ? '' : '  [对照失效]'));
+  }
+  const bad = summary.filter(s => s.fails.length || !s.controlOk);
+  process.exit(bad.length ? 1 : 0);
 })().catch(e => { console.log('FAIL ' + (e.stack || e.message)); process.exit(1); });
