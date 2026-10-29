@@ -59,7 +59,7 @@ export interface SkillRuntime {
  *  - unique / exclusive：上限 1
  * 不得在这里偷偷改规则；要改先改文档。
  */
-export function calcSkill(sk: SkillInst, stats: CharStats): SkillRuntime {
+export function calcSkill(sk: SkillInst, stats: CharStats, atkMul = 1): SkillRuntime {
   const b: SkillDef = SKILLS[sk.id];
   if (!b) throw new Error(`未知技能：${sk.id}`);
 
@@ -97,7 +97,10 @@ export function calcSkill(sk: SkillInst, stats: CharStats): SkillRuntime {
     }
   }
 
-  cd *= Math.pow(0.88, rapid);                    // 急速：乘区
+  // 急速：乘区。秘术学徒的「黑科技冷却效果 +25%」= 每份急速的减免幅度 ×1.25
+  // （0.88 的"效果"是 -12%，×1.25 → -15% → 单份系数 0.85）
+  const rapidPer = stats.modCdrMul ? Math.pow(0.88, stats.modCdrMul) : 0.88;
+  cd *= Math.pow(rapidPer, rapid);
 
   // 标签冷却减免（来自道具）
   for (const t of b.tags) {
@@ -137,6 +140,9 @@ export function calcSkill(sk: SkillInst, stats: CharStats): SkillRuntime {
   count = Math.min(5, count + Math.min(3, stats.count ?? 0));
   pierce = Math.min(6, pierce + Math.min(4, stats.pierce ?? 0));
   bounce = Math.min(5, bounce + Math.min(3, stats.bounce ?? 0));
+
+  // 角色临时强化（铁拳骑士：受击后 2s 攻击力 +20%），由 Battle 在施放时传入
+  if (atkMul !== 1) dmg *= atkMul;
 
   return {
     cd,

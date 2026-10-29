@@ -361,8 +361,9 @@ export interface ResultBuildRow { icon: string; name: string; sub: string }
 export function buildResult(parent: Node,
                             stats: { win: boolean; wave: number; lv: number; kills: number; time: number;
                                      build: ResultBuildRow[]; gold?: number; seed?: number;
-                                     waveTotal?: number; endless?: boolean },
-                            onMenu: () => void, onRetry: () => void): Node {
+                                     waveTotal?: number; endless?: boolean; maxAlive?: number },
+                            onMenu: () => void, onRetry: () => void,
+                            onContinue?: () => void): Node {
   const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
   const at2 = (x: number, y: number) => at(VW, VH, x, y);
   const S = safeTop(), B = safeBottom();
@@ -401,7 +402,9 @@ export function buildResult(parent: Node,
 
   // 金币 / 种子（小字，不抢统计卡）
   const extra = at2(180, S + 152 + CH * 2 + GAP + 18);
-  text(root, extra.x, extra.y, '金币 ' + (stats.gold ?? 0) + '   ·   种子 ' + (stats.seed ?? ''),
+  text(root, extra.x, extra.y,
+    '金币 ' + (stats.gold ?? 0) + '   ·   种子 ' + (stats.seed ?? '')
+    + (stats.maxAlive ? '   ·   同屏峰值 ' + stats.maxAlive : ''),
     { size: 10, color: COL.dim, width: 336 });
 
   // 本局构筑
@@ -439,11 +442,18 @@ export function buildResult(parent: Node,
       { size: 10, color: COL.dim, align: 'left', width: 336 });
   }
 
-  // 底部：主界面(96) + 再来一局(232)
+  // 底部：主界面(96) + 再来一局；通关且 onContinue 存在时变成三按钮 96/96/128
   const byy = -VH / 2 + B + 25;
-  const m = button(root, at2(12 + 48, 0).x, byy, 96, 50, '主界面', { size: 14 });
+  const m = button(root, at2(12 + 48, 0).x, byy, 96, 50, '主界面', { size: 13 });
   onTap(m.node, onMenu);
-  const r2 = button(root, at2(116 + 116, 0).x, byy, 232, 50, '再来一局', { primary: true, size: 17 });
-  onTap(r2.node, onRetry);
+  if (onContinue) {
+    const again = button(root, at2(116 + 48, 0).x, byy, 96, 50, '再来一局', { size: 13 });
+    onTap(again.node, onRetry);
+    const go = button(root, at2(220 + 64, 0).x, byy, 128, 50, '继续 · 无尽', { primary: true, size: 15 });
+    onTap(go.node, onContinue);
+  } else {
+    const r2 = button(root, at2(116 + 116, 0).x, byy, 232, 50, '再来一局', { primary: true, size: 17 });
+    onTap(r2.node, onRetry);
+  }
   return root;
 }

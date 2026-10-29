@@ -27,6 +27,8 @@ export interface SaveData {
   merges: number;
   /** 已解锁成就 id */
   ach: string[];
+  /** 通关过的角色 id（角色专属成就用） */
+  charsWin: string[];
 }
 
 export function defaultSave(): SaveData {
@@ -34,5 +36,6 @@ export function defaultSave(): SaveData {
     music: true, sfx: true,
     runs: 0, wins: 0, kills: 0, bestWave: 0, bestLv: 0, bossKills: 0, merges: 0,
     ach: [],
+    charsWin: [],
   };
 }

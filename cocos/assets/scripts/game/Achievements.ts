@@ -15,6 +15,8 @@ export interface AchDef {
   desc: string;
   metric: AchMetric;
   target: number;
+  /** 角色专属成就：必须用该角色通关（看 SaveData.charsWin） */
+  charId?: string;
 }
 
 export const ACHIEVEMENTS: AchDef[] = [
@@ -27,14 +29,29 @@ export const ACHIEVEMENTS: AchDef[] = [
   { id: 'boss_1', name: '屠龙者', desc: '击败 1 只 BOSS', metric: 'bossKills', target: 1 },
   { id: 'merge_1', name: '黑科技大师', desc: '合成 1 次强化模块（3 个同名 → II）', metric: 'merges', target: 1 },
   { id: 'win_1', name: '远征成功', desc: '通关一次（20 波全部清空）', metric: 'wins', target: 1 },
+  // ★ 玩法审计 §8.7：每个角色一条专属目标，给复玩一个低成本理由
+  { id: 'win_knight', name: '铁壁通关', desc: '用铁拳骑士通关一次', metric: 'wins', target: 1, charId: 'knight' },
+  { id: 'win_mage', name: '奥术通关', desc: '用秘术学徒通关一次', metric: 'wins', target: 1, charId: 'mage' },
+  { id: 'win_ranger', name: '游侠通关', desc: '用荒野游侠通关一次', metric: 'wins', target: 1, charId: 'ranger' },
+  { id: 'win_monk', name: '苦行通关', desc: '用苦行僧通关一次', metric: 'wins', target: 1, charId: 'monk' },
+  { id: 'win_summoner', name: '陨星通关', desc: '用陨星师通关一次', metric: 'wins', target: 1, charId: 'summoner' },
+  { id: 'win_zealot', name: '狂信通关', desc: '用狂信者通关一次', metric: 'wins', target: 1, charId: 'zealot' },
 ];
 
 export interface AchView { def: AchDef; cur: number; done: boolean }
 
 /** 当前进度视图（按定义顺序） */
+/** 某条成就是否已达成（角色专属看 charsWin，其余看累计数值） */
+function reached(s: SaveData, def: AchDef): boolean {
+  if (def.charId) return s.charsWin.includes(def.charId);
+  return ((s[def.metric] as number) ?? 0) >= def.target;
+}
+
 export function achViews(s: SaveData): AchView[] {
   return ACHIEVEMENTS.map((def) => {
-    const cur = Math.min(def.target, Math.max(0, Math.floor((s[def.metric] as number) ?? 0)));
+    const cur = def.charId
+      ? (s.charsWin.includes(def.charId) ? def.target : 0)
+      : Math.min(def.target, Math.max(0, Math.floor((s[def.metric] as number) ?? 0)));
     return { def, cur, done: s.ach.includes(def.id) };
   });
 }
@@ -44,8 +61,7 @@ export function newlyUnlocked(s: SaveData): string[] {
   const out: string[] = [];
   for (const def of ACHIEVEMENTS) {
     if (s.ach.includes(def.id)) continue;
-    const cur = (s[def.metric] as number) ?? 0;
-    if (cur >= def.target) out.push(def.id);
+    if (reached(s, def)) out.push(def.id);
   }
   return out;
 }

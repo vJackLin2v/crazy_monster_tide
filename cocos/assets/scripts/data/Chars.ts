@@ -15,13 +15,15 @@ export const CHARS: CharDef[] = [
     id: 'mage', name: '秘术学徒', unit: 'mage',
     pos: '黑科技冷却效果 +25%', neg: '生命上限 -20',
     start: 'arcane',
-    stats: { power: 1.1, maxhp: 48 },
+    // modCdr：模块提供的冷却效果 ×1.25（"黑科技冷却效果 +25%"，在 calcSkill 里只作用于 rapid）
+    stats: { power: 1.1, maxhp: 48, modCdrMul: 1.25 },
   },
   {
     id: 'ranger', name: '荒野游侠', unit: 'archer',
     pos: '投射物速度 +25%，拾取范围 +50%', neg: '受到伤害 +15%（更脆）',
     start: 'ice_spear',
-    stats: { power: 0.95, speedMul: 1.15, maxhp: 54, projSpd: 1.25, pickupMul: 1.5 },
+    // armor -0.15 = 「受到伤害 +15%」（与狂信者同一机制，之前这条负面根本没生效）
+    stats: { power: 0.95, speedMul: 1.15, maxhp: 54, projSpd: 1.25, pickupMul: 1.5, armor: -0.15 },
   },
   {
     id: 'monk', name: '苦行僧', unit: 'spearman',

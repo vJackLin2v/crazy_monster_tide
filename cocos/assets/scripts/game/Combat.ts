@@ -12,6 +12,12 @@ import type { Rng } from '../core/Rng';
 // ---------- 刷怪 ----------
 export interface SpawnPlan { batch: number; interval: number; }
 
+/** 同屏活怪上限（玩法审计 §8.2）：超过软上限就降速，达到硬上限就停刷 */
+export const ALIVE_SOFT = 40;
+export const ALIVE_HARD = 60;
+/** 超过软上限时刷怪间隔的惩罚倍率 */
+export const ALIVE_SLOW_MUL = 1.6;
+
 /**
  * 当前波次的刷怪节奏。
  * ⚠️ 曲线被用户实测打回过一次：原来的 `1 + floor(wave/2)` 在第 2 波直接从 1 只/批跳到 2 只/批，
@@ -39,8 +45,12 @@ export function spawnPlan(wave: number): SpawnPlan {
     //   1.4只/秒 -> 在屏 2.6 只，玩家活（HP 84/120）
     //   2.6只/秒 -> 在屏 6.7 只，玩家**第 1 波就死**
     // 取中间：第 1 波约 2.0 只/秒（在屏 4~5 只），随技能数增长加速。
-    interval: Math.max(0.18, 0.53 - wave * 0.022),
-    batch: Math.min(5, 1 + Math.floor(wave / 3)),
+    // ★ 2026-10-29 难度曲线返工（docs/audits/gameplay_audit_and_proposal.md §8.2 候选 A）：
+    //   旧参数 max(0.18, 0.53-0.022w) × min(5,1+floor(w/3)) 让生成率从 1.97/s 涨到 27.78/s（14 倍），
+    //   且第 3/6/9/12 波是乘法台阶（+109% / +58% / +42% / +35%），中后期活怪无上限地堆积。
+    //   新参数：峰值 ≈ 8.8/s（原 27.8），台阶幅度约 +33%，配合 Battle 里的活怪软/硬上限。
+    interval: Math.max(0.34, 0.62 - wave * 0.016),
+    batch: Math.min(3, 1 + Math.floor(wave / 4)),
   };
 }
 

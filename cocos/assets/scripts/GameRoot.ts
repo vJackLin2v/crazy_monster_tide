@@ -616,6 +616,23 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       })());
   }
 
+  /** 通关后继续无尽：把 endless 打开，回到战斗并从第 21 波开始 */
+  private continueEndless() {
+    const rs = this.battle.rs;
+    rs.endless = true;
+    this.endWaveShown();
+    this.battle.running = true;
+    this.battle.advanceWave();
+  }
+
+  private endWaveShown() {
+    this.closeModal();
+    this.clearScreen();
+    this.phase = 'battle';
+    this.battleNode.active = true;
+    this.joyNode.active = true;
+  }
+
   private nextWave() {
     const rs = this.battle.rs;
     // 用户指令：进下一关前**统一打开一次安装界面**，让玩家把背包里的模块装一装
@@ -648,7 +665,10 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       this.save.kills += rsP.kills;
       this.save.bestWave = Math.max(this.save.bestWave, rsP.wave);
       this.save.bestLv = Math.max(this.save.bestLv, rsP.lv);
-      if (win) this.save.wins++;
+      if (win) {
+        this.save.wins++;
+        if (!this.save.charsWin.includes(rsP.charId)) this.save.charsWin.push(rsP.charId);
+      }
       const unlocked = applyUnlocks(this.save);
       writeSave(this.save);
       if (unlocked) console.log('[Ach] 解锁新成就：' + this.save.ach.join(','));
@@ -672,8 +692,11 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
     try {
       this.cur = buildResult(this.uiRoot,
         { win, wave: rs.wave, lv: rs.lv, kills: rs.kills, time: rs.runTime, build,
-          gold: rs.gold, seed: this.seed, waveTotal: RUN.waves, endless: rs.endless },
-        () => this.showMenu(), () => void this.startBattle());
+          gold: rs.gold, seed: this.seed, waveTotal: RUN.waves, endless: rs.endless,
+          maxAlive: this.battle.maxAlive },
+        () => this.showMenu(), () => void this.startBattle(),
+        // 通关后进入无尽（RUN.canContinue 之前是死字段，从没人读）
+        win && RUN.canContinue ? () => this.continueEndless() : undefined);
     } catch (e) {
       console.error('[UI] 结算面板构建失败，回到主菜单', e);
       this.closeModal(); this.clearScreen(); this.showMenu();

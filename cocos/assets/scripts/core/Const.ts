@@ -79,8 +79,9 @@ export const SHAKE = { kill: 1.2, hurt: 4, elite: 9, boss: 14 };     // 屏震�
 export const DEATH_ANIM_TIME = 0.75;                                 // 死亡动画时长（超过即回收，见 KI-001）
 
 // ---------- 成长曲线 ----------
-export const HP_GROWTH_PER_WAVE = 0.24;   // 敌人血量 / 波
-export const DMG_GROWTH_PER_WAVE = 0.12;  // 敌人伤害 / 波
+// ★ 2026-10-29：24%/12% 会让第 10 波血量 3.16×、伤害 2.08×，而玩家成长跟不上（见玩法审计 §8.2）
+export const HP_GROWTH_PER_WAVE = 0.18;   // 敌人血量 / 波
+export const DMG_GROWTH_PER_WAVE = 0.10;  // 敌人伤害 / 波
 export const EXP_BASE = 5;
 export const EXP_PER_LEVEL = 3.2;
 

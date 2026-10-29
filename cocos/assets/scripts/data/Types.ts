@@ -59,6 +59,8 @@ export interface CharStats {
   tagBonus: Record<string, number>;
   tagCdr: Record<string, number>;
   hp: number;
+  /** 角色：模块提供的冷却效果倍率（秘术学徒 = 1.25；只作用于 rapid 模块，不影响其它 cdr） */
+  modCdrMul?: number;
 }
 
 export interface ItemDef {
@@ -76,7 +78,7 @@ export interface CharDef {
   pos: string;             // 正向天赋
   neg: string;             // 负向天赋（必须明显）
   start: string;           // 初始技能 id
-  stats: Partial<CharStats> & { speedMul?: number; pickupMul?: number };
+  stats: Partial<CharStats> & { speedMul?: number; pickupMul?: number; modCdrMul?: number };
 }
 
 export interface EnemyDef {

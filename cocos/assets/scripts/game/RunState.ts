@@ -114,8 +114,26 @@ export class RunState {
     const out: Reward[] = [];
     const used = new Set<string>();
     let guard = 0;
+    // ★ 2026-10-29（玩法审计 §8.4）：原来是 4 类**等概率 25%**，中后期会频繁出现"三张都没用"。
+    //   改成分阶段权重；并且保证三张里至少有一张不是纯属性（属性是"看不出变化"的那一类）。
+    const W: Record<string, Partial<Record<RewardKind, number>>> = {
+      early: { skill: 0.35, module: 0.25, item: 0.25, attr: 0.15 },
+      mid:   { skill: 0.20, module: 0.35, item: 0.25, attr: 0.20 },
+      late:  { skill: 0.15, module: 0.35, item: 0.30, attr: 0.20 },
+    };
+    const band = this.lv <= 5 ? W.early : this.lv <= 12 ? W.mid : W.late;
+    const pickKind = (): RewardKind => {
+      let r = this.rng.next();
+      for (const k of ['skill', 'module', 'item', 'attr'] as RewardKind[]) {
+        r -= band[k] ?? 0;
+        if (r <= 0) return k;
+      }
+      return 'attr';
+    };
     while (out.length < 3 && guard++ < 200) {
-      const kind = this.rng.pick<RewardKind>(['skill', 'module', 'item', 'attr']);
+      let kind = pickKind();
+      // 保底：第 3 张如果是属性，但前面也全是属性，就改抽模块/道具
+      if (out.length === 2 && kind === 'attr' && out.every(o => o.kind === 'attr')) kind = 'module';
       let r: Reward | null = null;
 
       if (kind === 'skill') {

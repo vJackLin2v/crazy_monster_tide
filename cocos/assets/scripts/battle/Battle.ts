@@ -22,7 +22,8 @@ import { FrameAnim } from '../engine/FrameAnim';
 import { Camera2D } from '../engine/Camera2D';
 import { RunState } from '../game/RunState';
 import { calcSkill, type SkillRuntime } from '../game/SkillCalc';
-import { spawnPlan, spawnPointAround, waveScale, rollDamage, playerTakenDamage } from '../game/Combat';
+import { spawnPlan, spawnPointAround, waveScale, rollDamage, playerTakenDamage,
+  ALIVE_SOFT, ALIVE_HARD, ALIVE_SLOW_MUL } from '../game/Combat';
 import { SKILLS, SKILL_ART, FX } from '../data/Skills';
 import type { SkillArt } from '../data/Types';
 import { ENEMIES, bossUnitFor } from '../data/Enemies';
@@ -49,6 +50,12 @@ interface Enemy {
   poisonDmg: number; burnDmg: number;
   /** 视觉缩放（M64）：精英/BOSS 只放大**显示**，不动碰撞半径 r */
   visScale: number;
+  /** AI（玩法审计 §8.5/§8.6）：冲锋/BOSS 技能的预警-执行-恢复状态机 */
+  aiState: 'idle' | 'tele' | 'dash' | 'rec' | 'slam';
+  aiT: number;          // 当前状态剩余时间
+  aiCd: number;         // 冷却
+  aiDX: number; aiDY: number;   // 锁定的冲锋方向
+  aiNext: 'charge' | 'slam';    // BOSS 下一次要放哪招
 }
 interface Bullet {
   node: Node; anim: FrameAnim;
@@ -137,6 +144,10 @@ export class Battle extends Component {
   }
   private waveLeft = 0;
   private elitesSpawned = 0;
+  /** 铁拳骑士「受击后 2s 攻击力 +20%」剩余时间 */
+  private hurtBoostT = 0;
+  /** 本局最高同屏活怪（结算页展示，用于判断"怪潮是否失控"） */
+  maxAlive = 0;
   private bossRef: Enemy | null = null;
   private bossDefeated = false;
   private hitstop = 0;
@@ -223,7 +234,7 @@ export class Battle extends Component {
     this.waveEnding = false; this.waveEndT = 0; this.waveEndPending = false;
     this.waveEndUps = 0; this.pendingUps = 0;
     this.bossRef = null; this.bossAlive = null; this.bossDefeated = false;
-    this.hitstop = 0; this.hurtFlash = 0; this.inv = 0; this.dmgFlash = 0;
+    this.hitstop = 0; this.hurtFlash = 0; this.inv = 0; this.dmgFlash = 0; this.hurtBoostT = 0;
     this.skillT = [0, 0, 0, 0];
     this.running = false; this.paused = false;
   }
@@ -601,6 +612,7 @@ export class Battle extends Component {
       const pool0 = this.rs.spawnPool;
       if (pool0.length) {
         const open = Math.min(12, 5 + Math.floor(n / 2));   // 开场铺怪（6 只在第1波太多，改成 5）
+        void ALIVE_SOFT;
         for (let i = 0; i < open; i++) {
           const p = this.spawnPt();
           this.spawnEnemy(this.rs.rng.pick(pool0), p.x, p.y);
@@ -622,6 +634,8 @@ export class Battle extends Component {
     const def = ENEMIES[kind];
     if (!def) { console.warn('[Battle] 未知敌人：' + kind); return; }
     const ws = waveScale(this.rs.wave);
+    // 玩法审计 §8.5：阻路者（慢速高血量）降速但更难推走；其它单位保持原样
+    const BLOCKER = kind === 'orc' || kind === 'cavebrute';
     const hp = Math.round(def.hp * ws.hp * scale);
     const unit = unitOverride ?? def.unit;
     // 尺寸交给 FrameAnim.autoSize（按帧原生像素），这里只给兜底色块尺寸
@@ -636,7 +650,10 @@ export class Battle extends Component {
       boss: !!def.boss, elite: !!def.elite,
       poisonT: 0, burnT: 0, dotTick: 0, poisonDmg: 0, burnDmg: 0,
       visScale: 1,
+      aiState: 'idle', aiT: 0, aiCd: (def.boss ? 2.2 : 3.0), aiDX: 0, aiDY: 0,
+      aiNext: 'charge',
     };
+    if (BLOCKER) e.spd = Math.round(e.spd * 0.82);
     // ★ M49：单位帧是异步加载的，加载完成前先**藏起来**（之前会露出红色兜底方块）
     const bodyNode = node.getChildByName('body') ?? node;
     const bodySp = bodyNode.getComponent(Sprite);
@@ -1152,6 +1169,7 @@ export class Battle extends Component {
     this.updateFx(dtRaw);
     this.checkWaveEnd(dt);
     if (this.hurtFlash > 0) this.hurtFlash = Math.max(0, this.hurtFlash - dtRaw * 2.2);
+    if (this.hurtBoostT > 0) this.hurtBoostT = Math.max(0, this.hurtBoostT - dtRaw);
     if (this.waveEnding) {
       this.waveEndT += dtRaw;
       // ★ M33 #2：**等经验全部吸完**（0.6s 起步 + 3.2s 兜底）再开升级卡；
@@ -1204,18 +1222,32 @@ export class Battle extends Component {
     for (let i = 0; i < this.rs.skills.length && i < 4; i++) {
       this.skillT[i] -= dt;
       if (this.skillT[i] > 0) continue;
-      const rt = calcSkill(this.rs.skills[i], this.rs.stats);
+      // 铁拳骑士：受击后 2s 内攻击力 +20%（角色被动，之前只有描述）
+      const atkMul = (this.rs.charId === 'knight' && this.hurtBoostT > 0) ? 1.2 : 1;
+      const rt = calcSkill(this.rs.skills[i], this.rs.stats, atkMul);
       this.skillT[i] = rt.cd;
       this.atkT = 0.3;
       this.fireSkill(i, rt);
     }
   }
 
+  /** 当前存活敌人数（死亡动画中的不计） */
+  private aliveCount(): number {
+    let n = 0;
+    for (const e of this.enemies) if (!e.dead) n++;
+    if (n > this.maxAlive) this.maxAlive = n;
+    return n;
+  }
+
   private updateSpawn(dt: number) {
     if (this.bossRef && !this.bossRef.dead) return;
+    // ★ 活怪上限（玩法审计 §8.2）：硬上限停刷，软上限把间隔拉长，避免同屏无限堆积
+    const alive = this.aliveCount();
+    if (alive >= ALIVE_HARD) return;
     const plan = spawnPlan(this.rs.wave);
+    const interval = alive >= ALIVE_SOFT ? plan.interval * ALIVE_SLOW_MUL : plan.interval;
     this.spawnAcc += dt;
-    if (this.spawnAcc < plan.interval) return;
+    if (this.spawnAcc < interval) return;
     this.spawnAcc = 0;
     const pool = this.rs.spawnPool;
     if (!pool.length) return;
@@ -1263,6 +1295,64 @@ export class Battle extends Component {
 
       const spdMul = e.slow > 0 ? 0.65 : 1;
       const a = Math.atan2(this.py - e.y, this.px - e.x);
+
+      // ── AI 状态机（玩法审计 §8.5/§8.6）：冲锋预警 → 冲锋 → 恢复；BOSS 额外有范围砸地 ──
+      const canCharge = (e.elite || e.boss);
+      if (canCharge && e.spawnT <= 0) {
+        if (e.aiCd > 0) e.aiCd -= dt;
+        if (e.aiState === 'idle') {
+          if (e.aiCd <= 0) {
+            if (e.boss && e.aiNext === 'slam') {
+              e.aiState = 'slam'; e.aiT = 0.9;
+              this.addVfx('ground/ring/cast-circle', e.x, e.y, 0.9, 2.6);   // 预警：范围提示
+            } else {
+              e.aiState = 'tele'; e.aiT = 0.7;
+              e.aiDX = Math.cos(a); e.aiDY = Math.sin(a);
+              this.addVfx(FX.spawnWarn, e.x + e.aiDX * 26, e.y + e.aiDY * 26, 0.7, 2.2);  // 预警：冲锋方向
+            }
+          }
+        } else if (e.aiState === 'tele') {
+          e.aiT -= dt;
+          if (e.aiT <= 0) { e.aiState = 'dash'; e.aiT = 0.35; }
+          e.x -= Math.cos(a) * e.spd * 0.25 * dt;   // 蓄力时后撤一点，给玩家反应
+          e.y -= Math.sin(a) * e.spd * 0.25 * dt;
+        } else if (e.aiState === 'dash') {
+          e.aiT -= dt;
+          e.x += e.aiDX * e.spd * 2.2 * dt;
+          e.y += e.aiDY * e.spd * 2.2 * dt;
+          if (e.aiT <= 0) { e.aiState = 'rec'; e.aiT = 0.55; }
+        } else if (e.aiState === 'slam') {
+          e.aiT -= dt;
+          if (e.aiT <= 0) {
+            // 结算：玩家在半径 70 内才吃伤害（预警 0.9s 已经给足移动时间）
+            const d2 = Math.hypot(this.px - e.x, this.py - e.y);
+            this.addVfx('core/burst/warm-explosion', e.x, e.y, 0.5, 2.8);
+            this.cam.addShake(SHAKE.elite);
+            if (d2 < 70 && this.inv <= 0) {
+              const dm = playerTakenDamage(Math.round(e.dmg * 1.5), this.rs.stats);
+              this.rs.stats.hp -= dm;
+              this.inv = Math.max(0.2, this.rs.stats.invuln ?? 0.8);
+              this.dmgFlash = 1; this.hurtFlash = 1;
+              if (this.rs.charId === 'knight') this.hurtBoostT = 2.0;
+              Sfx.sfx('hitHeavy', 0.5, 200);
+            }
+            e.aiState = 'rec'; e.aiT = 0.5;
+          }
+        } else if (e.aiState === 'rec') {
+          e.aiT -= dt;
+          if (e.aiT <= 0) {
+            e.aiState = 'idle';
+            e.aiCd = e.boss ? 3.2 : 4.5;
+            e.aiNext = e.aiNext === 'charge' ? 'slam' : 'charge';
+          }
+        }
+        // 冲锋/砸地期间不普通追击
+        if (e.aiState !== 'idle') {
+          this.place(e.node, e.x, e.y);
+          continue;
+        }
+      }
+
       e.x += Math.cos(a) * e.spd * spdMul * dt;
       e.y += Math.sin(a) * e.spd * spdMul * dt;
       e.x += e.kx * dt * 4; e.y += e.ky * dt * 4; e.kx *= 0.86; e.ky *= 0.86;
@@ -1311,6 +1401,7 @@ export class Battle extends Component {
         this.dmgFlash = 1;
         e.atkT = 0.34;
         this.hurtFlash = 1;                 // HUD 用它做"屏幕边缘红光一闪"
+        if (this.rs.charId === 'knight') this.hurtBoostT = 2.0;   // 骑士受击强化 2s
         Sfx.sfx('hitMetal', 0.4, 180);      // 玩家挨打
         this.cam.addShake(SHAKE.hurt);
         // ★ 刺猬（thornmail，M49）：把 8 点伤害反弹给咬你的怪
