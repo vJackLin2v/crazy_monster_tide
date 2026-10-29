@@ -1,30 +1,21 @@
 /**
- * 战斗 HUD —— 顶部状态带 + 底部技能带，**中央战斗区完全留空**
+ * 战斗 HUD —— 顶部信息带 + 底部技能带，**中央战斗区完全留空**
  *
- * v2 改造（像素共鸣 UI 专项）：
- *   - 素材：技能槽 / 暂停键 / 状态条全部走 ui/Art 的九宫格（Kenney Pixel UI Pack，CC0）
- *   - 语义色按规范重排：**生命=绿、经验=蓝紫、危险/BOSS=红、强调=橙、选中/当前=青**
- *     （旧版生命是红色、经验是绿色，与"红=危险"的语义冲突）
- *   - 顶部按 `safeTop()` 让开刘海 / 状态栏（旧版写死 11，刘海机会被压住）
+ * M2 视觉升级（规范：docs/ui-redesign/ui_visual_upgrade_v1.md）：
+ *   - 顶部加**极薄承载板**（渐隐色带，最高到 S+92），让数字在亮色特效上仍可读，但不盖战斗区
+ *   - 左上：HP 156×18（数值 11px）/ EXP 156×12（LV 贴右端）/ 金币 16 图标 + 14px 数值
+ *   - 右上：波次 · 击杀（右对齐 300）/ 倒计时 26px（最后 5 秒转红并放大）/ 暂停 36×36（热区 44）
+ *   - BOSS：名字 S+64、血条 336×12 @S+80（无 BOSS 不占位）
+ *   - 底部：4 个技能槽 54×54，x=81/147/213/279，中心锚定 VH - safeBottom - 63
+ *   - **残血态**：HP < 25% 时数值转红 + 血条红框（静态，不闪烁）
  *
- * 布局（设计坐标，原点屏幕左上、y 向下 360x640，顶部另加安全区 S）：
- *   S+2   左上 HP 条 156x18（含数值）
- *   S+22  XP 条 156x14（LV 嵌在条内右端）
- *   S+40  金币图标 + 数字
- *   S+6   右上「波次 · 击杀」（右对齐至 350）
- *   S+30  右上倒计时（26px，最后 5 秒变红放大）
- *   S+64  右上暂停键 34x34（热区 44）
- *   S+86  BOSS 血条（仅 BOSS 波显示）
- *   底部：4 个技能槽 54x54，间距 12，居中，距底 36；槽内底部 3 个黑科技方块
- *
- * ⚠️ 视线安全区（顶部带以下 ~ S+110 ~ 技能带以上）不得被任何常驻 UI 侵占。
- * ⚠️ 位置全部锚定 `view.getVisibleSize()`，不得写死 640（KI-009）。
+ * ⚠️ 位置全部锚定 view.getVisibleSize() / safeTop() / safeBottom()，不得写死 640（KI-009）。
  */
 import { Node, Label, Color, Graphics, UITransform, Sprite, UIOpacity, view } from 'cc';
 import { panel, gradBar, text, mkNode, onTap, slot, paintPanel } from './UIKit';
 import { COL, FS, R, BORDER, MIN_TAP } from './Tokens';
 import { iconFrame, loadIcon } from '../engine/Assets';
-import { safeTop } from './Safe';
+import { safeTop, safeBottom } from './Safe';
 
 export interface HudData {
   hp: number; maxhp: number;
@@ -43,17 +34,19 @@ function P(vw: number, vh: number, x: number, y: number) {
   return { x: x - vw / 2, y: vh / 2 - y };
 }
 
-const C_HP_TOP = new Color(126, 224, 126, 255);    // 生命：亮绿
-const C_HP_BOT = new Color(52, 148, 74, 255);      // 生命：深绿
-const C_XP_TOP = new Color(140, 156, 255, 255);    // 经验：亮蓝紫
-const C_XP_BOT = new Color(64, 82, 200, 255);      // 经验：深蓝紫
-const C_SLOT_EMPTY = new Color(21, 21, 28, 255);   // 空槽底色
+const C_HP_TOP = new Color(136, 214, 188, 255);    // 生命：薄荷绿（正向色）
+const C_HP_BOT = new Color(62, 158, 124, 255);
+const C_XP_TOP = new Color(140, 160, 255, 255);    // 经验：蓝紫
+const C_XP_BOT = new Color(64, 91, 168, 255);
+const C_HP_WARN = new Color(224, 64, 96, 255);     // 残血：危险红
+const C_SLOT_EMPTY = new Color(13, 23, 50, 255);
 
 export class Hud {
   root: Node;
   private vw = 360; private vh = 640;
   private hpBar!: ReturnType<typeof gradBar>;
   private hpText!: Label;
+  private hpWarn!: Graphics;
   private expBar!: ReturnType<typeof gradBar>;
   private lvText!: Label;
   private goldText!: Label;
@@ -64,6 +57,7 @@ export class Hud {
   private bossName!: Label;
   private hurtVig!: Node;
   private hurtOp!: UIOpacity;
+  private lastWarn = false;
   private slots: {
     node: Node; cd: Graphics; lvl: Label; icon: Sprite;
     modDots: Graphics; name: Label; plus: Label;
@@ -75,9 +69,10 @@ export class Hud {
     this.vw = VW; this.vh = VH;
     this.root = mkNode(parent, 'Hud', VW, VH);
     const at = (x: number, y: number) => P(VW, VH, x, y);
-    const S = safeTop();               // 顶部安全区（刘海 / 状态栏）
+    const S = safeTop();
+    const B = safeBottom();
 
-    // ── 受击红光：屏幕四边由外向内逐层变淡（容器整体调 opacity）──
+    // ── 受击红光：屏幕四边由外向内逐层变淡 ──
     this.hurtVig = mkNode(this.root, 'hurtVig', VW, VH);
     const hg = this.hurtVig.addComponent(Graphics);
     const LAYERS = 10;
@@ -92,26 +87,37 @@ export class Hud {
     this.hurtOp = this.hurtVig.addComponent(UIOpacity);
     this.hurtOp.opacity = 0;
 
-    // ── 左上：HP 条 156x18 ─────────────────────────────────────
-    const HP_W = 156, HP_H = 18;
-    let p = at(10 + HP_W / 2, S + 2 + HP_H / 2);
-    this.hpBar = gradBar(this.root, p.x, p.y, HP_W, HP_H, {
-      dir: 'h', from: C_HP_TOP, to: C_HP_BOT, line: COL.line,
-    });
-    this.hpText = text(this.root, p.x, p.y - 1, '100/100',
-      { size: 10, color: COL.cream, width: HP_W - 8, bold: true, outline: true });
+    // ── 顶部承载板：渐隐色带（不盖战斗区，只托住数字）──
+    const PLATE = S + 92;
+    const plate = mkNode(this.root, 'topPlate', VW, PLATE, 0, VH / 2 - PLATE / 2);
+    const pg = plate.addComponent(Graphics);
+    const BANDS = 6, bh = PLATE / BANDS;
+    for (let i = 0; i < BANDS; i++) {
+      const a = Math.round(118 * Math.pow(1 - i / BANDS, 1.6));
+      pg.fillColor = new Color(9, 14, 30, a);
+      pg.rect(-VW / 2, PLATE / 2 - (i + 1) * bh, VW, bh + 0.5);
+      pg.fill();
+    }
 
-    // ── 经验条 156x14 @S+22，LV 嵌在条内右端 ────────────────────
-    const XP_H = 14;
-    p = at(10 + HP_W / 2, S + 22 + XP_H / 2);
-    this.expBar = gradBar(this.root, p.x, p.y, HP_W, XP_H, {
-      dir: 'h', from: C_XP_TOP, to: C_XP_BOT, line: COL.line,
-    });
+    // ── 左上：HP 156×18 ──
+    const HP_W = 156, HP_H = 18;
+    let p = at(10 + HP_W / 2, S + 4 + HP_H / 2);
+    this.hpBar = gradBar(this.root, p.x, p.y, HP_W, HP_H, { dir: 'h', from: C_HP_TOP, to: C_HP_BOT, line: COL.line });
+    this.hpText = text(this.root, p.x, p.y - 1, '100/100',
+      { size: 11, color: COL.cream, width: HP_W - 8, bold: true, outline: true });
+    // 残血红框（静态，不闪烁）
+    const warn = mkNode(this.root, 'hpWarn', HP_W + 4, HP_H + 4, p.x, p.y);
+    this.hpWarn = warn.addComponent(Graphics);
+
+    // ── 经验 156×12，LV 贴右端 ──
+    const XP_H = 12;
+    p = at(10 + HP_W / 2, S + 25 + XP_H / 2);
+    this.expBar = gradBar(this.root, p.x, p.y, HP_W, XP_H, { dir: 'h', from: C_XP_TOP, to: C_XP_BOT, line: COL.line });
     this.lvText = text(this.root, at(10 + HP_W - 5, 0).x, p.y, 'LV.1',
       { size: 10, color: COL.cream, align: 'right', width: 52, bold: true, outline: true });
 
-    // ── 金币：素材图标 16x16 + 数字 ─────────────────────────────
-    const gy = S + 40 + 8;
+    // ── 金币：16 图标 + 14px 数值 ──
+    const gy = S + 48;
     const coinC = at(18, gy);
     const coin = mkNode(this.root, 'coin', 16, 16, coinC.x, coinC.y);
     const cs = coin.addComponent(Sprite);
@@ -122,44 +128,40 @@ export class Hud {
       const f2 = iconFrame('ui-gold.png');
       if (f2 && cs.isValid) cs.spriteFrame = f2;
     });
-    this.goldText = text(this.root, at(29, gy).x, at(0, gy).y, '0',
-      { size: 15, color: COL.cream, align: 'left', width: 90, bold: true, outline: true });
+    this.goldText = text(this.root, at(30, gy).x, at(0, gy).y, '0',
+      { size: 14, color: COL.cream, align: 'left', width: 96, bold: true, outline: true });
 
-    // ── 右上：波次 / 倒计时 / 暂停 ─────────────────────────────
-    this.waveText = text(this.root, at(350, 0).x, at(0, S + 8).y, '波次 1 · 击杀 0',
+    // ── 右上：波次 · 击杀 / 倒计时 / 暂停 ──
+    this.waveText = text(this.root, at(300, 0).x, at(0, S + 12).y, '波次 1 · 击杀 0',
       { size: 12, color: COL.cream, align: 'right', width: 210, bold: true, outline: true });
+    this.timerText = text(this.root, at(300, 0).x, at(0, S + 37).y, '0',
+      { size: 26, color: COL.cream, align: 'right', width: 130, bold: true, outline: true, shadow: true });
 
-    this.timerText = text(this.root, at(350, 0).x, at(0, S + 32).y, '0',
-      { size: 24, color: COL.cream, align: 'right', width: 120, bold: true, outline: true, shadow: true });
-
-    // 暂停 34x34 九宫格（中心 S+64+17），热区扩到 44（微信硬要求）
-    const pauseC = at(350 - 17, S + 64 + 17);
-    const pause = panel(this.root, pauseC.x, pauseC.y, 34, 34, { art: 'panel_soft' });
-    // ⚠️ 图标必须画在**子节点**：panel 节点上已挂了 Sprite，同节点再加 Graphics 会互相打架
-    const pIcon = mkNode(pause, 'pauseIcon', 34, 34);
-    const pg = pIcon.addComponent(Graphics);
-    pg.fillColor = COL.cream;
-    pg.rect(-6, -7, 4, 14); pg.rect(2, -7, 4, 14); pg.fill();
+    // 暂停：视觉 36×36，热区 44（微信硬要求）
+    const pauseC = at(332, S + 29);
+    const pause = panel(this.root, pauseC.x, pauseC.y, 36, 36, { art: 'panel_soft' });
+    const pIcon = mkNode(pause, 'pauseIcon', 36, 36);
+    const pgi = pIcon.addComponent(Graphics);
+    pgi.fillColor = COL.cream;
+    pgi.rect(-6, -8, 4, 16); pgi.rect(3, -8, 4, 16); pgi.fill();
     const hit = mkNode(this.root, 'pauseHit', MIN_TAP, MIN_TAP, pauseC.x, pauseC.y);
     if (onPause) onTap(hit, onPause);
 
-    // ── BOSS 血条（S+96 起，BOSS 波才显示）────────────────────
-    const bz = at(184, S + 96 + 18);
-    this.bossBox = mkNode(this.root, 'bossBox', 336, 36, bz.x, bz.y);
-    this.bossName = text(this.bossBox, -168 + 2, 13, '', { size: 11, color: COL.accent, align: 'left', width: 330, bold: true, outline: true });
+    // ── BOSS：名字 S+64 / 血条 336×12 @S+80（无 BOSS 不占位）──
+    this.bossBox = mkNode(this.root, 'bossBox', 336, 34, at(180, S + 72).x, at(0, S + 72).y);
+    this.bossName = text(this.bossBox, -166, 8, '', { size: 11, color: COL.accent, align: 'left', width: 330, bold: true, outline: true });
     this.bossBar = gradBar(this.bossBox, 0, -7, 336, 12, {
       dir: 'h', from: new Color(255, 122, 60), to: COL.red, line: COL.line,
     });
     this.bossBox.active = false;
 
-    // ── 底部技能栏 ─────────────────────────────────────────────
-    // ⚠️ 必须**按屏幕底部定位**，不能按"设计稿的绝对 y"（760 屏会悬空 120px）
+    // ── 底部技能栏 ──
     const SLOT = 54, PITCH = 66;
-    const FROM_BOTTOM = 36 + SLOT / 2;      // 槽中心离屏幕底
+    const centerY = VH - B - 63;          // 中心锚定：底部安全区往上 63
     for (let i = 0; i < 4; i++) {
       const cx = 81 + i * PITCH;
-      const c = at(cx, VH - FROM_BOTTOM);
-      const sk = mkNode(this.root, 'sk' + i, SLOT, SLOT, c.x, c.y);
+      const c = at(cx, 0);
+      const sk = mkNode(this.root, 'sk' + i, SLOT, SLOT, c.x, VH / 2 - centerY);
 
       const box = slot(sk, 0, 0, SLOT);
       const ic = mkNode(box, 'icon', 36, 36);
@@ -171,41 +173,56 @@ export class Hud {
       const cd = mkNode(box, 'cd', SLOT, SLOT);
       const g = cd.addComponent(Graphics);
 
-      // 等级角标：槽右上（18x16）
-      const bp = at(cx + SLOT / 2 - 8, VH - FROM_BOTTOM - SLOT / 2 + 8);
-      const badge = mkNode(this.root, 'stack', 18, 16, bp.x, bp.y);
+      // 等级角标：槽右上（18×16），只有 Lv>1 才显示
+      const bpx = cx + SLOT / 2 - 8, bpy = centerY - SLOT / 2 + 8;
+      const badge = mkNode(this.root, 'stack', 18, 16, at(bpx, 0).x, VH / 2 - bpy);
       const bg = badge.addComponent(Graphics);
       bg.fillColor = COL.accent;
       bg.rect(-9, -8, 18, 16); bg.fill();
       bg.lineWidth = 2; bg.strokeColor = COL.line; bg.rect(-9, -8, 18, 16); bg.stroke();
       const lv = text(badge, 0, 1, '', { size: 10, color: COL.ink, width: 16, bold: true, outline: false });
 
-      // 3 个黑科技方块：**槽内底部**（原来在槽下方，矮屏会贴到屏幕边）
+      // 3 个黑科技方块：槽内底部
       const dots = mkNode(box, 'mods', 42, 9, 0, -SLOT / 2 + 7);
       const dg = dots.addComponent(Graphics);
 
       const nm = text(sk, 0, -34, '', { size: 10, color: COL.dim, width: SLOT + 6 });
-      nm.node.active = false;          // 规格 v1.1：图标下不放技能名（用户确认）
+      nm.node.active = false;
 
       this.slots.push({ node: sk, cd: g, lvl: lv, icon: isp, modDots: dg, name: nm, plus });
     }
   }
 
   sync(d: HudData) {
-    this.hpBar.set(d.maxhp > 0 ? d.hp / d.maxhp : 0);
+    const ratio = d.maxhp > 0 ? Math.max(0, d.hp) / d.maxhp : 0;
+    this.hpBar.set(ratio);
     this.hpText.string = Math.max(0, Math.round(d.hp)) + ' / ' + Math.round(d.maxhp);
     this.expBar.set(d.expNeed > 0 ? d.exp / d.expNeed : 0);
     this.lvText.string = 'LV.' + d.lv;
     this.goldText.string = String(d.gold);
     this.waveText.string = '波次 ' + d.wave + ' · 击杀 ' + d.kills;
+
+    // 残血态：数值转红 + 红框（低于 25%，静态不闪烁）
+    const warn = ratio > 0 && ratio < 0.25;
+    if (warn !== this.lastWarn) {
+      this.lastWarn = warn;
+      this.hpText.color = warn ? C_HP_WARN : COL.cream;
+      this.hpWarn.clear();
+      if (warn) {
+        const w = 160, h = 22;
+        this.hpWarn.lineWidth = 2;
+        this.hpWarn.strokeColor = C_HP_WARN;
+        this.hpWarn.rect(-w / 2, -h / 2, w, h);
+        this.hpWarn.stroke();
+      }
+    }
+
     const left = Math.ceil(d.waveLeft);
     this.timerText.string = d.waveLeft > 0 ? String(Math.max(0, left)) : '';
-    // 最后 5 秒倒计时变红放大，给"这一波要结束了"的感知
     const urgent = d.waveLeft > 0 && left <= 5;
     this.timerText.color = urgent ? COL.red : COL.cream;
     this.timerText.node.setScale(urgent ? 1.12 : 1, urgent ? 1.12 : 1, 1);
 
-    // 受击红光
     this.hurtOp.opacity = Math.round(255 * Math.max(0, Math.min(1, d.hurtFlash)));
 
     if (d.bossName) {
@@ -222,13 +239,12 @@ export class Hud {
       const box = s.icon.node.parent!;
 
       if (!sk) {
-        // 空槽：底色更深 + 灰色「＋」+ 3 个空方块
         paintPanel(box, 54, 54, { art: 'well' });
         s.icon.spriteFrame = null;
         s.lvl.node.parent!.active = false;
         s.plus.node.active = true;
         for (let k = 0; k < 3; k++) s.modDots.rect(-15 + k * 12, -4.5, 9, 9);
-        s.modDots.fillColor = new Color(58, 58, 72);
+        s.modDots.fillColor = new Color(42, 58, 92);
         s.modDots.fill();
         s.modDots.lineWidth = 2; s.modDots.strokeColor = COL.line;
         for (let k = 0; k < 3; k++) s.modDots.rect(-15 + k * 12, -4.5, 9, 9);
@@ -238,7 +254,6 @@ export class Hud {
       paintPanel(box, 54, 54, { art: 'slot' });
       s.plus.node.active = false;
 
-      // 图标：整数倍缩放，目标 ~36px（非整数倍会糊）
       if (sk.icon) {
         const f = iconFrame(sk.icon);
         if (f) {
@@ -254,26 +269,22 @@ export class Hud {
         }
       }
 
-      // 等级角标：只有 Lv>1 才显示
       s.lvl.string = sk.lvl > 1 ? String(sk.lvl) : '';
       s.lvl.node.parent!.active = sk.lvl > 1;
 
-      // 3 个黑科技方块（已装 = 橙）
       s.modDots.fillColor = COL.accent;
-      for (let k = 0; k < 3; k++) {
-        if (k < sk.modCount) { s.modDots.rect(-15 + k * 12, -4.5, 9, 9); }
-      }
+      for (let k = 0; k < 3; k++) if (k < sk.modCount) s.modDots.rect(-15 + k * 12, -4.5, 9, 9);
       s.modDots.fill();
-      s.modDots.fillColor = new Color(58, 58, 72);
+      s.modDots.fillColor = new Color(42, 58, 92);
       for (let k = sk.modCount; k < 3; k++) s.modDots.rect(-15 + k * 12, -4.5, 9, 9);
       if (sk.modCount < 3) s.modDots.fill();
       s.modDots.lineWidth = 2; s.modDots.strokeColor = COL.line;
       for (let k = 0; k < 3; k++) s.modDots.rect(-15 + k * 12, -4.5, 9, 9);
       s.modDots.stroke();
 
-      // 冷却遮罩：从下往上盖
+      // 冷却遮罩：从下往上盖（透明度压到 120，图标仍可辨认）
       if (sk.cdPct > 0.001) {
-        s.cd.fillColor = new Color(0, 0, 0, 140);
+        s.cd.fillColor = new Color(0, 0, 0, 120);
         const hh = 54 * Math.min(1, sk.cdPct);
         s.cd.rect(-27, -27, 54, hh);
         s.cd.fill();

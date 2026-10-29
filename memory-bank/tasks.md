@@ -2,6 +2,15 @@
 
 ## 当前阶段
 
+**M68（2026-10-29）视觉升级 M2：战斗 HUD（已完成，等用户确认）**
+- 顶部加 6 段渐隐承载板（最高 S+92，不侵占中央战斗区）；倒计时 24→26px；
+  暂停键 34→36（中心上移到 S+29，**修掉与 BOSS 血条在 y 上重叠**）；金币改 16 图标 + 14px 成组；
+  经验条 156×14→156×12；**残血态新增**（HP<25% 红字 + 红框，静态不闪）；冷却遮罩 alpha 140→120。
+- BOSS：名字 S+64 / 血条 336×12 @S+80（无 BOSS 整块隐藏）；技能栏中心锚定 VH−B−63。
+- 验证：构建 success、`tsc.check` 0、tests 120 PASS；三档视口 × 3 状态截图在
+  `screenshots/ui-visual-upgrade/m2/`（空槽 / 四技能 / 残血+BOSS），pageerror = none。
+- 记录：`docs/ui-redesign/ui_visual_m2.md`；未验证：微信真机安全区。
+
 **M67（2026-10-29）视觉升级 M1：视觉规范 + 主菜单 + 角色选择（已完成，等用户确认）**
 - 规范：新增 `docs/ui-redesign/ui_visual_upgrade_v1.md`（FROZEN v1.0：深蓝色板 / 字号阶梯 / 组件规则），
   `ui-spec-approved.md` 升 v1.5 并声明**旧色板作废**；审查矩阵 `ui_visual_audit.md`。
