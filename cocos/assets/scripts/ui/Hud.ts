@@ -211,16 +211,26 @@ export class Hud {
       this.hpText.color = warn ? C_HP_TEXT : COL.cream;
       this.hpWarn.clear();
       if (warn) {
-        // 血条外圈光晕：**四边等宽**（用户 2026-10-29 第三轮反馈：上左右比下宽，看着不对齐）
-        //   · 宽度统一 2.5px —— 上限由经验条决定：血条底边到经验条顶边只有 3px
-        //   · 两层：外圈 2.5px（淡）+ 内圈 1.1px（浓），叠出"边缘实、往外化开"的效果
-        const W = 156, H = 18, GLOW = 5;
-        this.hpWarn.fillColor = new Color(214, 88, 106, 38);
-        this.hpWarn.roundRect(-W / 2 - GLOW, -H / 2 - GLOW, W + GLOW * 2, H + GLOW * 2, 7);
-        this.hpWarn.fill();
-        this.hpWarn.fillColor = new Color(224, 100, 116, 92);
-        this.hpWarn.roundRect(-W / 2 - 1.1, -H / 2 - 1.1, W + 2.2, H + 2.2, 5);
-        this.hpWarn.fill();
+        // 血条外圈光晕：**由内到外、由深到浅**（像素版的 expanding glow）
+        //
+        // 做法参考 Aseprite 的 "expanding glow"：把形状一圈圈往外扩，每扩一圈用**更低的不透明度**
+        // 填一层。因为每层都覆盖内圈区域，alpha 会自然叠加 —— 贴边最浓、越外越淡。
+        // 这比"模糊阴影"更像素，也不会在纯色背景上糊成一坨。
+        //
+        // 6 圈，外扩 1~6px（四边等宽）；血条底边 +6 仍留 3px 给经验条。
+        const W = 156, H = 18;
+        const ALPHA = [160, 100, 66, 42, 26, 14];              // 内 → 外
+        const TINT: [number, number, number][] = [               // 内 → 外：深红 → 偏灰玫瑰
+          [226, 62, 90], [221, 71, 96], [214, 80, 102],
+          [207, 90, 108], [199, 100, 114], [191, 110, 120],
+        ];
+        for (let i = ALPHA.length; i >= 1; i--) {
+          const pad = i;                                        // 1..6px
+          const [r0, g0, b0] = TINT[i - 1];
+          this.hpWarn.fillColor = new Color(r0, g0, b0, ALPHA[i - 1]);
+          this.hpWarn.roundRect(-W / 2 - pad, -H / 2 - pad, W + pad * 2, H + pad * 2, 4 + pad);
+          this.hpWarn.fill();
+        }
       }
     }
 
