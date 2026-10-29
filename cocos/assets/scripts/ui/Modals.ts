@@ -286,6 +286,7 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
       //    只写 onTap(hit) 会让"点锁"同时触发整行购买（本轮实测复现）。
       //    这里单独处理并 propagationStopped = true，保证「点锁只锁定、点主体才购买」。
       const hit = mkNode(row, 'lockHit', 44, 44, 144, 0);
+      (hit as unknown as { __hit?: boolean }).__hit = true;   // 手工注册的锁也需要进热区审计
       hit.on(Node.EventType.TOUCH_END, (e: EventTouch) => {
         e.propagationStopped = true;
         Sfx.sfx('click', 0.45, 40);
@@ -475,8 +476,9 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
       text(cell, CW / 2 - 32, 0, r.value, { size: 12, color: vc, align: 'right', width: 46, bold: true, outline: false });
       // M65（6.3）：把"基础值的加成"单独一列显示，玩家能分清 总值 / 加成
       if (r.deltaText) {
+        // 9px 承担"本局增减"这种判断信息太小（P1-C：重要状态 ≥10，关键说明 ≥11）
         text(cell, CW / 2 - 2, 0, r.deltaText,
-          { size: 9, color: r.delta > 0 ? COL.mint : COL.red, align: 'right', width: 30, outline: false });
+          { size: 10, color: r.delta > 0 ? COL.mint : COL.red, align: 'right', width: 36, outline: false });
       }
     });
     // M58（P1-5）：属性太多时默认只显示「核心 + 本局有变化」，底部给可点入口展开/收起全部（数据一项不删）
@@ -485,9 +487,10 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
       // 位置：网格下方 18px。展开到 12 行时要再抬高一点，否则会被「主菜单/继续」按钮压住
       //（M58 首版截图：展开后条带下半截被按钮盖住）
       const my = bodyY - 18 - rowsShown * ROW_H - 12;
-      const strip = mkNode(attrRoot, 'attrMore', VW - 32, 26, 0, my);
-      panel(strip, 0, 0, VW - 32, 26, { bg: COL.bg3, line: COL.line2, radius: R.s, shadow: false });
-      text(strip, 0, 1, attr.more.label, { size: 11, color: COL.accent, width: VW - 46, bold: true, outline: false });
+      // 视觉条只有 26 高，热区单独给 44（P1-B），避免"看得见点不到"
+      const strip = mkNode(attrRoot, 'attrMore', VW - 32, 44, 0, my);
+      panel(strip, 0, 2, VW - 32, 26, { bg: COL.bg3, line: COL.line2, radius: R.s, shadow: false });
+      text(strip, 0, 3, attr.more.label, { size: 11, color: COL.accent, width: VW - 46, bold: true, outline: false });
       onTap(strip, attr.more.onTap);
     }
   }
@@ -503,7 +506,7 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
     let y = bodyY - 6;
     skillDetails.slice(0, 4).forEach((s, i) => {
       const open = skillOpen === i;
-      const rowH = 42;
+      const rowH = 44;                  // P1-B：整行就是热区，必须 ≥44（原来是 42）
       const card = panel(skillRoot, 0, y - rowH / 2, W, rowH, {
         bg: COL.bg3, line: open ? COL.accent : COL.line2, radius: R.s, shadow: false,
       });
@@ -519,7 +522,7 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
         });
       }
       text(card, -W / 2 + 32, 10, s.name + '  Lv.' + s.lvl, { size: 12, color: COL.cream, align: 'left', width: 200, bold: true, outline: true });
-      text(card, -W / 2 + 32, -8, s.summary, { size: 9, color: COL.dim, align: 'left', width: W - 60 });
+      text(card, -W / 2 + 32, -9, s.summary, { size: 10, color: COL.dim, align: 'left', width: W - 60 });
       text(card, W / 2 - 18, 0, open ? '▼' : '▶', { size: 10, color: COL.accent, align: 'right', width: 16 });
       onTap(card, () => { skillOpen = open ? -1 : i; renderSkills(); });
       y -= rowH + 4;
@@ -587,7 +590,7 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
     });
     if (itemDetails.length > MAX) {
       text(itemRoot, -W / 2 + 12, y - 4, '… 还有 ' + (itemDetails.length - MAX) + ' 件（结算页可看全部）',
-        { size: 9, color: COL.dim, align: 'left', width: W - 20 });
+        { size: 10, color: COL.dim, align: 'left', width: W - 20 });
     }
   }
 
@@ -629,13 +632,13 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
         text(card, -W / 2 + 32, 8, m.name + (m.count > 1 ? ' ×' + m.count : ''),
           { size: 12, color: COL.cream, align: 'left', width: W - 110, bold: true, outline: true });
         text(card, -W / 2 + 32, -9, m.desc,
-          { size: 9, color: COL.dim, align: 'left', width: W - 100 });
+          { size: 10, color: COL.dim, align: 'left', width: W - 108 });
         if (m.installed) chip(card, W / 2 - 34, 0, '已装', { color: COL.mint, size: 9 });
         y -= rowH + 4;
       });
       if (arr.length > 3) {
         text(modRoot, -W / 2 + 4, y, '… 还有 ' + (arr.length - 3) + ' 个（去安装屏查看）',
-          { size: 9, color: COL.dim, align: 'left', width: W });
+          { size: 10, color: COL.dim, align: 'left', width: W });
         y -= 16;
       }
     };

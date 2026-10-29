@@ -294,23 +294,33 @@ export function button(parent: Node, x: number, y: number, w: number, h: number,
   });
 
   let cur = normal;
+  // ★ 运行时状态：disabled 必须是**可变**的，不能只在创建时算一次。
+  //   之前 `dis` 是常量，setEnabled(false) 只改外观 —— 点了照样触发业务回调、照样播点击音。
+  let enabled = !dis;
+  (n as unknown as { __uiEnabled?: boolean }).__uiEnabled = enabled;
+
   const swap = (art: UiArtName, dy: number) => {
     if (cur === art) { l.node.setPosition(0, dy); return; }
     cur = art;
     if (usedArt) setUiSprite(n, art, w, hh);
     l.node.setPosition(0, dy);
   };
-  n.on(Node.EventType.TOUCH_START, () => { if (!dis) swap(pressed, 0); }, n);
-  n.on(Node.EventType.TOUCH_END, () => { if (!dis) swap(normal, 1); }, n);
-  n.on(Node.EventType.TOUCH_CANCEL, () => { if (!dis) swap(normal, 1); }, n);
+  n.on(Node.EventType.TOUCH_START, () => { if (enabled) swap(pressed, 0); }, n);
+  n.on(Node.EventType.TOUCH_END, () => { if (enabled) swap(normal, 1); }, n);
+  n.on(Node.EventType.TOUCH_CANCEL, () => { if (enabled) swap(normal, 1); }, n);
 
-  return {
-    node: n, label: l,
-    setEnabled: (v: boolean) => {
-      l.color = v ? fg : COL.dim2;
-      if (usedArt) setUiSprite(n, v ? normal : 'btn_disabled', w, hh);
-    },
+  const setEnabled = (v: boolean) => {
+    enabled = v;
+    (n as unknown as { __uiEnabled?: boolean }).__uiEnabled = v;
+    l.color = v ? fg : COL.dim2;
+    if (usedArt) {
+      cur = v ? normal : 'btn_disabled';
+      setUiSprite(n, cur, w, hh);
+    }
+    if (!v) l.node.setPosition(0, 1);       // 禁用时把文字从"按下位"复位
   };
+
+  return { node: n, label: l, setEnabled };
 }
 
 // ---------- 槽位 / 标签 ----------
@@ -401,7 +411,13 @@ export function setOutline(l: Label, on: boolean): void {
 // ---------- 交互 ----------
 /** 触摸回调（UIKit 不接管输入，避免和摇杆抢事件） */
 export function onTap(node: Node, cb: () => void): void {
+  // ⚠️ 统一在这里挡掉"被禁用的按钮"：button().setEnabled(false) 会写 __uiEnabled=false，
+  //    TOUCH_END 仍会到达节点（节点没被移除），所以必须在这里拦截，
+  //    否则禁用按钮照样执行回调、照样播"点击成功"的音效。
+  const n = node as unknown as { __uiEnabled?: boolean; __hit?: boolean };
+  n.__hit = true;   // 标记：热区审计（tools/ui/audit_hit_area.cjs）据此收集所有可点区域
   node.on(Node.EventType.TOUCH_END, () => {
+    if (n.__uiEnabled === false) return;
     Sfx.sfx('click', 0.45, 40);     // 统一点击音（限流 40ms，避免连点刷屏）
     cb();
   }, node);

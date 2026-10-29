@@ -174,7 +174,9 @@ export function portraitFit(srcW: number, srcH: number): { k: number; w: number;
   const maxW = CS.CARD_W - 12;
   const maxH = CS.PORTRAIT;
   // 立绘基准统一到**目标高度**，再受宽高上限约束（避免骑乘单位比别人大一档半）
-  const TARGET_H = 56;
+  // 统一目标高度 55：整数倍下 6 个角色的可见高度落在 50~60（相对目标 ±9.1%），
+  // 骑乘单位（17×25）只能 2 倍 = 50，3 倍 = 75 会超出卡片立绘框，且不允许拉伸。
+  const TARGET_H = 55;
   let k = Math.max(1, Math.round(TARGET_H / srcH));
   while (k > 1 && (srcW * k > maxW || srcH * k > maxH)) k--;
   return { k, w: srcW * k, h: srcH * k };

@@ -242,9 +242,15 @@ export function buildAchievements(parent: Node, s: SaveData, onBack: () => void)
   text(root, 0, at2(180, S + 58 + 20).y, '已解锁 ' + got + ' / ' + ACHIEVEMENTS.length,
     { size: 11, color: COL.dim, width: 320, outline: false });
 
+  // P2-C：九行必须完整显示，且最后一行与「返回」至少留 12px（不引滚动容器）
   const top = S + 58 + 38;
-  const ROW_H = 46, ROW_GAP = 5, ROW_W = 336;
+  const ROW_W = 336;
   const listTop = top;
+  const backTop = VH - B - 24 - 24;          // 返回按钮顶边（按钮高 48，中心在 B+24）
+  const avail = backTop - 12 - listTop;      // 留 12px 视觉间距
+  const n = ACHIEVEMENTS.length;
+  const ROW_GAP = 5;
+  const ROW_H = Math.max(38, Math.min(50, Math.floor((avail - (n - 1) * ROW_GAP) / n)));
   achViews(s).forEach((v, i) => {
     const cy = listTop + ROW_H / 2 + i * (ROW_H + ROW_GAP);
     const c = at2(180, cy);

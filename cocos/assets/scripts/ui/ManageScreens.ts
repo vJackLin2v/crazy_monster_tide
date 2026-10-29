@@ -128,7 +128,9 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
       } else {
         text(b, 0, 1, '＋', { size: 16, color: COL.dash, width: SW, outline: false });
       }
-      onTap(b, () => cb.onPickSlot(si, k));
+      // 视觉槽只有 34~40 高，热区单独给到 74×44（P1-B：可点区域 ≥44）
+      const slotHit = mkNode(row, 'slotHit', SW, 44, slotCx(k), 0);
+      onTap(slotHit, () => cb.onPickSlot(si, k));
     }
   });
 
@@ -139,7 +141,8 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
   const moreTxt = d.bag.length > (compact ? 3 : 6) ? '（还有 ' + (d.bag.length - (compact ? 3 : 6)) + ' 个）' : '';
   text(box, -158, bagTitleY, '背包里的黑科技' + moreTxt,
     { size: 13, color: COL.accent, align: 'left', width: 300, bold: true, outline: true });
-  const BW = 100, BHH = compact ? 30 : 34, BGAP = 6, BCOLS = 3;
+  // 背包格：视觉 40 高、行距 46 —— 保证 100×44 的热区上下不相交（P1-B）
+  const BW = 100, BHH = 40, BGAP = 6, BCOLS = 3;
   const BAG_MAX = compact ? 3 : 6;              // 矮屏只放一排
   const bagTop = bagTitleY - 12;
   if (!d.bag.length) {
@@ -155,7 +158,8 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
       drawIcon(n, -BW / 2 + 17, 0, 18, m.icon);
       text(n, 9, 0, (m.name + (m.merged ? 'Ⅱ' : '')).slice(0, 5),
         { size: 11, color: m.merged ? COL.accent : COL.cream, width: 62, outline: true });
-      onTap(n, () => cb.onSelectBag(on ? null : i));
+      const bagHit = mkNode(box, 'bagHit', BW, 44, cx, cyy);
+      onTap(bagHit, () => cb.onSelectBag(on ? null : i));
     });
   }
   const bagRows = d.bag.length ? Math.min(compact ? 1 : 2, Math.ceil(Math.min(d.bag.length, BAG_MAX) / BCOLS)) : 1;
@@ -167,7 +171,9 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
     { size: 11, color: COL.accent, align: 'left', width: 316, bold: true, outline: true });
   const descY = -PH / 2 + (d.pickedDesc ? 104 : 66);
   const mergeTop = mergeTitleY - 12;
-  const maxRows = Math.max(1, Math.floor((mergeTop - descY - 10) / 34));
+  // 行距必须 > 44：热区要 44 高，行距不够相邻热区就会相交（P1-B）
+  const MERGE_PITCH = 46;
+  const maxRows = Math.max(1, Math.floor((mergeTop - descY - 10) / MERGE_PITCH));
   // 候选按"已有份数"排序：够 3 个给按钮，不够给"还差 N 个"（不拿灰按钮骗人）
   const cands = d.merges
     .filter(m => m.count > 0)
@@ -178,8 +184,8 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
       { size: 11, color: COL.dim, align: 'left', width: 316 });
   } else {
     cands.forEach((m, i) => {
-      const cy = mergeTop - 16 - i * 34;
-      const row = panel(box, 0, cy, 316, 30, { art: 'panel_soft' });
+      const cy = mergeTop - 20 - i * MERGE_PITCH;
+      const row = panel(box, 0, cy, 316, 38, { art: 'panel_soft' });
       drawIcon(row, -146, 0, 18, m.resultIcon);
       text(row, -128, 0, m.name + ' ×' + m.count + ' / 3 → ' + m.resultName,
         { size: 11, color: COL.cream, align: 'left', width: 208, outline: true });
@@ -187,9 +193,9 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
         // 按钮右边缘留 9px、上下各 5px（用户反馈：原来贴住行边框，右上都没空）
         const mb = panel(row, 126, 0, 46, 20, { art: 'btn_primary' });
         text(mb, 0, 1, '合成', { size: 10, color: COL.ink, width: 42, bold: true, outline: false });
-        const hit = mkNode(row, 'mergeHit', 46, 34, 126, 0);
+        // 热区 46×44（≥44）；不再给 mb 单独 onTap —— 两个热区完全重叠会互相抢事件
+        const hit = mkNode(row, 'mergeHit', 46, 44, 126, 0);
         onTap(hit, () => cb.onMerge(m.baseId));
-        onTap(mb, () => cb.onMerge(m.baseId));
       } else {
         // 右对齐结束在 x=148（行半宽 158，留 10px）
         text(row, 111, 0, '还差 ' + Math.max(1, 3 - m.count) + ' 个',
@@ -200,14 +206,16 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
 
   // ── 效果说明条 + 卸下 ──
   if (d.pickedDesc) {
-    text(box, -158, descY, '「' + (d.selName ?? '') + '」' + d.pickedDesc,
-      { size: 11, color: COL.mint, align: 'left', width: d.selSlot ? 240 : 316, h: 32 });
+    // ★ 不再拼「名称」前缀：顶部提示已经写了"已拿起「X」"，加前缀会把文案挤到第二行只掉 2~3 个字（孤字）
+    //    宽度给「卸下」让位（按钮左边缘 82），11px 下 1~2 行都能完整显示
+    text(box, -158, descY, d.pickedDesc,
+      { size: 11, color: COL.mint, align: 'left', width: d.selSlot ? 236 : 316, h: 36 });
   }
   if (d.selSlot) {
     // 右边缘收到 162（面板半宽 170，留 8px）：原来 x=132 + 40 = 172，**超出面板 2px**
     const ub = panel(box, 122, descY, 80, 28, { art: 'btn_danger' });
     text(ub, 0, 1, '卸下', { size: 12, color: COL.cream, width: 76, bold: true, outline: false });
-    const hit = mkNode(box, 'unequipHit', 80, 34, 122, descY);
+    const hit = mkNode(box, 'unequipHit', 80, 44, 122, descY);
     onTap(hit, () => cb.onUnequip());
   }
 
@@ -256,14 +264,15 @@ export function buildReplace(parent: Node, newSkill: { name: string; desc: strin
     const row = panel(box, 0, cy, ROW_W, ROW_H, { art: 'panel_soft' });
     const ib = slot(row, -ROW_W / 2 + 26, 0, 34);
     if (o.icon) drawIcon(ib, 0, 0, 26, o.icon);
-    text(row, -ROW_W / 2 + 50, 0, o.name, { size: 14, color: COL.cream, align: 'left', width: 150, bold: true, outline: true });
-    text(row, 6, 0, o.modCount ? o.modCount + ' 个黑科技退回背包' : '无黑科技可退',
-      { size: 9, color: o.modCount ? COL.mint : COL.dim, align: 'left', width: 96 });
+    text(row, -ROW_W / 2 + 50, 9, o.name, { size: 14, color: COL.cream, align: 'left', width: 150, bold: true, outline: true });
+    // ★ 操作后果必须在**点之前**就读到，且 ≥11px（P1-C）；原来 9px 还和技能名挤在同一行
+    text(row, -ROW_W / 2 + 50, -11, o.modCount ? o.modCount + ' 个黑科技退回背包' : '无黑科技可退',
+      { size: 11, color: o.modCount ? COL.mint : COL.dim, align: 'left', width: 156, h: 16 });
     chip(row, 132, 0, '替换', { color: COL.red, size: 11 });
     onTap(row, () => onReplace(i));
   });
 
-  text(box, 0, -PH / 2 + 78, '换下的技能，黑科技会退回背包，不会丢失', { size: 10, color: COL.mint, width: 316 });
+  text(box, 0, -PH / 2 + 78, '换下的技能，黑科技会退回背包，不会丢失', { size: 11, color: COL.mint, width: 316 });
 
   const b = button(box, 0, -PH / 2 + 28, 300, 46, '放弃这个技能', { size: 15 });
   onTap(b.node, onGiveUp);

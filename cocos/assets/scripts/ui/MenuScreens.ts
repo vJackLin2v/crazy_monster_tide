@@ -92,6 +92,9 @@ export function buildMenu(parent: Node, seed: number, onStart: () => void, onHow
     { size: 40, color: COL.cream, bold: true, width: 354, outline: true, shadow: true });
   text(root, 0, at2(180, S + 100).y, 'C R A Z Y   M O N S T E R   T I D E',
     { size: 10, color: COL.accent, width: 354, bold: true, outline: true });
+  // P2-A：一行讲清核心循环（不填满页面、不加卡片）
+  text(root, 0, at2(180, S + 136).y, '自动开火 · 4 技能构筑 · 20 波挑战',
+    { size: 11, color: COL.dim, width: 340, outline: false });
   // ── 底部动作栈：**底部留白 = 标题上方留白**（用户要求上下呼吸感一致）
   //    640 参考：标题上沿 68 / CTA 398 / 次按钮 466 / 图标行 544 / 底部留白 68
   const topGap = S + 40;                 // 标题上沿到屏幕顶的距离
@@ -149,8 +152,12 @@ export function buildHowto(parent: Node, onBack: () => void): Node {
     text(box, -120, cy + 9, head, { size: 15, color: COL.cream, align: 'left', width: 294, bold: true, outline: true });
     text(box, -120, cy - 10, desc, { size: 11, color: COL.dim, align: 'left', width: 294, outline: false });
   });
-  text(root, 0, at2(0, S + 82 + bodyH + 24).y, '提示：3 个同名黑科技可合成 Ⅱ（效果 ×2，只占 1 槽）',
-    { size: 11, color: COL.mint, width: 336, outline: false });
+  // P2-B：合成规则从"弱提示"升级成一条规则条（336×34，11px），但仍不与返回键碰撞
+  const hintY = S + 82 + bodyH + 26;
+  const hintC = at2(180, hintY);
+  const bar = panel(root, hintC.x, hintC.y, 336, 34, { art: 'panel_soft' });
+  text(bar, 0, 1, '合成规则：3 个同名黑科技 → Ⅱ 级（效果 ×2，只占 1 槽）',
+    { size: 11, color: COL.mint, width: 324, outline: false });
 
   const btn = button(root, 0, -VH / 2 + B + 25, 336, 50, '返回', { size: FS.m });
   onTap(btn.node, onBack);
@@ -423,6 +430,13 @@ export function buildResult(parent: Node,
   } else {
     text(root, at2(12, rowsTop + 10).x, at2(12, rowsTop + 10).y, '· 没有收获',
       { size: FS.xs, color: COL.dim, align: 'left', width: 312 });
+  }
+  // 列表被可用高度截断时必须说清楚，别让玩家以为只有这几行
+  if (stats.build.length > list.length) {
+    const moreY = rowsTop + list.length * 42 + 4;
+    text(root, at2(12, moreY).x, at2(12, moreY).y,
+      '仅显示前 ' + list.length + ' 项（共 ' + stats.build.length + ' 项）',
+      { size: 10, color: COL.dim, align: 'left', width: 336 });
   }
 
   // 底部：主界面(96) + 再来一局(232)
