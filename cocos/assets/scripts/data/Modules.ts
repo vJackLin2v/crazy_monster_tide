@@ -4,23 +4,23 @@ import type { ModuleDef } from './Types';
  *  核心规则：可重复安装；模块自己声明叠加方式与上限；兼容性由标签决定。 */
 export const MODULES: Record<string, ModuleDef> = {
   multi:     { name: '加量', icon: '≡', stack: 'additive', max: 4, requires: ['projectile'],               desc: '一次开火多打出 1 发，全额伤害、同方向' },
-  fan:       { name: '扇射', icon: '⋔', stack: 'additive', max: 2, requires: ['projectile'],               desc: '额外散开 2 枚小子弹（55% 伤害、射程短）' },
-  split:     { name: '裂开', icon: '⋉', stack: 'additive', max: 3, requires: ['projectile'],               desc: '命中后炸成 2 枚小子弹' },
+  fan:       { name: '扇射', icon: '⋔', stack: 'additive', max: 3, requires: ['projectile'],               desc: '额外散开 2 枚小子弹（55% 伤害、射程短）；每多 1 份 +2 枚' },
+  split:     { name: '裂开', icon: '⋉', stack: 'additive', max: 3, requires: ['projectile'],               desc: '命中后炸出小子弹：1 份 2 枚、2 份 3 枚、3 份 4 枚' },
   bounce:    { name: '反弹', icon: '↺', stack: 'additive', max: 3, requires: ['projectile'],               desc: '命中后转向另一只继续飞（弹体不消失）' },
   pierce:    { name: '穿透', icon: '⇢', stack: 'additive', max: 3, requires: ['projectile'],               desc: '可额外穿透 +1 个目标' },
   orbit:     { name: '转圈圈', icon: '◌', stack: 'additive', max: 3, requires: ['projectile'],               desc: '多 1 枚绕着角色转的子弹' },
   giant:     { name: '巨大', icon: '⬤', stack: 'additive', max: 3, requires: ['projectile','area','pulse','chain'], desc: '体积/范围 +30%' },
   rapid:     { name: '起飞', icon: '»', stack: 'tier',     max: 3, requires: ['projectile','pulse','chain','area'], desc: '技能冷却 -12%（可叠加）' },
-  echo:      { name: '复读机', icon: '↻', stack: 'tier',     max: 2, requires: ['area','pulse','chain'],      desc: '施放 0.4s 后再来一次（60% 伤害）' },
-  burn:      { name: '上火', icon: '✹', stack: 'tier',     max: 3, requires: ['fire','lightning','holy'],  desc: '命中附加持续伤害' },
-  frost:     { name: '冷静', icon: '✽', stack: 'tier',     max: 2, requires: ['ice'],                      desc: '命中减速 35%，持续 1.2s' },
+  echo:      { name: '复读机', icon: '↻', stack: 'tier',     max: 3, requires: ['area','pulse','chain'],      desc: '施放后 0.4s 再放一次（60% 伤害）；每份 +1 次重放' },
+  burn:      { name: '上火', icon: '✹', stack: 'tier',     max: 3, requires: ['fire','lightning','holy'],  desc: '命中挂灼烧：每 0.5s 掉 10% 伤害、持续 2s；每份 +10% 且 +0.6s' },
+  frost:     { name: '冷静', icon: '✽', stack: 'tier',     max: 3, requires: ['ice'],                      desc: '命中减速 35%、1.2s；每份 +10% 减速、+0.4s' },
   vamp:      { name: '吸血', icon: '♥', stack: 'unique',   max: 1, requires: ['physical','poison'],        desc: '伤害的 6% 回复自身生命' },
-  chain:     { name: '传染', icon: '⛓', stack: 'tier',     max: 2, requires: ['projectile','chain'],       desc: '命中后跳到附近另一只身上（不再穿过去）' },
-  snipe:     { name: '点名', icon: '⌖', stack: 'tier',     max: 2, requires: ['projectile'],               desc: '弹速 +40%，伤害 +15%' },
+  chain:     { name: '传染', icon: '⛓', stack: 'tier',     max: 3, requires: ['projectile','chain'],       desc: '命中后跳到附近另一只身上（不再穿过去）；每份 +1 跳' },
+  snipe:     { name: '点名', icon: '⌖', stack: 'tier',     max: 3, requires: ['projectile'],               desc: '弹速 +40%，伤害 +15%（每份叠乘）' },
   harvest:   { name: '割韭菜', icon: '✂', stack: 'unique',   max: 1, requires: ['physical','fire','poison'],  desc: '每次击杀回复 1 点生命' },
-  thunder:   { name: '渡劫', icon: '⚡', stack: 'tier',     max: 2, requires: ['lightning','arcane','holy'], desc: '命中时 15% 概率落雷，造成范围伤害' },
+  thunder:   { name: '渡劫', icon: '⚡', stack: 'tier',     max: 3, requires: ['lightning','arcane','holy'], desc: '命中时 15%/份 概率落雷，对落点范围造成 50% 伤害' },
   thornmail: { name: '刺猬', icon: '✜', stack: 'unique',   max: 1, requires: ['nature','physical'],        desc: '被咬时反弹 8 点伤害给攻击者' },
-  overload:  { name: '超载', icon: '⚠', stack: 'tier',     max: 2, requires: ['projectile','area','pulse','chain'], desc: '伤害 +25%，但范围 -10%' },
+  overload:  { name: '超载', icon: '⚠', stack: 'tier',     max: 3, requires: ['projectile','area','pulse','chain'], desc: '伤害 +25%、范围 -10%（每份叠乘）' },
 };
 
 export const MODULE_IDS = Object.keys(MODULES);

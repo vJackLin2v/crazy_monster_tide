@@ -12,7 +12,7 @@
  *  7. 波次规则：BOSS 波 / 精英波 / 无尽
  */
 import { RunState } from '../assets/scripts/game/RunState';
-import { calcSkill, makeSkill, canInstall } from '../assets/scripts/game/SkillCalc';
+import { calcSkill, makeSkill, canInstall, modCount } from '../assets/scripts/game/SkillCalc';
 import { MODULES, MODULE_IDS, MODULE_HOOKS, MODULE_NUMS } from '../assets/scripts/data/Modules';
 import { assertStatsSane, freshStats, emptyStats } from '../assets/scripts/game/Stats';
 import { CHARS } from '../assets/scripts/data/Chars';
@@ -27,6 +27,7 @@ import { VFX_FRAMES } from '../assets/scripts/data/VfxFrames';
 import { ACHIEVEMENTS, achViews, newlyUnlocked, applyUnlocks } from '../assets/scripts/game/Achievements';
 import { defaultSave } from '../assets/scripts/game/Progress';
 import { balance, balanceOverride, balanceReset, DEFAULT_BALANCE } from '../assets/scripts/core/Balance';
+import { splitBullets, echoRepeats, burnDuration, burnTickMul, frostSlowPct, frostDuration } from '../assets/scripts/game/ModuleScale';
 import { telemetryStart, telemetryWaveEnd, telemetryRunEnd, listRuns, summarize } from '../assets/scripts/game/Telemetry';
 import type { SaveData } from '../assets/scripts/game/Progress';
 
@@ -437,15 +438,24 @@ console.log('\n== 5h. 非 UI BUG 回归（B1/B2/B3/B4/B10） ==');
     ok(snap() === before, 'B3 失败时背包与技能槽完全不变');
   }
 
-  // B4：强化模块一次占 2 份，不能突破 max（fan max=2，已有 1 份 + _2 会超）
+  // B4：强化模块一次占 2 份，不能突破 max（扇射 max=3：已有 2 份 + _2 的 2 份 = 4 > 3）
+  {
+    const rs = mk();
+    rs.skills[0].mods = ['fan', 'fan'];
+    rs.modsBag = ['fan_2'];
+    let threw = false;
+    try { rs.installAt(0, 2, 'fan_2'); } catch { threw = true; }
+    ok(threw, 'B4 已占 2 份 + 强化 2 份 > max(3) 时拒绝安装');
+    ok(rs.skills[0].mods.length === 2 && rs.modsBag.includes('fan_2'), 'B4 拒绝后状态不变');
+  }
+  // 合法边界：已有 1 份 + 强化 2 份 = 3 <= max(3) 允许
   {
     const rs = mk();
     rs.skills[0].mods = ['fan'];
     rs.modsBag = ['fan_2'];
-    let threw = false;
-    try { rs.installAt(0, 1, 'fan_2'); } catch { threw = true; }
-    ok(threw, 'B4 已占 1 份 + 强化 2 份 > max(2) 时拒绝安装');
-    ok(rs.skills[0].mods.length === 1 && rs.modsBag.includes('fan_2'), 'B4 拒绝后状态不变');
+    let okInstall = true;
+    try { rs.installAt(0, 1, 'fan_2'); } catch { okInstall = false; }
+    ok(okInstall && modCount(rs.skills[0], 'fan') === 3, 'B4 边界：1 份 + _2(2 份) = 3 正好等于上限，允许');
   }
 
   // B10：波末金币的贪婪加成也必须封顶 +100%
@@ -454,6 +464,30 @@ console.log('\n== 5h. 非 UI BUG 回归（B1/B2/B3/B4/B10） ==');
     const b = mk(); b.stats.greed = 1.5; const g2 = b.waveClearGold();
     ok(g1 === g2, 'B10 greed 1.5 与 1.0 的波末金币相同（封顶 +100%）：' + g1 + '=' + g2);
   }
+}
+
+console.log('\n== 5i. 模块份数真的更强（B8）+ 合成入口（B4） ==');
+{
+  // 分裂：1 份 2 枚 → 每份 +1，封顶 6
+  ok(splitBullets(1) === 2 && splitBullets(2) === 3 && splitBullets(3) === 4, '分裂份数生效：2/3/4 枚');
+  ok(splitBullets(9) === 6, '分裂封顶 6 枚');
+  // 复读机：1 份 1 次、2 份 2 次、3 份 3 次
+  ok(echoRepeats(1) === 1 && echoRepeats(2) === 2 && echoRepeats(3) === 3, '复读机份数 = 重放次数');
+  // 上火：时长与每跳伤害都随份数涨
+  ok(burnDuration(1) === 2 && Math.abs(burnDuration(3) - 3.2) < 1e-9, '上火时长 2 → 3.2 秒');
+  ok(Math.abs(burnTickMul(1) - 0.1) < 1e-9 && Math.abs(burnTickMul(3) - 0.3) < 1e-9, '上火每跳 10% → 30%');
+  // 冷静：减速与时长都随份数涨，且有上限
+  ok(Math.abs(frostSlowPct(1) - 0.35) < 1e-9 && Math.abs(frostSlowPct(3) - 0.55) < 1e-9, '冷静减速 35% → 55%');
+  ok(frostSlowPct(9) === 0.6, '冷静减速封顶 60%');
+  ok(Math.abs(frostDuration(1) - 1.2) < 1e-9 && Math.abs(frostDuration(3) - 2.0) < 1e-9, '冷静时长 1.2 → 2.0 秒');
+
+  // B4：可合成模块 max 必须 >= 3；unique 模块不该出现在合成候选
+  const mergeable = Object.keys(MODULES).filter(id => MODULES[id].max >= 3);
+  const notMergeable = Object.keys(MODULES).filter(id => MODULES[id].max < 3);
+  ok(mergeable.length + notMergeable.length === Object.keys(MODULES).length, '模块按 max 分成可合成/不可合成两组');
+  ok(notMergeable.every(id => MODULES[id].max <= 2), '不可合成组都是 max<=2（unique/稀有）');
+  ok(mergeable.includes('split') && mergeable.includes('echo') && mergeable.includes('burn') && mergeable.includes('frost'),
+    '四个"份数型"模块现在都能凑够 3 份（可合成）');
 }
 
 console.log('\n== 6. 确定性与波次规则 ==');

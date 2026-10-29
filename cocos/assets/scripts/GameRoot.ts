@@ -404,7 +404,9 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         const d = id ? moduleDef(id) : undefined;
         return d ? d.desc : '';
       })(),
-      merges: MODULE_IDS.map(id => ({
+      // 只列「max >= 3」的模块：max 1~2 的模块永远凑不到 3 个同名，
+      // 列出来只会显示"还差 1 个"却永远凑不齐（B4 的体验问题）
+      merges: MODULE_IDS.filter(id => MODULES[id].max >= 3).map(id => ({
         baseId: id,
         name: MODULES[id].name,
         count: rs.totalMods(id),

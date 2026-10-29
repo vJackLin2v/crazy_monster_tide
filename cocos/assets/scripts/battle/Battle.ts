@@ -25,6 +25,7 @@ import { calcSkill, type SkillRuntime } from '../game/SkillCalc';
 import { spawnPlan, spawnPointAround, waveScale, rollDamage, playerTakenDamage, aliveCaps } from '../game/Combat';
 import { balance } from '../core/Balance';
 import { telemetryWaveStart, telemetryWaveEnd } from '../game/Telemetry';
+import { splitBullets, echoRepeats, echoDelay, burnDuration, burnTickMul, frostSlowPct, frostDuration } from '../game/ModuleScale';
 import { SKILLS, SKILL_ART, FX } from '../data/Skills';
 import type { SkillArt } from '../data/Types';
 import { ENEMIES, bossUnitFor } from '../data/Enemies';
@@ -45,6 +46,8 @@ interface Enemy {
   spd: number; dmg: number; r: number; exp: number; gold: number;
   dead: boolean; deathT: number; animT: number; walkT: number; atkT: number;
   facing: number; flash: number; kx: number; ky: number; slow: number; spawnT: number;
+  /** 减速比例（冷静模块的份数决定：35~55%） */
+  slowPct: number;
   boss: boolean; elite: boolean;
   /** 状态层（M48）：中毒淡绿 / 灼烧淡红，持续期间每 0.5s 掉血 */
   poisonT: number; burnT: number; dotTick: number;
@@ -658,7 +661,7 @@ export class Battle extends Component {
       hp, maxhp: hp, spd: def.spd, dmg: Math.round(def.dmg * ws.dmg),
       r: def.r, exp: def.exp, gold: def.gold,
       dead: false, deathT: 0, animT: 0, walkT: 0, atkT: 0,
-      facing: 1, flash: 0, kx: 0, ky: 0, slow: 0, spawnT: 0.9,
+      facing: 1, flash: 0, kx: 0, ky: 0, slow: 0, spawnT: 0.9, slowPct: 0.35,
       boss: !!def.boss, elite: !!def.elite,
       poisonT: 0, burnT: 0, dotTick: 0, poisonDmg: 0, burnDmg: 0,
       visScale: 1,
@@ -766,7 +769,7 @@ export class Battle extends Component {
       }
     } else if (def.type === 'pulse') {
       // 复读机（echo）：0.4s 后再来一次 60% 伤害
-      if (rt.echo > 0) this.echoQueue.push({ slot, in: 0.4 });
+      this.queueEcho(slot, rt.echo);
       // 0.45s 让扩散过程看得见；再补一圈更大的冲击环和尘土
       this.spawnArea(this.px, this.py, rt.size + 26, rt.dmg, 0.45, 'pulse', art.aoe, rt);
       this.addVfx('core/ring/shockwave', this.px, this.py, 0.38, Math.max(1.6, (rt.size + 26) / 12));
@@ -782,7 +785,7 @@ export class Battle extends Component {
         this.addVfx(art.swing, (this.px + ax) / 2, (this.py + ay) / 2, 0.24, 1.8, -ang * 180 / Math.PI);
       }
       // 复读机（echo）：0.4s 后再来一次 60% 伤害
-      if (rt.echo > 0) this.echoQueue.push({ slot, in: 0.4 });
+      this.queueEcho(slot, rt.echo);
       // ★ 陨石（M45）：先从屏幕上方砸下来，**落地瞬间**才生成燃烧区
       if (sk.id === 'meteor') { this.castMeteor(ax, ay, rt.size, rt.dmg, rt, art); return; }
       // 第三轮：区域时长/跳动间隔按技能配置（默认 3.4s / 0.45s）
@@ -899,6 +902,12 @@ export class Battle extends Component {
       t: 0, dur: 0.55, size, dmg, rt, zoneKey: art.zone ?? art.aoe, trailT: 0, done: false,
       zoneLife: SKILLS.meteor.zoneLife, tickRate: SKILLS.meteor.tickRate,
     });
+  }
+
+  /** 复读机：按份数排队重放（0.4s / 0.8s / 1.2s…），每份 +1 次 */
+  private queueEcho(slot: number, n: number) {
+    const reps = echoRepeats(n);
+    for (let i = 0; i < reps; i++) this.echoQueue.push({ slot, in: echoDelay(i) });
   }
 
   private updateEcho(dt: number) {
@@ -1054,10 +1063,13 @@ export class Battle extends Component {
     }
     // 灼烧（M48）：挂 2s 持续状态（淡红 + 每 0.5s 掉血），不再是"一次性附加伤害"
     if (rt.burn) {
-      e.burnT = Math.max(e.burnT, 2.0);
-      e.burnDmg = Math.max(e.burnDmg, Math.max(1, Math.round(dmg * 0.10)));
+      e.burnT = Math.max(e.burnT, burnDuration(rt.burn));              // 2 / 2.6 / 3.2 秒
+      e.burnDmg = Math.max(e.burnDmg, Math.max(1, Math.round(dmg * burnTickMul(rt.burn))));  // 10/20/30%
     }
-    if (rt.slow) e.slow = 1.2;
+    if (rt.slow) {
+      e.slow = frostDuration(rt.slow);       // 1.2 / 1.6 / 2.0 秒
+      e.slowPct = frostSlowPct(rt.slow);     // 35 / 45 / 55%
+    }
     if (rt.vamp) this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + dmg * 0.06);
     // ★ B7：原来只有特效、**没有伤害**（描述写"造成范围伤害"）。
     //   现在按 15%×份数 触发，对落点 60 半径内的敌人结算 50% 伤害。
@@ -1323,7 +1335,7 @@ export class Battle extends Component {
         e.dotTick = 0;
       }
 
-      const spdMul = e.slow > 0 ? 0.65 : 1;
+      const spdMul = e.slow > 0 ? 1 - (e.slowPct ?? 0.35) : 1;   // 冷静的份数会提高减速比例
       const a = Math.atan2(this.py - e.y, this.px - e.x);
 
       // ── AI 状态机（玩法审计 §8.5/§8.6）：冲锋预警 → 冲锋 → 恢复；BOSS 额外有范围砸地 ──
@@ -1526,8 +1538,11 @@ export class Battle extends Component {
           if (b.split > 0 && !b.splitDone) {
             b.splitDone = true;
             const base = Math.atan2(b.vy, b.vx);
-            for (let k = 0; k < 2; k++) {
-              const ang = base + (k === 0 ? -0.7 : 0.7);
+            // 份数 → 子弹数（1 份 2 枚，2 份 3 枚，3 份 4 枚），角度均匀散开
+            const cnt = splitBullets(b.split);
+            for (let k = 0; k < cnt; k++) {
+              const spread = cnt <= 1 ? 0 : 1.4 / (cnt - 1);
+              const ang = base + (k - (cnt - 1) / 2) * spread;
               this.spawnBullet(b.x, b.y, Math.cos(ang) * 170, Math.sin(ang) * 170,
                 // 第三轮批准：衍生弹伤害 40%（原 50%），且 split:0 保证不再递归
                 { ...this.bulletRt(b), dmg: b.dmg * 0.4, pierce: 0, bounce: 0, chain: 0, split: 0, burn: 0 },
