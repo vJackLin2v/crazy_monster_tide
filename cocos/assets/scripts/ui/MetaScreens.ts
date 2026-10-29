@@ -16,6 +16,7 @@ import { ITEMS } from '../data/Items';
 import { ITEM_ICON } from '../data/IconMap';
 import { ENEMIES } from '../data/Enemies';
 import { Assets, iconFrame, loadIcon } from '../engine/Assets';
+import { listRuns, exportLogs } from '../game/Telemetry';
 
 function at(vw: number, vh: number, x: number, y: number) {
   return { x: x - vw / 2, y: vh / 2 - y };
@@ -62,7 +63,7 @@ export function buildSettings(parent: Node, s: SaveData, onToggle: (k: 'music' |
   const root = mkNode(parent, 'scr-settings', VW, VH);
   mask(root, VW, VH);
 
-  const W = 312, H = 240;
+  const W = 312, H = 300;
   const c = at(VW, VH, 180, VH / 2);
   const box = panel(root, c.x, c.y, W, H, { art: 'panel' });
   title(box, H / 2 - 30, '设置', { width: W - 40 });
@@ -91,7 +92,20 @@ export function buildSettings(parent: Node, s: SaveData, onToggle: (k: 'music' |
     });
   });
 
-  const cl = button(box, 0, -H / 2 + 34, 200, 46, '关闭', { primary: true, size: 16 });
+  // 战斗日志：本地已记录 N 局，一键导出（浏览器里会写剪贴板 + 控制台）
+  const runs = listRuns().length;
+  text(box, 0, -H / 2 + 108, '战斗日志：已记录 ' + runs + ' 局（每波一行，可在控制台 __logs() 查看）',
+    { size: 10, color: COL.dim, width: W - 24, outline: false });
+  const exp = button(box, 0, -H / 2 + 74, 200, 40, '导出战斗日志', { size: 14 });
+  onTap(exp.node, () => {
+    const json = exportLogs();
+    console.log('[Log] 导出 ' + runs + ' 局：\n' + json);
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) void navigator.clipboard.writeText(json);
+    } catch { /* 剪贴板不可用就只打控制台 */ }
+  });
+
+  const cl = button(box, 0, -H / 2 + 30, 200, 44, '关闭', { primary: true, size: 16 });
   onTap(cl.node, onClose);
   return root;
 }

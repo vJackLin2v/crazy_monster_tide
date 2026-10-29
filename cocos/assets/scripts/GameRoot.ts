@@ -20,6 +20,8 @@ import { Hud, type HudData } from './ui/Hud';
 import { buildMenu, buildHowto, buildCharSelect, buildResult, type ResultBuildRow } from './ui/MenuScreens';
 import { buildSettings, buildCodex, buildAchievements } from './ui/MetaScreens';
 import { loadSave, writeSave } from './engine/Save';
+import { telemetryStart, telemetryRunEnd, listRuns, exportLogs, clearLogs, summarize } from './game/Telemetry';
+import { balance, balanceOverride, balanceReset, exportBalance, importBalance } from './core/Balance';
 import { applyUnlocks } from './game/Achievements';
 import { buildLevelUp, buildShop, buildBuildDrawer, buildConfirm, type CardData, type ShopSlotView } from './ui/Modals';
 import { buildInstall, buildReplace } from './ui/ManageScreens';
@@ -68,6 +70,23 @@ export class GameRoot extends Component {
   onLoad() {
     // 设计分辨率写死在代码里，不依赖编辑器设置（编辑器里是 1280x720，见 KI-005）
     view.setDesignResolutionSize(SCREEN_W, SCREEN_H, ResolutionPolicy.FIXED_WIDTH);
+
+    // 控制台调试钩子（只在浏览器/微信调试器里用）：
+    //   __logs()          看全部战斗日志
+    //   __logDump()       打印 JSON（发同事）
+    //   __bal()           看当前生效的数值表
+    //   __balSet({...})   局部改数值（立即持久化，下次进局生效）
+    //   __balReset()      恢复代码默认值
+    const dbg = globalThis as unknown as Record<string, unknown>;
+    dbg.__logs = () => listRuns();
+    dbg.__logDump = () => console.log(exportLogs());
+    dbg.__logClear = () => { clearLogs(); console.log('[Log] 已清空'); };
+    dbg.__logSummary = () => summarize();
+    dbg.__bal = () => balance();
+    dbg.__balSet = (p: unknown) => balanceOverride(p as never);
+    dbg.__balReset = () => balanceReset();
+    dbg.__balExport = () => exportBalance();
+    dbg.__balImport = (j: string) => importBalance(j);
 
     this.battleNode = new Node('Battle');
     this.battleNode.parent = this.node;
@@ -217,6 +236,7 @@ export class GameRoot extends Component {
     this.hud = new Hud(hudNode, () => this.onPausePressed());
     this.cur = hudNode;
     const t0 = performance.now();
+    telemetryStart(this.charId, this.seed);       // 战斗日志：本局开始
     await this.battle.startRun(this.charId, this.seed);
     console.log('[GameRoot] startRun 耗时 ' + Math.round(performance.now() - t0) + 'ms');
     this.battle.paused = false;
@@ -673,6 +693,17 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       writeSave(this.save);
       if (unlocked) console.log('[Ach] 解锁新成就：' + this.save.ach.join(','));
     }
+    // 战斗日志：本局结束（阵亡/通关）
+    // ⚠️ 上面成就块里的 rsP 是块级作用域，这里必须重新取
+    const rsR = this.battle.rs;
+    telemetryRunEnd({
+      end: win ? 'clear' : 'dead',
+      deathWave: rsR.wave,
+      kills: rsR.kills,
+      maxAlive: this.battle.maxAlive,
+      dmgTaken: this.battle.totalDmgTaken(),
+      durSec: rsR.runTime,
+    });
     Sfx.sfx(win ? 'victory' : 'defeat', 0.7, 800);
     Sfx.bgm('menu');
     this.closeModal(); this.clearScreen();

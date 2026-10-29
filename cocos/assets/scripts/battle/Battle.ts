@@ -22,8 +22,9 @@ import { FrameAnim } from '../engine/FrameAnim';
 import { Camera2D } from '../engine/Camera2D';
 import { RunState } from '../game/RunState';
 import { calcSkill, type SkillRuntime } from '../game/SkillCalc';
-import { spawnPlan, spawnPointAround, waveScale, rollDamage, playerTakenDamage,
-  ALIVE_SOFT, ALIVE_HARD, ALIVE_SLOW_MUL } from '../game/Combat';
+import { spawnPlan, spawnPointAround, waveScale, rollDamage, playerTakenDamage, aliveCaps } from '../game/Combat';
+import { balance } from '../core/Balance';
+import { telemetryWaveStart, telemetryWaveEnd } from '../game/Telemetry';
 import { SKILLS, SKILL_ART, FX } from '../data/Skills';
 import type { SkillArt } from '../data/Types';
 import { ENEMIES, bossUnitFor } from '../data/Enemies';
@@ -148,6 +149,14 @@ export class Battle extends Component {
   private hurtBoostT = 0;
   /** 本局最高同屏活怪（结算页展示，用于判断"怪潮是否失控"） */
   maxAlive = 0;
+  /** 本波玩家受到的伤害（日志用） */
+  private waveDmg = 0;
+  private totalDmg = 0;
+
+  /** 本局玩家累计受到的伤害（结算/日志用） */
+  totalDmgTaken(): number { return this.totalDmg; }
+  /** 本波最高同屏（日志用） */
+  private waveAliveMax = 0;
   private bossRef: Enemy | null = null;
   private bossDefeated = false;
   private hitstop = 0;
@@ -591,6 +600,9 @@ export class Battle extends Component {
 
   private async startWave(n: number) {
     this.rs.wave = n;
+    this.waveDmg = 0; this.waveAliveMax = 0;
+    if (n === 1) this.totalDmg = 0;
+    telemetryWaveStart(this.rs.kills);
     this.waveEnding = false; this.waveEndT = 0; this.waveEndPending = false;
     this.waveEndUps = 0; this.waveAbsorbDone = false;
     this.spawnAcc = 0;
@@ -611,8 +623,8 @@ export class Battle extends Component {
     if (!isBossWave(n)) {
       const pool0 = this.rs.spawnPool;
       if (pool0.length) {
-        const open = Math.min(12, 5 + Math.floor(n / 2));   // 开场铺怪（6 只在第1波太多，改成 5）
-        void ALIVE_SOFT;
+        const S = balance().spawn;
+        const open = Math.min(S.openMax, S.openBase + Math.floor(n / S.openEvery));   // 开场铺怪
         for (let i = 0; i < open; i++) {
           const p = this.spawnPt();
           this.spawnEnemy(this.rs.rng.pick(pool0), p.x, p.y);
@@ -650,7 +662,8 @@ export class Battle extends Component {
       boss: !!def.boss, elite: !!def.elite,
       poisonT: 0, burnT: 0, dotTick: 0, poisonDmg: 0, burnDmg: 0,
       visScale: 1,
-      aiState: 'idle', aiT: 0, aiCd: (def.boss ? 2.2 : 3.0), aiDX: 0, aiDY: 0,
+      aiState: 'idle', aiT: 0,
+      aiCd: def.boss ? balance().ai.bossFirstCd : balance().ai.eliteFirstCd, aiDX: 0, aiDY: 0,
       aiNext: 'charge',
     };
     if (BLOCKER) e.spd = Math.round(e.spd * 0.82);
@@ -1236,16 +1249,18 @@ export class Battle extends Component {
     let n = 0;
     for (const e of this.enemies) if (!e.dead) n++;
     if (n > this.maxAlive) this.maxAlive = n;
+    if (n > this.waveAliveMax) this.waveAliveMax = n;
     return n;
   }
 
   private updateSpawn(dt: number) {
     if (this.bossRef && !this.bossRef.dead) return;
     // ★ 活怪上限（玩法审计 §8.2）：硬上限停刷，软上限把间隔拉长，避免同屏无限堆积
+    const caps = aliveCaps();
     const alive = this.aliveCount();
-    if (alive >= ALIVE_HARD) return;
+    if (alive >= caps.hard) return;
     const plan = spawnPlan(this.rs.wave);
-    const interval = alive >= ALIVE_SOFT ? plan.interval * ALIVE_SLOW_MUL : plan.interval;
+    const interval = alive >= caps.soft ? plan.interval * caps.slowMul : plan.interval;
     this.spawnAcc += dt;
     if (this.spawnAcc < interval) return;
     this.spawnAcc = 0;
@@ -1302,25 +1317,30 @@ export class Battle extends Component {
         if (e.aiCd > 0) e.aiCd -= dt;
         if (e.aiState === 'idle') {
           if (e.aiCd <= 0) {
+            const AI = balance().ai;
             if (e.boss && e.aiNext === 'slam') {
-              e.aiState = 'slam'; e.aiT = 0.9;
+              e.aiState = 'slam'; e.aiT = AI.bossSlamTele;
               this.addVfx('ground/ring/cast-circle', e.x, e.y, 0.9, 2.6);   // 预警：范围提示
             } else {
-              e.aiState = 'tele'; e.aiT = 0.7;
+              e.aiState = 'tele'; e.aiT = e.boss ? balance().ai.bossChargeTele : balance().ai.eliteChargeTele;
               e.aiDX = Math.cos(a); e.aiDY = Math.sin(a);
               this.addVfx(FX.spawnWarn, e.x + e.aiDX * 26, e.y + e.aiDY * 26, 0.7, 2.2);  // 预警：冲锋方向
             }
           }
         } else if (e.aiState === 'tele') {
           e.aiT -= dt;
-          if (e.aiT <= 0) { e.aiState = 'dash'; e.aiT = 0.35; }
+          if (e.aiT <= 0) {
+            const AI = balance().ai;
+            e.aiState = 'dash'; e.aiT = e.boss ? AI.bossChargeDash : AI.eliteChargeDash;
+          }
           e.x -= Math.cos(a) * e.spd * 0.25 * dt;   // 蓄力时后撤一点，给玩家反应
           e.y -= Math.sin(a) * e.spd * 0.25 * dt;
         } else if (e.aiState === 'dash') {
           e.aiT -= dt;
-          e.x += e.aiDX * e.spd * 2.2 * dt;
-          e.y += e.aiDY * e.spd * 2.2 * dt;
-          if (e.aiT <= 0) { e.aiState = 'rec'; e.aiT = 0.55; }
+          const AI = balance().ai;
+          e.x += e.aiDX * e.spd * AI.chargeSpeedMul * dt;
+          e.y += e.aiDY * e.spd * AI.chargeSpeedMul * dt;
+          if (e.aiT <= 0) { e.aiState = 'rec'; e.aiT = e.boss ? AI.bossChargeRec : AI.eliteChargeRec; }
         } else if (e.aiState === 'slam') {
           e.aiT -= dt;
           if (e.aiT <= 0) {
@@ -1328,9 +1348,11 @@ export class Battle extends Component {
             const d2 = Math.hypot(this.px - e.x, this.py - e.y);
             this.addVfx('core/burst/warm-explosion', e.x, e.y, 0.5, 2.8);
             this.cam.addShake(SHAKE.elite);
-            if (d2 < 70 && this.inv <= 0) {
-              const dm = playerTakenDamage(Math.round(e.dmg * 1.5), this.rs.stats);
+            const AI2 = balance().ai;
+            if (d2 < AI2.bossSlamRadius && this.inv <= 0) {
+              const dm = playerTakenDamage(Math.round(e.dmg * AI2.bossSlamMul), this.rs.stats);
               this.rs.stats.hp -= dm;
+        this.waveDmg += dm; this.totalDmg += dm;
               this.inv = Math.max(0.2, this.rs.stats.invuln ?? 0.8);
               this.dmgFlash = 1; this.hurtFlash = 1;
               if (this.rs.charId === 'knight') this.hurtBoostT = 2.0;
@@ -1342,7 +1364,7 @@ export class Battle extends Component {
           e.aiT -= dt;
           if (e.aiT <= 0) {
             e.aiState = 'idle';
-            e.aiCd = e.boss ? 3.2 : 4.5;
+            e.aiCd = e.boss ? balance().ai.bossChargeCd : balance().ai.eliteChargeCd;
             e.aiNext = e.aiNext === 'charge' ? 'slam' : 'charge';
           }
         }
@@ -1394,6 +1416,7 @@ export class Battle extends Component {
         const bossGuard = (e.elite || e.boss) ? (1 - Math.min(0.5, this.rs.stats.bossArmor ?? 0)) : 1;
         const dm = playerTakenDamage(e.dmg, this.rs.stats, bossGuard);
         this.rs.stats.hp -= dm;
+        this.waveDmg += dm; this.totalDmg += dm;
         // 受击无敌帧 0.55 -> 0.80（2026-10-13 实测标定）
         // 原来 0.55s 把承伤封顶在 ~11 伤害/秒，120 血只够撑 11 秒，而一波 18 秒 ——
         // 密度一提上来就必死。放宽到 0.80 秒后封顶 ~7.5/秒，才留得出走位空间。
@@ -1608,7 +1631,7 @@ export class Battle extends Component {
         Sfx.sfx('pickup', 0.16, 90);
         this.addVfx('feedback/pickup/exp-gain', g.x, g.y, 0.22, 0.55);   // 拾取反馈
         // 用户要求：波次结束的**全屏吸取经验减半**（原地捡是全额）
-        const gain = this.waveEnding ? g.v * 0.5 : g.v;
+        const gain = this.waveEnding ? g.v * balance().exp.waveEndMul : g.v;
         const ups = this.rs.addExp(gain);
         if (ups > 0) {
           // 波末吸到的经验先记账，**等全部吸完**再开升级卡（M33 #2）
@@ -1697,6 +1720,11 @@ export class Battle extends Component {
     this.despawnAllEnemies();
     const gain = this.rs.waveClearGold();
     console.log(`[Battle] 第 ${this.rs.wave} 波通过  +${gain} 金币  总计 ${this.rs.gold}  Lv${this.rs.lv}`);
+    // 战斗日志：每波一行（之后可在控制台 __logs() / 设置页导出）
+    telemetryWaveEnd({
+      wave: this.rs.wave, kills: this.rs.kills, lv: this.rs.lv, gold: this.rs.gold,
+      aliveMax: this.waveAliveMax, hp: this.rs.stats.hp, dmgTaken: this.waveDmg,
+    });
     this.waveEnding = true;
     this.waveEndT = 0;
     this.waveEndUps = 0;

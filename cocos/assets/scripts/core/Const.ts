@@ -17,6 +17,8 @@ export const SCREEN_H = 640;
  *     关键在于「适配方式」也必须一致：工程用 fitWidth+fitHeight（完整容纳），
  *     保证可视设计高度正好 640 —— 否则同样的 64px 会显得更小（见 D-31）。
  *  改这个值必须连带改 ①竞技场 ②生成半径 ③刷怪密度（D-27）。 */
+import { balance, DEFAULT_BALANCE } from './Balance';
+
 export const ZOOM = 2;
 
 /** 观感倍率：在"自适应基准"之上再放大的倍数（1.0 = 与 HTML 原型完全同比例）
@@ -66,7 +68,9 @@ export const RUN = {
 } as const;
 
 export function waveTime(n: number): number {
-  return RUN.baseTime + Math.floor((n - 1) / RUN.timeEvery) * RUN.timeStep;
+  // 走可配置表（core/Balance.ts），没有覆盖时与 RUN 里的默认值一致
+  const w = balance().wave;
+  return w.baseTime + Math.floor((n - 1) / w.timeEvery) * w.timeStep;
 }
 export function isBossWave(n: number): boolean { return n % RUN.bossEvery === 0; }
 export function isEliteWave(n: number): boolean { return !isBossWave(n) && n % RUN.eliteEvery === 0; }
@@ -79,9 +83,10 @@ export const SHAKE = { kill: 1.2, hurt: 4, elite: 9, boss: 14 };     // 屏震�
 export const DEATH_ANIM_TIME = 0.75;                                 // 死亡动画时长（超过即回收，见 KI-001）
 
 // ---------- 成长曲线 ----------
-// ★ 2026-10-29：24%/12% 会让第 10 波血量 3.16×、伤害 2.08×，而玩家成长跟不上（见玩法审计 §8.2）
-export const HP_GROWTH_PER_WAVE = 0.18;   // 敌人血量 / 波
-export const DMG_GROWTH_PER_WAVE = 0.10;  // 敌人伤害 / 波
+// ★ 2026-10-29：改成可配置（core/Balance.ts）。这里的常量仅作为"文档默认值"保留，
+//   实际生效值请读 `balance().growth`。
+export const HP_GROWTH_PER_WAVE = DEFAULT_BALANCE.growth.hpPerWave;
+export const DMG_GROWTH_PER_WAVE = DEFAULT_BALANCE.growth.dmgPerWave;
 export const EXP_BASE = 5;
 export const EXP_PER_LEVEL = 3.2;
 

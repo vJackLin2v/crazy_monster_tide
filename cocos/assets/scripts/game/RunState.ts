@@ -1,5 +1,6 @@
 import { Rng } from '../core/Rng';
-import { RUN, SHOP_SLOTS, REROLL_BASE_COST, EXP_BASE, EXP_PER_LEVEL, isBossWave, eliteCount } from '../core/Const';
+import { balance } from '../core/Balance';
+import { RUN, SHOP_SLOTS, EXP_BASE, EXP_PER_LEVEL, isBossWave, eliteCount } from '../core/Const';
 import { CHARS } from '../data/Chars';
 import { ITEMS } from '../data/Items';
 import { MODULES, MERGE_COST, baseOf, modPower } from '../data/Modules';
@@ -103,7 +104,8 @@ export class RunState {
   get bossUnit(): string { return bossUnitFor(this.wave); }
 
   waveClearGold(bonus = 0): number {
-    const raw = 12 + this.wave * 5 + bonus;
+    const P = balance().shop;
+    const raw = P.clearGoldBase + this.wave * P.clearGoldPerWave + bonus;
     const gain = Math.round(raw * (1 + this.stats.greed));
     this.gold += gain;
     return gain;
@@ -116,12 +118,9 @@ export class RunState {
     let guard = 0;
     // ★ 2026-10-29（玩法审计 §8.4）：原来是 4 类**等概率 25%**，中后期会频繁出现"三张都没用"。
     //   改成分阶段权重；并且保证三张里至少有一张不是纯属性（属性是"看不出变化"的那一类）。
-    const W: Record<string, Partial<Record<RewardKind, number>>> = {
-      early: { skill: 0.35, module: 0.25, item: 0.25, attr: 0.15 },
-      mid:   { skill: 0.20, module: 0.35, item: 0.25, attr: 0.20 },
-      late:  { skill: 0.15, module: 0.35, item: 0.30, attr: 0.20 },
-    };
-    const band = this.lv <= 5 ? W.early : this.lv <= 12 ? W.mid : W.late;
+    const R = balance().reward;
+    const band: Partial<Record<RewardKind, number>> =
+      this.lv <= R.earlyMax ? R.early : this.lv <= R.midMax ? R.mid : R.late;
     const pickKind = (): RewardKind => {
       let r = this.rng.next();
       for (const k of ['skill', 'module', 'item', 'attr'] as RewardKind[]) {
@@ -348,24 +347,27 @@ export class RunState {
     const rng = new Rng((this.seed ^ (this.wave * 7919) ^ (this.shopReroll * 104729) ^ (used.length * 2654435761)) >>> 0);
     const itemPool = Object.keys(ITEMS).filter(k => !this.items.some(i => i.id === k) && !used.includes(k));
     const modPool = Object.keys(MODULES).filter(m => this.totalMods(m) < MODULES[m].max && !used.includes(m));
+    const P = balance().shop;
+    const itemPrice = () => P.itemBase + rng.int(0, P.itemRand) + this.wave * P.itemPerWave;
+    const modPrice = () => P.modBase + rng.int(0, P.modRand) + this.wave * P.modPerWave;
     if (rng.next() < 0.5 && itemPool.length) {
       const id = rng.pick(itemPool);
-      return { kind: 'item', id, price: 12 + rng.int(0, 6) + this.wave * 2, sold: false, locked: false };
+      return { kind: 'item', id, price: itemPrice(), sold: false, locked: false };
     }
     if (modPool.length) {
       const id = rng.pick(modPool);
-      return { kind: 'module', id, price: 16 + rng.int(0, 7) + this.wave * 3, sold: false, locked: false };
+      return { kind: 'module', id, price: modPrice(), sold: false, locked: false };
     }
     if (itemPool.length) {
       const id = rng.pick(itemPool);
-      return { kind: 'item', id, price: 12 + rng.int(0, 6) + this.wave * 2, sold: false, locked: false };
+      return { kind: 'item', id, price: itemPrice(), sold: false, locked: false };
     }
     return idx % 2 === 0
-      ? { kind: 'heal', id: 'heal', price: 8 + this.wave, sold: false, locked: false }
-      : { kind: 'attr', id: 'attr', price: 16 + this.wave * 3, sold: false, locked: false };
+      ? { kind: 'heal', id: 'heal', price: P.healBase + this.wave * P.healPerWave, sold: false, locked: false }
+      : { kind: 'attr', id: 'attr', price: P.attrBase + this.wave * P.attrPerWave, sold: false, locked: false };
   }
 
-  rerollCost(): number { return REROLL_BASE_COST + this.shopReroll; }
+  rerollCost(): number { return balance().shop.rerollBase + this.shopReroll; }
 
   rerollShop(): boolean {
     const cost = this.rerollCost();

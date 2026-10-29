@@ -4,7 +4,8 @@
  * 拆出来的目的：把「怎么算」和「怎么画」分开。
  * 数值来源全部走 core/Const.ts，别在这里写魔法数字。
  */
-import { HP_GROWTH_PER_WAVE, DMG_GROWTH_PER_WAVE, VIEW_W, VIEW_H, ZOOM } from '../core/Const';
+import { VIEW_W, VIEW_H, ZOOM } from '../core/Const';
+import { balance } from '../core/Balance';
 import { ENEMIES } from '../data/Enemies';
 import type { CharStats } from '../data/Types';
 import type { Rng } from '../core/Rng';
@@ -17,6 +18,12 @@ export const ALIVE_SOFT = 40;
 export const ALIVE_HARD = 60;
 /** 超过软上限时刷怪间隔的惩罚倍率 */
 export const ALIVE_SLOW_MUL = 1.6;
+
+/** 运行时生效的活怪上限（可被 Balance 覆盖） */
+export function aliveCaps(): { soft: number; hard: number; slowMul: number } {
+  const s = balance().spawn;
+  return { soft: s.aliveSoft, hard: s.aliveHard, slowMul: s.slowMul };
+}
 
 /**
  * 当前波次的刷怪节奏。
@@ -49,8 +56,8 @@ export function spawnPlan(wave: number): SpawnPlan {
     //   旧参数 max(0.18, 0.53-0.022w) × min(5,1+floor(w/3)) 让生成率从 1.97/s 涨到 27.78/s（14 倍），
     //   且第 3/6/9/12 波是乘法台阶（+109% / +58% / +42% / +35%），中后期活怪无上限地堆积。
     //   新参数：峰值 ≈ 8.8/s（原 27.8），台阶幅度约 +33%，配合 Battle 里的活怪软/硬上限。
-    interval: Math.max(0.34, 0.62 - wave * 0.016),
-    batch: Math.min(3, 1 + Math.floor(wave / 4)),
+    interval: Math.max(balance().spawn.minInterval, balance().spawn.baseInterval - wave * balance().spawn.perWave),
+    batch: Math.min(balance().spawn.batchMax, 1 + Math.floor(wave / balance().spawn.batchEvery)),
   };
 }
 
@@ -90,7 +97,8 @@ export function spawnPointAround(
 /** 波次强度倍率：血量线性 +24%/波，伤害 +12%/波 */
 export function waveScale(wave: number): { hp: number; dmg: number } {
   const g = Math.max(0, wave - 1);
-  return { hp: 1 + HP_GROWTH_PER_WAVE * g, dmg: 1 + DMG_GROWTH_PER_WAVE * g };
+  const b = balance().growth;
+  return { hp: 1 + b.hpPerWave * g, dmg: 1 + b.dmgPerWave * g };
 }
 
 // ---------- 伤害 ----------

@@ -26,6 +26,8 @@ import { SKILLS, SKILL_ART } from '../assets/scripts/data/Skills';
 import { VFX_FRAMES } from '../assets/scripts/data/VfxFrames';
 import { ACHIEVEMENTS, achViews, newlyUnlocked, applyUnlocks } from '../assets/scripts/game/Achievements';
 import { defaultSave } from '../assets/scripts/game/Progress';
+import { balance, balanceOverride, balanceReset, DEFAULT_BALANCE } from '../assets/scripts/core/Balance';
+import { telemetryStart, telemetryWaveEnd, telemetryRunEnd, listRuns, summarize } from '../assets/scripts/game/Telemetry';
 import type { SaveData } from '../assets/scripts/game/Progress';
 
 let pass = 0, fail = 0;
@@ -362,6 +364,29 @@ console.log('\n== 5f. 成就系统（纯逻辑） ==');
   const s2 = mk({ kills: 100 });
   ok(applyUnlocks(s2) && s2.ach.includes('kills_100'), '边界：正好达标即解锁');
   ok(achViews(mk({ kills: 99999 })).find(v => v.def.id === 'kills_1000')!.cur === 1000, '进度按 target 截断，不溢出');
+}
+
+console.log('\n== 5g. 数值表与战斗日志（纯逻辑） ==');
+{
+  // 数值表：默认值可读、局部覆盖只改目标字段、reset 回到默认
+  ok(balance().spawn.batchMax === DEFAULT_BALANCE.spawn.batchMax, '默认数值表可读（batchMax=' + DEFAULT_BALANCE.spawn.batchMax + '）');
+  const before = balance().shop.modBase;
+  balanceOverride({ shop: { modBase: before + 5 } });
+  ok(balance().shop.modBase === before + 5, '局部覆盖生效（只改 modBase）');
+  ok(balance().spawn.batchMax === DEFAULT_BALANCE.spawn.batchMax, '覆盖不影响其它分组');
+  balanceReset();
+  ok(balance().shop.modBase === before, 'reset 后恢复默认');
+
+  // 日志：没有 localStorage 时不能崩，且空数据可汇总
+  let threw = false;
+  try {
+    telemetryStart('knight', 1);
+    telemetryWaveEnd({ wave: 1, kills: 10, lv: 2, gold: 20, aliveMax: 6, hp: 50, dmgTaken: 12 });
+    telemetryRunEnd({ end: 'dead', deathWave: 1, kills: 10, maxAlive: 6, dmgTaken: 12, durSec: 18 });
+  } catch { threw = true; }
+  ok(!threw, '日志 API 在无 localStorage 环境下不抛异常');
+  ok(Array.isArray(listRuns()), 'listRuns 返回数组');
+  ok(typeof summarize() === 'object', 'summarize 返回对象');
 }
 
 console.log('\n== 6. 确定性与波次规则 ==');
