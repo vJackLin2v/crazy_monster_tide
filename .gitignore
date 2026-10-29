@@ -23,3 +23,14 @@ screenshots/**/tmp/
 # 本地临时
 *.log
 .cache/
+
+# 本地临时工作区（截图脚本 / 验证样本 / 三方缓存 / 下载包）
+# ⚠️ 这里含只有本机可读的目录（.tmp/aipipe/*），提交会让 clone/push 失败
+.tmp/
+
+# Python 缓存
+__pycache__/
+*.pyc
+
+# 打包分发包（体积大，放 Release / 网盘，不进仓库）
+*.zip
