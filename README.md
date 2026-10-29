@@ -1,82 +1,141 @@
-# 《疯狂怪潮》 crazy-monster-tide
+# 《疯狂怪潮》 crazy_monster_tide
 
-竖屏像素风 · 自动攻击割草 · 构筑向肉鸽 · 微信小游戏。
+> 竖屏像素风 · 自动攻击割草 · 构筑向肉鸽 · 微信小游戏
+> **Cocos Creator 3.8.6 + TypeScript** ｜ 设计分辨率 **360×640 竖屏** ｜ 当前进度 **M66（UI 专项改造完成）**
 
-> **一句话**：你只管走位，技能自己开火；4 个主动技能 × 每技能 3 个可插拔行为槽，
-> 行为模块可重复安装、可随时搬家，怪潮铺满屏幕，Build 成型后一键清场。
+**一句话玩法**：你只负责走位，技能自动开火；4 个主动技能 × 每个 3 个可插拔「黑科技」槽，
+怪潮铺满屏幕，撑过 20 波就算通关（每 3 波精英，第 10 / 20 波 BOSS）。
 
----
-
-## 这个工程是什么
-
-一个 **Agent 驱动**的游戏工程。人只做决策与验收，编码 / 测试 / 文档由 AI Agent 按
-`AGENTS.md` 的路由规则分批完成。
-
-工程第一原则不是「文档多」，而是 **单次只给 Agent 尽可能小、尽可能有用的上下文**：
-
-- `AGENTS.md` = 地图（告诉 Agent 现在该读哪几个文件）
-- `docs/` = 规则仓库（按需读，禁止全量加载）
-- `memory-bank/` = 实时状态（做到哪、决定了什么、踩了什么坑）
+![主菜单](screenshots/ui-redesign/390x844-01-menu.png)
 
 ---
 
-## 怎么开局
+## 30 秒读懂这个仓库
 
-1. 让 Agent 读 `AGENTS.md`（它会自己决定接下来读什么）。
-2. 读 `docs/requirements.md`（唯一需求来源）。
-3. 读 `memory-bank/tasks.md`（当前该做什么）。
-4. 按 `docs/process.md` 的阶段门禁推进，**一次只做一个里程碑，做完停下等确认**。
+| 你想知道 | 去读 |
+|---|---|
+| 这游戏到底要做什么 | `docs/requirements.md`（唯一需求来源） |
+| 玩法规则（技能/模块/属性/波次/奖励…） | `docs/systems/` |
+| **UI 规范与落地说明** | `docs/ui/`、`docs/ui-redesign/` |
+| 现在做到哪、做过什么决定、踩过什么坑 | `memory-bank/`（tasks / decisions / rules / architecture） |
+| 代码 | `cocos/assets/scripts/` |
+| 素材来源与授权 | `docs/ui-redesign/asset_usage_manifest.md`、`docs/assets/` |
+| 给 AI Agent 的入口 | `AGENTS.md`（仓库地图 + 红线 + 路由表） |
 
-新会话开始，直接用 `START_PROMPT.md` 作为提示词。
+> 这是一个 **Agent 驱动**的工程：`AGENTS.md` 是地图，`docs/` 是按需读取的规则仓库，
+> `memory-bank/` 是实时状态。单次任务只读命中的 1~3 个文件，不做全量加载。
 
 ---
 
-## 目录
+## 目录结构
 
 ```
-AGENTS.md               Agent 总入口（地图 + 红线）
-START_PROMPT.md         新会话启动提示词
-docs/
-  requirements.md       唯一需求来源（v0.2）
-  control_protocol.md   Agent 信息分级与读取纪律
-  process.md            开发流程与阶段门禁
-  team_division.md      角色分工与交付物
-  systems/              玩法规则（10 个系统）
-  ui/                   UI 流程、竖屏规格、原型门禁
-  assets/               素材门禁、盘点、缺口、归一化、授权
-  testing/              分层测试、固定种子、玩家模拟
-prototype-html/         竖屏 HTML 可玩 MVP（Möbelmon 式单手 UI）
-tests/                  E2E 玩家流程 + 静态门禁
-screenshots/            三档视口截图
-assets/ui-reference/    参考素材（reference_only，不进游戏）
-memory-bank/
-  project.md            项目现状
-  architecture.md       目录与技术架构（Cocos Creator 3.8.6，D-02）
-  decisions.md          已确认决策 D-01 ~ D-10
-  rules.md              硬规则与红线
-  tasks.md              当前阶段 / 里程碑 / 待办
-tools/vision/           本地目视确认工具（注意：禁止批量跑大模型，见 memory-bank/rules.md §3B）
+cocos/                     Cocos Creator 工程（真正的游戏本体）
+  assets/scripts/          全部 TypeScript
+    battle/Battle.ts       战斗主循环（敌人/子弹/技能/波次/掉落）
+    ui/                    UIKit + 11 个页面（Hud / MenuScreens / Modals / ManageScreens …）
+    data/                 技能、道具、黑科技、敌人、属性的数据表
+    game/                  RunState（一局的状态）/ SkillCalc（伤害与冷却结算）
+    engine/                资源加载、帧动画、摇杆、相机、音频
+  assets/resources/        运行时要加载的素材（单位 / 特效 / 图标 / UI 九宫格 / 背景）
+  tests/run.ts             纯逻辑单测（不需要编辑器，111 条断言）
+  build/, library/         Cocos 生成物（已 .gitignore，不入库）
+
+docs/                      规格与规则（需求、系统、UI、素材、测试）
+docs/ui-redesign/          ★ UI 专项改造的完整交付包（本仓库最近一轮工作）
+memory-bank/               项目实时状态（进度 / 决策 / 硬规则 / 架构）
+prototype-html/            早期的竖屏 HTML 可玩原型
+screenshots/               实机截图（本次 UI 改造的三档视口截图在 screenshots/ui-redesign/）
+tools/                     素材索引、美术生成、目视确认等脚本
+assets/ui/third_party/     第三方素材原始包（含 License，见下方授权）
+LICENSE                    MIT
 ```
 
 ---
 
-## 当前状态
+## 怎么跑起来
 
-**M1 完成**：决策落定（引擎 Cocos Creator 3.8.6 / 世界观像素奇幻 / 命名确认 / 素材可迁移）
-+ Möbelmon UI 参考采集与分析 + **竖屏 HTML 可玩 MVP**（`prototype-html/`，E2E 50 PASS、门禁 19 PASS）。
+**前置**：Cocos Creator **3.8.6**（仓库不含引擎本体）、Node.js ≥ 18。
 
-下一阶段：UI 迭代与冻结（S3），或素材门禁（S1）—— 待用户确认。
+1. 用 Cocos Creator 打开 `cocos/` 目录（首次会自动导入资源、生成 `library/`，约 1~3 分钟）。
+2. 打开 `assets/scenes/Boot.scene`，点预览即可（竖屏，建议窗口比例接近 9:19.5）。
 
-阶段路线：`需求分析 → 素材门禁 → HTML 可玩 MVP → UI 冻结 → 引擎实现 → 测试 → 验收`。
+**构建**（CLI，需先关闭编辑器）：
 
-详见 `memory-bank/tasks.md`。
+```bash
+# Windows 示例
+CocosCreator.exe --project <仓库>/cocos --build "platform=web-mobile;debug=false"
+```
+
+> ⚠️ 两个踩过的坑：① 环境里若有 `ELECTRON_RUN_AS_NODE=1`，编辑器会退化成一个 node 进程并报
+> `bad option: --project`，先清掉该变量；② 编辑器开着的时候 CLI 构建会拿不到锁。
+
+**单测**（纯逻辑层，不需要编辑器）：
+
+```bash
+node <tsx-cli> tests/run.ts     # 当前：PASS 111 / FAIL 0
+```
 
 ---
 
-## 与母本工程的关系
+## 最近一轮工作：UI 专项改造（M66）
 
-需求来源：`H:\AI-game\pixel_roguelike_wechat_agent_kit`。
-该工程含 3,666 个素材文件、素材总览 Excel（1,299 张内嵌图）、HTML 原型与系统文档，
-**可作为迁移源，但迁移必须先登记决策**（见 `docs/assets/asset_inventory.md` 与 `memory-bank/decisions.md` D-04）。
+原来的 UI 是「程序化圆角方块」拼的，这次换成一整套**真实像素九宫格素材**并重排了所有页面。
 
-同时参考：`H:\AI-game\行囊守卫`（Godot 竖屏小游戏的 Agent 文档体系与踩坑清单）。
+| 做了什么 | 说明 |
+|---|---|
+| 素材 | **Kenney Pixel UI Pack（CC0）** → 按本作暗色调色板重上色，生成 19 张 52×52 九宫格 + Cocos meta |
+| 组件层 | `ui/UIKit.ts` 全部改为素材优先（缺素材自动回退 Graphics）；按钮按下换图、热区 ≥44；新增安全区模块 `ui/Safe.ts` |
+| 页面 | 战斗 HUD / 升级三选一 / 主菜单 / 角色选择 / 商店 / 结算 / 暂停构建面板 / 黑科技安装 / 技能替换 / 二次确认 / 玩法说明 |
+| 表现 | 精英/BOSS 由「地面光圈」改为**身体泛光**（两层同帧放大副本） |
+| 稳定性 | 卡死看门狗（暂停但无弹窗 2s 自动恢复）+ 四处界面构建 try/catch + 结算单次触发闸门 |
+
+**【必读文档】**
+
+- `docs/ui-redesign/README_请先看.md` — 交付包入口
+- `docs/ui-redesign/ui_pages_v2.md` — **逐页布局/绑定数据/交互/适配**（改 UI 先看这个）
+- `docs/ui-redesign/asset_usage_manifest.md` — 素材逐文件清单与 CC0 授权记录
+- `docs/ui-redesign/delivery_report.md` — 交付报告（含构建/测试结果、卡死排查结论、未验证项）
+
+### 截图（三档视口 × 14 屏，全部在 `screenshots/ui-redesign/`）
+
+| 战斗 HUD | 升级三选一 |
+|---|---|
+| ![战斗 HUD](screenshots/ui-redesign/390x844-04-battle-hud.png) | ![升级三选一](screenshots/ui-redesign/390x844-05-levelup.png) |
+
+| 角色选择 | 商店 |
+|---|---|
+| ![角色选择](screenshots/ui-redesign/390x844-03-charselect.png) | ![商店](screenshots/ui-redesign/390x844-06-shop.png) |
+
+- 精英 / BOSS 身体泛光：`screenshots/ui-redesign/390x844-04b-elite-boss.png`
+- 12 屏总览（360×640）：`screenshots/ui-redesign/_sheet-360x640.png`
+- 设计分辨率基准：`screenshots/ui-redesign/360x640-*` ／ 宽屏比例：`412x915-*`
+
+---
+
+## 技术要点（给接手的人）
+
+- **渲染**：全程 2D UI（`Graphics` + `Sprite`），像素素材强制 **NEAREST** 过滤，九宫格四角不拉伸。
+- **适配**：设计分辨率写死 360×640 + `FIXED_WIDTH`；所有贴边元素按 `view.getVisibleSize()` 与安全区换算，
+  禁止写死 640（历史事故见 `memory-bank/rules.md` KI-009）。
+- **确定性**：一局一个随机种子，同种子同奖励/同商店，方便复现问题。
+- **数据驱动**：16 技能 / 24 属性 / 70 道具 / 18 黑科技全是数据表，UI 只渲染，不重算规则。
+
+---
+
+## 第三方素材与许可
+
+| 素材 | 授权 | 位置 |
+|---|---|---|
+| **Kenney Pixel UI Pack**（UI 九宫格来源） | **CC0 1.0**（可商用、无需署名） | 原始包 `assets/ui/third_party/kenney_pixel_ui_pack/`（含 `License.txt`），游戏内使用见 `cocos/assets/resources/ui/kenney/` |
+| 角色 / 怪物 / 技能特效 | 项目已通过素材门禁（CC0 / 可商用），逐项登记在 `docs/assets/` | `cocos/assets/resources/art/` |
+| 生成物 | `tools/art/gen_ui_kit.py` 只做调色 + 加边 + 导出，可复跑 | — |
+
+项目代码采用 **MIT** 许可，见 `LICENSE`。
+
+---
+
+## 历史来源（本机路径，仅供参考）
+
+需求与素材最初来自本机的 `pixel_roguelike_wechat_agent_kit` 母本工程与《行囊守卫》的 Agent 文档体系，
+迁移决策记录在 `memory-bank/decisions.md`（D-04 等）。这些路径只在本机有效，仓库内不依赖它们。
