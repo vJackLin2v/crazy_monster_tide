@@ -24,6 +24,9 @@ import { ITEMS, ELITE_POOL, itemNumbers } from '../assets/scripts/data/Items';
 import { CS, pageCount, cellPos, gridBottom, detailBox, detailRows, portraitFit } from '../assets/scripts/ui/CharLayout';
 import { SKILLS, SKILL_ART } from '../assets/scripts/data/Skills';
 import { VFX_FRAMES } from '../assets/scripts/data/VfxFrames';
+import { ACHIEVEMENTS, achViews, newlyUnlocked, applyUnlocks } from '../assets/scripts/game/Achievements';
+import { defaultSave } from '../assets/scripts/game/Progress';
+import type { SaveData } from '../assets/scripts/game/Progress';
 
 let pass = 0, fail = 0;
 const ok = (c: boolean, m: string) => { c ? (pass++, console.log('  PASS ' + m)) : (fail++, console.log('  FAIL ' + m)); };
@@ -339,6 +342,26 @@ console.log('\n== 5. 商店（固定货位 / 购买不消失 / 锁定） ==');
   rs.shopStock = null;
   rs.refreshShop(false);
   ok(rs.shopStock!.some(s => s.id === id1), '下一波商店里能看到带过来的锁定货');
+}
+
+console.log('\n== 5f. 成就系统（纯逻辑） ==');
+{
+  const mk = (o: Partial<SaveData> = {}): SaveData => ({ ...defaultSave(), ...o });
+  const fresh = mk();
+  ok(achViews(fresh).length === ACHIEVEMENTS.length, '成就定义 ' + ACHIEVEMENTS.length + ' 条，视图一一对应');
+  ok(achViews(fresh).every(v => !v.done && v.cur === 0), '全新区间：全部未解锁、进度 0');
+
+  const s1 = mk({ runs: 1, kills: 150, bestWave: 10 });
+  const n1 = newlyUnlocked(s1);
+  ok(n1.includes('first_run') && n1.includes('kills_100') && n1.includes('wave_10'), '达标的三条被识别');
+  ok(!n1.includes('kills_1000') && !n1.includes('wave_20') && !n1.includes('win_1'), '未达标的不会被误解锁');
+  ok(applyUnlocks(s1) === true && s1.ach.length === 3, 'applyUnlocks 写入 3 条');
+  ok(applyUnlocks(s1) === false, '重复调用不再新增（幂等）');
+  ok(achViews(s1).filter(v => v.done).length === 3, '视图里 3 条已完成');
+
+  const s2 = mk({ kills: 100 });
+  ok(applyUnlocks(s2) && s2.ach.includes('kills_100'), '边界：正好达标即解锁');
+  ok(achViews(mk({ kills: 99999 })).find(v => v.def.id === 'kills_1000')!.cur === 1000, '进度按 target 截断，不溢出');
 }
 
 console.log('\n== 6. 确定性与波次规则 ==');
