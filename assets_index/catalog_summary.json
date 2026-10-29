@@ -1,0 +1,26 @@
+{
+  "entries": 4652,
+  "by_cat": {
+    "icon-svg": 4259,
+    "icon": 200,
+    "unit": 102,
+    "vfx": 91
+  },
+  "by_gate": {
+    "attribution-required": 4259,
+    "replace-before-launch": 224,
+    "ok": 169
+  },
+  "by_fit": {
+    "vector": 4267,
+    "native": 232,
+    "offgrid": 98,
+    "big": 46,
+    "unknown": 9
+  },
+  "by_license": {
+    "attribution": 4259,
+    "user-approved": 224,
+    "ok-attribution": 169
+  }
+}

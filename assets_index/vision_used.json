@@ -1,0 +1,262 @@
+{
+ "project:icons/item-scythe.png": {
+  "desc": "红白色小镰刀（细柄）",
+  "tags": [
+   "镰刀",
+   "武器",
+   "红色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-arcanecore.png": {
+  "desc": "深色圆核，外圈米色光环",
+  "tags": [
+   "核心",
+   "奥术",
+   "圆环"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-arcanorb.png": {
+  "desc": "米白色圆球（光球）",
+  "tags": [
+   "法球",
+   "圆球",
+   "奥术"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-berserkaxe.png": {
+  "desc": "斜置米色战斧",
+  "tags": [
+   "战斧",
+   "武器",
+   "斧"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-galebow.png": {
+  "desc": "米色箭矢与弓弦",
+  "tags": [
+   "弓",
+   "箭矢",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-healingsanct.png": {
+  "desc": "灰色小教堂 / 圣所",
+  "tags": [
+   "圣所",
+   "治疗",
+   "建筑"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-lifesap.png": {
+  "desc": "米色叶片",
+  "tags": [
+   "叶",
+   "生命",
+   "吸取"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-mountain.png": {
+  "desc": "米色岩石山峰",
+  "tags": [
+   "山",
+   "岩石",
+   "地形"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-multishot.png": {
+  "desc": "两名人形弓箭手",
+  "tags": [
+   "多重",
+   "弓箭手",
+   "人形"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-overload.png": {
+  "desc": "米绿色放射爆裂",
+  "tags": [
+   "过载",
+   "爆裂",
+   "放射"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-piercebul.png": {
+  "desc": "米色弹体与尖刺",
+  "tags": [
+   "弹体",
+   "穿透",
+   "尖刺"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-precision.png": {
+  "desc": "米色碎片 / 箭形",
+  "tags": [
+   "精准",
+   "碎片",
+   "箭"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-tripleshot.png": {
+  "desc": "三支米色箭矢",
+  "tags": [
+   "三连",
+   "箭矢",
+   "多重"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-voltsaw.png": {
+  "desc": "米色锯齿圆盘",
+  "tags": [
+   "锯",
+   "闪电",
+   "圆盘"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/ui-essence.png": {
+  "desc": "蓝色水晶碎片",
+  "tags": [
+   "水晶",
+   "蓝色",
+   "精华"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/up-arrow.png": {
+  "desc": "米色箭头 / 菱形",
+  "tags": [
+   "箭头",
+   "方向",
+   "米色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/up-heart2.png": {
+  "desc": "深色心形，金色描边",
+  "tags": [
+   "心",
+   "生命",
+   "金色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/up-reroll.png": {
+  "desc": "米色交叉纸带 / 卷轴",
+  "tags": [
+   "重roll",
+   "卷轴",
+   "米色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/up-speed.png": {
+  "desc": "奔跑的米色人影，带速度线",
+  "tags": [
+   "奔跑",
+   "速度",
+   "人形"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/up-startgold.png": {
+  "desc": "金色钱币 / 金锭堆",
+  "tags": [
+   "金币",
+   "金色",
+   "财富"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/w-blade.png": {
+  "desc": "米色弯刀，暗红底",
+  "tags": [
+   "弯刀",
+   "武器",
+   "斩击"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/w-bleed.png": {
+  "desc": "米色交叉双刃",
+  "tags": [
+   "交叉刀",
+   "武器",
+   "流血"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/w-deadly.png": {
+  "desc": "绿色人脸，X 形眼",
+  "tags": [
+   "脸",
+   "毒",
+   "死亡"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/w-guard.png": {
+  "desc": "米绿色长剑，带护手",
+  "tags": [
+   "长剑",
+   "武器",
+   "防御"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/w-savage.png": {
+  "desc": "米色三道爪痕",
+  "tags": [
+   "爪痕",
+   "武器",
+   "撕裂"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/w-thrust.png": {
+  "desc": "米色长矛突刺，带速度线",
+  "tags": [
+   "长矛",
+   "突刺",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ }
+}

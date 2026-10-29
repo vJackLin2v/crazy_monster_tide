@@ -71,3 +71,38 @@
 
 **当前占位清单**：原型阶段的单位与特效是**程序几何体**（`prototype-html/` 的字符画精灵），
 不是占位素材，属于「程序绘制」——可保留，但正式美术接入后应替换为规范像素素材。
+
+---
+
+## 5. 特效适配审计（2026-10-20 实测）
+
+> 回答「特效素材很多，但适配我们游戏的有多少」。数据来自脚本扫 `art/vfx` + 解析 `Skills.ts` 的 `SKILL_ART`。
+
+| 口径 | 数量 | 占比 |
+|---|------:|---:|
+| 素材总量 | **91 个组件 / 947 帧**（11 个功能组） | 100% |
+| 结构适配（32×32 原生，与单位同网格） | **76 组件 / 720 帧** | 84% / 76% |
+| 需要缩放（96×96 或 128×128） | 14 组件 / 225 帧 | 15% / 24% |
+| **已接入游戏**（`SKILL_ART` + `FX`） | **25 组件** | **27%** |
+| 未接入但同网格可用 | 66 组件 | 73% |
+
+**结论：**
+
+1. 不缺数量，缺**接线**：91 个里只有 25 个被技能用到，剩 66 个是「摆着没接」；
+2. 缺**元素专精**：冰系 3 个技能（冰晶矛 / 霜爆 / 寒冰环）共用 `frost-nova` + `ice-hit`；圣光弹复用了雷系的 `plasma-shot`；
+3. 缺**规格统一**：13 个 96×96 组件（`lattice-beam`、`electric-impact`、`solar-shrapnel`…）原生是「大特效」，按 1/3 缩小会糊，接进来要先评估；
+4. **不缺授权**：91 个组件都在 `ok-attribution`（多为 CC0，`spell-fx` 需署名）。
+
+未接入里其实有现成的专精件：`core/ring/fire-ring`、`melee/slash/fire-slash`、`melee/slash/ice-slash`、
+`projectile/ice/ice-shatter`、`support/heal/holy-light`、`defense/shield/shield-bubble` 等——
+补元素差异**不用新素材**，接上就行。
+
+| 元素 | 技能数 | 现用专精组件 | 缺口 |
+|---|---:|---|---|
+| 火 | 1 | fireball-shot / fire-hit | 无（但只有 1 个技能，够了） |
+| 冰 | 3 | ice-shard-shot / frost-nova / ice-hit | 🔴 三个技能抢 1 个 AoE |
+| 雷 | 2 | energy-bolt / plasma-shot | 🟡 两个技能形状接近 |
+| 毒 | 1 | ground-fill-poison / acid-splash / poison-hit | 无 |
+| 圣光 | 1 | （复用 plasma-shot） | 🔴 **无专属素材**，现成的 `holy-light` 没接 |
+| 奥术 | 2 | magic-missile / energy-bolt / summon | 🟡 灵能箭与连锁闪电共形 |
+| 物理 | 3 | wide-cleave / spin-slash / slash-hit / cast-circle | 🟡 刃暴借了地面环 |

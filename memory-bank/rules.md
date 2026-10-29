@@ -46,6 +46,19 @@
 2. **不要写过多测试**。用户明确要求：够用就行，别为了覆盖率造测试。
    已有测试只在**关键规则回归**时补充（如 D-13 倍率、KI-001 回收），不要新建测试套件。
 
+## 3D. 源码编辑禁令（2026-10-20 事故后新增，硬性）
+
+> 事故：用 PowerShell `Get-Content -Raw` + `Set-Content -Encoding UTF8` 改 `ui/ManageScreens.ts`，
+> 默认编码是本地 ANSI(GBK)，读完再以 UTF-8 写回 → **所有中文变乱码**、文件带 BOM，
+> 编辑器编译失败，**预览直接打不开**（用户："游戏直接给我改崩了"）。
+
+1. **禁止**用 shell（PowerShell/cmd）的 `Get-Content`/`Set-Content`/`>` 重写源码文件；
+   中文源码一律用 edit / write 工具（UTF-8 安全）。
+2. 需要脚本批量改文本时，用 **Python 显式 `encoding='utf-8'`** 读写，并在写后立刻
+   `python -c "open(f,encoding='utf-8').read()"` 验证 + 扫一遍乱码特征字（妯/鐨/锛/鈥）。
+3. shell 只用于：跑编译/测试、查进程/端口、读写非源码文件（日志、临时数据）。
+4. 「改完能编译」不等于"没崩"：**改完必须实际打开预览页确认 canvas 出得来**。
+
 ## 4. 已知踩坑（继承自同类工程，勿重复踩）
 
 | # | 坑 | 规则 |
@@ -68,3 +81,13 @@
 | 11 | `resources.load()` **不接受扩展名** | `'art/audio/battle.ogg'` 会报 "Bundle resources doesn't contain…"。必须去掉 `.ogg/.wav/.png` 再加载（图标那边早就这么做了，音频漏了） |
 | 12 | 「没载入就先记状态」导致功能永不生效 | BGM 的 `bgm()` 在 clip 未载入时就把 `curBgm` 记下了 → 之后同样调用被"同一首"挡掉，**永远不播**。要记"想要的状态"，等载入完补播 |
 | 13 | **放大像素角色 ≠ 放大帧框**：32×32 单位帧里角色本体只有 13×15（约 40%），把框从 96 加到 128 后角色本体仍只有 52×60 | 要真正变大必须**先裁掉透明留白**（`portrait.png`）再按整数倍放大；判断"够不够大"要量**角色本体的像素尺寸**，不是节点尺寸。见 D-36 / `ui/CharLayout.portraitFit()` |
+| 14 | **投射物素材统一头朝右**，但代码按"朝上"算（`-atan2 - 90`）→ 火球/箭横着飞 | 旋转公式必须与素材朝向一致：本项目所有 `art/vfx/projectile/*` 都是**头右尾左**，所以 `node.angle = -atan2(vy, vx) * 180/PI`（**不要再减 90**）。换素材前先拼对照表看头朝哪 |
+| 15 | **覆盖 `curModal` 不销毁旧节点 → 旧弹窗永久留在最上层、按钮全失效** | 任何 `this.curModal = buildXxx(...)` 之前必须 `this.closeModal()`。用户报「替换技能后无法关闭升级页」就是这个（`showReplace` 漏了一步） |
+| 16 | **CLI 构建报 `bad option: --project`** —— 环境里有 `ELECTRON_RUN_AS_NODE=1`，CocosCreator.exe 会退化成一个 node 进程 | 跑构建前先 `Remove-Item Env:ELECTRON_RUN_AS_NODE`（或置空），再 `--project ... --build ...`；CLI 构建要求编辑器**没在运行** |
+| 17 | **手写 `.meta` 名字写成 `<name>.meta`（少了 .png）→ 编辑器另生成 `<name>.png.meta`，出现两份 meta** | Cocos 只认 `<file>.<ext>.meta`；批量导入素材后要检查目录里没有 `<name>.meta` 这种孤儿 |
+| 18 | **九宫格素材缺 `SpriteFrame.inset*` → Sprite SLICED 退化成整图拉伸，四角变形** | 载入素材时显式写 `insetLeft/Right/Top/Bottom`（`Assets.loadUi()` 里统一 10px），并且节点尺寸不能小于 2×边距 |
+| 19 | **精英/BOSS 的"泛光"一直没渲染出来**：`_glow/_glow2/_outline` 是挂在**容器节点**上的，而 `FrameAnim` 挂在 **body 子节点**上，`apply()` 只查 `this.node` → 取不到 → 光晕/描边层永远没有 spriteFrame（所以以前只能靠地面光圈认精英） | 同步贴图时要**同时向上看一层父节点**（FrameAnim 已改）；以后新增任何"跟随身体换帧"的图层，都要确认它挂在哪一层 |
+| 20 | **把"槽位满了"当成"不兼容"去置灰** → 玩家以为这个技能不能再装黑科技 | 可用性判定要区分 `不兼容 / 已满级 / 需替换槽位`（见 `canInstall().why`）；"需替换槽位"算**可用**，UI 用金色框 +「满」提示，别压暗 |
+| 21 | **"页面卡死"最常见的一类根因 = `paused=true` 但 `curModal=null`**（面板构建抛异常 / 弹窗销毁了没恢复暂停）——画面停住、点哪都没反应、控制台还不一定报错 | ①任何 `buildXxx` 都要 try/catch，失败时恢复暂停；②`GameRoot.watchdog` 兜底：暂停+无弹窗 + 仍在运行 超过 2s 自动恢复；③排查时先看 `curModal` 和 `battle.paused` 两个值 |
+| 22 | **用编辑器预览（7456）试玩时，改代码/重建会让对局直接停住**，表现和"游戏卡死"一模一样，控制台还留着旧日志 | 长时间试玩用构建产物（静态服务 8123）；用 7456 时改完代码要**刷新页面** |
+| 23 | **`onDead/onClear` 没有一次性闸门** → 重入/同一帧重复触发，日志连刷「玩家阵亡」、结算页反复重建 | 结算类钩子加 `endShown` 标记，每局只允许进一次结算 |

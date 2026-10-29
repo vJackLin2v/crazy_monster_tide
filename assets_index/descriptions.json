@@ -1,0 +1,3253 @@
+{
+ "project:icons/relic-001.png": {
+  "desc": "红金法杖，顶端橙色宝珠",
+  "tags": [
+   "法杖",
+   "武器",
+   "火焰",
+   "橙色"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-001.png": {
+  "desc": "红金法杖，顶端橙色宝珠",
+  "tags": [
+   "法杖",
+   "武器",
+   "火焰",
+   "橙色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-001.png"
+ },
+ "kit:internal/icons/items/relic-001.png": {
+  "desc": "红金法杖，顶端橙色宝珠",
+  "tags": [
+   "法杖",
+   "武器",
+   "火焰",
+   "橙色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-001.png"
+ },
+ "project:icons/relic-002.png": {
+  "desc": "粉红色披风 / 翼状护甲",
+  "tags": [
+   "披风",
+   "护甲",
+   "粉色",
+   "羽翼"
+  ],
+  "conf": 0.8
+ },
+ "project:icons/items/relic-002.png": {
+  "desc": "粉红色披风 / 翼状护甲",
+  "tags": [
+   "披风",
+   "护甲",
+   "粉色",
+   "羽翼"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-002.png"
+ },
+ "kit:internal/icons/items/relic-002.png": {
+  "desc": "粉红色披风 / 翼状护甲",
+  "tags": [
+   "披风",
+   "护甲",
+   "粉色",
+   "羽翼"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-002.png"
+ },
+ "project:icons/relic-003.png": {
+  "desc": "一对红樱桃",
+  "tags": [
+   "樱桃",
+   "食物",
+   "红色"
+  ],
+  "conf": 0.95
+ },
+ "project:icons/items/relic-003.png": {
+  "desc": "一对红樱桃",
+  "tags": [
+   "樱桃",
+   "食物",
+   "红色"
+  ],
+  "conf": 0.95,
+  "twin": "project:icons/relic-003.png"
+ },
+ "kit:internal/icons/items/relic-003.png": {
+  "desc": "一对红樱桃",
+  "tags": [
+   "樱桃",
+   "食物",
+   "红色"
+  ],
+  "conf": 0.95,
+  "twin": "project:icons/relic-003.png"
+ },
+ "project:icons/relic-004.png": {
+  "desc": "红色带刺铁球（流星锤头）",
+  "tags": [
+   "流星锤",
+   "武器",
+   "红色",
+   "刺"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-004.png": {
+  "desc": "红色带刺铁球（流星锤头）",
+  "tags": [
+   "流星锤",
+   "武器",
+   "红色",
+   "刺"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-004.png"
+ },
+ "kit:internal/icons/items/relic-004.png": {
+  "desc": "红色带刺铁球（流星锤头）",
+  "tags": [
+   "流星锤",
+   "武器",
+   "红色",
+   "刺"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-004.png"
+ },
+ "project:icons/relic-005.png": {
+  "desc": "红色交叉双刀（X 形）",
+  "tags": [
+   "交叉刀",
+   "武器",
+   "红色"
+  ],
+  "conf": 0.8
+ },
+ "project:icons/items/relic-005.png": {
+  "desc": "红色交叉双刀（X 形）",
+  "tags": [
+   "交叉刀",
+   "武器",
+   "红色"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-005.png"
+ },
+ "kit:internal/icons/items/relic-005.png": {
+  "desc": "红色交叉双刀（X 形）",
+  "tags": [
+   "交叉刀",
+   "武器",
+   "红色"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-005.png"
+ },
+ "project:icons/relic-006.png": {
+  "desc": "橙黄色钱袋",
+  "tags": [
+   "钱袋",
+   "金币",
+   "财富"
+  ],
+  "conf": 0.95
+ },
+ "project:icons/items/relic-006.png": {
+  "desc": "橙黄色钱袋",
+  "tags": [
+   "钱袋",
+   "金币",
+   "财富"
+  ],
+  "conf": 0.95,
+  "twin": "project:icons/relic-006.png"
+ },
+ "kit:internal/icons/items/relic-006.png": {
+  "desc": "橙黄色钱袋",
+  "tags": [
+   "钱袋",
+   "金币",
+   "财富"
+  ],
+  "conf": 0.95,
+  "twin": "project:icons/relic-006.png"
+ },
+ "project:icons/relic-007.png": {
+  "desc": "紫灰色战锤",
+  "tags": [
+   "战锤",
+   "武器",
+   "锤"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-007.png": {
+  "desc": "紫灰色战锤",
+  "tags": [
+   "战锤",
+   "武器",
+   "锤"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-007.png"
+ },
+ "kit:internal/icons/items/relic-007.png": {
+  "desc": "紫灰色战锤",
+  "tags": [
+   "战锤",
+   "武器",
+   "锤"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-007.png"
+ },
+ "project:icons/relic-008.png": {
+  "desc": "蓝色水晶箭",
+  "tags": [
+   "箭矢",
+   "蓝色",
+   "水晶"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-008.png": {
+  "desc": "蓝色水晶箭",
+  "tags": [
+   "箭矢",
+   "蓝色",
+   "水晶"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-008.png"
+ },
+ "kit:internal/icons/items/relic-008.png": {
+  "desc": "蓝色水晶箭",
+  "tags": [
+   "箭矢",
+   "蓝色",
+   "水晶"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-008.png"
+ },
+ "project:icons/relic-009.png": {
+  "desc": "红色 ×2 倍率标记",
+  "tags": [
+   "倍率",
+   "双倍",
+   "红色",
+   "文字"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-009.png": {
+  "desc": "红色 ×2 倍率标记",
+  "tags": [
+   "倍率",
+   "双倍",
+   "红色",
+   "文字"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-009.png"
+ },
+ "kit:internal/icons/items/relic-009.png": {
+  "desc": "红色 ×2 倍率标记",
+  "tags": [
+   "倍率",
+   "双倍",
+   "红色",
+   "文字"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-009.png"
+ },
+ "project:icons/relic-010.png": {
+  "desc": "蓝色方形宝石",
+  "tags": [
+   "宝石",
+   "蓝色",
+   "水晶"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-010.png": {
+  "desc": "蓝色方形宝石",
+  "tags": [
+   "宝石",
+   "蓝色",
+   "水晶"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-010.png"
+ },
+ "kit:internal/icons/items/relic-010.png": {
+  "desc": "蓝色方形宝石",
+  "tags": [
+   "宝石",
+   "蓝色",
+   "水晶"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-010.png"
+ },
+ "project:icons/relic-011.png": {
+  "desc": "金色弯刃 / 獠牙",
+  "tags": [
+   "弯刃",
+   "獠牙",
+   "金色",
+   "武器"
+  ],
+  "conf": 0.8
+ },
+ "project:icons/items/relic-011.png": {
+  "desc": "金色弯刃 / 獠牙",
+  "tags": [
+   "弯刃",
+   "獠牙",
+   "金色",
+   "武器"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-011.png"
+ },
+ "kit:internal/icons/items/relic-011.png": {
+  "desc": "金色弯刃 / 獠牙",
+  "tags": [
+   "弯刃",
+   "獠牙",
+   "金色",
+   "武器"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-011.png"
+ },
+ "project:icons/relic-012.png": {
+  "desc": "灰褐色圆盾（金边）",
+  "tags": [
+   "盾牌",
+   "防御",
+   "盾"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-012.png": {
+  "desc": "灰褐色圆盾（金边）",
+  "tags": [
+   "盾牌",
+   "防御",
+   "盾"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-012.png"
+ },
+ "kit:internal/icons/items/relic-012.png": {
+  "desc": "灰褐色圆盾（金边）",
+  "tags": [
+   "盾牌",
+   "防御",
+   "盾"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-012.png"
+ },
+ "project:icons/relic-013.png": {
+  "desc": "红白条纹号角",
+  "tags": [
+   "号角",
+   "乐器",
+   "红白"
+  ],
+  "conf": 0.85
+ },
+ "project:icons/items/relic-013.png": {
+  "desc": "红白条纹号角",
+  "tags": [
+   "号角",
+   "乐器",
+   "红白"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-013.png"
+ },
+ "kit:internal/icons/items/relic-013.png": {
+  "desc": "红白条纹号角",
+  "tags": [
+   "号角",
+   "乐器",
+   "红白"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-013.png"
+ },
+ "project:icons/relic-014.png": {
+  "desc": "紫色晶体碎片",
+  "tags": [
+   "晶体",
+   "紫色",
+   "魔法"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-014.png": {
+  "desc": "紫色晶体碎片",
+  "tags": [
+   "晶体",
+   "紫色",
+   "魔法"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-014.png"
+ },
+ "kit:internal/icons/items/relic-014.png": {
+  "desc": "紫色晶体碎片",
+  "tags": [
+   "晶体",
+   "紫色",
+   "魔法"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-014.png"
+ },
+ "project:icons/relic-015.png": {
+  "desc": "金色神像 / 雕像",
+  "tags": [
+   "雕像",
+   "神像",
+   "金色"
+  ],
+  "conf": 0.85
+ },
+ "project:icons/items/relic-015.png": {
+  "desc": "金色神像 / 雕像",
+  "tags": [
+   "雕像",
+   "神像",
+   "金色"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-015.png"
+ },
+ "kit:internal/icons/items/relic-015.png": {
+  "desc": "金色神像 / 雕像",
+  "tags": [
+   "雕像",
+   "神像",
+   "金色"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-015.png"
+ },
+ "project:icons/relic-016.png": {
+  "desc": "黑金戒指（红宝石）",
+  "tags": [
+   "戒指",
+   "红宝石",
+   "饰品"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-016.png": {
+  "desc": "黑金戒指（红宝石）",
+  "tags": [
+   "戒指",
+   "红宝石",
+   "饰品"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-016.png"
+ },
+ "kit:internal/icons/items/relic-016.png": {
+  "desc": "黑金戒指（红宝石）",
+  "tags": [
+   "戒指",
+   "红宝石",
+   "饰品"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-016.png"
+ },
+ "project:icons/relic-017.png": {
+  "desc": "银色高脚杯",
+  "tags": [
+   "高脚杯",
+   "杯",
+   "银色"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-017.png": {
+  "desc": "银色高脚杯",
+  "tags": [
+   "高脚杯",
+   "杯",
+   "银色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-017.png"
+ },
+ "kit:internal/icons/items/relic-017.png": {
+  "desc": "银色高脚杯",
+  "tags": [
+   "高脚杯",
+   "杯",
+   "银色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-017.png"
+ },
+ "project:icons/relic-018.png": {
+  "desc": "金色天平",
+  "tags": [
+   "天平",
+   "平衡",
+   "金色"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-018.png": {
+  "desc": "金色天平",
+  "tags": [
+   "天平",
+   "平衡",
+   "金色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-018.png"
+ },
+ "kit:internal/icons/items/relic-018.png": {
+  "desc": "金色天平",
+  "tags": [
+   "天平",
+   "平衡",
+   "金色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-018.png"
+ },
+ "project:icons/relic-019.png": {
+  "desc": "粉橙色卷轴",
+  "tags": [
+   "卷轴",
+   "纸张",
+   "魔法"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-019.png": {
+  "desc": "粉橙色卷轴",
+  "tags": [
+   "卷轴",
+   "纸张",
+   "魔法"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-019.png"
+ },
+ "kit:internal/icons/items/relic-019.png": {
+  "desc": "粉橙色卷轴",
+  "tags": [
+   "卷轴",
+   "纸张",
+   "魔法"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-019.png"
+ },
+ "project:icons/relic-020.png": {
+  "desc": "金色长弓",
+  "tags": [
+   "弓",
+   "武器",
+   "金色"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-020.png": {
+  "desc": "金色长弓",
+  "tags": [
+   "弓",
+   "武器",
+   "金色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-020.png"
+ },
+ "kit:internal/icons/items/relic-020.png": {
+  "desc": "金色长弓",
+  "tags": [
+   "弓",
+   "武器",
+   "金色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-020.png"
+ },
+ "project:icons/relic-021.png": {
+  "desc": "橙黄火焰魔杖",
+  "tags": [
+   "魔杖",
+   "火焰",
+   "橙色",
+   "武器"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-021.png": {
+  "desc": "橙黄火焰魔杖",
+  "tags": [
+   "魔杖",
+   "火焰",
+   "橙色",
+   "武器"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-021.png"
+ },
+ "kit:internal/icons/items/relic-021.png": {
+  "desc": "橙黄火焰魔杖",
+  "tags": [
+   "魔杖",
+   "火焰",
+   "橙色",
+   "武器"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-021.png"
+ },
+ "project:icons/relic-022.png": {
+  "desc": "银色箭矢",
+  "tags": [
+   "箭矢",
+   "银色",
+   "武器"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-022.png": {
+  "desc": "银色箭矢",
+  "tags": [
+   "箭矢",
+   "银色",
+   "武器"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-022.png"
+ },
+ "kit:internal/icons/items/relic-022.png": {
+  "desc": "银色箭矢",
+  "tags": [
+   "箭矢",
+   "银色",
+   "武器"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-022.png"
+ },
+ "project:icons/relic-023.png": {
+  "desc": "金色五角星",
+  "tags": [
+   "星星",
+   "金色",
+   "光"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-023.png": {
+  "desc": "金色五角星",
+  "tags": [
+   "星星",
+   "金色",
+   "光"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-023.png"
+ },
+ "kit:internal/icons/items/relic-023.png": {
+  "desc": "金色五角星",
+  "tags": [
+   "星星",
+   "金色",
+   "光"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-023.png"
+ },
+ "project:icons/relic-024.png": {
+  "desc": "紫橙条纹糖果",
+  "tags": [
+   "糖果",
+   "条纹",
+   "紫色"
+  ],
+  "conf": 0.8
+ },
+ "project:icons/items/relic-024.png": {
+  "desc": "紫橙条纹糖果",
+  "tags": [
+   "糖果",
+   "条纹",
+   "紫色"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-024.png"
+ },
+ "kit:internal/icons/items/relic-024.png": {
+  "desc": "紫橙条纹糖果",
+  "tags": [
+   "糖果",
+   "条纹",
+   "紫色"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-024.png"
+ },
+ "project:icons/relic-025.png": {
+  "desc": "紫绿药水瓶",
+  "tags": [
+   "药水",
+   "瓶子",
+   "紫色",
+   "治疗"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-025.png": {
+  "desc": "紫绿药水瓶",
+  "tags": [
+   "药水",
+   "瓶子",
+   "紫色",
+   "治疗"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-025.png"
+ },
+ "kit:internal/icons/items/relic-025.png": {
+  "desc": "紫绿药水瓶",
+  "tags": [
+   "药水",
+   "瓶子",
+   "紫色",
+   "治疗"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-025.png"
+ },
+ "project:icons/relic-026.png": {
+  "desc": "红色生肉",
+  "tags": [
+   "肉",
+   "食物",
+   "红色"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-026.png": {
+  "desc": "红色生肉",
+  "tags": [
+   "肉",
+   "食物",
+   "红色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-026.png"
+ },
+ "kit:internal/icons/items/relic-026.png": {
+  "desc": "红色生肉",
+  "tags": [
+   "肉",
+   "食物",
+   "红色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-026.png"
+ },
+ "project:icons/relic-027.png": {
+  "desc": "橙绿护符",
+  "tags": [
+   "护符",
+   "项链",
+   "橙色"
+  ],
+  "conf": 0.85
+ },
+ "project:icons/items/relic-027.png": {
+  "desc": "橙绿护符",
+  "tags": [
+   "护符",
+   "项链",
+   "橙色"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-027.png"
+ },
+ "kit:internal/icons/items/relic-027.png": {
+  "desc": "橙绿护符",
+  "tags": [
+   "护符",
+   "项链",
+   "橙色"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-027.png"
+ },
+ "project:icons/relic-028.png": {
+  "desc": "绿色草药 / 叶子",
+  "tags": [
+   "草药",
+   "叶子",
+   "绿色",
+   "治疗"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-028.png": {
+  "desc": "绿色草药 / 叶子",
+  "tags": [
+   "草药",
+   "叶子",
+   "绿色",
+   "治疗"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-028.png"
+ },
+ "kit:internal/icons/items/relic-028.png": {
+  "desc": "绿色草药 / 叶子",
+  "tags": [
+   "草药",
+   "叶子",
+   "绿色",
+   "治疗"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-028.png"
+ },
+ "project:icons/relic-029.png": {
+  "desc": "绿色提灯",
+  "tags": [
+   "灯笼",
+   "照明",
+   "绿色"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-029.png": {
+  "desc": "绿色提灯",
+  "tags": [
+   "灯笼",
+   "照明",
+   "绿色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-029.png"
+ },
+ "kit:internal/icons/items/relic-029.png": {
+  "desc": "绿色提灯",
+  "tags": [
+   "灯笼",
+   "照明",
+   "绿色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-029.png"
+ },
+ "project:icons/relic-030.png": {
+  "desc": "深紫色靴子",
+  "tags": [
+   "靴子",
+   "护甲",
+   "紫色"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-030.png": {
+  "desc": "深紫色靴子",
+  "tags": [
+   "靴子",
+   "护甲",
+   "紫色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-030.png"
+ },
+ "kit:internal/icons/items/relic-030.png": {
+  "desc": "深紫色靴子",
+  "tags": [
+   "靴子",
+   "护甲",
+   "紫色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-030.png"
+ },
+ "project:icons/relic-031.png": {
+  "desc": "灰色铁砧",
+  "tags": [
+   "铁砧",
+   "锻造",
+   "灰色"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-031.png": {
+  "desc": "灰色铁砧",
+  "tags": [
+   "铁砧",
+   "锻造",
+   "灰色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-031.png"
+ },
+ "kit:internal/icons/items/relic-031.png": {
+  "desc": "灰色铁砧",
+  "tags": [
+   "铁砧",
+   "锻造",
+   "灰色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-031.png"
+ },
+ "project:icons/relic-032.png": {
+  "desc": "米色獠牙 / 角",
+  "tags": [
+   "獠牙",
+   "角",
+   "米色"
+  ],
+  "conf": 0.8
+ },
+ "project:icons/items/relic-032.png": {
+  "desc": "米色獠牙 / 角",
+  "tags": [
+   "獠牙",
+   "角",
+   "米色"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-032.png"
+ },
+ "kit:internal/icons/items/relic-032.png": {
+  "desc": "米色獠牙 / 角",
+  "tags": [
+   "獠牙",
+   "角",
+   "米色"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-032.png"
+ },
+ "project:icons/relic-033.png": {
+  "desc": "红橙色火把",
+  "tags": [
+   "火把",
+   "火焰",
+   "照明"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-033.png": {
+  "desc": "红橙色火把",
+  "tags": [
+   "火把",
+   "火焰",
+   "照明"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-033.png"
+ },
+ "kit:internal/icons/items/relic-033.png": {
+  "desc": "红橙色火把",
+  "tags": [
+   "火把",
+   "火焰",
+   "照明"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-033.png"
+ },
+ "project:icons/relic-034.png": {
+  "desc": "银灰色锭 / 矿石",
+  "tags": [
+   "银锭",
+   "矿石",
+   "灰色"
+  ],
+  "conf": 0.8
+ },
+ "project:icons/items/relic-034.png": {
+  "desc": "银灰色锭 / 矿石",
+  "tags": [
+   "银锭",
+   "矿石",
+   "灰色"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-034.png"
+ },
+ "kit:internal/icons/items/relic-034.png": {
+  "desc": "银灰色锭 / 矿石",
+  "tags": [
+   "银锭",
+   "矿石",
+   "灰色"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-034.png"
+ },
+ "project:icons/relic-035.png": {
+  "desc": "紫色卡片 / 票券",
+  "tags": [
+   "卡片",
+   "票券",
+   "紫色"
+  ],
+  "conf": 0.85
+ },
+ "project:icons/items/relic-035.png": {
+  "desc": "紫色卡片 / 票券",
+  "tags": [
+   "卡片",
+   "票券",
+   "紫色"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-035.png"
+ },
+ "kit:internal/icons/items/relic-035.png": {
+  "desc": "紫色卡片 / 票券",
+  "tags": [
+   "卡片",
+   "票券",
+   "紫色"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-035.png"
+ },
+ "project:icons/relic-036.png": {
+  "desc": "棕色鲁特琴",
+  "tags": [
+   "鲁特琴",
+   "乐器",
+   "音乐"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-036.png": {
+  "desc": "棕色鲁特琴",
+  "tags": [
+   "鲁特琴",
+   "乐器",
+   "音乐"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-036.png"
+ },
+ "kit:internal/icons/items/relic-036.png": {
+  "desc": "棕色鲁特琴",
+  "tags": [
+   "鲁特琴",
+   "乐器",
+   "音乐"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-036.png"
+ },
+ "project:icons/relic-037.png": {
+  "desc": "金色钥匙",
+  "tags": [
+   "钥匙",
+   "金色",
+   "开锁"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-037.png": {
+  "desc": "金色钥匙",
+  "tags": [
+   "钥匙",
+   "金色",
+   "开锁"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-037.png"
+ },
+ "kit:internal/icons/items/relic-037.png": {
+  "desc": "金色钥匙",
+  "tags": [
+   "钥匙",
+   "金色",
+   "开锁"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-037.png"
+ },
+ "project:icons/relic-038.png": {
+  "desc": "红色旗帜",
+  "tags": [
+   "旗帜",
+   "红色",
+   "标记"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-038.png": {
+  "desc": "红色旗帜",
+  "tags": [
+   "旗帜",
+   "红色",
+   "标记"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-038.png"
+ },
+ "kit:internal/icons/items/relic-038.png": {
+  "desc": "红色旗帜",
+  "tags": [
+   "旗帜",
+   "红色",
+   "标记"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-038.png"
+ },
+ "project:icons/relic-039.png": {
+  "desc": "红色交叉箭矢",
+  "tags": [
+   "箭矢",
+   "交叉",
+   "红色"
+  ],
+  "conf": 0.85
+ },
+ "project:icons/items/relic-039.png": {
+  "desc": "红色交叉箭矢",
+  "tags": [
+   "箭矢",
+   "交叉",
+   "红色"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-039.png"
+ },
+ "kit:internal/icons/items/relic-039.png": {
+  "desc": "红色交叉箭矢",
+  "tags": [
+   "箭矢",
+   "交叉",
+   "红色"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-039.png"
+ },
+ "project:icons/relic-040.png": {
+  "desc": "灰色齿轮",
+  "tags": [
+   "齿轮",
+   "机械",
+   "灰色"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-040.png": {
+  "desc": "灰色齿轮",
+  "tags": [
+   "齿轮",
+   "机械",
+   "灰色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-040.png"
+ },
+ "kit:internal/icons/items/relic-040.png": {
+  "desc": "灰色齿轮",
+  "tags": [
+   "齿轮",
+   "机械",
+   "灰色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-040.png"
+ },
+ "project:icons/relic-041.png": {
+  "desc": "白色骰子（⚠ 赌博语义，慎用）",
+  "tags": [
+   "骰子",
+   "随机",
+   "白色",
+   "风险"
+  ],
+  "conf": 0.95
+ },
+ "project:icons/items/relic-041.png": {
+  "desc": "白色骰子（⚠ 赌博语义，慎用）",
+  "tags": [
+   "骰子",
+   "随机",
+   "白色",
+   "风险"
+  ],
+  "conf": 0.95,
+  "twin": "project:icons/relic-041.png"
+ },
+ "kit:internal/icons/items/relic-041.png": {
+  "desc": "白色骰子（⚠ 赌博语义，慎用）",
+  "tags": [
+   "骰子",
+   "随机",
+   "白色",
+   "风险"
+  ],
+  "conf": 0.95,
+  "twin": "project:icons/relic-041.png"
+ },
+ "project:icons/relic-042.png": {
+  "desc": "绿色药水瓶",
+  "tags": [
+   "药水",
+   "绿色",
+   "瓶子"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-042.png": {
+  "desc": "绿色药水瓶",
+  "tags": [
+   "药水",
+   "绿色",
+   "瓶子"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-042.png"
+ },
+ "kit:internal/icons/items/relic-042.png": {
+  "desc": "绿色药水瓶",
+  "tags": [
+   "药水",
+   "绿色",
+   "瓶子"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-042.png"
+ },
+ "project:icons/relic-043.png": {
+  "desc": "肌肉手臂",
+  "tags": [
+   "手臂",
+   "力量",
+   "肌肉"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-043.png": {
+  "desc": "肌肉手臂",
+  "tags": [
+   "手臂",
+   "力量",
+   "肌肉"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-043.png"
+ },
+ "kit:internal/icons/items/relic-043.png": {
+  "desc": "肌肉手臂",
+  "tags": [
+   "手臂",
+   "力量",
+   "肌肉"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-043.png"
+ },
+ "project:icons/relic-044.png": {
+  "desc": "灰色石块",
+  "tags": [
+   "石块",
+   "灰色",
+   "材料"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-044.png": {
+  "desc": "灰色石块",
+  "tags": [
+   "石块",
+   "灰色",
+   "材料"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-044.png"
+ },
+ "kit:internal/icons/items/relic-044.png": {
+  "desc": "灰色石块",
+  "tags": [
+   "石块",
+   "灰色",
+   "材料"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-044.png"
+ },
+ "project:icons/relic-045.png": {
+  "desc": "绿色十字（治疗）",
+  "tags": [
+   "十字",
+   "治疗",
+   "绿色"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-045.png": {
+  "desc": "绿色十字（治疗）",
+  "tags": [
+   "十字",
+   "治疗",
+   "绿色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-045.png"
+ },
+ "kit:internal/icons/items/relic-045.png": {
+  "desc": "绿色十字（治疗）",
+  "tags": [
+   "十字",
+   "治疗",
+   "绿色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-045.png"
+ },
+ "project:icons/relic-046.png": {
+  "desc": "红白条纹药丸 / 糖果",
+  "tags": [
+   "药丸",
+   "条纹",
+   "红白"
+  ],
+  "conf": 0.75
+ },
+ "project:icons/items/relic-046.png": {
+  "desc": "红白条纹药丸 / 糖果",
+  "tags": [
+   "药丸",
+   "条纹",
+   "红白"
+  ],
+  "conf": 0.75,
+  "twin": "project:icons/relic-046.png"
+ },
+ "kit:internal/icons/items/relic-046.png": {
+  "desc": "红白条纹药丸 / 糖果",
+  "tags": [
+   "药丸",
+   "条纹",
+   "红白"
+  ],
+  "conf": 0.75,
+  "twin": "project:icons/relic-046.png"
+ },
+ "project:icons/relic-047.png": {
+  "desc": "红白靶心（飞镖盘）",
+  "tags": [
+   "靶心",
+   "瞄准",
+   "红白"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-047.png": {
+  "desc": "红白靶心（飞镖盘）",
+  "tags": [
+   "靶心",
+   "瞄准",
+   "红白"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-047.png"
+ },
+ "kit:internal/icons/items/relic-047.png": {
+  "desc": "红白靶心（飞镖盘）",
+  "tags": [
+   "靶心",
+   "瞄准",
+   "红白"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-047.png"
+ },
+ "project:icons/relic-048.png": {
+  "desc": "金色铃铛",
+  "tags": [
+   "铃铛",
+   "金色",
+   "声音"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-048.png": {
+  "desc": "金色铃铛",
+  "tags": [
+   "铃铛",
+   "金色",
+   "声音"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-048.png"
+ },
+ "kit:internal/icons/items/relic-048.png": {
+  "desc": "金色铃铛",
+  "tags": [
+   "铃铛",
+   "金色",
+   "声音"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-048.png"
+ },
+ "project:icons/relic-049.png": {
+  "desc": "绿色斗篷",
+  "tags": [
+   "斗篷",
+   "护甲",
+   "绿色"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-049.png": {
+  "desc": "绿色斗篷",
+  "tags": [
+   "斗篷",
+   "护甲",
+   "绿色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-049.png"
+ },
+ "kit:internal/icons/items/relic-049.png": {
+  "desc": "绿色斗篷",
+  "tags": [
+   "斗篷",
+   "护甲",
+   "绿色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-049.png"
+ },
+ "project:icons/relic-050.png": {
+  "desc": "紫色蘑菇",
+  "tags": [
+   "蘑菇",
+   "紫色",
+   "植物"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-050.png": {
+  "desc": "紫色蘑菇",
+  "tags": [
+   "蘑菇",
+   "紫色",
+   "植物"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-050.png"
+ },
+ "kit:internal/icons/items/relic-050.png": {
+  "desc": "紫色蘑菇",
+  "tags": [
+   "蘑菇",
+   "紫色",
+   "植物"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-050.png"
+ },
+ "project:icons/relic-051.png": {
+  "desc": "白色蜘蛛网",
+  "tags": [
+   "蜘蛛网",
+   "白色",
+   "陷阱"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-051.png": {
+  "desc": "白色蜘蛛网",
+  "tags": [
+   "蜘蛛网",
+   "白色",
+   "陷阱"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-051.png"
+ },
+ "kit:internal/icons/items/relic-051.png": {
+  "desc": "白色蜘蛛网",
+  "tags": [
+   "蜘蛛网",
+   "白色",
+   "陷阱"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-051.png"
+ },
+ "project:icons/relic-052.png": {
+  "desc": "灰色坩埚",
+  "tags": [
+   "坩埚",
+   "炼金",
+   "灰色"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-052.png": {
+  "desc": "灰色坩埚",
+  "tags": [
+   "坩埚",
+   "炼金",
+   "灰色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-052.png"
+ },
+ "kit:internal/icons/items/relic-052.png": {
+  "desc": "灰色坩埚",
+  "tags": [
+   "坩埚",
+   "炼金",
+   "灰色"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-052.png"
+ },
+ "project:icons/relic-053.png": {
+  "desc": "金色靴子",
+  "tags": [
+   "靴子",
+   "金色",
+   "护甲"
+  ],
+  "conf": 0.85
+ },
+ "project:icons/items/relic-053.png": {
+  "desc": "金色靴子",
+  "tags": [
+   "靴子",
+   "金色",
+   "护甲"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-053.png"
+ },
+ "kit:internal/icons/items/relic-053.png": {
+  "desc": "金色靴子",
+  "tags": [
+   "靴子",
+   "金色",
+   "护甲"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-053.png"
+ },
+ "project:icons/relic-054.png": {
+  "desc": "绿黄羽毛 / 叶片",
+  "tags": [
+   "羽毛",
+   "叶片",
+   "绿色"
+  ],
+  "conf": 0.8
+ },
+ "project:icons/items/relic-054.png": {
+  "desc": "绿黄羽毛 / 叶片",
+  "tags": [
+   "羽毛",
+   "叶片",
+   "绿色"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-054.png"
+ },
+ "kit:internal/icons/items/relic-054.png": {
+  "desc": "绿黄羽毛 / 叶片",
+  "tags": [
+   "羽毛",
+   "叶片",
+   "绿色"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-054.png"
+ },
+ "project:icons/relic-055.png": {
+  "desc": "蓝色盾牌 / 旗帜",
+  "tags": [
+   "盾牌",
+   "蓝色",
+   "防御"
+  ],
+  "conf": 0.85
+ },
+ "project:icons/items/relic-055.png": {
+  "desc": "蓝色盾牌 / 旗帜",
+  "tags": [
+   "盾牌",
+   "蓝色",
+   "防御"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-055.png"
+ },
+ "kit:internal/icons/items/relic-055.png": {
+  "desc": "蓝色盾牌 / 旗帜",
+  "tags": [
+   "盾牌",
+   "蓝色",
+   "防御"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-055.png"
+ },
+ "project:icons/relic-056.png": {
+  "desc": "绿色书（羽毛笔）",
+  "tags": [
+   "书",
+   "绿色",
+   "法术"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-056.png": {
+  "desc": "绿色书（羽毛笔）",
+  "tags": [
+   "书",
+   "绿色",
+   "法术"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-056.png"
+ },
+ "kit:internal/icons/items/relic-056.png": {
+  "desc": "绿色书（羽毛笔）",
+  "tags": [
+   "书",
+   "绿色",
+   "法术"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-056.png"
+ },
+ "project:icons/relic-057.png": {
+  "desc": "红色书",
+  "tags": [
+   "书",
+   "红色",
+   "法术"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-057.png": {
+  "desc": "红色书",
+  "tags": [
+   "书",
+   "红色",
+   "法术"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-057.png"
+ },
+ "kit:internal/icons/items/relic-057.png": {
+  "desc": "红色书",
+  "tags": [
+   "书",
+   "红色",
+   "法术"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-057.png"
+ },
+ "project:icons/relic-058.png": {
+  "desc": "紫色书（闪电）",
+  "tags": [
+   "书",
+   "紫色",
+   "闪电",
+   "法术"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-058.png": {
+  "desc": "紫色书（闪电）",
+  "tags": [
+   "书",
+   "紫色",
+   "闪电",
+   "法术"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-058.png"
+ },
+ "kit:internal/icons/items/relic-058.png": {
+  "desc": "紫色书（闪电）",
+  "tags": [
+   "书",
+   "紫色",
+   "闪电",
+   "法术"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-058.png"
+ },
+ "project:icons/relic-059.png": {
+  "desc": "金色人物卡牌",
+  "tags": [
+   "卡牌",
+   "人物",
+   "金色"
+  ],
+  "conf": 0.85
+ },
+ "project:icons/items/relic-059.png": {
+  "desc": "金色人物卡牌",
+  "tags": [
+   "卡牌",
+   "人物",
+   "金色"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-059.png"
+ },
+ "kit:internal/icons/items/relic-059.png": {
+  "desc": "金色人物卡牌",
+  "tags": [
+   "卡牌",
+   "人物",
+   "金色"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-059.png"
+ },
+ "project:icons/relic-060.png": {
+  "desc": "金色王冠",
+  "tags": [
+   "王冠",
+   "金色",
+   "国王"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-060.png": {
+  "desc": "金色王冠",
+  "tags": [
+   "王冠",
+   "金色",
+   "国王"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-060.png"
+ },
+ "kit:internal/icons/items/relic-060.png": {
+  "desc": "金色王冠",
+  "tags": [
+   "王冠",
+   "金色",
+   "国王"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-060.png"
+ },
+ "project:icons/relic-061.png": {
+  "desc": "蓝橙卡牌（S）",
+  "tags": [
+   "卡牌",
+   "蓝橙",
+   "字母"
+  ],
+  "conf": 0.8
+ },
+ "project:icons/items/relic-061.png": {
+  "desc": "蓝橙卡牌（S）",
+  "tags": [
+   "卡牌",
+   "蓝橙",
+   "字母"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-061.png"
+ },
+ "kit:internal/icons/items/relic-061.png": {
+  "desc": "蓝橙卡牌（S）",
+  "tags": [
+   "卡牌",
+   "蓝橙",
+   "字母"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-061.png"
+ },
+ "project:icons/relic-062.png": {
+  "desc": "橙蓝卡牌（S）",
+  "tags": [
+   "卡牌",
+   "橙色",
+   "字母"
+  ],
+  "conf": 0.8
+ },
+ "project:icons/items/relic-062.png": {
+  "desc": "橙蓝卡牌（S）",
+  "tags": [
+   "卡牌",
+   "橙色",
+   "字母"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-062.png"
+ },
+ "kit:internal/icons/items/relic-062.png": {
+  "desc": "橙蓝卡牌（S）",
+  "tags": [
+   "卡牌",
+   "橙色",
+   "字母"
+  ],
+  "conf": 0.8,
+  "twin": "project:icons/relic-062.png"
+ },
+ "project:icons/relic-063.png": {
+  "desc": "绿色心形",
+  "tags": [
+   "心",
+   "绿色",
+   "生命"
+  ],
+  "conf": 0.9
+ },
+ "project:icons/items/relic-063.png": {
+  "desc": "绿色心形",
+  "tags": [
+   "心",
+   "绿色",
+   "生命"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-063.png"
+ },
+ "kit:internal/icons/items/relic-063.png": {
+  "desc": "绿色心形",
+  "tags": [
+   "心",
+   "绿色",
+   "生命"
+  ],
+  "conf": 0.9,
+  "twin": "project:icons/relic-063.png"
+ },
+ "project:icons/relic-064.png": {
+  "desc": "棕色鹿角冠",
+  "tags": [
+   "鹿角",
+   "头饰",
+   "棕色"
+  ],
+  "conf": 0.85
+ },
+ "project:icons/items/relic-064.png": {
+  "desc": "棕色鹿角冠",
+  "tags": [
+   "鹿角",
+   "头饰",
+   "棕色"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-064.png"
+ },
+ "kit:internal/icons/items/relic-064.png": {
+  "desc": "棕色鹿角冠",
+  "tags": [
+   "鹿角",
+   "头饰",
+   "棕色"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-064.png"
+ },
+ "project:icons/relic-065.png": {
+  "desc": "金链蓝宝石项链",
+  "tags": [
+   "项链",
+   "蓝宝石",
+   "金色"
+  ],
+  "conf": 0.85
+ },
+ "project:icons/items/relic-065.png": {
+  "desc": "金链蓝宝石项链",
+  "tags": [
+   "项链",
+   "蓝宝石",
+   "金色"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-065.png"
+ },
+ "kit:internal/icons/items/relic-065.png": {
+  "desc": "金链蓝宝石项链",
+  "tags": [
+   "项链",
+   "蓝宝石",
+   "金色"
+  ],
+  "conf": 0.85,
+  "twin": "project:icons/relic-065.png"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__01attackup.png": {
+  "desc": "粉白色斜置长剑，刃口带光",
+  "tags": [
+   "剑",
+   "攻击",
+   "粉色",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__02hpup.png": {
+  "desc": "灰金色盾牌，金色包边",
+  "tags": [
+   "盾牌",
+   "防御",
+   "灰金",
+   "护甲"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__03aspdup.png": {
+  "desc": "绿白色斜置长剑，带速度线",
+  "tags": [
+   "剑",
+   "攻速",
+   "绿色",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__04firsthit.png": {
+  "desc": "绿红相间的怪物头（尖牙）",
+  "tags": [
+   "怪物",
+   "头",
+   "绿色",
+   "红色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__05lasthit.png": {
+  "desc": "橙红色斜向刀光",
+  "tags": [
+   "刀光",
+   "橙色",
+   "斩击"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__06killhaste.png": {
+  "desc": "青蓝色能量条，右侧发亮",
+  "tags": [
+   "能量",
+   "青色",
+   "速度"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__07survive.png": {
+  "desc": "暗红色方框，中间发红",
+  "tags": [
+   "框架",
+   "红色",
+   "屏障"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__08berserk.png": {
+  "desc": "橙黑火焰骷髅",
+  "tags": [
+   "骷髅",
+   "火焰",
+   "狂暴",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__09bloodrage.png": {
+  "desc": "白红色刀锋，带血光",
+  "tags": [
+   "刀",
+   "红色",
+   "血",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__10battlefervor.png": {
+  "desc": "绿白色匕首",
+  "tags": [
+   "匕首",
+   "绿色",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__11allydeath.png": {
+  "desc": "蓝白色长剑",
+  "tags": [
+   "剑",
+   "蓝色",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__12concentrate.png": {
+  "desc": "粉白色长剑，刃口高光",
+  "tags": [
+   "剑",
+   "粉色",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__13jungsu.png": {
+  "desc": "蓝色水晶簇",
+  "tags": [
+   "水晶",
+   "蓝色",
+   "魔法"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__14slotsplus.png": {
+  "desc": "蓝金旗帜，中间数字 2",
+  "tags": [
+   "旗帜",
+   "数字2",
+   "槽位",
+   "蓝金"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__15combatshift.png": {
+  "desc": "粉白色人物肖像框",
+  "tags": [
+   "肖像",
+   "框架",
+   "粉色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__16victoryfeast.png": {
+  "desc": "绿色发光果实/光点",
+  "tags": [
+   "光点",
+   "绿色",
+   "食物"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__17lonewolf.png": {
+  "desc": "橙黑色狼形剪影",
+  "tags": [
+   "狼",
+   "剪影",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__18gold.png": {
+  "desc": "金色钱袋与金币",
+  "tags": [
+   "金币",
+   "金色",
+   "财富"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__19baseguardian.png": {
+  "desc": "黑白人形剪影，站姿",
+  "tags": [
+   "人影",
+   "守卫",
+   "黑白"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__20judgementprep.png": {
+  "desc": "白红色人形剪影，抬手",
+  "tags": [
+   "人影",
+   "红色",
+   "审判"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__21bossprep.png": {
+  "desc": "粉蓝色头盔",
+  "tags": [
+   "头盔",
+   "粉色",
+   "蓝色",
+   "护甲"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__22skillmastery.png": {
+  "desc": "白色沙漏（棕色沙）",
+  "tags": [
+   "沙漏",
+   "时间",
+   "白色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__angry.png": {
+  "desc": "绷带缠头的人脸，红眼",
+  "tags": [
+   "脸",
+   "绷带",
+   "愤怒",
+   "红色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__blindx.png": {
+  "desc": "红色眼睛，外围带触须",
+  "tags": [
+   "眼睛",
+   "红色",
+   "致盲"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__blockshield.png": {
+  "desc": "黄蓝菱形盾，中心闪电",
+  "tags": [
+   "盾",
+   "闪电",
+   "格挡",
+   "黄蓝"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__blood.png": {
+  "desc": "红色锥形血滴",
+  "tags": [
+   "血",
+   "红色",
+   "滴"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__close.png": {
+  "desc": "红色 X 形叉",
+  "tags": [
+   "叉",
+   "关闭",
+   "红色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__cross.png": {
+  "desc": "黄色十字",
+  "tags": [
+   "十字",
+   "治疗",
+   "黄色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__diffusion.png": {
+  "desc": "橙色螺旋",
+  "tags": [
+   "螺旋",
+   "扩散",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__dizzy.png": {
+  "desc": "紫色旋涡",
+  "tags": [
+   "旋涡",
+   "眩晕",
+   "紫色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__earthquake.png": {
+  "desc": "棕色裂纹地面",
+  "tags": [
+   "地面",
+   "裂纹",
+   "地震",
+   "棕色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__enlarge.png": {
+  "desc": "深色方块，红眼，两侧凸起",
+  "tags": [
+   "方块",
+   "红眼",
+   "机械"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__execute.png": {
+  "desc": "紫粉色骷髅",
+  "tags": [
+   "骷髅",
+   "处决",
+   "紫色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__explosion.png": {
+  "desc": "红橙色爆炸火焰",
+  "tags": [
+   "爆炸",
+   "火焰",
+   "红色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__eye.png": {
+  "desc": "红白眼睛（双瞳）",
+  "tags": [
+   "眼睛",
+   "红白"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__fear.png": {
+  "desc": "紫色蜘蛛",
+  "tags": [
+   "蜘蛛",
+   "恐惧",
+   "紫色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__fire.png": {
+  "desc": "橙色火焰",
+  "tags": [
+   "火焰",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__fireskeleton.png": {
+  "desc": "紫色骷髅带火焰",
+  "tags": [
+   "骷髅",
+   "火焰",
+   "紫色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__fist.png": {
+  "desc": "灰色拳头",
+  "tags": [
+   "拳头",
+   "灰色",
+   "力量"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__golem.png": {
+  "desc": "橙色铁砧，下方小十字",
+  "tags": [
+   "铁砧",
+   "橙色",
+   "锻造"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__heart.png": {
+  "desc": "红色心形",
+  "tags": [
+   "心",
+   "红色",
+   "生命"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__hit.png": {
+  "desc": "橙色星形冲击",
+  "tags": [
+   "星形",
+   "冲击",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__holy.png": {
+  "desc": "青色放射光芒",
+  "tags": [
+   "光芒",
+   "青色",
+   "神圣"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__hourglass.png": {
+  "desc": "白色沙漏",
+  "tags": [
+   "沙漏",
+   "时间",
+   "白色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__ice.png": {
+  "desc": "蓝色冰晶水滴",
+  "tags": [
+   "冰",
+   "蓝色",
+   "水滴"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__mad.png": {
+  "desc": "红色十字 / 星形",
+  "tags": [
+   "十字",
+   "红色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__meteor.png": {
+  "desc": "橙红色流星火焰",
+  "tags": [
+   "流星",
+   "火焰",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__multihit.png": {
+  "desc": "黄色闪电",
+  "tags": [
+   "闪电",
+   "黄色",
+   "连击"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__multihits.png": {
+  "desc": "蓝色链状闪电",
+  "tags": [
+   "闪电链",
+   "蓝色",
+   "连击"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__noskill.png": {
+  "desc": "彩色眼睛，中心红色",
+  "tags": [
+   "眼睛",
+   "彩色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__pantherscratch.png": {
+  "desc": "红色爪痕",
+  "tags": [
+   "爪痕",
+   "红色",
+   "撕裂"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__pierce.png": {
+  "desc": "红白靶心",
+  "tags": [
+   "靶心",
+   "穿透",
+   "红白"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__poison.png": {
+  "desc": "绿色团块",
+  "tags": [
+   "团块",
+   "绿色",
+   "毒"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__shadowclone.png": {
+  "desc": "米色环形 / 圆环",
+  "tags": [
+   "环形",
+   "米色",
+   "影子"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__shield.png": {
+  "desc": "灰白盾牌",
+  "tags": [
+   "盾",
+   "防御",
+   "灰白"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__shrink.png": {
+  "desc": "紫白人形，红色下箭头",
+  "tags": [
+   "人形",
+   "下箭头",
+   "缩小"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__skillsizeupgrade.png": {
+  "desc": "紫白人形，绿色十字",
+  "tags": [
+   "人形",
+   "绿色十字",
+   "升级"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__stardebuff.png": {
+  "desc": "橙色五角星",
+  "tags": [
+   "星星",
+   "橙色",
+   "减益"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__swordplus.png": {
+  "desc": "紫白人形，橙色加号",
+  "tags": [
+   "人形",
+   "加号",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__swordupgrade.png": {
+  "desc": "紫白人形，绿色加号",
+  "tags": [
+   "人形",
+   "加号",
+   "绿色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__teeth.png": {
+  "desc": "红色獠牙 / 恶魔脸",
+  "tags": [
+   "獠牙",
+   "红色",
+   "恶魔"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/atk-up.png": {
+  "desc": "粉白色斜置长剑，刃口带光",
+  "tags": [
+   "剑",
+   "攻击",
+   "粉色",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__randomoption__01attackup.png"
+ },
+ "project:icons/hp-up.png": {
+  "desc": "灰金色盾牌，金色包边",
+  "tags": [
+   "盾牌",
+   "防御",
+   "灰金",
+   "护甲"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__randomoption__02hpup.png"
+ },
+ "project:icons/aspd-up.png": {
+  "desc": "绿白色斜置长剑，带速度线",
+  "tags": [
+   "剑",
+   "攻速",
+   "绿色",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__randomoption__03aspdup.png"
+ },
+ "project:icons/first-hit.png": {
+  "desc": "绿红相间的怪物头（尖牙）",
+  "tags": [
+   "怪物",
+   "头",
+   "绿色",
+   "红色"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__randomoption__04firsthit.png"
+ },
+ "project:icons/last-hit.png": {
+  "desc": "橙红色斜向刀光",
+  "tags": [
+   "刀光",
+   "橙色",
+   "斩击"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__randomoption__05lasthit.png"
+ },
+ "project:icons/survive.png": {
+  "desc": "暗红色方框，中间发红",
+  "tags": [
+   "框架",
+   "红色",
+   "屏障"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__randomoption__07survive.png"
+ },
+ "project:icons/berserk.png": {
+  "desc": "橙黑火焰骷髅",
+  "tags": [
+   "骷髅",
+   "火焰",
+   "狂暴",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__randomoption__08berserk.png"
+ },
+ "project:icons/bloodrage.png": {
+  "desc": "白红色刀锋，带血光",
+  "tags": [
+   "刀",
+   "红色",
+   "血",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__randomoption__09bloodrage.png"
+ },
+ "project:icons/concentrate.png": {
+  "desc": "粉白色长剑，刃口高光",
+  "tags": [
+   "剑",
+   "粉色",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__randomoption__12concentrate.png"
+ },
+ "project:icons/slotsplus.png": {
+  "desc": "蓝金旗帜，中间数字 2",
+  "tags": [
+   "旗帜",
+   "数字2",
+   "槽位",
+   "蓝金"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__randomoption__14slotsplus.png"
+ },
+ "project:icons/combatshift.png": {
+  "desc": "粉白色人物肖像框",
+  "tags": [
+   "肖像",
+   "框架",
+   "粉色"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__randomoption__15combatshift.png"
+ },
+ "project:icons/gold-bag.png": {
+  "desc": "金色钱袋与金币",
+  "tags": [
+   "金币",
+   "金色",
+   "财富"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__randomoption__18gold.png"
+ },
+ "project:icons/skillmastery.png": {
+  "desc": "白色沙漏（棕色沙）",
+  "tags": [
+   "沙漏",
+   "时间",
+   "白色"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__randomoption__22skillmastery.png"
+ },
+ "project:icons/sh-angry.png": {
+  "desc": "绷带缠头的人脸，红眼",
+  "tags": [
+   "脸",
+   "绷带",
+   "愤怒",
+   "红色"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__angry.png"
+ },
+ "project:icons/sh-blockshield.png": {
+  "desc": "黄蓝菱形盾，中心闪电",
+  "tags": [
+   "盾",
+   "闪电",
+   "格挡",
+   "黄蓝"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__blockshield.png"
+ },
+ "project:icons/sh-blood.png": {
+  "desc": "红色锥形血滴",
+  "tags": [
+   "血",
+   "红色",
+   "滴"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__blood.png"
+ },
+ "project:icons/sh-cross.png": {
+  "desc": "黄色十字",
+  "tags": [
+   "十字",
+   "治疗",
+   "黄色"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__cross.png"
+ },
+ "project:icons/sh-diffusion.png": {
+  "desc": "橙色螺旋",
+  "tags": [
+   "螺旋",
+   "扩散",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__diffusion.png"
+ },
+ "project:icons/sh-earthquake.png": {
+  "desc": "棕色裂纹地面",
+  "tags": [
+   "地面",
+   "裂纹",
+   "地震",
+   "棕色"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__earthquake.png"
+ },
+ "project:icons/sh-enlarge.png": {
+  "desc": "深色方块，红眼，两侧凸起",
+  "tags": [
+   "方块",
+   "红眼",
+   "机械"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__enlarge.png"
+ },
+ "project:icons/sh-execute.png": {
+  "desc": "紫粉色骷髅",
+  "tags": [
+   "骷髅",
+   "处决",
+   "紫色"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__execute.png"
+ },
+ "project:icons/sh-explosion.png": {
+  "desc": "红橙色爆炸火焰",
+  "tags": [
+   "爆炸",
+   "火焰",
+   "红色"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__explosion.png"
+ },
+ "project:icons/sh-eye.png": {
+  "desc": "红白眼睛（双瞳）",
+  "tags": [
+   "眼睛",
+   "红白"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__eye.png"
+ },
+ "project:icons/sh-fire.png": {
+  "desc": "橙色火焰",
+  "tags": [
+   "火焰",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__fire.png"
+ },
+ "project:icons/sh-fist.png": {
+  "desc": "灰色拳头",
+  "tags": [
+   "拳头",
+   "灰色",
+   "力量"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__fist.png"
+ },
+ "project:icons/sh-golem.png": {
+  "desc": "橙色铁砧，下方小十字",
+  "tags": [
+   "铁砧",
+   "橙色",
+   "锻造"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__golem.png"
+ },
+ "project:icons/sh-heart.png": {
+  "desc": "红色心形",
+  "tags": [
+   "心",
+   "红色",
+   "生命"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__heart.png"
+ },
+ "project:icons/sh-holy.png": {
+  "desc": "青色放射光芒",
+  "tags": [
+   "光芒",
+   "青色",
+   "神圣"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__holy.png"
+ },
+ "project:icons/sh-hourglass.png": {
+  "desc": "白色沙漏",
+  "tags": [
+   "沙漏",
+   "时间",
+   "白色"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__hourglass.png"
+ },
+ "project:icons/sh-ice.png": {
+  "desc": "蓝色冰晶水滴",
+  "tags": [
+   "冰",
+   "蓝色",
+   "水滴"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__ice.png"
+ },
+ "project:icons/sh-meteor.png": {
+  "desc": "橙红色流星火焰",
+  "tags": [
+   "流星",
+   "火焰",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__meteor.png"
+ },
+ "project:icons/sh-multihit.png": {
+  "desc": "黄色闪电",
+  "tags": [
+   "闪电",
+   "黄色",
+   "连击"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__multihit.png"
+ },
+ "project:icons/sh-multihits.png": {
+  "desc": "蓝色链状闪电",
+  "tags": [
+   "闪电链",
+   "蓝色",
+   "连击"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__multihits.png"
+ },
+ "project:icons/sh-pierce.png": {
+  "desc": "红白靶心",
+  "tags": [
+   "靶心",
+   "穿透",
+   "红白"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__pierce.png"
+ },
+ "project:icons/sh-poison.png": {
+  "desc": "绿色团块",
+  "tags": [
+   "团块",
+   "绿色",
+   "毒"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__poison.png"
+ },
+ "project:icons/sh-shadowclone.png": {
+  "desc": "米色环形 / 圆环",
+  "tags": [
+   "环形",
+   "米色",
+   "影子"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__shadowclone.png"
+ },
+ "project:icons/sh-shield.png": {
+  "desc": "灰白盾牌",
+  "tags": [
+   "盾",
+   "防御",
+   "灰白"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__shield.png"
+ },
+ "project:icons/sh-sizeup.png": {
+  "desc": "紫白人形，绿色十字",
+  "tags": [
+   "人形",
+   "绿色十字",
+   "升级"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__skillsizeupgrade.png"
+ },
+ "project:icons/sh-swordplus.png": {
+  "desc": "紫白人形，橙色加号",
+  "tags": [
+   "人形",
+   "加号",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__swordplus.png"
+ },
+ "project:icons/sh-swordup.png": {
+  "desc": "紫白人形，绿色加号",
+  "tags": [
+   "人形",
+   "加号",
+   "绿色"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__swordupgrade.png"
+ },
+ "project:icons/sh-teeth.png": {
+  "desc": "红色獠牙 / 恶魔脸",
+  "tags": [
+   "獠牙",
+   "红色",
+   "恶魔"
+  ],
+  "conf": 0.8,
+  "src": "vlm",
+  "twin_of": "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__teeth.png"
+ },
+ "project:icons/item-scythe.png": {
+  "desc": "红白色小镰刀（细柄）",
+  "tags": [
+   "镰刀",
+   "武器",
+   "红色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-arcanecore.png": {
+  "desc": "深色圆核，外圈米色光环",
+  "tags": [
+   "核心",
+   "奥术",
+   "圆环"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-arcanorb.png": {
+  "desc": "米白色圆球（光球）",
+  "tags": [
+   "法球",
+   "圆球",
+   "奥术"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-berserkaxe.png": {
+  "desc": "斜置米色战斧",
+  "tags": [
+   "战斧",
+   "武器",
+   "斧"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-galebow.png": {
+  "desc": "米色箭矢与弓弦",
+  "tags": [
+   "弓",
+   "箭矢",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-healingsanct.png": {
+  "desc": "灰色小教堂 / 圣所",
+  "tags": [
+   "圣所",
+   "治疗",
+   "建筑"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-lifesap.png": {
+  "desc": "米色叶片",
+  "tags": [
+   "叶",
+   "生命",
+   "吸取"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-mountain.png": {
+  "desc": "米色岩石山峰",
+  "tags": [
+   "山",
+   "岩石",
+   "地形"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-multishot.png": {
+  "desc": "两名人形弓箭手",
+  "tags": [
+   "多重",
+   "弓箭手",
+   "人形"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-overload.png": {
+  "desc": "米绿色放射爆裂",
+  "tags": [
+   "过载",
+   "爆裂",
+   "放射"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-piercebul.png": {
+  "desc": "米色弹体与尖刺",
+  "tags": [
+   "弹体",
+   "穿透",
+   "尖刺"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-precision.png": {
+  "desc": "米色碎片 / 箭形",
+  "tags": [
+   "精准",
+   "碎片",
+   "箭"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-tripleshot.png": {
+  "desc": "三支米色箭矢",
+  "tags": [
+   "三连",
+   "箭矢",
+   "多重"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/sk-voltsaw.png": {
+  "desc": "米色锯齿圆盘",
+  "tags": [
+   "锯",
+   "闪电",
+   "圆盘"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/ui-essence.png": {
+  "desc": "蓝色水晶碎片",
+  "tags": [
+   "水晶",
+   "蓝色",
+   "精华"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/up-arrow.png": {
+  "desc": "米色箭头 / 菱形",
+  "tags": [
+   "箭头",
+   "方向",
+   "米色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/up-heart2.png": {
+  "desc": "深色心形，金色描边",
+  "tags": [
+   "心",
+   "生命",
+   "金色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/up-reroll.png": {
+  "desc": "米色交叉纸带 / 卷轴",
+  "tags": [
+   "重roll",
+   "卷轴",
+   "米色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/up-speed.png": {
+  "desc": "奔跑的米色人影，带速度线",
+  "tags": [
+   "奔跑",
+   "速度",
+   "人形"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/up-startgold.png": {
+  "desc": "金色钱币 / 金锭堆",
+  "tags": [
+   "金币",
+   "金色",
+   "财富"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/w-blade.png": {
+  "desc": "米色弯刀，暗红底",
+  "tags": [
+   "弯刀",
+   "武器",
+   "斩击"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/w-bleed.png": {
+  "desc": "米色交叉双刃",
+  "tags": [
+   "交叉刀",
+   "武器",
+   "流血"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/w-deadly.png": {
+  "desc": "绿色人脸，X 形眼",
+  "tags": [
+   "脸",
+   "毒",
+   "死亡"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/w-guard.png": {
+  "desc": "米绿色长剑，带护手",
+  "tags": [
+   "长剑",
+   "武器",
+   "防御"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/w-savage.png": {
+  "desc": "米色三道爪痕",
+  "tags": [
+   "爪痕",
+   "武器",
+   "撕裂"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "project:icons/w-thrust.png": {
+  "desc": "米色长矛突刺，带速度线",
+  "tags": [
+   "长矛",
+   "突刺",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ }
+}

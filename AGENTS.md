@@ -51,6 +51,12 @@
 | 判断原型能不能过门禁 | `docs/ui/prototype_gate.md` | HTML MVP 体验门槛 |
 | 用素材 / 加素材 | `docs/assets/asset_license.md` + `docs/assets/asset_gap.md` | 授权与缺口，先过 Asset Gate |
 | 素材尺寸/像素化处理 | `docs/assets/asset_normalization.md`、`asset_style_guide.md` | 归一化与风格统一 |
+| 评估 / 接入 AI 素材（图标·角色·特效） | `docs/assets/ai_asset_pipeline.md` | 工具矩阵、可商用边界、统一化管线与验证实验 |
+| 按文本找素材 / 整理素材索引 | `docs/assets/asset_index.md` | 检索命令、字段、授权标注与维护 |
+| 查图标语义核对结论 | `docs/assets/icon_semantic_audit.md` | 70 道具 + 18 模块的图标 ↔ 画面核对与替换建议 |
+| 治画风不统一 / 做图标槽位 | `docs/assets/style_consistency.md` | 实测诊断、40×40 槽位规格、三层修法与验收线 |
+| 查可商用素材清单 | `assets_index/CATALOG.md`（+ `docs/assets/asset_index.md` §8） | 只含过授权门槛的 4,652 条，含 fit/gate 字段 |
+| 看 H 盘素材都在哪 | `docs/assets/hdrive_inventory.md` | 全盘普查：哪些目录能用、哪些是版权禁区、索引覆盖了哪些 |
 | 写测试 / 跑验收 | `docs/testing/protocol.md`、`seed_and_harness.md` | 分层测试与固定种子 |
 | 模拟玩家点一遍 | `docs/testing/player_simulation.md` | 人类式 E2E 规范 |
 | 看历史决策 | `memory-bank/decisions.md` | 已确认的 D-*，不得推翻 |

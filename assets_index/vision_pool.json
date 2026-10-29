@@ -1,0 +1,619 @@
+{
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__01attackup.png": {
+  "desc": "粉白色斜置长剑，刃口带光",
+  "tags": [
+   "剑",
+   "攻击",
+   "粉色",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__02hpup.png": {
+  "desc": "灰金色盾牌，金色包边",
+  "tags": [
+   "盾牌",
+   "防御",
+   "灰金",
+   "护甲"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__03aspdup.png": {
+  "desc": "绿白色斜置长剑，带速度线",
+  "tags": [
+   "剑",
+   "攻速",
+   "绿色",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__04firsthit.png": {
+  "desc": "绿红相间的怪物头（尖牙）",
+  "tags": [
+   "怪物",
+   "头",
+   "绿色",
+   "红色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__05lasthit.png": {
+  "desc": "橙红色斜向刀光",
+  "tags": [
+   "刀光",
+   "橙色",
+   "斩击"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__06killhaste.png": {
+  "desc": "青蓝色能量条，右侧发亮",
+  "tags": [
+   "能量",
+   "青色",
+   "速度"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__07survive.png": {
+  "desc": "暗红色方框，中间发红",
+  "tags": [
+   "框架",
+   "红色",
+   "屏障"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__08berserk.png": {
+  "desc": "橙黑火焰骷髅",
+  "tags": [
+   "骷髅",
+   "火焰",
+   "狂暴",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__09bloodrage.png": {
+  "desc": "白红色刀锋，带血光",
+  "tags": [
+   "刀",
+   "红色",
+   "血",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__10battlefervor.png": {
+  "desc": "绿白色匕首",
+  "tags": [
+   "匕首",
+   "绿色",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__11allydeath.png": {
+  "desc": "蓝白色长剑",
+  "tags": [
+   "剑",
+   "蓝色",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__12concentrate.png": {
+  "desc": "粉白色长剑，刃口高光",
+  "tags": [
+   "剑",
+   "粉色",
+   "武器"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__13jungsu.png": {
+  "desc": "蓝色水晶簇",
+  "tags": [
+   "水晶",
+   "蓝色",
+   "魔法"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__14slotsplus.png": {
+  "desc": "蓝金旗帜，中间数字 2",
+  "tags": [
+   "旗帜",
+   "数字2",
+   "槽位",
+   "蓝金"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__15combatshift.png": {
+  "desc": "粉白色人物肖像框",
+  "tags": [
+   "肖像",
+   "框架",
+   "粉色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__16victoryfeast.png": {
+  "desc": "绿色发光果实/光点",
+  "tags": [
+   "光点",
+   "绿色",
+   "食物"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__17lonewolf.png": {
+  "desc": "橙黑色狼形剪影",
+  "tags": [
+   "狼",
+   "剪影",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__18gold.png": {
+  "desc": "金色钱袋与金币",
+  "tags": [
+   "金币",
+   "金色",
+   "财富"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__19baseguardian.png": {
+  "desc": "黑白人形剪影，站姿",
+  "tags": [
+   "人影",
+   "守卫",
+   "黑白"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__20judgementprep.png": {
+  "desc": "白红色人形剪影，抬手",
+  "tags": [
+   "人影",
+   "红色",
+   "审判"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__21bossprep.png": {
+  "desc": "粉蓝色头盔",
+  "tags": [
+   "头盔",
+   "粉色",
+   "蓝色",
+   "护甲"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__randomoption__22skillmastery.png": {
+  "desc": "白色沙漏（棕色沙）",
+  "tags": [
+   "沙漏",
+   "时间",
+   "白色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__angry.png": {
+  "desc": "绷带缠头的人脸，红眼",
+  "tags": [
+   "脸",
+   "绷带",
+   "愤怒",
+   "红色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__blindx.png": {
+  "desc": "红色眼睛，外围带触须",
+  "tags": [
+   "眼睛",
+   "红色",
+   "致盲"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__blockshield.png": {
+  "desc": "黄蓝菱形盾，中心闪电",
+  "tags": [
+   "盾",
+   "闪电",
+   "格挡",
+   "黄蓝"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__blood.png": {
+  "desc": "红色锥形血滴",
+  "tags": [
+   "血",
+   "红色",
+   "滴"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__close.png": {
+  "desc": "红色 X 形叉",
+  "tags": [
+   "叉",
+   "关闭",
+   "红色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__cross.png": {
+  "desc": "黄色十字",
+  "tags": [
+   "十字",
+   "治疗",
+   "黄色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__diffusion.png": {
+  "desc": "橙色螺旋",
+  "tags": [
+   "螺旋",
+   "扩散",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__dizzy.png": {
+  "desc": "紫色旋涡",
+  "tags": [
+   "旋涡",
+   "眩晕",
+   "紫色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__earthquake.png": {
+  "desc": "棕色裂纹地面",
+  "tags": [
+   "地面",
+   "裂纹",
+   "地震",
+   "棕色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__enlarge.png": {
+  "desc": "深色方块，红眼，两侧凸起",
+  "tags": [
+   "方块",
+   "红眼",
+   "机械"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__execute.png": {
+  "desc": "紫粉色骷髅",
+  "tags": [
+   "骷髅",
+   "处决",
+   "紫色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__explosion.png": {
+  "desc": "红橙色爆炸火焰",
+  "tags": [
+   "爆炸",
+   "火焰",
+   "红色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__eye.png": {
+  "desc": "红白眼睛（双瞳）",
+  "tags": [
+   "眼睛",
+   "红白"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__fear.png": {
+  "desc": "紫色蜘蛛",
+  "tags": [
+   "蜘蛛",
+   "恐惧",
+   "紫色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__fire.png": {
+  "desc": "橙色火焰",
+  "tags": [
+   "火焰",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__fireskeleton.png": {
+  "desc": "紫色骷髅带火焰",
+  "tags": [
+   "骷髅",
+   "火焰",
+   "紫色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__fist.png": {
+  "desc": "灰色拳头",
+  "tags": [
+   "拳头",
+   "灰色",
+   "力量"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__golem.png": {
+  "desc": "橙色铁砧，下方小十字",
+  "tags": [
+   "铁砧",
+   "橙色",
+   "锻造"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__heart.png": {
+  "desc": "红色心形",
+  "tags": [
+   "心",
+   "红色",
+   "生命"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__hit.png": {
+  "desc": "橙色星形冲击",
+  "tags": [
+   "星形",
+   "冲击",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__holy.png": {
+  "desc": "青色放射光芒",
+  "tags": [
+   "光芒",
+   "青色",
+   "神圣"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__hourglass.png": {
+  "desc": "白色沙漏",
+  "tags": [
+   "沙漏",
+   "时间",
+   "白色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__ice.png": {
+  "desc": "蓝色冰晶水滴",
+  "tags": [
+   "冰",
+   "蓝色",
+   "水滴"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__mad.png": {
+  "desc": "红色十字 / 星形",
+  "tags": [
+   "十字",
+   "红色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__meteor.png": {
+  "desc": "橙红色流星火焰",
+  "tags": [
+   "流星",
+   "火焰",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__multihit.png": {
+  "desc": "黄色闪电",
+  "tags": [
+   "闪电",
+   "黄色",
+   "连击"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__multihits.png": {
+  "desc": "蓝色链状闪电",
+  "tags": [
+   "闪电链",
+   "蓝色",
+   "连击"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__noskill.png": {
+  "desc": "彩色眼睛，中心红色",
+  "tags": [
+   "眼睛",
+   "彩色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__pantherscratch.png": {
+  "desc": "红色爪痕",
+  "tags": [
+   "爪痕",
+   "红色",
+   "撕裂"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__pierce.png": {
+  "desc": "红白靶心",
+  "tags": [
+   "靶心",
+   "穿透",
+   "红白"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__poison.png": {
+  "desc": "绿色团块",
+  "tags": [
+   "团块",
+   "绿色",
+   "毒"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__shadowclone.png": {
+  "desc": "米色环形 / 圆环",
+  "tags": [
+   "环形",
+   "米色",
+   "影子"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__shield.png": {
+  "desc": "灰白盾牌",
+  "tags": [
+   "盾",
+   "防御",
+   "灰白"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__shrink.png": {
+  "desc": "紫白人形，红色下箭头",
+  "tags": [
+   "人形",
+   "下箭头",
+   "缩小"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__skillsizeupgrade.png": {
+  "desc": "紫白人形，绿色十字",
+  "tags": [
+   "人形",
+   "绿色十字",
+   "升级"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__stardebuff.png": {
+  "desc": "橙色五角星",
+  "tags": [
+   "星星",
+   "橙色",
+   "减益"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__swordplus.png": {
+  "desc": "紫白人形，橙色加号",
+  "tags": [
+   "人形",
+   "加号",
+   "橙色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__swordupgrade.png": {
+  "desc": "紫白人形，绿色加号",
+  "tags": [
+   "人形",
+   "加号",
+   "绿色"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ },
+ "pool-icons:游戏图标/行囊守卫/icons__imprinticons__shortsicons__teeth.png": {
+  "desc": "红色獠牙 / 恶魔脸",
+  "tags": [
+   "獠牙",
+   "红色",
+   "恶魔"
+  ],
+  "conf": 0.8,
+  "src": "vlm"
+ }
+}

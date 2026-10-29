@@ -20,7 +20,7 @@
 候选分类（待确认，对应母本工程分类法）：
 
 `projectile` 投射物 · `melee` 近战判定 · `area` 区域效果 · `beam` 射线 ·
-`chain` 链式跳跃 · `pulse` 角色中心脉冲 · `burst` 延迟爆发 · `summon` 召唤物
+`chain` 链式跳跃 · `pulse` 角色中心脉冲 · `burst` 延迟爆发（`summon` 召唤物类型已于 M44 移除）
 
 ## 3. 技能数据字段 `[TBD]`
 

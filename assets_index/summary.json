@@ -1,0 +1,41 @@
+{
+  "files": 39688,
+  "mb": 1202.22,
+  "by_cat": {
+    "asset": 16519,
+    "icon-svg": 8490,
+    "icon": 4019,
+    "ui": 3859,
+    "unit": 2727,
+    "item": 1804,
+    "bg": 867,
+    "vfx": 779,
+    "audio": 351,
+    "portrait": 270,
+    "font": 3
+  },
+  "by_root": {
+    "prev-pixel": 13148,
+    "pool-icons": 6677,
+    "cc0-packs": 4329,
+    "pool-ui": 3427,
+    "crew-assets": 3304,
+    "pool-units": 2592,
+    "kit": 2250,
+    "pool-items": 1804,
+    "pool-bg": 822,
+    "pool-vfx": 436,
+    "project": 422,
+    "pool-audio": 316,
+    "crew-ai": 161
+  },
+  "by_license": {
+    "unverified": 30301,
+    "attribution": 8490,
+    "blocked": 420,
+    "user-approved": 296,
+    "ok-attribution": 181
+  },
+  "dups": 367,
+  "opaque_icons": 494
+}
