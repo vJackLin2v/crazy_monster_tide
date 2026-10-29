@@ -204,9 +204,10 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
       { size: 11, color: COL.mint, align: 'left', width: d.selSlot ? 240 : 316, h: 32 });
   }
   if (d.selSlot) {
-    const ub = panel(box, 132, descY, 80, 28, { art: 'btn_danger' });
+    // 右边缘收到 162（面板半宽 170，留 8px）：原来 x=132 + 40 = 172，**超出面板 2px**
+    const ub = panel(box, 122, descY, 80, 28, { art: 'btn_danger' });
     text(ub, 0, 1, '卸下', { size: 12, color: COL.cream, width: 76, bold: true, outline: false });
-    const hit = mkNode(box, 'unequipHit', 80, 34, 132, descY);
+    const hit = mkNode(box, 'unequipHit', 80, 34, 122, descY);
     onTap(hit, () => cb.onUnequip());
   }
 
