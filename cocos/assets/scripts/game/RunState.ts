@@ -9,7 +9,7 @@ import { ATTRS } from '../data/Attrs';
 import { enemyPool, ENEMIES, bossUnitFor } from '../data/Enemies';
 import type { CharStats } from '../data/Types';
 import { freshStats } from './Stats';
-import { calcSkill, makeSkill, MAX_SKILLS, MAX_SLOTS, canInstall, isCompatible, type SkillInst } from './SkillCalc';
+import { calcSkill, makeSkill, MAX_SKILLS, MAX_SLOTS, canInstall, isCompatible, modCount, type SkillInst } from './SkillCalc';
 
 export type RewardKind = 'skill' | 'skillup' | 'module' | 'item' | 'attr';
 export interface Reward { kind: RewardKind; id: string; needReplace?: boolean; }
@@ -106,7 +106,9 @@ export class RunState {
   waveClearGold(bonus = 0): number {
     const P = balance().shop;
     const raw = P.clearGoldBase + this.wave * P.clearGoldPerWave + bonus;
-    const gain = Math.round(raw * (1 + this.stats.greed));
+    // ⚠️ B10：击杀金币用 Math.min(1, greed) 封顶 +100%，波末金币却直接 (1+greed)，
+    //    两处规则冲突。统一按"金币获取加成上限 +100%"处理。
+    const gain = Math.round(raw * (1 + Math.min(1, this.stats.greed)));
     this.gold += gain;
     return gain;
   }
@@ -248,20 +250,32 @@ export class RunState {
     return back;
   }
 
+  /**
+   * 把一个模块装到 slot 技能的 target 槽位。
+   *
+   * ⚠️ B3：模型层必须是**最终防线**。UI 把行变暗只是提示，回调仍可能被程序/测试直接调用。
+   * ⚠️ B4：叠加判定要用「已占份数 + 本次模块份数 ≤ max」，不能只比"当前份数 < max"
+   *    —— 强化模块 _2 一次占 2 份，旧写法会让 max=2 的模块被装到 3 份。
+   * 所有校验都在**改动任何状态之前**完成；失败抛错且不产生副作用。
+   */
   installAt(slot: number, target: number, mid: string): { replaced: string | null } {
     const sk = this.skills[slot];
-    if (!sk) throw new Error('槽位越界：' + slot);
-    if (target < sk.mods.length) {
-      const old = sk.mods[target];
-      const bagI = this.modsBag.indexOf(mid);
-      if (bagI >= 0) this.modsBag.splice(bagI, 1);
-      this.modsBag.push(old);
-      sk.mods[target] = mid;
-      return { replaced: old };
-    }
-    if (sk.mods.length >= MAX_SLOTS) throw new Error('槽位已满，需指定替换目标');
+    if (!sk) throw new Error('技能槽越界：' + slot);
+    if (!Number.isInteger(target) || target < 0 || target >= MAX_SLOTS) throw new Error('模块槽越界：' + target);
+    const m = MODULES[baseOf(mid)];
+    if (!m) throw new Error('未知模块：' + mid);
+    if (this.modsBag.indexOf(mid) < 0) throw new Error('背包里没有该模块：' + mid);
+    if (!isCompatible(sk.id, mid)) throw new Error('不兼容：' + mid);
+    const old = sk.mods[target];
+    if (!old && sk.mods.length >= MAX_SLOTS) throw new Error('槽位已满，需指定替换目标');
+    // 被顶掉的那一份不算在内：它同时离开技能（换成同 id 时两边抵消）
+    const existing = modCount(sk, mid) - (old && baseOf(old) === baseOf(mid) ? modPower(old) : 0);
+    if (existing + modPower(mid) > m.max) throw new Error('超过上限：' + mid + '（' + existing + '+' + modPower(mid) + ' > ' + m.max + '）');
+
+    // —— 校验全部通过，开始提交（之后不会再 return）——
     const bagI = this.modsBag.indexOf(mid);
-    if (bagI >= 0) this.modsBag.splice(bagI, 1);
+    this.modsBag.splice(bagI, 1);
+    if (old) { this.modsBag.push(old); sk.mods[target] = mid; return { replaced: old }; }
     sk.mods.push(mid);
     return { replaced: null };
   }
@@ -308,16 +322,22 @@ export class RunState {
       return true;
     }
 
-    const target = b.mods[toSl] ?? null;
-    if (target !== null) {
+    // ⚠️ B2：跨技能搬到"空槽"时不能写 b.mods[toSl] = mod —— 当 toSl >= 长度时会
+    //    造出带空洞的稀疏数组（例如 [] 上写 index 2 → [empty, empty, mod]），
+    //    之后 calcSkill 迭代到 undefined 会崩，槽位计数也会与 UI 不一致。
+    //    正确语义：mods 永远是**连续**数组；空槽 = 位置由 push 决定（UI 的点选只用来表达"要装"）。
+    const isEmptySlot = toSl >= b.mods.length || b.mods[toSl] === undefined;
+    if (!isEmptySlot) {
+      const target = b.mods[toSl];
       if (!isCompatible(b.id, mod) || !isCompatible(a.id, target)) return false;
       b.mods[toSl] = mod;
       a.mods[fromSl] = target;
-    } else {
-      if (!isCompatible(b.id, mod)) return false;
-      b.mods[toSl] = mod;
-      a.mods.splice(fromSl, 1);
+      return true;
     }
+    if (!isCompatible(b.id, mod)) return false;
+    if (b.mods.length >= MAX_SLOTS) return false;      // 目标技能已满 3 槽
+    b.mods.push(mod);
+    a.mods.splice(fromSl, 1);
     return true;
   }
 

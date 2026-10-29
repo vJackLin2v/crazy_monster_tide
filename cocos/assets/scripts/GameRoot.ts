@@ -280,8 +280,10 @@ export class GameRoot extends Component {
         icon: SKILLS[s.id] ? SKILLS[s.id].icon : undefined,
       })),
       (slot) => {
-        const back = rs.replaceSkill(slot, newId);   // 被换掉技能上的模块**退回背包**
-        if (back.length) rs.modsBag.push(...back);
+        // ⚠️ B1：replaceSkill() **自己**已经把旧模块放进 modsBag 并返回同一份数组。
+        //    调用方再 push 一次就会让模块翻倍（复制 BUG）。返还责任只在模型层。
+        const back = rs.replaceSkill(slot, newId);
+        console.log('[Replace] 退回背包 ' + back.length + ' 个（模型层已入库）');
         this.installSelIdx = null; this.installSel = null;
         if (rs.modsBag.length) this.selectBag(0);
         this.closeModal();

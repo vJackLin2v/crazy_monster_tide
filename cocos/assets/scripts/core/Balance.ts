@@ -53,6 +53,8 @@ export interface Balance {
   };
   /** 经验 / 拾取 */
   exp: { base: number; perLevel: number; waveEndMul: number };
+  /** 落雷（thunder 模块）：触发概率固定 15%×份数，这里只配范围与伤害倍率 */
+  thunder: { radius: number; mul: number };
 }
 
 export const DEFAULT_BALANCE: Balance = {
@@ -86,6 +88,8 @@ export const DEFAULT_BALANCE: Balance = {
     bossFirstCd: 2.2, eliteFirstCd: 3.0, chargeSpeedMul: 2.2,
   },
   exp: { base: 5, perLevel: 3.2, waveEndMul: 0.5 },
+  // ⚠️ 候选值（文档未规定）：半径 60、伤害 50%。已列入 docs/audits/non_ui_bug_audit.md 待负责人确认
+  thunder: { radius: 60, mul: 0.5 },
 };
 
 const KEY = 'cmt_balance_v1';

@@ -389,6 +389,73 @@ console.log('\n== 5g. 数值表与战斗日志（纯逻辑） ==');
   ok(typeof summarize() === 'object', 'summarize 返回对象');
 }
 
+console.log('\n== 5h. 非 UI BUG 回归（B1/B2/B3/B4/B10） ==');
+{
+  const mk = (charId = 'knight') => new RunState(charId, 12345);
+  const total = (rs: any, base: string) => {
+    let n = 0;
+    for (const m of rs.modsBag) if ((m === base || m === base + '_2')) n += (m === base + '_2' ? 2 : 1);
+    for (const s of rs.skills) for (const m of s.mods) if (m && (m === base || m === base + '_2')) n += (m === base + '_2' ? 2 : 1);
+    return n;
+  };
+
+  // B1：替换技能不得复制模块（总量守恒）
+  {
+    const rs = mk();
+    rs.skills[0].mods = ['multi', 'pierce'];
+    const before = total(rs, 'multi') + total(rs, 'pierce');
+    rs.replaceSkill(0, 'ice_spear');
+    const after = total(rs, 'multi') + total(rs, 'pierce');
+    ok(before === after && after === 2, 'B1 替换技能后模块总量不变（' + before + ' → ' + after + '）');
+    ok(rs.modsBag.filter(m => m === 'multi').length === 1, 'B1 背包里 multi 只有 1 份（无重复返还）');
+  }
+
+  // B2：跨技能移到"第 3 个空槽"不能产生稀疏数组
+  {
+    const rs = mk();
+    rs.skills.push({ id: 'ice_spear', lvl: 1, mods: [] } as never);
+    rs.skills[0].mods = ['multi'];
+    const okMove = rs.moveMod(0, 0, 1, 2);       // 目标技能只有 0 个模块，点第 3 槽
+    const b = rs.skills[1].mods;
+    const holeFree = b.length === 1 && b.every(m => typeof m === 'string' && m.length > 0);
+    ok(okMove && holeFree, 'B2 跨技能移动到空槽后数组连续（length=' + b.length + '）');
+    ok(!Object.keys(b).some(k => b[Number(k)] === undefined), 'B2 无 undefined 空洞');
+  }
+
+  // B3：installAt 的非法输入必须抛错且不改变状态
+  {
+    const rs = mk();
+    rs.modsBag = ['multi'];
+    const snap = () => JSON.stringify({ bag: rs.modsBag, mods: rs.skills.map(s => s.mods) });
+    const before = snap();
+    let threw = 0;
+    try { rs.installAt(0, 0, 'not_a_module'); } catch { threw++; }
+    try { rs.installAt(0, 0, 'pierce'); } catch { threw++; }          // 背包里没有
+    try { rs.installAt(0, 5, 'multi'); } catch { threw++; }            // 槽位越界
+    try { rs.installAt(9, 0, 'multi'); } catch { threw++; }            // 技能越界
+    ok(threw === 4, 'B3 四种非法安装都抛错（' + threw + '/4）');
+    ok(snap() === before, 'B3 失败时背包与技能槽完全不变');
+  }
+
+  // B4：强化模块一次占 2 份，不能突破 max（fan max=2，已有 1 份 + _2 会超）
+  {
+    const rs = mk();
+    rs.skills[0].mods = ['fan'];
+    rs.modsBag = ['fan_2'];
+    let threw = false;
+    try { rs.installAt(0, 1, 'fan_2'); } catch { threw = true; }
+    ok(threw, 'B4 已占 1 份 + 强化 2 份 > max(2) 时拒绝安装');
+    ok(rs.skills[0].mods.length === 1 && rs.modsBag.includes('fan_2'), 'B4 拒绝后状态不变');
+  }
+
+  // B10：波末金币的贪婪加成也必须封顶 +100%
+  {
+    const a = mk(); a.stats.greed = 1.0; const g1 = a.waveClearGold();
+    const b = mk(); b.stats.greed = 1.5; const g2 = b.waveClearGold();
+    ok(g1 === g2, 'B10 greed 1.5 与 1.0 的波末金币相同（封顶 +100%）：' + g1 + '=' + g2);
+  }
+}
+
 console.log('\n== 6. 确定性与波次规则 ==');
 {
   const a = new RunState('mage', 4242), b = new RunState('mage', 4242);

@@ -718,7 +718,9 @@ export class Battle extends Component {
         let cur = tgt; const hit = new Set<Enemy>([cur]);
         this.spawnBolt(this.px, this.py, cur.x, cur.y);          // ★ 玩家 → 第一个目标
         this.hitEnemy(cur, rt.dmg, rt, art.hit);
-        for (let j = 0; j < 2 + rt.bounce; j++) {
+        // ⚠️ B6：原来只吃 bounce（反弹模块），「传染」模块累积在 rt.chain 里但被忽略。
+        //    现在两者都算跳数：2 基础跳 + 反弹 + 传染。
+        for (let j = 0; j < 2 + rt.bounce + rt.chain; j++) {
           const from = cur;
           const nx = this.nearestEnemy(from.x, from.y, 140, hit);
           if (!nx) break;
@@ -1019,7 +1021,7 @@ export class Battle extends Component {
   }
 
   /** 一次伤害结算（走 Combat.rollDamage，暴击也吃同一个 Rng） */
-  private hitEnemy(e: Enemy, base: number, rt: SkillRuntime, hitVfx?: string) {
+  private hitEnemy(e: Enemy, base: number, rt: SkillRuntime, hitVfx?: string, noThunder = false) {
     if (e.dead) return;
     let { dmg, crit } = rollDamage(base, this.rs.stats, this.rs.rng);
     // ★ 精英伤害：对精英/BOSS 额外加成
@@ -1057,7 +1059,20 @@ export class Battle extends Component {
     }
     if (rt.slow) e.slow = 1.2;
     if (rt.vamp) this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + dmg * 0.06);
-    if (rt.thunder > 0 && this.rs.rng.chance(0.15 * rt.thunder)) this.addVfx('feedback/hit/shock-hit', e.x, e.y, 0.4, 1.4);
+    // ★ B7：原来只有特效、**没有伤害**（描述写"造成范围伤害"）。
+    //   现在按 15%×份数 触发，对落点 60 半径内的敌人结算 50% 伤害。
+    //   ⚠️ 这两个数值（半径/倍率）在 docs/systems 里没有规定，是候选值，已列入审计报告待确认；
+    //   通过 Balance 可调，不需要改代码。
+    if (!noThunder && rt.thunder > 0 && this.rs.rng.chance(0.15 * rt.thunder)) {
+      const T = balance().thunder;
+      this.addVfx('feedback/hit/shock-hit', e.x, e.y, 0.4, 1.4);
+      for (const t of this.enemies) {
+        if (t.dead || t === e) continue;
+        if (Math.hypot(t.x - e.x, t.y - e.y) <= T.radius) {
+          this.hitEnemy(t, dmg * T.mul, rt, undefined, true);   // 递归触发被最后一个参数挡住
+        }
+      }
+    }
     // 击退
     if (!e.boss) {
       const a = Math.atan2(e.y - this.py, e.x - this.px);
@@ -1491,13 +1506,18 @@ export class Battle extends Component {
           // ★ 传染（M49）：**不是穿过去**，而是从这只怪身上"跳"到附近的另一只——
           //   劈一道链式闪电 + 追加 80% 伤害，本体到此结束（和穿透/反弹完全不同）
           if (b.chain > 0) {
-            b.chain--;
-            const nx = this.nearestEnemy(e.x, e.y, 150, b.hit);
-            if (nx) {
+            // ⚠️ B6：原来不管 chain 有几份，都只跳 1 次就终止弹体。
+            //    现在按份数连续跳（每跳 70% 伤害、命中表去重，避免来回跳同一只）。
+            let from = e;
+            while (b.chain > 0) {
+              b.chain--;
+              const nx = this.nearestEnemy(from.x, from.y, 150, b.hit);
+              if (!nx) break;
               b.hit.add(nx);
-              this.spawnBolt(e.x, e.y, nx.x, nx.y);
+              this.spawnBolt(from.x, from.y, nx.x, nx.y);
               this.addVfx('chain/chain-node', nx.x, nx.y, 0.3, 1);
               this.hitEnemy(nx, b.dmg * 0.7, this.bulletRt(b), b.hitVfx);
+              from = nx;
             }
             b.life = 0;
             break;
