@@ -34,3 +34,5 @@ __pycache__/
 
 # 打包分发包（体积大，放 Release / 网盘，不进仓库）
 *.zip
+# 打包交付物（zip 已忽略，目录整体也不入库）
+deliverables/
