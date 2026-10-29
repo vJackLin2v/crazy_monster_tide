@@ -89,7 +89,7 @@ export class Hud {
     this.hurtOp.opacity = 0;
 
     // ── 顶部承载板：渐隐色带（不盖战斗区，只托住数字）──
-    const PLATE = S + 92;
+    const PLATE = S + 100;
     const plate = mkNode(this.root, 'topPlate', VW, PLATE, 0, VH / 2 - PLATE / 2);
     const pg = plate.addComponent(Graphics);
     const BANDS = 6, bh = PLATE / BANDS;
@@ -112,13 +112,13 @@ export class Hud {
 
     // ── 经验 156×12，LV 贴右端 ──
     const XP_H = 12;
-    p = at(10 + HP_W / 2, S + 25 + XP_H / 2);
+    p = at(10 + HP_W / 2, S + 31 + XP_H / 2);
     this.expBar = gradBar(this.root, p.x, p.y, HP_W, XP_H, { dir: 'h', from: C_XP_TOP, to: C_XP_BOT, line: COL.line });
     this.lvText = text(this.root, at(10 + HP_W - 5, 0).x, p.y, 'LV.1',
       { size: 10, color: COL.cream, align: 'right', width: 52, bold: true, outline: true });
 
     // ── 金币：16 图标 + 14px 数值 ──
-    const gy = S + 48;
+    const gy = S + 56;
     const coinC = at(18, gy);
     const coin = mkNode(this.root, 'coin', 16, 16, coinC.x, coinC.y);
     const cs = coin.addComponent(Sprite);
@@ -149,7 +149,7 @@ export class Hud {
     if (onPause) onTap(hit, onPause);
 
     // ── BOSS：名字 S+64 / 血条 336×12 @S+80（无 BOSS 不占位）──
-    this.bossBox = mkNode(this.root, 'bossBox', 336, 34, at(180, S + 72).x, at(0, S + 72).y);
+    this.bossBox = mkNode(this.root, 'bossBox', 336, 34, at(180, S + 80).x, at(0, S + 80).y);
     this.bossName = text(this.bossBox, -166, 8, '', { size: 11, color: COL.accent, align: 'left', width: 330, bold: true, outline: true });
     this.bossBar = gradBar(this.bossBox, 0, -7, 336, 12, {
       dir: 'h', from: new Color(255, 122, 60), to: COL.red, line: COL.line,
@@ -214,7 +214,7 @@ export class Hud {
         // 血条外圈光晕：**四边等宽**（用户 2026-10-29 第三轮反馈：上左右比下宽，看着不对齐）
         //   · 宽度统一 2.5px —— 上限由经验条决定：血条底边到经验条顶边只有 3px
         //   · 两层：外圈 2.5px（淡）+ 内圈 1.1px（浓），叠出"边缘实、往外化开"的效果
-        const W = 156, H = 18, GLOW = 2.5;
+        const W = 156, H = 18, GLOW = 5;
         this.hpWarn.fillColor = new Color(214, 88, 106, 38);
         this.hpWarn.roundRect(-W / 2 - GLOW, -H / 2 - GLOW, W + GLOW * 2, H + GLOW * 2, 7);
         this.hpWarn.fill();
