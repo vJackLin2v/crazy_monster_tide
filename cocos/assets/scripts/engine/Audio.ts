@@ -45,6 +45,10 @@ class AudioMgr {
   /** 想播的 BGM（若此刻还没载入完，preload 结束后自动补播） */
   private wantBgm = '';
   muted = false;
+  /** 音乐开关（独立于音效；由设置面板写入并存档） */
+  musicOn = true;
+  /** 音效开关 */
+  sfxOn = true;
 
   init(node: Node): void {
     if (this.sfxSrc) return;
@@ -71,7 +75,7 @@ class AudioMgr {
 
   /** 播一个音效。gapMs = 限流间隔；vol = 0~1 */
   sfx(key: string, vol = 0.6, gapMs = 55): void {
-    if (this.muted || !this.sfxSrc) return;
+    if (this.muted || !this.sfxOn || !this.sfxSrc) return;
     const clip = this.clips.get(key);
     if (!clip) return;
     const now = Date.now();
@@ -90,6 +94,7 @@ class AudioMgr {
   bgm(key: string): void {
     this.wantBgm = key;
     if (!this.bgmSrc) return;
+    if (!this.musicOn) { this.curBgm = ''; try { this.bgmSrc.stop(); } catch (e) { /* ignore */ } return; }
     if (this.curBgm === key) return;
     const clip = this.clips.get('bgm_' + key);
     if (!clip) return;                     // 还没载完 -> 不记 curBgm，等 preload 补播
@@ -112,6 +117,22 @@ class AudioMgr {
     if (!this.bgmSrc) return;
     if (m) { try { this.bgmSrc.pause(); } catch (e) { /* ignore */ } }
     else { try { this.bgmSrc.play(); } catch (e) { /* ignore */ } }
+  }
+
+  /** 音乐开关：关=立刻停；开=恢复当前想播的那首 */
+  setMusic(on: boolean): void {
+    this.musicOn = on;
+    if (!this.bgmSrc) return;
+    if (!on) { try { this.bgmSrc.stop(); } catch (e) { /* ignore */ } return; }
+    const key = this.wantBgm || this.curBgm;
+    if (!key) return;
+    this.curBgm = '';
+    this.bgm(key);
+  }
+
+  /** 音效开关 */
+  setSfx(on: boolean): void {
+    this.sfxOn = on;
   }
 }
 

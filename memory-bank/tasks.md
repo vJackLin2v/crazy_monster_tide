@@ -16,6 +16,17 @@
 - 未验证：微信真机安全区；其它页面仅继承新色板、未重新验收（M2–M5）。
 - 记录：`docs/ui-redesign/ui_visual_m1.md`。
 
+**M67 追加（2026-10-29 用户反馈，仍属 M1）**
+- 主菜单：**去掉主视觉角色与底部 seed 小字**；动作栈整体下移，底部新增 **图鉴 / 成就 / 设置** 三个 104×56 入口。
+- 新增 **设置弹窗**：音乐 / 音效两个开关，立即生效（`Sfx.setMusic/setSfx`）并写入本地存档。
+- 新增 **图鉴**（角色/技能/道具/怪物 四页签，6 行一页 + 翻页，读现有数据表）与
+  **成就系统**（9 条，结算累计 + `localStorage` 持久化）。
+- 新增 `game/Progress.ts`（纯数据，可单测）、`engine/Save.ts`（sys.localStorage）、
+  `game/Achievements.ts`（纯逻辑）、`ui/MetaScreens.ts`（三个页面）；
+  `Audio.ts` 拆分 music/sfx；`Battle.hooks.onBossKill` 只做成就计数。
+- 测试：**120 PASS / 0 FAIL**（新增 9 条成就断言）；`tsc.check` 0；构建 success；
+  三档视口 × 8 屏新截图（menu/settings/codex×3/achievements）。
+
 **M66（2026-10-28）UI 专项改造：像素 UI 套件 + 11 屏重排（已完成，待用户验收）**
 - 素材：**Kenney Pixel UI Pack（CC0）** 19 张九宫格落地 `cocos/assets/resources/ui/kenney/`；
   原始包 + License.txt 存 `assets/ui/third_party/kenney_pixel_ui_pack/`；

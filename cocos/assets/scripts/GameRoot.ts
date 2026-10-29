@@ -18,6 +18,9 @@ import { mkNode, screen } from './ui/UIKit';
 import { preloadUiArt } from './ui/Art';
 import { Hud, type HudData } from './ui/Hud';
 import { buildMenu, buildHowto, buildCharSelect, buildResult, type ResultBuildRow } from './ui/MenuScreens';
+import { buildSettings, buildCodex, buildAchievements } from './ui/MetaScreens';
+import { loadSave, writeSave } from './engine/Save';
+import { applyUnlocks } from './game/Achievements';
 import { buildLevelUp, buildShop, buildBuildDrawer, buildConfirm, type CardData, type ShopSlotView } from './ui/Modals';
 import { buildInstall, buildReplace } from './ui/ManageScreens';
 import { CHARS } from './data/Chars';
@@ -35,7 +38,7 @@ const { ccclass } = _decorator;
 /** 启动占位底色（与 COL.bg1 一致，避免首帧白/黑闪） */
 const COL_BG1 = new Color(38, 38, 54, 255);
 
-type Phase = 'menu' | 'howto' | 'charselect' | 'battle' | 'shop' | 'result';
+type Phase = 'menu' | 'howto' | 'charselect' | 'battle' | 'shop' | 'result' | 'codex' | 'ach';
 
 @ccclass('GameRoot')
 export class GameRoot extends Component {
@@ -59,6 +62,8 @@ export class GameRoot extends Component {
   private endShown = false;
   /** 卡死看门狗计时：战斗被暂停、却没有任何弹窗时的累计时间 */
   private stuckT = 0;
+  /** 本地存档（音频开关 + 成就进度），只读展示 + 结算时累计 */
+  private save = loadSave();
 
   onLoad() {
     // 设计分辨率写死在代码里，不依赖编辑器设置（编辑器里是 1280x720，见 KI-005）
@@ -81,6 +86,11 @@ export class GameRoot extends Component {
     //   控制台会连刷「玩家阵亡」，还会反复重建结算页（用户 2026-10-28 反馈"看到阵亡提示但没死"）
     this.battle.hooks.onDead = () => { if (this.endShown) return; this.endShown = true; this.showResult(false); };
     this.battle.hooks.onClear = () => { if (this.endShown) return; this.endShown = true; this.showResult(true); };
+    // 成就统计（只计数，不参与战斗结算）
+    this.battle.hooks.onBossKill = () => { this.save.bossKills++; writeSave(this.save); };
+    // 应用存档里的音频开关
+    Sfx.setMusic(this.save.music);
+    Sfx.setSfx(this.save.sfx);
 
     Sfx.init(this.node);
     void Sfx.preload();
@@ -157,7 +167,32 @@ export class GameRoot extends Component {
     // 回到菜单就摇**下一局**的种子，菜单底部显示的就是即将用的那个
     this.seed = this.newSeed();
     this.seedFresh = true;
-    this.cur = buildMenu(this.uiRoot, this.seed, () => this.showCharSelect(), () => this.showHowto());
+    this.cur = buildMenu(this.uiRoot, this.seed,
+      () => this.showCharSelect(),
+      () => this.showHowto(),
+      () => this.showCodex(),
+      () => this.showAchievements(),
+      () => this.showSettings());
+  }
+
+  // ---------- 元页面：图鉴 / 成就 / 设置 ----------
+  private showCodex() {
+    this.phase = 'codex'; this.closeModal(); this.clearScreen();
+    this.cur = buildCodex(this.uiRoot, () => this.showMenu());
+  }
+  private showAchievements() {
+    this.phase = 'ach'; this.closeModal(); this.clearScreen();
+    this.cur = buildAchievements(this.uiRoot, this.save, () => this.showMenu());
+  }
+  /** 设置是**模态**：盖在菜单上，关闭后菜单还在（不重建，避免闪一下） */
+  private showSettings() {
+    this.closeModal();
+    this.curModal = buildSettings(this.uiRoot, this.save, (k) => {
+      this.save[k] = !this.save[k];
+      if (k === 'music') Sfx.setMusic(this.save.music);
+      else Sfx.setSfx(this.save.sfx);
+      writeSave(this.save);
+    }, () => this.closeModal());
   }
   private showHowto() {
     this.phase = 'howto'; this.clearScreen();
@@ -383,6 +418,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       },
       onMerge: (baseId) => {
         const ok = rs.mergeModule(baseId);
+        if (ok) { this.save.merges++; writeSave(this.save); }
         console.log('[Merge] ' + baseId + ' ×3 → ' + baseId + '_2 : ' + ok);
         this.installFromSlot = null;
         const idx = rs.modsBag.lastIndexOf(baseId + '_2');
@@ -605,6 +641,18 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       console.warn('[Result] 非法胜利状态：wave=' + rs0.wave + ' < 总波次 ' + RUN.waves + '（可能来自调试调用）');
     }
     this.phase = 'result';
+    // ★ 成就统计：只在结算时累计一次（不影响分数/奖励）
+    {
+      const rsP = this.battle.rs;
+      this.save.runs++;
+      this.save.kills += rsP.kills;
+      this.save.bestWave = Math.max(this.save.bestWave, rsP.wave);
+      this.save.bestLv = Math.max(this.save.bestLv, rsP.lv);
+      if (win) this.save.wins++;
+      const unlocked = applyUnlocks(this.save);
+      writeSave(this.save);
+      if (unlocked) console.log('[Ach] 解锁新成就：' + this.save.ach.join(','));
+    }
     Sfx.sfx(win ? 'victory' : 'defeat', 0.7, 800);
     Sfx.bgm('menu');
     this.closeModal(); this.clearScreen();

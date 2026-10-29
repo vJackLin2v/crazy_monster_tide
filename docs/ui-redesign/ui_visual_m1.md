@@ -63,6 +63,29 @@
 
 ---
 
+## 4.5 追加修改（用户 2026-10-29 反馈，仍属 M1）
+
+| 反馈 | 处理 |
+|---|---|
+| 主菜单的角色"太丑"，去掉 | 删除主视觉立绘节点与光晕；标题下方保留 3 个卖点块，动作栈整体下移（CTA 428 / 次按钮 496 / 图标行 574，640 参考） |
+| 底部小字去掉 | 删除 seed 页脚（`void seed`，参数保留给以后调试用） |
+| 加音乐开关（关音乐+音效） | 新增 **设置弹窗**：音乐 / 音效两个开关，切换立即生效（`Sfx.setMusic/setSfx`）并写入本地存档 |
+| 加图鉴 | 新增 **图鉴页**：角色 / 技能 / 道具 / 怪物 四个页签，6 行一页 + 翻页；数据直接读现有 `CHARS/SKILLS/ITEMS/ENEMIES`，怪物名做了中文映射 |
+| 加成就系统 | 新增 **成就页 + 累计统计**：9 个成就（初次远征 / 百人斩 / 千军辟易 / 深入怪潮 / 抵达终点 / 构建成型 / 屠龙者 / 黑科技大师 / 远征成功），进度来自结算累计，存 `localStorage` |
+
+**新增文件**
+- `game/Progress.ts`（纯数据形状，可单测）、`engine/Save.ts`（`sys.localStorage` 读写）
+- `game/Achievements.ts`（定义 + 视图 + 解锁判定，纯逻辑）
+- `ui/MetaScreens.ts`（设置 / 图鉴 / 成就）
+
+**改动**
+- `engine/Audio.ts`：`musicOn / sfxOn` 拆开，`setMusic/setSfx`；`bgm()` 在音乐关闭时停播并记住想播的那首
+- `battle/Battle.ts`：新增 `hooks.onBossKill`（只做成就计数，不参与结算）
+- `GameRoot.ts`：路由 codex/ach/settings；结算累计 `runs/kills/bestWave/bestLv/wins` 并 `applyUnlocks` 落盘；合成成功累计 `merges`
+- `tests/run.ts`：新增 9 条成就断言（达标 / 未达标 / 幂等 / 边界 / 进度截断），**120 PASS / 0 FAIL**
+
+> 说明：图鉴与成就是**新增功能**，按用户明确要求加入；都只读现有数据或累计计数，不改战斗、掉落、经济。
+
 ## 5. 未验证 / 风险
 
 1. **微信真机安全区未测**（浏览器里 `getSafeAreaRect` 返回全屏，只有常量兜底）。

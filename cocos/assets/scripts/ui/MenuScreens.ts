@@ -55,7 +55,8 @@ function titleBar(root: Node, vw: number, s: number, label: string): Node {
 }
 
 /** 1. 主界面 */
-export function buildMenu(parent: Node, seed: number, onStart: () => void, onHowto: () => void): Node {
+export function buildMenu(parent: Node, seed: number, onStart: () => void, onHowto: () => void,
+                        onCodex: () => void, onAchievements: () => void, onSettings: () => void): Node {
   const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
   const at2 = (x: number, y: number) => at(VW, VH, x, y);
   const S = safeTop(), B = safeBottom();
@@ -92,39 +93,11 @@ export function buildMenu(parent: Node, seed: number, onStart: () => void, onHow
   text(root, 0, at2(180, S + 100).y, 'C R A Z Y   M O N S T E R   T I D E',
     { size: 10, color: COL.accent, width: 354, bold: true, outline: true });
 
-  // ── 底部块：以可视高度为基准（640 参考：卖点 362 / CTA 422 / 次按钮 482）──
-  const band = Math.max(320, VH - S - B);
-  const ctaY = S + band * 0.655;
-  const chipsY = ctaY - 60;
-  const subBtnY = ctaY + 60;
-
-  // ── 主视觉：现有 CHARS[0] 立绘（整数倍放大，失败静默隐藏，不放彩色占位块）──
-  const stageTop = S + 124;
-  const stageBot = chipsY - 15 - 14;
-  const stageH = Math.max(80, stageBot - stageTop);
-  const stageCY = (stageTop + stageBot) / 2;
-  radialGlow(root, 0, at2(180, stageCY).y, Math.min(VW * 0.46, stageH * 0.72), new Color(96, 146, 214), 62, 14);
-
-  // x 补偿 +7：立绘里剑在左侧，像素主体视觉重心比几何中心偏左
-  const hero = mkNode(root, 'menu-hero', 200, Math.max(80, stageH), 7, at2(180, stageCY).y);
-  const heroSp = hero.addComponent(Sprite);
-  heroSp.sizeMode = Sprite.SizeMode.CUSTOM;
-  heroSp.trim = false;
-  const heroUt = hero.getComponent(UITransform);
-  const applyHero = (f: SpriteFrame | null) => {
-    if (!f || !heroSp.isValid) return;
-    heroSp.spriteFrame = f;
-    const w = (f.rect && f.rect.width) || 32, h = (f.rect && f.rect.height) || 32;
-    // 目标高度 120~140：只允许整数倍（像素风硬规则），宽度不超过 200
-    const k = Math.max(1, Math.floor(Math.min(138 / h, 196 / w)));
-    if (heroUt) heroUt.setContentSize(w * k, h * k);
-  };
-  void Assets.loadPortrait(CHARS[0].unit).then((f) => {
-    if (f) { applyHero(f); return; }
-    return Assets.loadUnit(CHARS[0].unit).then((c) => {
-      applyHero((c.idle && c.idle[0]) || (c.walk && c.walk[0]) || null);
-    });
-  }).catch(() => { /* 立绘失败不影响进入游戏 */ });
+  // ── 底部动作栈：固定间距、从底部安全区往上排（640 参考：卖点 356 / CTA 428 / 次按钮 496 / 图标行 574）──
+  const iconRowY = VH - B - 50;
+  const subBtnY = iconRowY - 78;
+  const ctaY = subBtnY - 68;
+  const chipsY = ctaY - 72;
 
   // ── 卖点条：3 个信息块（不是按钮，不可点）──
   const FEATURES = ['4 个主动技能', '黑科技构筑', '20 波挑战'];
@@ -144,9 +117,17 @@ export function buildMenu(parent: Node, seed: number, onStart: () => void, onHow
   const btn2 = button(root, b2.x, b2.y, 276, 46, '玩法说明', { size: 17 });
   onTap(btn2.node, onHowto);
 
-  // ── 页脚：只留 seed（玩法要点已上移成卖点条）──
-  text(root, 0, at2(180, VH - B - 26).y, '本局种子 ' + seed + ' · 同种子奖励相同',
-    { size: 10, color: COL.dim2, width: 340, outline: false });
+  // ── 次级入口：图鉴 / 成就 / 设置（每个 104×56，热区 >=44）──
+  const ENTRIES: [string, () => void][] = [['图鉴', onCodex], ['成就', onAchievements], ['设置', onSettings]];
+  const EW = 104, EGAP = 8;
+  ENTRIES.forEach(([label, cb], i) => {
+    const cx = 180 - (EW + EGAP) + i * (EW + EGAP);
+    const c = at2(cx, iconRowY);
+    const b = button(root, c.x, c.y, EW, 56, label, { size: 15 });
+    onTap(b.node, cb);
+  });
+
+  void seed;   // 页脚不再显示种子（用户要求去掉底部小字）
   return root;
 }
 

@@ -156,6 +156,8 @@ export class Battle extends Component {
     onLevelUp?: (cards: import('../game/RunState').Reward[]) => void;
     onDead?: () => void;
     onClear?: () => void;
+    /** 击败 BOSS（只用于成就统计，不参与结算） */
+    onBossKill?: () => void;
   } = {};
 
   // ---------- 启动 ----------
@@ -1060,6 +1062,7 @@ export class Battle extends Component {
     const big = e.boss || e.elite;
     if (e.boss) Sfx.sfx('special', 0.65, 200);
     else if (e.elite) Sfx.sfx('hitMetal', 0.5, 200);
+    if (e.boss) this.hooks.onBossKill?.();      // 成就统计用（不改战斗逻辑）
     else Sfx.sfx('drop', 0.14, 130);
     this.addVfx(big ? FX.killBig : FX.killSmall, e.x, e.y, e.boss ? 0.9 : 0.5, big ? 2 : 1);
     this.addVfx(FX.killSpark, e.x, e.y, 0.42, big ? 1.8 : 1.1);
