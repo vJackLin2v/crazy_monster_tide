@@ -211,14 +211,18 @@ export class Hud {
       this.hpText.color = warn ? C_HP_TEXT : COL.cream;
       this.hpWarn.clear();
       if (warn) {
-        // 只画**血条外圈**的柔和光晕：6 层低透明度圆角矩形向外扩，越外越淡
-        // （不画内侧填充层——那会把血条本身糊成灰块）
-        const W = 156, H = 18, LAYERS = 6;
+        // 血条外圈光晕：**窄一点、浓一点**（用户 2026-10-29 第二轮反馈：太淡且压到经验条）
+        //   · 横向最多外扩 ~9.5px、向上 ~11px
+        //   · 向下只扩 2.5px —— 经验条就在血条下方 3px 处，扩多了会盖住它
+        //   · 5 层，最内层 alpha 52 → 最外层 14（同一颜色叠加会更浓）
+        const W = 156, H = 18, LAYERS = 5;
         for (let i = LAYERS; i >= 1; i--) {
-          const pad = 3 + i * 2.4;                       // 5.4 ~ 17.4px（都在血条外侧）
-          const a = Math.round(7 + 20 * (1 - i / (LAYERS + 1)));  // ≈ 24 ~ 10
-          this.hpWarn.fillColor = new Color(198, 92, 112, a);      // 偏灰的暗红，不刺眼
-          this.hpWarn.roundRect(-(W + pad * 2) / 2, -(H + pad * 2) / 2, W + pad * 2, H + pad * 2, 8);
+          const padX = 2 + i * 1.5;
+          const up = 2 + i * 1.8;
+          const down = 2.5;
+          const a = Math.round(14 + 38 * (1 - (i - 1) / LAYERS));
+          this.hpWarn.fillColor = new Color(214, 88, 106, a);
+          this.hpWarn.roundRect(-W / 2 - padX, -H / 2 - down, W + padX * 2, H + up + down, 6);
           this.hpWarn.fill();
         }
       }
