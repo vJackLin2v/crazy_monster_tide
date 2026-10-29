@@ -4,14 +4,14 @@ import type { CharDef, CharStats } from '../data/Types';
 /** 空属性表（所有字段显式初始化，避免 undefined 参与运算产生 NaN） */
 export function emptyStats(): CharStats {
   return {
-    power: 1, haste: 1, area: 1, maxhp: 100, speed: BASE_SPEED,
+    power: 1, haste: 1, area: 1, maxhp: 60, speed: BASE_SPEED,
     crit: 0.05, critdmg: 1.5,
     projSpd: 1, pierce: 0, bounce: 0, count: 0, sizeMul: 1,
     armor: 0, regen: 0, invuln: 0.80, lifesteal: 0,
     pickup: BASE_PICKUP, greed: 0, expGain: 0, killHeal: 0,
-    cdr: 0, knockback: 26, eliteDmg: 0, summonPower: 0,
+    cdr: 0, knockback: 26, eliteDmg: 0, aoeDmg: 0, extraProjDmg: 0, bossArmor: 0,
     tagAll: 0,
-    tagBonus: {}, tagCdr: {}, hp: 100,
+    tagBonus: {}, tagCdr: {}, hp: 60,
   };
 }
 

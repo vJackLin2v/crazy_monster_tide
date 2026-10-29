@@ -13,14 +13,17 @@
  */
 import { RunState } from '../assets/scripts/game/RunState';
 import { calcSkill, makeSkill, canInstall } from '../assets/scripts/game/SkillCalc';
+import { MODULES, MODULE_IDS, MODULE_HOOKS, MODULE_NUMS } from '../assets/scripts/data/Modules';
 import { assertStatsSane, freshStats, emptyStats } from '../assets/scripts/game/Stats';
 import { CHARS } from '../assets/scripts/data/Chars';
-import { RUN, waveTime, isBossWave, isEliteWave, eliteCount, BASE_SPEED, SHOP_SLOTS } from '../assets/scripts/core/Const';
+import { RUN, waveTime, isBossWave, isEliteWave, eliteCount, BASE_SPEED, BASE_PICKUP, SHOP_SLOTS } from '../assets/scripts/core/Const';
 import { ENEMIES, enemyPool, BOSS_UNITS, bossUnitFor } from '../assets/scripts/data/Enemies';
 import { ATTRS } from '../assets/scripts/data/Attrs';
 import { UNIT_FRAMES } from '../assets/scripts/data/UnitFrames';
-import { ITEMS, ELITE_POOL } from '../assets/scripts/data/Items';
-import { CS, pageCount, cellPos, gridBottom, detailBox, detailRows, pagerPos, portraitFit } from '../assets/scripts/ui/CharLayout';
+import { ITEMS, ELITE_POOL, itemNumbers } from '../assets/scripts/data/Items';
+import { CS, pageCount, cellPos, gridBottom, detailBox, detailRows, portraitFit } from '../assets/scripts/ui/CharLayout';
+import { SKILLS, SKILL_ART } from '../assets/scripts/data/Skills';
+import { VFX_FRAMES } from '../assets/scripts/data/VfxFrames';
 
 let pass = 0, fail = 0;
 const ok = (c: boolean, m: string) => { c ? (pass++, console.log('  PASS ' + m)) : (fail++, console.log('  FAIL ' + m)); };
@@ -32,13 +35,39 @@ for (const c of CHARS) {
   ok(errs.length === 0, `${c.name} 属性合理（移速 ${Math.round(s.speed)} px/s，拾取 ${Math.round(s.pickup)}）` + (errs.length ? ' → ' + errs.join('；') : ''));
 }
 ok(Math.abs(freshStats(CHARS[0]).speed - BASE_SPEED * 0.9) < 0.01, '骑士 = 基础移速 x 0.90 倍率');
-ok(Math.abs(freshStats(CHARS[2]).pickup - 85 * 1.5) < 0.01, '游侠拾取 = 基础 x 1.5 倍率');
+ok(Math.abs(freshStats(CHARS[2]).pickup - BASE_PICKUP * 1.5) < 0.01, '游侠拾取 = 基础 x 1.5 倍率（基础 ' + BASE_PICKUP + '）');
+
+// M50：每个黑科技都必须有运行时落点，且声明 calc 的模块真的会改动结算
+{
+  const st = freshStats(CHARS[0]);
+  const missing = MODULE_IDS.filter(id => !MODULE_HOOKS[id] || !MODULE_HOOKS[id].length);
+  ok(missing.length === 0, '每个黑科技都有运行时落点（缺失：' + (missing.join(',') || '无') + '）');
+  const noNums = MODULE_IDS.filter(id => !MODULE_NUMS[id]);
+  ok(noNums.length === 0, '每个黑科技都有数值说明（缺失：' + (noNums.join(',') || '无') + '）');
+  const skillFor = (id: string) => {
+    const req = MODULES[id].requires as unknown as string[];
+    return Object.keys(SKILLS).find(k => (SKILLS[k].tags as unknown as string[]).some(tag => req.includes(tag)));
+  };
+  const noEffect: string[] = [];
+  for (const id of MODULE_IDS) {
+    if (!MODULE_HOOKS[id].includes('calc')) continue;
+    const skId = skillFor(id);
+    if (!skId) { noEffect.push(id + '(无兼容技能)'); continue; }
+    const base = calcSkill(makeSkill(skId), st);
+    const withMod = calcSkill({ ...makeSkill(skId), mods: [id] }, st);
+    const changed = Object.keys(base).some(k => JSON.stringify((base as unknown as Record<string, unknown>)[k]) !== JSON.stringify((withMod as unknown as Record<string, unknown>)[k]));
+    if (!changed) noEffect.push(id);
+  }
+  ok(noEffect.length === 0, '声明 calc 的黑科技都真的改动了结算（无效果：' + (noEffect.join(',') || '无') + '）');
+}
 
 console.log('\n== 2. 行为模块叠加规则 ==');
 {
   const st = freshStats(CHARS[0]);
   const base = calcSkill(makeSkill('fireball'), st);
   ok(base.count === 1, '初始投射物数量 1');
+  // M30 #1：扇射只改 fan，实际发数 = count + fan*2（在 Battle.fireSkill 里结算）
+  ok(calcSkill({ ...makeSkill('fireball'), mods: ['fan'] }, st).fan === 1, '扇射 → fan=1（施放发数 = count + fan×2）');
 
   const s2 = makeSkill('fireball'); s2.mods = ['multi'];
   ok(calcSkill(s2, st).count === 2, '多重 x1 → 数量 2');
@@ -101,6 +130,44 @@ console.log('\n== 4. 替换不让玩家损失 ==');
   ok(r.replaced === 'multi' && rs.modsBag.includes('multi'), '被顶掉的 multi 退回背包');
   ok(!rs.modsBag.includes('giant'), '装上去的 giant 从背包移除');
 }
+{
+  // M30 #5：Build 面板重新分配「已经装在技能上」的模块（背包空也要能做，且不损失）
+  const rs = new RunState('knight', 1);
+  rs.skills = [makeSkill('fireball'), makeSkill('ice_spear')];
+  rs.skills[0].mods = ['pierce', 'giant'];
+  rs.modsBag = [];
+  ok(rs.moveMod(0, 0, 1, 0) === true, '跨技能搬模块：火球 → 冰晶矛');
+  ok(rs.skills[0].mods.length === 1 && rs.skills[0].mods[0] === 'giant', '源技能只剩 giant');
+  ok(rs.skills[1].mods[0] === 'pierce', '目标技能拿到了 pierce');
+  ok(rs.modsBag.length === 0, '背包不变（是直接搬，不是退回背包）');
+  // 目标槽已占用 -> 交换，谁也不丢
+  const rs2 = new RunState('knight', 1);
+  rs2.skills = [makeSkill('fireball'), makeSkill('ice_spear')];
+  rs2.skills[0].mods = ['pierce'];
+  rs2.skills[1].mods = ['multi'];                      // 两个都满足 projectile 标签，可互换
+  const swapped = rs2.moveMod(0, 0, 1, 0);
+  ok(swapped && rs2.skills[0].mods[0] === 'multi' && rs2.skills[1].mods[0] === 'pierce', '目标已占用时交换（不损失）');
+}
+{
+  // M32：3 个同名模块 → 1 个「II」强化（效果 ×2、只占 1 槽；强化不再参与合成）
+  const rs = new RunState('knight', 1);
+  rs.skills = [makeSkill('fireball')];
+  rs.modsBag = ['pierce', 'pierce', 'pierce', 'giant'];
+  ok(rs.mergeReady('pierce') === 1, '3 个穿透 = 可合成 1 次');
+  ok(rs.mergeModule('pierce') === true, '合成成功');
+  ok(rs.modsBag.filter(x => x === 'pierce').length === 0 && rs.modsBag.includes('pierce_2'), '3 个基础模块换成 1 个 pierce_2');
+  ok(rs.mergeReady('pierce') === 0, '强化模块不能再合成（封顶 ×2）');
+  ok(rs.mergeModule('pierce') === false, '凑不满 3 个时合成失败（不会吞模块）');
+  rs.skills[0].mods = ['pierce_2'];
+  ok(calcSkill(rs.skills[0], freshStats(CHARS[0])).pierce === 2, '强化穿透 = 2 份效果，但只占 1 个槽');
+  ok(rs.moveMod(0, 0, 0, 0) === false, '同一槽移到自己身上 = 无操作');
+  // 反例：目标技能不兼容 -> 拒绝，谁都不动
+  const rs3 = new RunState('knight', 1);
+  rs3.skills = [makeSkill('fireball'), makeSkill('blade_storm')];
+  rs3.skills[0].mods = ['pierce'];
+  rs3.skills[1].mods = ['giant'];
+  ok(rs3.moveMod(0, 0, 1, 1) === false && rs3.skills[0].mods[0] === 'pierce', '目标技能不兼容时拒绝移动（不乱丢模块）');
+}
 
 console.log('')
 console.log('== 4b. 属性数量 + 是否真的进结算（需求 §10） ==')
@@ -137,6 +204,11 @@ console.log('== 4c. 道具数量（需求 §10：50 普通 + 20 高级） ==')
   ok(t1 === 50, '普通道具 50 个（实际 ' + t1 + '）');
   ok(t2 === 20, '高级道具 20 个（实际 ' + t2 + '）');
   ok(ELITE_POOL.every(k => ITEMS[k] && ITEMS[k].tier === 2), '精英掉落池里全是高级道具');
+  // M43：道具详情的数值说明（从 apply 反推）
+  ok(itemNumbers(ITEMS.power_s, 'power_s') === '攻击力 +8%', '数值说明：铁匠手套 = 攻击力 +8%');
+  ok(itemNumbers(ITEMS.speed_l, 'speed_l').indexOf('移动速度 +14%') === 0, '数值说明：移速类按百分比显示');
+  ok(itemNumbers(ITEMS.t_fire, 't_fire') === '火系技能伤害 +25%', '数值说明：余烬核心 = 火系技能伤害 +25%');
+  ok(itemNumbers(ITEMS.dragon, 'dragon').indexOf('生命上限 +40') === 0, '数值说明：巨龙之心含「生命上限 +40」');
   // 抽一个道具验证它真的改属性
   const st = emptyStats();
   const before = st.power;
@@ -144,11 +216,20 @@ console.log('== 4c. 道具数量（需求 §10：50 普通 + 20 高级） ==')
   ok(st.power > before, '★ 道具生效（攻击力 ' + before.toFixed(2) + ' → ' + st.power.toFixed(2) + '）');
 }
 
-console.log('\n== 4e. 角色选择布局（2 列 / 每屏 4 个 / 立绘 128） ==');
+console.log('\n== 4e. 角色选择布局（3 列 / 一页 6 个 / 立绘按格子自适应） ==');
 {
   ok(CHARS.length === 6, '角色 6 个（实际 ' + CHARS.length + '）');
-  ok(pageCount(CHARS.length) === 2, '6 个角色 → 2 页（每页 ' + CS.PER_PAGE + ' 个）');
-  ok(CS.PORTRAIT === 128 && CS.PORTRAIT % 32 === 0, '立绘 ' + CS.PORTRAIT + 'px = 32px 源 × 4（整数倍，不糊边）');
+  ok(pageCount(CHARS.length) === 1 && CS.PER_PAGE === 6, '6 个角色 → 1 页放得下（每屏 ' + CS.PER_PAGE + ' 个）');
+
+  // 立绘按「裁掉透明留白后的内容尺寸」整数倍放大：13×15 → 6 倍 = 78×90
+  const k1 = portraitFit(13, 15), k2 = portraitFit(17, 25);
+  ok(k1.k === 6 && k1.w === 78 && k1.h === 90, '13×15 立绘 → 6 倍 = 78×90（比最初 32×32 框里的 52×60 大 50%）');
+  ok(k2.k === 3 && k2.w === 51 && k2.h === 75, '17×25 骑乘立绘 → 3 倍 = 51×75');
+  const allFit = [[13, 15], [14, 15], [12, 14], [17, 25]].every(([w, h]) => {
+    const f = portraitFit(w, h);
+    return f.w <= CS.CARD_W - 12 && f.h <= CS.PORTRAIT && f.k >= 1;
+  });
+  ok(allFit, '所有立绘都在格子可用区（≤ ' + Math.floor(CS.CARD_W - 12) + ' × ' + CS.PORTRAIT + '）');
 
   // 立绘 + 姓名必须在格子内，且互不压（3px 描边内缩）
   const innerH = CS.CARD_H / 2 - 3;
@@ -156,18 +237,8 @@ console.log('\n== 4e. 角色选择布局（2 列 / 每屏 4 个 / 立绘 128） 
   const pBot = CS.PORTRAIT_DY - CS.PORTRAIT / 2;
   const lTop = CS.NAME_DY + 10;
   const lBot = CS.NAME_DY - 10;
-  ok(pTop <= innerH + 0.01 && pBot >= -innerH - 0.01, '立绘 128 在格子内（上下留白 ' + Math.round(innerH - pTop) + ' / ' + Math.round(pBot + innerH) + 'px）');
+  ok(pTop <= innerH + 0.01 && pBot >= -innerH - 0.01, '立绘在格子内（上留白 ' + Math.round(innerH - pTop) + 'px）');
   ok(pBot - lTop >= 1.5 && lBot >= -innerH - 0.01, '姓名在立绘下方且不出格子（间隔 ' + (pBot - lTop).toFixed(0) + 'px）');
-
-  // 立绘按「裁掉透明留白后的内容尺寸」整数倍放大：13×15 → 8 倍 = 104×120，17×25 → 5 倍 = 85×125
-  const k1 = portraitFit(13, 15), k2 = portraitFit(17, 25);
-  ok(k1.k === 8 && k1.w === 104 && k1.h === 120, '13×15 立绘 → 8 倍 = 104×120（原来 32×32 框里只有 52×60）');
-  ok(k2.k === 5 && k2.w === 85 && k2.h === 125, '17×25 立绘 → 5 倍 = 85×125');
-  const allFit = [[13, 15], [14, 15], [12, 14], [17, 25]].every(([w, h]) => {
-    const f = portraitFit(w, h);
-    return f.w <= CS.CARD_W - 12 && f.h <= CS.PORTRAIT && f.k >= 1;
-  });
-  ok(allFit, '所有立绘都在格子可用区（≤ ' + (CS.CARD_W - 12) + ' × ' + CS.PORTRAIT + '）');
 
   let inX = true, inY = true;
   for (let s = 0; s < CS.PER_PAGE; s++) {
@@ -175,9 +246,9 @@ console.log('\n== 4e. 角色选择布局（2 列 / 每屏 4 个 / 立绘 128） 
     if (p.x - CS.CARD_W / 2 < CS.MARGIN_X - 0.01 || p.x + CS.CARD_W / 2 > 360 - CS.MARGIN_X + 0.01) inX = false;
     if (p.cy + CS.CARD_H / 2 > gridBottom() + 0.01) inY = false;
   }
-  ok(inX && inY, '每页 4 格都落在 12~348 的安全区内');
+  ok(inX && inY, '一页 6 格都落在 12~348 的安全区内');
   ok(cellPos(0).cy - CS.CARD_H / 2 >= CS.GRID_TOP - 0.01, '第一行格子不压标题（网格顶边 ' + CS.GRID_TOP + '）');
-  ok(Math.abs((cellPos(0).x + cellPos(1).x) / 2 - 180) < 0.01, '第 2 页的 2 个角色对称居中');
+  ok(Math.abs(cellPos(0).x + cellPos(2).x - 360) < 0.01, '3 列关于屏幕中线对称');
 
   for (const vh of [640, 760, 844]) {
     const box = detailBox(vh);
@@ -188,6 +259,8 @@ console.log('\n== 4e. 角色选择布局（2 列 / 每屏 4 个 / 立绘 128） 
        'VH ' + vh + '：详情 ' + Math.round(box.height) + 'px ' + (dr.compact ? '紧凑' : '完整') + '排版，内容全在面板内');
     ok(box.top > gridBottom() && box.top + box.height < vh - 65,
        'VH ' + vh + '：详情面板夹在网格与底部按钮之间（' + box.top + ' → ' + Math.round(box.top + box.height) + '）');
+    // ⚠️ 用户反馈「角色格子和详情面板边框重叠」：缝隙必须够，否则 3px 描边会糊在一起
+    ok(box.top - gridBottom() >= 10, 'VH ' + vh + '：网格与详情面板之间留 ' + Math.round(box.top - gridBottom()) + 'px 缝（≥10）');
   }
 
   const noOverlap = [640, 700, 760, 844].every(vh => {
@@ -205,9 +278,34 @@ console.log('\n== 4e. 角色选择布局（2 列 / 每屏 4 个 / 立绘 128） 
     return true;
   });
   ok(noOverlap, '详情五行互不压字（VH 640 / 700 / 760 / 844）');
+}
 
-  const pp = pagerPos();
-  ok(pp.x - pp.w / 2 >= CS.MARGIN_X + 228, '翻页按钮在副标题右侧（' + (pp.x - pp.w / 2) + ' ≥ ' + (CS.MARGIN_X + 228) + '）');
+console.log('\n== 4f. 技能视觉与描述一致（用户反馈「灵能箭射出来是个球」） ==');
+{
+  // 1) 所有引用的 VFX key 必须真实存在（打错一个字就静默变成空特效）
+  const missing: string[] = [];
+  for (const [id, a] of Object.entries(SKILL_ART)) {
+    for (const k of [a.proj, a.hit, a.aoe, a.zone, a.cast, a.swing]) {
+      if (k && VFX_FRAMES[k] === undefined) missing.push(id + ':' + k);
+    }
+  }
+  ok(missing.length === 0, '16 个技能的 VFX key 全在 VfxFrames 表里' + (missing.length ? ' → ' + missing.join(', ') : ''));
+
+  // 2) 不许再用「圆球」当弹道（灵能箭/圣光弹/回旋刃 原本都是 arcane-orb）
+  const BALL = new Set(['projectile/arcane/arcane-orb', 'projectile/arcane/homing-orb']);
+  const balls = Object.entries(SKILL_ART).filter(([, a]) => a.proj && BALL.has(a.proj)).map(([id]) => id);
+  ok(balls.length === 0, '没有弹道技能再用圆球素材' + (balls.length ? ' → ' + balls.join(', ') : ''));
+
+  // 3) 形状要对得上名字
+  ok(SKILL_ART.spirit.proj === 'projectile/lightning/energy-bolt', '灵能箭 = 细长带尾的 bolt（不再是球）');
+  ok(SKILL_ART.holybolt.proj === 'projectile/lightning/plasma-shot', '圣光弹 = 光弹（不再是球）');
+  ok(SKILL_ART.blade.proj === 'melee/slash/wide-cleave', '回旋刃 = 月牙刃光（不再是球）');
+
+  // 4) 区域技能要有施法动作（用户反馈「刃爆看不出施法，直接作用到敌人身上」）
+  ok(!!SKILL_ART.blade_storm.cast && !!SKILL_ART.blade_storm.swing, '刃暴有施法动作（cast + swing）');
+  const areaIds = Object.keys(SKILLS).filter(id => SKILLS[id].type === 'area');
+  ok(areaIds.length > 0 && areaIds.every(id => !!SKILL_ART[id] && !!SKILL_ART[id].cast), 
+     '所有区域技能都有起手动作（' + areaIds.join('/') + '）');
 }
 
 console.log('\n== 5. 商店（固定货位 / 购买不消失 / 锁定） ==');

@@ -44,27 +44,45 @@ interface Enemy {
   dead: boolean; deathT: number; animT: number; walkT: number; atkT: number;
   facing: number; flash: number; kx: number; ky: number; slow: number; spawnT: number;
   boss: boolean; elite: boolean;
+  /** 状态层（M48）：中毒淡绿 / 灼烧淡红，持续期间每 0.5s 掉血 */
+  poisonT: number; burnT: number; dotTick: number;
+  poisonDmg: number; burnDmg: number;
+  /** 视觉缩放（M64）：精英/BOSS 只放大**显示**，不动碰撞半径 r */
+  visScale: number;
 }
 interface Bullet {
   node: Node; anim: FrameAnim;
   x: number; y: number; vx: number; vy: number; r: number; dmg: number;
   pierce: number; bounce: number; chain: number; split: number; life: number; t: number;
   hitVfx: string; hit: Set<Enemy>; homing: boolean;
+  /** 触发效果（M48/M49）：子弹要带上技能的各类附加效果，否则命中时丢失 */
+  burn?: number; slow?: number; vamp?: number; thunder?: number;
+  splitDone?: boolean;
+  /** 回旋（回旋刃）：飞出去一段时间后折返，回程可再命中一次 */
+  returning?: boolean;
+  returned?: boolean;
+  outT?: number;
+  /** 回程自转角度（让刃"转着回来"） */
+  spinAngle?: number;
 }
 interface Area {
   node: Node; anim: FrameAnim; x: number; y: number; r: number; maxR: number;
   dmg: number; life: number; t: number; tick: number; tickRate: number;
   kind: 'pulse' | 'zone'; done: boolean;
+  /** 产生它的技能 id（地刺要按节拍从地里冒刺；毒雾挂中毒） */
+  tag?: string;
+  /** 灼烧层数（区域技能命中时也要挂灼烧状态） */
+  burn?: number;
 }
-interface Gem { node: Node; x: number; y: number; v: number; pop: number; vx: number; vy: number; }
+interface Gem { node: Node; x: number; y: number; v: number; pop: number; vx: number; vy: number; base: number; }
 interface Fx { node: Node; anim: FrameAnim; t: number; life: number; }
-/** 召唤物（守卫图腾）：存在一段时间，自己定期朝最近敌人开火 */
-interface Summon {
-  node: Node; anim: FrameAnim;
-  x: number; y: number; t: number; life: number; cd: number;
-  dmg: number; rt: SkillRuntime;
+/** 陨石（M45）：从天而降的投射体，落地才结算范围伤害 */
+interface Meteor {
+  node: Node; fromX: number; fromY: number; toX: number; toY: number;
+  t: number; dur: number; size: number; dmg: number; rt: SkillRuntime;
+  zoneLife?: number; tickRate?: number;
+  zoneKey?: string; trailT: number; done: boolean;
 }
-
 @ccclass('Battle')
 export class Battle extends Component {
   // 节点树
@@ -72,6 +90,8 @@ export class Battle extends Component {
   private layerArea: Node = null!;
   private layerUnit: Node = null!;
   private layerBullet: Node = null!;
+  /** 玩家单独一层，永远画在所有敌人之上（M66：否则被怪群盖住找不到自己） */
+  private layerPlayer: Node = null!;
   private layerFx: Node = null!;
   private layerText: Node = null!;
   cam: Camera2D = null!;
@@ -91,7 +111,10 @@ export class Battle extends Component {
   private areas: Area[] = [];
   private gems: Gem[] = [];
   private fx: Fx[] = [];
-  private summons: Summon[] = [];
+  private meteors: Meteor[] = [];
+  /** 复读机（echo）：延迟重放一次施放 */
+  private echoQueue: { slot: number; in: number }[] = [];
+
   /** 闪电线段（连锁闪电用）：画成折线，短暂淡出 */
   private bolts: { node: Node; t: number; life: number }[] = [];
 
@@ -101,6 +124,9 @@ export class Battle extends Component {
   private waveEnding = false;      // 正在结算本波（吸收经验中）
   private waveEndT = 0;
   private waveEndPending = false;  // 经验收完了，但还有升级弹窗没处理完
+  /** 本波吸取到的经验（升级次数）：等全部吸完再一次性开升级卡（M33 #2） */
+  private waveEndUps = 0;
+  private waveAbsorbDone = false;
   /** 受击闪屏强度 0~1（Hud 读它做红色边框闪烁） */
   hurtFlash = 0;
 
@@ -146,10 +172,15 @@ export class Battle extends Component {
     //    于是 cam / world 都没建。之前这里直接 this.cam.target = node 会抛 TypeError，
     //    把整个 startRun 打断（表现出来就是"进战斗卡一下"+"看不到人"）。
     if (!this.cam || !this.world) this.buildTree();
+    // ★ M33 #1：先清上一局残留。以前这里只 new RunState，场上旧敌人 / 经验球 /
+    //   飞行物 / 旧玩家节点全留着 —— 表现就是"开新局还能看到上一局的经验球和两个玩家"。
+    this.resetRunState();
     const charDef = CHARS.find(c => c.id === charId) ?? CHARS[0];
     this.rs = new RunState(charDef.id, seed);
     // 预载：玩家单位 + 初始技能的投射物/命中特效
     this.playerClips = await Assets.loadUnit(charDef.unit);
+    // 经验球素材（5 帧，很小）：开局就同步载入，保证第一只怪掉球时就能看见
+    await Assets.loadVfx('pickup/gem');
     // VFX **不再阻塞入场**（用户反馈「进入游戏时会先卡顿一下」）：
     //   原来这里同步 await 了 20+ 个特效组件，实测 startRun 要 700ms+。
     //   改成后台加载：前 1~2 秒的命中特效可能缺席，但不卡；GameRoot 开局也在预加载同一批。
@@ -159,6 +190,40 @@ export class Battle extends Component {
     await this.startWave(1);
     this.running = true;
     this.paused = false;
+  }
+
+  /**
+   * 开新局前把**所有跨局残留**清掉（M33 #1）。
+   * 覆盖：玩家节点、敌人、经验球、飞行物、区域、特效、召唤、闪电、
+   *      波次计时 / BOSS 引用 / 命中停顿 / 受击闪屏 / 技能冷却。
+   */
+  private resetRunState() {
+    const kill = (n?: Node) => { if (n && n.isValid) n.destroy(); };
+    kill(this.playerNode);
+    this.playerNode = null!;
+    for (const e of this.enemies) kill(e.node);
+    this.enemies = [];
+    for (const g of this.gems) kill(g.node);
+    this.gems = [];
+    for (const b of this.bullets) kill(b.node);
+    this.bullets = [];
+    for (const a of this.areas) kill(a.node);
+    this.areas = [];
+    for (const f of this.fx) kill(f.node);
+    this.fx = [];
+    for (const bo of this.bolts) kill(bo.node);
+    this.bolts = [];
+    for (const m of this.meteors) kill(m.node);
+    this.meteors = [];
+    this.echoQueue = [];
+
+    this.waveLeft = 0; this.elitesSpawned = 0; this.spawnAcc = 0;
+    this.waveEnding = false; this.waveEndT = 0; this.waveEndPending = false;
+    this.waveEndUps = 0; this.pendingUps = 0;
+    this.bossRef = null; this.bossAlive = null; this.bossDefeated = false;
+    this.hitstop = 0; this.hurtFlash = 0; this.inv = 0; this.dmgFlash = 0;
+    this.skillT = [0, 0, 0, 0];
+    this.running = false; this.paused = false;
   }
 
   /** 屏上调试行：素材加载统计（确认资源路径是否正确最直观的方式） */
@@ -292,6 +357,32 @@ export class Battle extends Component {
     }
     ground.setPosition(0, ARENA_H, 0);
 
+    // ── 地面贴图（2026-10-20）：SDXL 竞技场底图，620×940 = 1:1 世界尺寸 ──
+    // 加载成功就隐藏上面那套程序绘制（保留为兜底：素材没导入时画面不会空）
+    const artGround = new Node('GroundArt');
+    artGround.parent = this.world;
+    const gut = artGround.addComponent(UITransform);
+    gut.setContentSize(ARENA_W, ARENA_H);
+    artGround.setPosition(ARENA_W / 2, ARENA_H / 2, 0);
+    const gsp = artGround.addComponent(Sprite);
+    gsp.sizeMode = Sprite.SizeMode.CUSTOM;
+    gsp.trim = false;
+    void Assets.loadBg('battle-floor-620x940').then((sf) => {
+      if (!sf || !gsp.isValid) { console.warn('[Battle] 地面贴图缺失，回退程序绘制'); return; }
+      gsp.spriteFrame = sf;
+      ground.active = false;
+    });
+
+    // 竞技场边界（2px 橙）单独一层，不随 ground 隐藏
+    const bd = new Node('ArenaBorder');
+    bd.parent = this.world;
+    const bdg = bd.addComponent(Graphics);
+    bdg.lineWidth = 2;
+    bdg.strokeColor = new Color(255, 168, 75, 90);
+    bdg.rect(0, -ARENA_H, ARENA_W, ARENA_H);
+    bdg.stroke();
+    bd.setPosition(0, ARENA_H, 0);
+
     // 边缘暗角：四周压暗，把注意力聚焦到战斗中心
     const vig = new Node('Vignette');
     vig.parent = this.world;
@@ -309,9 +400,13 @@ export class Battle extends Component {
     }
     vig.setPosition(0, ARENA_H, 0);
 
+    // ⚠️ M66（遮挡评估）：层序就是绘制序。旧顺序 Area>Unit>Bullet 让**子弹画在单位上面**，
+    //   且玩家与敌人同层（敌人后创建 → 盖住玩家）。密集战斗里玩家会被整个盖掉（已有截图证据）。
+    //   新顺序：Area(地面/经验球) > Bullet(子弹) > Unit(敌人) > Player(玩家恒在单位之上) > Fx > Text
     this.layerArea = mk('Area');
-    this.layerUnit = mk('Unit');
     this.layerBullet = mk('Bullet');
+    this.layerUnit = mk('Unit');
+    this.layerPlayer = mk('Player');
     this.layerFx = mk('Fx');
     this.layerText = mk('Text');
   }
@@ -346,6 +441,8 @@ export class Battle extends Component {
 
     let body = node;
     let outline: Sprite | null = null;
+    let glow: Node | null = null;
+    let glow2: Node | null = null;
     if (withShadow) {
       const ol = new Node('outline');
       ol.parent = node;
@@ -355,6 +452,26 @@ export class Battle extends Component {
       outline.sizeMode = Sprite.SizeMode.CUSTOM;
       outline.trim = false;
       outline.color = new Color(6, 8, 16, 235);
+
+      // ★ 泛光层（参考"吞噬/行囊守卫"的转职光晕做法：同一帧放大 + 染色低透明度）
+      //   精英绿色泛光：内层 1.18× alpha 0.9，外层 1.45× alpha 0.3
+      glow = new Node('glow');
+      glow.parent = node;
+      const gut = glow.addComponent(UITransform);
+      gut.setContentSize(w * 1.22, h * 1.22);
+      const gsp = glow.addComponent(Sprite);
+      gsp.sizeMode = Sprite.SizeMode.CUSTOM; gsp.trim = false;
+      gsp.color = new Color(74, 227, 106, 255);
+      glow.active = false;
+
+      glow2 = new Node('glow2');
+      glow2.parent = node;
+      const g2ut = glow2.addComponent(UITransform);
+      g2ut.setContentSize(w * 1.46, h * 1.46);
+      const g2sp = glow2.addComponent(Sprite);
+      g2sp.sizeMode = Sprite.SizeMode.CUSTOM; g2sp.trim = false;
+      g2sp.color = new Color(74, 227, 106, 120);
+      glow2.active = false;
 
       body = new Node('body');
       body.parent = node;
@@ -371,6 +488,8 @@ export class Battle extends Component {
     but2.setContentSize(w, h);
     const anim = body.addComponent(FrameAnim);
     if (outline) (node as unknown as { _outline: Sprite })._outline = outline;
+    if (glow) (node as unknown as { _glow: Node })._glow = glow;
+    if (glow2) (node as unknown as { _glow2: Node })._glow2 = glow2;
 
     if (withShadow) {
       const sh = new Node('shadow');
@@ -382,21 +501,33 @@ export class Battle extends Component {
       ss.sizeMode = Sprite.SizeMode.CUSTOM;
       ss.trim = false;
       sh.setPosition(0, -h / 2 + 2, 0);
+      // ★ 层级必须是「描边 → 阴影 → 外泛光 → 内泛光 → 身体」：
+      //   泛光要**垫在身体后面**，否则 1.5× 的染色副本会盖住身体、把角色整体染成绿/红。
+      // （ol 是上一个 if 块里的局部变量，这里按名字取，别再引用它）
+      const olNode = node.getChildByName('outline');
+      if (olNode) olNode.setSiblingIndex(0);
       sh.setSiblingIndex(1);
-      body.setSiblingIndex(2);
+      if (glow2) glow2.setSiblingIndex(2);
+      if (glow) glow.setSiblingIndex(3);
+      body.setSiblingIndex(4);
       body.getComponent(UITransform)!.setContentSize(w, h);
     }
     return { node, anim, body };
   }
 
-  private addVfx(key: string, x: number, y: number, life: number, scale = 1): Fx | null {
+  private addVfx(key: string, x: number, y: number, life: number, scale = 1, angleDeg = 0): Fx | null {
     const frames = Assets.vfxFrames(key);
-    if (!frames || !frames.length) return null;
+    if (!frames || !frames.length) {
+      // 没预加载过的 key：先触发加载，下一次施放就能画出来（例如地刺的 spike-row）
+      void Assets.loadVfx(key);
+      return null;
+    }
     const { node, anim } = this.mkSpriteNode('fx:' + key, this.layerFx,
       32 * scale, 32 * scale);
     anim.setClips({ play: frames });
     anim.play('play', false);
     node.setPosition(x, ARENA_H - y, 0);
+    node.angle = angleDeg;
     const f: Fx = { node, anim, t: 0, life };
     this.fx.push(f);
     return f;
@@ -406,7 +537,7 @@ export class Battle extends Component {
   //  实体
   // ============================================================
   private createPlayer(unit: string) {
-    const { node, anim } = this.mkSpriteNode('player:' + unit, this.layerUnit, 32, 32, new Color(255, 168, 75), true);
+    const { node, anim } = this.mkSpriteNode('player:' + unit, this.layerPlayer, 32, 32, new Color(255, 168, 75), true);
     anim.setClips(this.playerClips);
     this.playerNode = node;
     this.playerAnim = anim;
@@ -428,19 +559,31 @@ export class Battle extends Component {
       if (a.hit) keys.add(a.hit);
       if (a.aoe) keys.add(a.aoe);
       if (a.zone) keys.add(a.zone);
+      if (a.cast) keys.add(a.cast);
+      if (a.swing) keys.add(a.swing);
     }
+    // 区域技能（type=area）的通用起手法阵
+    keys.add('ground/ring/cast-circle');
     keys.add('chain/chain-node');          // 连锁闪电的命中火花（原来每次跳都异步 load 一次）
+    keys.add('ground/earth/spike-row');    // 地刺的尖刺行（素材，M34 #2）
+    keys.add('ground/earth/stone-burst');  // 地刺的地面碎裂
+    keys.add('support/heal/heal');          // 吸血 / 击杀回血的回血动画（M39）
+    keys.add('pickup/gem');                 // 经验球素材动画（M41）
+    keys.add('projectile/fire/fire-trail'); // 陨石拖尾（M45）
+    keys.add('projectile/earth/meteor');    // 陨石本体（岩石，M53）
+    keys.add('core/burst/warm-explosion');
+    keys.add('core/burst/big-boom');
     for (const k of keys) await Assets.loadVfx(k);
   }
 
   private async startWave(n: number) {
     this.rs.wave = n;
+    this.waveEnding = false; this.waveEndT = 0; this.waveEndPending = false;
+    this.waveEndUps = 0; this.waveAbsorbDone = false;
     this.spawnAcc = 0;
     this.elitesSpawned = 0;
     this.bossRef = null;
     this.waveLeft = isBossWave(n) ? 0 : waveTime(n);
-    for (const s of this.summons) { if (s.node && s.node.isValid) s.node.destroy(); }
-    this.summons = [];
     for (const b of this.bolts) { if (b.node && b.node.isValid) b.node.destroy(); }
     this.bolts = [];
     this.px = ARENA_W / 2; this.py = ARENA_H / 2;
@@ -489,9 +632,42 @@ export class Battle extends Component {
       dead: false, deathT: 0, animT: 0, walkT: 0, atkT: 0,
       facing: 1, flash: 0, kx: 0, ky: 0, slow: 0, spawnT: 0.9,
       boss: !!def.boss, elite: !!def.elite,
+      poisonT: 0, burnT: 0, dotTick: 0, poisonDmg: 0, burnDmg: 0,
+      visScale: 1,
     };
+    // ★ M49：单位帧是异步加载的，加载完成前先**藏起来**（之前会露出红色兜底方块）
+    const bodyNode = node.getChildByName('body') ?? node;
+    const bodySp = bodyNode.getComponent(Sprite);
+    const outlineSp = (node as unknown as { _outline?: Sprite })._outline ?? null;
+    if (bodySp) bodySp.enabled = false;
+    if (outlineSp) outlineSp.enabled = false;
+    // ★ M64：精英/BOSS 只放大**显示**（碰撞半径 r 不变，判定范围不因此改变）
+    e.visScale = def.boss ? 1.6 : (def.elite ? 1.25 : 1);
+    if (e.visScale !== 1) node.setScale(e.visScale, e.visScale, 1);
+
+    // ★ 精英/BOSS 的辨识 = **身体泛光**（不再画地面圈）
+    //   用户 2026-10-28 明确要求：地面圈会盖住地面细节、还像技能范围指示；
+    //   改成"同帧放大 + 染色 + 半透明"的两层光晕垫在身体后面 —— 就是《吞噬守卫》里稀有度角色的做法。
+    if (e.elite) {
+      this.setBodyGlow(node, new Color(120, 255, 140), 235, new Color(52, 210, 90), 120);
+      const ol = (node as unknown as { _outline?: Sprite })._outline;
+      if (ol) ol.color = new Color(88, 232, 120, 255);     // 描边染绿 = 清晰的绿色轮廓
+    }
+    if (e.boss) {
+      this.setBodyGlow(node, new Color(255, 96, 80), 235, new Color(170, 34, 26), 130);
+      const ol = (node as unknown as { _outline?: Sprite })._outline;
+      if (ol) ol.color = new Color(232, 78, 66, 255);
+      this.addBossTag(node);
+      this.addVfx('core/ring/zap-ring', wx, wy, 0.7, 2.4);
+      this.cam.addShake(SHAKE.boss);
+    }
     this.enemies.push(e);
-    void Assets.loadUnit(unit).then((clips) => { if (e.node.isValid) e.anim.setClips(clips); });
+    void Assets.loadUnit(unit).then((clips) => {
+      if (!e.node.isValid) return;
+      e.anim.setClips(clips);
+      if (bodySp && bodySp.isValid) bodySp.enabled = true;
+      if (outlineSp && outlineSp.isValid) outlineSp.enabled = true;
+    });
     this.addVfx(FX.spawnWarn, wx, wy, 0.5, 1.6);
   }
 
@@ -522,23 +698,65 @@ export class Battle extends Component {
         }
         return;
       }
-      for (let i = 0; i < rt.count; i++) {
-        const spread = rt.fan > 0 ? 0.16 * rt.fan : 0.06;
-        const a = dir + (rt.count > 1 ? (i - (rt.count - 1) / 2) * spread : 0);
-        this.spawnBullet(this.px, this.py, Math.cos(a) * rt.spd, Math.sin(a) * rt.spd,
-          rt, art.proj, art.hit, def.tags.includes('homing'));
+      // ★ 扇射：以前 fan 只改「间距」不改「数量」—— count=1 时(i - (count-1)/2) 恒为 0，
+      //   装 1~2 个扇射完全看不出散射（用户反馈「火了装了散射却不散射」，2026-10-20 M30 #1）。
+      //   现在每个扇射 **多 2 发**，并沿扇面均匀铺开。
+      // ★ M49：**加量**和**扇射**必须不一样 ——
+      //   加量：同方向多打 1 发，全额伤害（火力集中）
+      //   扇射：额外散开 2 发"小弹"，每发 60% 伤害、射程更短（覆盖面换伤害）
+      const baseShots = rt.count;
+      const baseSpread = baseShots > 1 ? 0.06 : 0;
+      // 第三轮批准：额外弹（第 2 发起）按 extraProjDmg 加成（三重镜 = +15%），主弹仍是全额
+      const extraMul = 1 + (this.rs.stats.extraProjDmg ?? 0);
+      for (let i = 0; i < baseShots; i++) {
+        const a = dir + (i - (baseShots - 1) / 2) * baseSpread;
+        const shotRt = i === 0 || extraMul === 1 ? rt : { ...rt, dmg: rt.dmg * extraMul };
+        const bl = this.spawnBullet(this.px, this.py, Math.cos(a) * rt.spd, Math.sin(a) * rt.spd,
+          shotRt, art.proj, art.hit, def.tags.includes('homing'));
+        // ★ 回旋刃（M46）：飞出去 0.5s 后折返，回程可再命中一次
+        if (bl && def.tags.includes('return')) {
+          bl.returning = true;
+          bl.outT = 0.5;
+          bl.life = 2.2;
+        }
+      }
+      const fanShots = rt.fan * 2;
+      for (let i = 0; i < fanShots; i++) {
+        const a = dir + (i - (fanShots - 1) / 2) * 0.24;
+        this.spawnBullet(this.px, this.py, Math.cos(a) * rt.spd * 0.85, Math.sin(a) * rt.spd * 0.85,
+          { ...rt, dmg: rt.dmg * 0.55, pierce: 0, bounce: 0, chain: 0, split: 0 },
+          art.proj, art.hit, false, false, 0.75);
       }
       for (let i = 0; i < rt.orbit; i++) {
         this.spawnBullet(this.px, this.py, 0, 0, { ...rt, dmg: rt.dmg * 0.8 }, art.proj, art.hit, false, true);
       }
     } else if (def.type === 'pulse') {
-      this.spawnArea(this.px, this.py, rt.size + 26, rt.dmg, 0.32, 'pulse', art.aoe, rt);
+      // 复读机（echo）：0.4s 后再来一次 60% 伤害
+      if (rt.echo > 0) this.echoQueue.push({ slot, in: 0.4 });
+      // 0.45s 让扩散过程看得见；再补一圈更大的冲击环和尘土
+      this.spawnArea(this.px, this.py, rt.size + 26, rt.dmg, 0.45, 'pulse', art.aoe, rt);
+      this.addVfx('core/ring/shockwave', this.px, this.py, 0.38, Math.max(1.6, (rt.size + 26) / 12));
     } else if (def.type === 'area') {
       const ax = tgt ? tgt.x : this.px, ay = tgt ? tgt.y : this.py;
-      this.spawnArea(ax, ay, rt.size, rt.dmg, 3.4, 'zone', art.zone ?? art.aoe, rt);
-    } else if (def.type === 'summon') {
-      // 守卫图腾：在玩家附近立一个图腾，存活 9 秒，自行开火（DEMO 的行为）
-      this.spawnSummon(rt, art.proj);
+      // ★ 施法动作（用户反馈「刃爆看不出施法，像直接作用到敌人身上」）：
+      //   先在角色脚下起手法阵，再在角色身上转一刀，最后朝目标方向补一道斩击。
+      //   三道特效都在**落地之前**播，让"打出去"这件事有明确的动作来源。
+      this.addVfx('ground/ring/cast-circle', this.px, this.py, 0.34, 1.6);
+      if (art.cast) this.addVfx(art.cast, this.px, this.py, 0.30, 2.0);
+      if (art.swing && tgt) {
+        const ang = Math.atan2(ay - this.py, ax - this.px);
+        this.addVfx(art.swing, (this.px + ax) / 2, (this.py + ay) / 2, 0.24, 1.8, -ang * 180 / Math.PI);
+      }
+      // 复读机（echo）：0.4s 后再来一次 60% 伤害
+      if (rt.echo > 0) this.echoQueue.push({ slot, in: 0.4 });
+      // ★ 陨石（M45）：先从屏幕上方砸下来，**落地瞬间**才生成燃烧区
+      if (sk.id === 'meteor') { this.castMeteor(ax, ay, rt.size, rt.dmg, rt, art); return; }
+      // 第三轮：区域时长/跳动间隔按技能配置（默认 3.4s / 0.45s）
+      this.spawnArea(ax, ay, rt.size, rt.dmg, sk.zoneLife ?? 3.4, 'zone', art.zone ?? art.aoe, rt, sk.tickRate ?? 0.45);
+      // 地刺：zone 只负责伤害，视觉是"从地里冒出来的一排石刺"（M33 #3）
+      const ar = this.areas[this.areas.length - 1];
+      if (ar) ar.tag = sk.id;
+      if (sk.id === 'spike') this.spawnSpikeField(ax, ay, rt.size);
     }
   }
 
@@ -576,47 +794,9 @@ export class Battle extends Component {
     });
   }
 
-  /** 立一个守卫图腾 */
-  private spawnSummon(rt: SkillRuntime, vfxKey?: string) {
-    const key = vfxKey ?? FX.summon;
-    const frames = Assets.vfxFrames(key);
-    const x = this.px + this.rs.rng.range(-22, 22);
-    const y = this.py + this.rs.rng.range(-12, 12);
-    const { node, anim } = this.mkSpriteNode('summon', this.layerUnit, 32, 32, new Color(255, 201, 138));
-    if (frames.length) { anim.setClips({ play: frames }); anim.play('play', true); }
-    node.setPosition(x, ARENA_H - y, 0);
-    // 落地提示
-    this.addVfx(FX.summon, x, y, 0.5, 1.4);
-    // ★ 召唤强化：加伤害 + 加存活时间
-    const sp = this.rs.stats.summonPower ?? 0;
-    this.summons.push({ node, anim, x, y, t: 0, life: 9 * (1 + sp * 0.5), cd: 0.35, dmg: rt.dmg * (1 + sp), rt });
-  }
-
-  /** 召唤物更新：定期朝最近敌人开火；到期回收 */
-  private updateSummons(dt: number) {
-    for (const s of this.summons) {
-      s.t += dt; s.cd -= dt;
-      if (s.cd <= 0) {
-        s.cd = 0.75;
-        const t = this.nearestEnemy(s.x, s.y, 180);
-        if (t) {
-          const a = Math.atan2(t.y - s.y, t.x - s.x);
-          this.spawnBullet(s.x, s.y, Math.cos(a) * 185, Math.sin(a) * 185,
-            { ...s.rt, dmg: s.dmg, size: 5, pierce: 0, bounce: 0, chain: 0, split: 0, orbit: 0 },
-            'projectile/arcane/magic-missile', 'core/spark/hit-spark', false);
-        }
-      }
-    }
-    this.summons = this.summons.filter(s => {
-      if (s.t < s.life) return true;
-      if (s.node && s.node.isValid) s.node.destroy();
-      return false;
-    });
-  }
-
   private spawnBullet(x: number, y: number, vx: number, vy: number, rt: SkillRuntime,
                       vfxKey: string | undefined, hitVfx: string | undefined,
-                      homing: boolean, orbit = false) {
+                      homing: boolean, orbit = false, life = 1.6) {
     const key = vfxKey ?? FX.killSmall;
     const frames = Assets.vfxFrames(key);
     const sc = Math.max(1, Math.round(rt.size / 5));
@@ -624,30 +804,176 @@ export class Battle extends Component {
     anim.autoSize = false;   // 子弹按技能 size 缩放，不跟随帧原生尺寸
     if (frames.length) { anim.setClips({ play: frames }); anim.play('play', true); }
     node.setPosition(x, ARENA_H - y, 0);
-    this.bullets.push({
+    const b: Bullet = {
       node, anim, x, y, vx, vy, r: Math.max(4, rt.size),
       dmg: rt.dmg, pierce: rt.pierce, bounce: rt.bounce, chain: rt.chain, split: rt.split,
-      life: orbit ? 3.2 : 1.6, t: 0, hitVfx: hitVfx ?? 'core/spark/hit-spark',
+      life: orbit ? 3.2 : life, t: 0, hitVfx: hitVfx ?? 'core/spark/hit-spark',
       hit: new Set(), homing,
-    });
+      burn: rt.burn, slow: rt.slow, vamp: rt.vamp, thunder: rt.thunder,
+    };
+    this.bullets.push(b);
+    return b;
   }
 
   private spawnArea(x: number, y: number, r: number, dmg: number, life: number,
-                    kind: 'pulse' | 'zone', vfxKey: string | undefined, _rt: SkillRuntime) {
+                    kind: 'pulse' | 'zone', vfxKey: string | undefined, _rt: SkillRuntime,
+                    tickRate = 0.45) {
     const frames = vfxKey ? Assets.vfxFrames(vfxKey) : [];
     // 地面持续区域（zone）本身只是个"环/地面贴图"，很安静 —— 用户反馈「刃爆看不出特效」。
     // 这里补一发**起手爆发**：落下瞬间的冲击环 + 闪光，让"打出去了"这件事有明确反馈。
     const { node, anim } = this.mkSpriteNode('area', this.layerArea, r * 2, r * 2);
+    // ⚠️ M33 #3：FrameAnim.setClips 默认按帧原生尺寸（32px）改节点大小，
+    //    于是**所有范围技能都只画了 32px 的一小圈**（半径 26~34 的震荡波/霜爆/毒雾全中招），
+    //    玩家看到的就是"技能放出去没效果"。这里必须关掉 autoSize，保留 r*2。
+    anim.autoSize = false;
     if (frames.length) { anim.setClips({ play: frames }); anim.play('play', true); }
     node.setPosition(x, ARENA_H - y, 0);
     if (kind === 'zone') {
       this.addVfx('core/ring/shockwave', x, y, 0.35, Math.max(1.2, r / 18));
       this.addVfx(FX.killBig, x, y, 0.3, Math.max(1, r / 26));
+    } else {
+      // 脉冲（震荡波 / 霜爆 / 荆棘环 / 寒冰环）：冲击环 + 地面扬尘 + 镜头轻震
+      this.addVfx('core/dust/landing-dust', x, y + 6, 0.32, Math.max(1.4, r / 14));
+      this.cam.addShake(SHAKE.kill);
     }
     this.areas.push({
       node, anim, x, y, r: kind === 'pulse' ? 0 : r, maxR: r, dmg,
-      life, t: 0, tick: 0, tickRate: 0.45, kind, done: false,
+      life, t: 0, tick: 0, tickRate, kind, done: false, burn: _rt.burn,
     });
+  }
+
+  /**
+   * 陨石（M45）：从屏幕上方 300px 处砸向落点，越落越快，带火焰拖尾；
+   * **落地那一刻**才播爆炸 + 相机震动 + 生成燃烧区。这样才看得出"从天上来"。
+   */
+  private castMeteor(x: number, y: number, size: number, dmg: number, rt: SkillRuntime, art: SkillArt) {
+    // 落点预警环（下落期间才看得到，砸下来更有"要来了"的感觉）
+    this.addVfx('core/ring/zap-ring', x, y, Math.max(0.5, 0.6), Math.max(1.6, size / 12));
+    // M53：本体换成**岩石**（复用已导入的石屑帧第 2 张），火焰交给拖尾 ——
+    //      之前用 fireball-shot，看着就是"火球砸下来"（用户反馈）
+    const stoneFrames = Assets.vfxFrames('ground/earth/stone-burst');
+    const frames = stoneFrames.length > 1 ? [stoneFrames[1]] : stoneFrames;
+    const { node, anim } = this.mkSpriteNode('meteor', this.layerUnit, 32, 32, new Color(255, 160, 80));
+    anim.autoSize = false;
+    if (frames.length) { anim.setClips({ play: frames }); anim.play('play', true); }
+    const sc = Math.max(2.4, rt.size / 10);
+    node.setScale(sc, sc, 1);
+    node.setPosition(x, ARENA_H - (y - 320), 0);
+    this.meteors.push({
+      node,
+      fromX: x, fromY: y - 320, toX: x, toY: y,
+      t: 0, dur: 0.55, size, dmg, rt, zoneKey: art.zone ?? art.aoe, trailT: 0, done: false,
+      zoneLife: SKILLS.meteor.zoneLife, tickRate: SKILLS.meteor.tickRate,
+    });
+  }
+
+  private updateEcho(dt: number) {
+    for (const q of this.echoQueue) q.in -= dt;
+    const due = this.echoQueue.filter(q => q.in <= 0);
+    this.echoQueue = this.echoQueue.filter(q => q.in > 0);
+    for (const q of due) {
+      const sk = this.rs.skills[q.slot];
+      if (!sk) continue;
+      const rt = { ...this.rs.skillRuntime(q.slot), dmg: this.rs.skillRuntime(q.slot).dmg * 0.6, echo: 0 };
+      this.rs.skillT[q.slot] = 0;                     // 复读不消耗真实冷却
+      this.fireSkill(q.slot, rt);
+      this.rs.skillT[q.slot] = rt.cd;
+    }
+  }
+
+  private updateMeteors(dt: number) {
+    for (const m of this.meteors) {
+      m.t += dt;
+      const k = Math.min(1, m.t / m.dur);
+      const e = k * k;                                  // 越落越快
+      const x = m.fromX + (m.toX - m.fromX) * k;
+      const y = m.fromY + (m.toY - m.fromY) * e;
+      if (m.node && m.node.isValid) {
+        m.node.setPosition(x, ARENA_H - y, 0);
+        // 石块是"团"状，不做朝向旋转，靠**竖直下落 + 火焰拖尾**表现"砸下来"
+        m.node.setScale(Math.max(2.4, m.size / 10) * (1 + 0.15 * k));
+      }
+      m.trailT -= dt;
+      if (m.trailT <= 0) {
+        m.trailT = 0.05;
+        this.addVfx('projectile/fire/fire-trail', x, y + 6, 0.3, Math.max(1.0, m.size / 16));
+      }
+      if (k >= 1 && !m.done) {
+        m.done = true;
+        this.addVfx('core/burst/warm-explosion', m.toX, m.toY, 0.5, Math.max(1.6, m.size / 13));
+        this.addVfx('core/burst/big-boom', m.toX, m.toY, 0.42, Math.max(1.4, m.size / 17));
+        this.cam.addShake(SHAKE.boss);
+        Sfx.sfx('hitMetal', 0.6, 90);
+        this.spawnArea(m.toX, m.toY, m.size, m.dmg, m.zoneLife ?? 3.4, 'zone', m.zoneKey, m.rt, m.tickRate ?? 0.45);
+      }
+    }
+    this.meteors = this.meteors.filter(m => {
+      if (!m.done) return true;
+      if (m.node && m.node.isValid) m.node.destroy();
+      return false;
+    });
+  }
+
+  /**
+   * 地刺（M34）：**不再程序化绘制**，改用素材
+   *   · `ground/earth/spike-row`（SpikePlatform 的尖刺行，10 帧变体）
+   *   · `ground/earth/stone-burst`（石屑迸开，垫在尖刺脚下）
+   * 伤害仍由 zone 结算，这里只管表现。
+   */
+  private spawnSpikeField(x: number, y: number, r: number) {
+    const sc = Math.max(2, Math.round(r / 8));
+    // 主刺行 + 左右两撮错位，看起来像"一片"刺
+    this.addVfx('ground/earth/spike-row', x, y, 0.55, sc);
+    this.addVfx('ground/earth/spike-row', x - r * 0.35, y + 3, 0.5, Math.max(1.6, sc - 1));
+    this.addVfx('ground/earth/spike-row', x + r * 0.35, y + 3, 0.5, Math.max(1.6, sc - 1));
+    this.addVfx('ground/earth/stone-burst', x, y + 4, 0.42, Math.max(1.4, sc - 1));
+  }
+
+  /** 头顶「BOSS」标牌（M62）：深红底 + 浅红描边，和地面环一起构成身份标识 */
+  private addBossTag(parent: Node) {
+    const tag = new Node('bossTag');
+    tag.parent = parent;
+    const k = parent.scale.x || 1;          // 父节点已被放大 -> 标牌反向补偿，保持可读尺寸
+    tag.setPosition(0, 34 / k, 0);
+    tag.setScale(1 / k, 1 / k, 1);
+    const ut = tag.addComponent(UITransform); ut.setContentSize(40, 14);
+    const g = tag.addComponent(Graphics);
+    g.fillColor = new Color(120, 30, 34, 235);
+    g.roundRect(-20, -7, 40, 14, 3); g.fill();
+    g.lineWidth = 1; g.strokeColor = new Color(255, 138, 128, 210);
+    g.roundRect(-20, -7, 40, 14, 3); g.stroke();
+    const tn = new Node('label'); tn.parent = tag;
+    const l = tn.addComponent(Label);
+    l.string = 'BOSS'; l.fontSize = 9; l.lineHeight = 11; l.isBold = true;
+    l.color = new Color(255, 225, 215, 255);
+    const tu = tn.addComponent(UITransform); tu.setContentSize(40, 12);
+  }
+
+  /**
+   * 打开单位的「身体泛光」（精英 / BOSS 共用）
+   *
+   * 做法：两层同帧放大的染色副本垫在身体后面（内层亮、外层暗），
+   * 只露出一圈轮廓光 —— 不遮挡身体细节、不占用地面。
+   * ⚠️ 泛光节点必须在上面的层级顺序里排在 body **之前**（见 mkSpriteNode）。
+   */
+  private setBodyGlow(node: Node, inner: Color, innerA: number, outer: Color, outerA: number): void {
+    const ref = node as unknown as { _glow?: Node; _glow2?: Node };
+    const g1 = ref._glow, g2 = ref._glow2;
+    if (g1 && g1.isValid) {
+      g1.active = true;
+      const s = g1.getComponent(Sprite);
+      if (s) s.color = new Color(inner.r, inner.g, inner.b, innerA);
+    }
+    if (g2 && g2.isValid) {
+      g2.active = true;
+      const s = g2.getComponent(Sprite);
+      if (s) s.color = new Color(outer.r, outer.g, outer.b, outerA);
+    }
+  }
+
+  /** 玩家 4 个技能里只要装了某个黑科技就返回 true（强化版 `id_2` 也算） */
+  private hasModule(id: string): boolean {
+    return this.rs.skills.some(s => s.mods.some(m => m === id || m === id + '_2'));
   }
 
   private nearestEnemy(x: number, y: number, maxD: number, exclude?: Set<Enemy>): Enemy | null {
@@ -665,11 +991,15 @@ export class Battle extends Component {
     if (e.dead) return;
     let { dmg, crit } = rollDamage(base, this.rs.stats, this.rs.rng);
     // ★ 精英伤害：对精英/BOSS 额外加成
-    if ((e.elite || e.boss) && this.rs.stats.eliteDmg) dmg = Math.round(dmg * (1 + this.rs.stats.eliteDmg));
+    // 阶段 E：精英/首领伤害加成上限 +150%
+    if ((e.elite || e.boss) && this.rs.stats.eliteDmg) dmg = Math.round(dmg * (1 + Math.min(1.5, this.rs.stats.eliteDmg)));
     e.hp -= dmg;
-    // ★ 吸血：按伤害比例回血
+    // ★ 吸血：按伤害比例回血 + 绿色数字 + 角色身上回血动画（M39）
     if (this.rs.stats.lifesteal > 0) {
+      const before = this.rs.stats.hp;
       this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + dmg * this.rs.stats.lifesteal);
+      const healed = this.rs.stats.hp - before;
+      if (healed >= 0.5) this.healFeedback(healed);
     }
     e.flash = 0.12;
     this.addDamageText(e.x, e.y - 10, dmg, crit);
@@ -688,7 +1018,11 @@ export class Battle extends Component {
       this.addVfx(FX.crit, e.x, e.y, 0.5, 1);
       this.addVfx(FX.critFlash, e.x, e.y, 0.30, 1.5);
     }
-    if (rt.burn) e.hp -= Math.max(1, Math.round(dmg * 0.12));      // 灼烧：简化为附加一次伤害
+    // 灼烧（M48）：挂 2s 持续状态（淡红 + 每 0.5s 掉血），不再是"一次性附加伤害"
+    if (rt.burn) {
+      e.burnT = Math.max(e.burnT, 2.0);
+      e.burnDmg = Math.max(e.burnDmg, Math.max(1, Math.round(dmg * 0.10)));
+    }
     if (rt.slow) e.slow = 1.2;
     if (rt.vamp) this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + dmg * 0.06);
     if (rt.thunder > 0 && this.rs.rng.chance(0.15 * rt.thunder)) this.addVfx('feedback/hit/shock-hit', e.x, e.y, 0.4, 1.4);
@@ -709,10 +1043,17 @@ export class Battle extends Component {
   private killEnemy(e: Enemy, rt?: SkillRuntime) {
     if (e.dead) return;
     e.dead = true; e.deathT = 0;
+    // ★ 死亡动画：单位素材每套都有 death 帧（UNIT_FRAMES），以前从来没人播（M30 #2）
+    e.anim.playOnce('death');
     this.rs.addKill(e.exp, e.gold);
     // ★ 击杀回血属性
     const kh = this.rs.stats.killHeal ?? 0;
-    if (kh > 0) this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + kh);
+    if (kh > 0) {
+      const before = this.rs.stats.hp;
+      this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + kh);
+      const healed = this.rs.stats.hp - before;
+      if (healed >= 0.5) this.healFeedback(healed);
+    }
     this.hitstop = Math.max(this.hitstop, e.boss ? HITSTOP.boss : (e.elite ? HITSTOP.elite : HITSTOP.normal));
     this.cam.addShake(e.boss ? SHAKE.boss : (e.elite ? SHAKE.elite : SHAKE.kill));
     // 击杀分层：爆发 + 碎片 + 尘土（+ 精英/BOSS 额外冲击波）
@@ -725,24 +1066,62 @@ export class Battle extends Component {
     this.addVfx(FX.killDust, e.x, e.y + 4, 0.55, big ? 2.2 : 1.2);
     if (big) this.addVfx(FX.killRing, e.x, e.y, 0.55, e.boss ? 3.2 : 2.2);
     if (rt && rt.harvest) this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + 1);
-    const g = new Node('gem'); g.parent = this.layerUnit;
-    const ut = g.addComponent(UITransform); ut.setContentSize(8, 8);
-    const sp = g.addComponent(Sprite); sp.sizeMode = Sprite.SizeMode.CUSTOM;
-    const gg = g.addComponent(Graphics);
-    gg.fillColor = new Color(255, 209, 102, 255); gg.circle(0, 0, 4); gg.fill();
+    // ★ M41：经验球换成**素材动画**（Sunny Land 宝石，CC0，5 帧循环），按经验值分档大小：
+    //   普通 1×、精英 1.12×、BOSS/大额 1.35×。不再用程序化绘制的菱形。
+    const gemFrames = Assets.vfxFrames('pickup/gem');
+    if (!gemFrames.length) void Assets.loadVfx('pickup/gem');     // 首帧没预加载到就补一下
+    // 经验球是地面掉落物：放在 Area 层（单位下面），不会盖住玩家/敌人
+    const { node: g, anim: gemAnim } = this.mkSpriteNode('gem', this.layerArea, 12, 12);
+    gemAnim.autoSize = false;
+    if (gemFrames.length) { gemAnim.setClips({ play: gemFrames }); gemAnim.play('play', true); }
+    // 用户要求「经验弄小一些」：基准 12px，三档 0.85 / 1.0 / 1.15
+    const tier = e.exp >= 12 ? 1.15 : e.exp >= 4 ? 1.0 : 0.85;
     g.setPosition(e.x, ARENA_H - e.y, 0);
+    g.setScale(tier, tier, 1);
     const a = this.rs.rng.range(0, Math.PI * 2);
-    this.gems.push({ node: g, x: e.x, y: e.y, v: e.exp, pop: 0.22,
+    this.gems.push({ node: g, x: e.x, y: e.y, v: e.exp, pop: 0.22, base: tier,
       vx: Math.cos(a) * 60, vy: Math.sin(a) * 60 });
   }
 
-  private addDamageText(x: number, y: number, dmg: number, crit: boolean) {
+  /** 回血反馈冷却（避免每帧刷屏） */
+  private healFxCd = 0;
+
+  /** 回血反馈：角色头顶冒绿色 "+N"，身上播一次回血动画（带 0.35s 冷却 + 数值合并） */
+  private healFeedback(amount: number) {
+    this.healAccum += amount;
+    if (this.healFxCd > 0) return;          // 冷却中：先攒着，冷却结束合成一个数字
+    this.healFxCd = 0.35;
+    const total = this.healAccum;
+    this.healAccum = 0;
+    this.addHealText(this.px, this.py - 18, total);
+    this.addVfx('support/heal/heal', this.px, this.py, 0.55, 1.2);
+  }
+  private healAccum = 0;
+
+  /** 绿色回血数字（和伤害数字同一条层，向上飘） */
+  private addHealText(x: number, y: number, amount: number) {
+    const n = new Node('heal'); n.parent = this.layerText;
+    const l = n.addComponent(Label);
+    l.string = '+' + Math.max(1, Math.round(amount));
+    l.fontSize = 15;
+    l.lineHeight = 18;
+    l.color = new Color(120, 230, 140);
+    const ut = n.addComponent(UITransform); ut.setContentSize(60, 22);
+    n.setPosition(x, ARENA_H - y, 0);
+    this.fx.push({ node: n, anim: null as unknown as FrameAnim, t: 0, life: 0.8 });
+  }
+
+  private addDamageText(x: number, y: number, dmg: number, crit: boolean, kind?: 'poison' | 'burn') {
     const n = new Node('dmg'); n.parent = this.layerText;
     const l = n.addComponent(Label);
     l.string = String(dmg);
-    l.fontSize = crit ? 22 : 16;
-    l.lineHeight = crit ? 24 : 18;
-    l.color = crit ? new Color(255, 209, 102) : new Color(255, 255, 255);
+    // 用户要求：数字小一号；暴击用**红色**
+    // 用户要求：数字再小一号；持续伤害用更小的字号 + 状态色（毒=绿 / 烧=橙红）
+    l.fontSize = kind ? 9 : (crit ? 12 : 10);
+    l.lineHeight = kind ? 11 : (crit ? 14 : 12);
+    l.color = kind === 'poison' ? new Color(150, 230, 160, 255)
+      : kind === 'burn' ? new Color(255, 160, 110, 255)
+        : crit ? new Color(240, 70, 62, 255) : new Color(255, 255, 255, 255);
     const ut = n.addComponent(UITransform); ut.setContentSize(60, 24);
     n.setPosition(x, ARENA_H - y, 0);
     this.fx.push({ node: n, anim: null as unknown as FrameAnim, t: 0, life: 0.75 });
@@ -763,17 +1142,29 @@ export class Battle extends Component {
     this.updateEnemies(dt);
     this.updateBullets(dt);
     this.updateAreas(dt);
+    this.updateMeteors(dt);
+    this.updateEcho(dt);
     this.updateGems(dt);
-    this.updateSummons(dt);
     this.updateBolts(dt);
     this.updateFx(dtRaw);
     this.checkWaveEnd(dt);
     if (this.hurtFlash > 0) this.hurtFlash = Math.max(0, this.hurtFlash - dtRaw * 2.2);
     if (this.waveEnding) {
       this.waveEndT += dtRaw;
-      if (this.gems.length === 0 || this.waveEndT > 2.6) {   // 吸完 或 超时兜底
-        this.waveEnding = false;
-        this.finishWave();
+      // ★ M33 #2：**等经验全部吸完**（0.6s 起步 + 3.2s 兜底）再开升级卡；
+      //   升级卡全部选完才进商店（finishWave）。一次升多级 = 连开多次。
+      const settled = this.gems.length === 0 || this.waveEndT > 3.2;
+      if (!this.waveAbsorbDone && this.waveEndT > 0.6 && settled) {
+        this.waveAbsorbDone = true;
+        if (this.waveEndUps > 0) {
+          const n = this.waveEndUps;
+          this.waveEndUps = 0;
+          this.waveEndPending = true;       // 弹完再收尾
+          this.onLevelUp(n);
+        } else {
+          this.waveEnding = false;
+          this.finishWave();
+        }
       }
     }
     this.updateDebug();
@@ -798,6 +1189,7 @@ export class Battle extends Component {
     this.py = Math.max(12, Math.min(ARENA_H - 12, this.py));
     this.animT += dt;
     if (this.atkT > 0) this.atkT -= dt;
+    if (this.healFxCd > 0) this.healFxCd -= dt;
     if (this.inv > 0) this.inv -= dt;
     this.place(this.playerNode, this.px, this.py);
     const s = this.playerNode.scale;
@@ -848,6 +1240,23 @@ export class Battle extends Component {
       if (e.atkT > 0) e.atkT -= dt;
       if (e.flash > 0) e.flash -= dt;
       if (e.slow > 0) e.slow -= dt;
+      // ── 持续伤害状态（M48）：中毒 / 灼烧，每 0.5s 结算一次 ──
+      if (e.poisonT > 0 || e.burnT > 0) {
+        e.dotTick -= dt;
+        if (e.dotTick <= 0) {
+          e.dotTick = 0.5;
+          let dot = 0;
+          if (e.poisonT > 0) { dot += e.poisonDmg; e.poisonT = Math.max(0, e.poisonT - 0.5); }
+          if (e.burnT > 0) { dot += e.burnDmg; e.burnT = Math.max(0, e.burnT - 0.5); }
+          if (dot > 0) {
+            e.hp -= dot;
+            this.addDamageText(e.x, e.y - 10, dot, false, e.poisonT > 0 ? 'poison' : 'burn');
+            if (e.hp <= 0) { this.killEnemy(e); continue; }
+          }
+        }
+      } else {
+        e.dotTick = 0;
+      }
 
       const spdMul = e.slow > 0 ? 0.65 : 1;
       const a = Math.atan2(this.py - e.y, this.px - e.x);
@@ -855,21 +1264,42 @@ export class Battle extends Component {
       e.y += Math.sin(a) * e.spd * spdMul * dt;
       e.x += e.kx * dt * 4; e.y += e.ky * dt * 4; e.kx *= 0.86; e.ky *= 0.86;
       e.walkT += dt;
+      // ★ 敌人动画：以前永远停在 idle（setClips 默认播 idle），走路看着就是"待机贴图在平移"
+      //   （用户反馈 M30 #2）。攻击中播 attack，其余时间播 walk。
+      if (e.atkT > 0) e.anim.playOnce('attack');
+      else e.anim.play('walk');
       if (Math.abs(Math.cos(a)) > 0.15) e.facing = Math.cos(a) > 0 ? 1 : -1;
       this.place(e.node, e.x, e.y);
       const s = e.node.scale;
       e.node.setScale(e.facing < 0 ? -Math.abs(s.x) : Math.abs(s.x), s.y, 1);
-      // 受击闪白：直接改 Sprite.color（乘算），比换贴图便宜
+      // M62：BOSS 头顶标牌不能跟着身体镜像（否则 BOSS 会变成「SSO8」）
+      if (e.boss) {
+        const tag = e.node.getChildByName('bossTag');
+        const inv = 1 / (e.visScale || 1);
+        if (tag && tag.isValid) tag.setScale((e.facing < 0 ? -1 : 1) * inv, inv, 1);
+      }
+      // 精英 / BOSS 身体泛光：缓慢呼吸（±5%），让它在混战里"活着"但不闪眼
+      if (e.elite || e.boss) {
+        const pulse = 1 + 0.05 * Math.sin(e.animT * 3.2);
+        const g1 = (e.node as unknown as { _glow?: Node })._glow;
+        const g2 = (e.node as unknown as { _glow2?: Node })._glow2;
+        if (g1 && g1.isValid) g1.setScale(pulse, pulse, 1);
+        if (g2 && g2.isValid) g2.setScale(pulse, pulse, 1);
+      }
       const bodyNode = e.node.getChildByName('body') ?? e.node;
       const sp = bodyNode.getComponent(Sprite);
       if (sp) {
-        if (e.flash > 0) sp.color = new Color(255, 150, 150, 255);
+        if (e.flash > 0) sp.color = new Color(255, 150, 150, 255);          // 受击闪白红
+        else if (e.poisonT > 0) sp.color = new Color(165, 230, 165, 255);   // 中毒：淡绿
+        else if (e.burnT > 0) sp.color = new Color(255, 165, 130, 255);     // 灼烧：淡红
         else if (sp.color.r !== 255 || sp.color.g !== 255) sp.color = new Color(255, 255, 255, 255);
       }
 
       const d = Math.hypot(this.px - e.x, this.py - e.y);
       if (d < e.r + 12 && this.inv <= 0) {
-        const dm = playerTakenDamage(e.dmg, this.rs.stats);
+        // 第三轮批准：屠魔者 = 受到精英/BOSS 伤害 -10%
+        const bossGuard = (e.elite || e.boss) ? (1 - Math.min(0.5, this.rs.stats.bossArmor ?? 0)) : 1;
+        const dm = playerTakenDamage(e.dmg, this.rs.stats, bossGuard);
         this.rs.stats.hp -= dm;
         // 受击无敌帧 0.55 -> 0.80（2026-10-13 实测标定）
         // 原来 0.55s 把承伤封顶在 ~11 伤害/秒，120 血只够撑 11 秒，而一波 18 秒 ——
@@ -880,6 +1310,13 @@ export class Battle extends Component {
         this.hurtFlash = 1;                 // HUD 用它做"屏幕边缘红光一闪"
         Sfx.sfx('hitMetal', 0.4, 180);      // 玩家挨打
         this.cam.addShake(SHAKE.hurt);
+        // ★ 刺猬（thornmail，M49）：把 8 点伤害反弹给咬你的怪
+        if (this.hasModule('thornmail')) {
+          e.hp -= 8;
+          this.addDamageText(e.x, e.y - 10, 8, false);
+          this.addVfx('core/spark/block-spark', e.x, e.y, 0.3, 1.2);
+          if (e.hp <= 0) this.killEnemy(e);
+        }
         if (this.rs.stats.hp <= 0 && this.running) { this.running = false; this.paused = true; console.log('[Battle] 玩家阵亡'); this.hooks.onDead?.(); }
       }
     }
@@ -906,17 +1343,76 @@ export class Battle extends Component {
             b.vx = Math.cos(na) * sp; b.vy = Math.sin(na) * sp;
           }
         }
+        // ★ 回旋：到点后朝玩家折返，回程清空命中表（同一只怪能再吃一次）
+        if (b.returning) {
+          b.outT = Math.max(0, (b.outT ?? 0) - dt);
+          if (b.outT <= 0) {
+            if (!b.returned) { b.returned = true; b.hit.clear(); }
+            const dx = this.px - b.x, dy = this.py - b.y;
+            const d = Math.hypot(dx, dy) || 1;
+            const sp = Math.hypot(b.vx, b.vy) || 200;
+            b.vx = (dx / d) * sp * 1.15;      // 回程略快
+            b.vy = (dy / d) * sp * 1.15;
+            if (d < 26) b.life = 0;           // 回到手上就消失
+          }
+        }
         b.x += b.vx * dt; b.y += b.vy * dt;
       }
       b.node.setPosition(b.x, ARENA_H - b.y, 0);
-      b.node.angle = -Math.atan2(b.vy, b.vx) * 180 / Math.PI - 90;
+      // ⚠️ 投射物素材**全部头朝右**（实测：fireball-shot / ice-shard-shot / energy-bolt / plasma-shot /
+      //    poison-dart 都是"头在右、尾在左"）。这里原多减了 90°（按"素材朝上"算）→ 火球/箭全都横着飞。
+      //    用户反馈「火球不要横着发射出去」即此。
+      // 回旋刃回程时自转，视觉上能看出"转着回来"
+      if (b.returning && b.returned) b.spinAngle = (b.spinAngle ?? 0) + 720 * dt;
+      b.node.angle = -Math.atan2(b.vy, b.vx) * 180 / Math.PI + (b.spinAngle ?? 0);
 
       for (const e of this.enemies) {
         if (e.dead || b.hit.has(e)) continue;
         if (Math.hypot(e.x - b.x, e.y - b.y) < e.r + b.r) {
           b.hit.add(e);
           this.hitEnemy(e, b.dmg, this.bulletRt(b), b.hitVfx);
-          if (b.hit.size > b.pierce + 1) { b.life = 0; break; }
+          // ★ 传染（M49）：**不是穿过去**，而是从这只怪身上"跳"到附近的另一只——
+          //   劈一道链式闪电 + 追加 80% 伤害，本体到此结束（和穿透/反弹完全不同）
+          if (b.chain > 0) {
+            b.chain--;
+            const nx = this.nearestEnemy(e.x, e.y, 150, b.hit);
+            if (nx) {
+              b.hit.add(nx);
+              this.spawnBolt(e.x, e.y, nx.x, nx.y);
+              this.addVfx('chain/chain-node', nx.x, nx.y, 0.3, 1);
+              this.hitEnemy(nx, b.dmg * 0.7, this.bulletRt(b), b.hitVfx);
+            }
+            b.life = 0;
+            break;
+          }
+          // ★ 分裂（M49）：命中时炸成 2 枚小子弹（和"扇射"的发射时散射区分开）
+          if (b.split > 0 && !b.splitDone) {
+            b.splitDone = true;
+            const base = Math.atan2(b.vy, b.vx);
+            for (let k = 0; k < 2; k++) {
+              const ang = base + (k === 0 ? -0.7 : 0.7);
+              this.spawnBullet(b.x, b.y, Math.cos(ang) * 170, Math.sin(ang) * 170,
+                // 第三轮批准：衍生弹伤害 40%（原 50%），且 split:0 保证不再递归
+                { ...this.bulletRt(b), dmg: b.dmg * 0.4, pierce: 0, bounce: 0, chain: 0, split: 0, burn: 0 },
+                undefined, b.hitVfx, false, false, 0.55);
+            }
+          }
+          // ★ 反弹（M49）：弹体不消失，**转向**附近另一个敌人继续飞
+          let bounced = false;
+          if (b.bounce > 0) {
+            b.bounce--;
+            const nx = this.nearestEnemy(e.x, e.y, 200, b.hit);
+            if (nx) {
+              const ang = Math.atan2(nx.y - b.y, nx.x - b.x);
+              const sp = Math.hypot(b.vx, b.vy) || 200;
+              b.vx = Math.cos(ang) * sp; b.vy = Math.sin(ang) * sp;
+              // 第三轮批准：反弹每次伤害 ×0.8（原来不衰减，会越弹越强）
+              b.dmg = b.dmg * 0.8;
+              b.life = Math.max(b.life, 0.9);
+              bounced = true;
+            }
+          }
+          if (!bounced && b.hit.size > b.pierce + 1) { b.life = 0; break; }
         }
       }
       if (b.x < -40 || b.x > ARENA_W + 40 || b.y < -40 || b.y > ARENA_H + 40) b.life = 0;
@@ -931,7 +1427,8 @@ export class Battle extends Component {
   private bulletRt(b: Bullet): SkillRuntime {
     return { cd: 0, dmg: b.dmg, spd: 0, size: b.r, count: 1, fan: 0, pierce: b.pierce,
       bounce: b.bounce, orbit: 0, split: b.split, chain: b.chain,
-      echo: 0, burn: 0, slow: 0, vamp: 0, thunder: 0, thornmail: 0, harvest: false };
+      echo: 0, burn: b.burn ?? 0, slow: b.slow ?? 0, vamp: b.vamp ?? 0, thunder: b.thunder ?? 0,
+      thornmail: 0, harvest: false };
   }
 
   private updateAreas(dt: number) {
@@ -939,6 +1436,9 @@ export class Battle extends Component {
       a.t += dt;
       if (a.kind === 'pulse') {
         a.r = a.maxR * Math.min(1, a.t / a.life);
+        // ★ M33 #3：脉冲的**画面**也要跟着扩散（之前节点固定 r*2，看着像"闪了一下"）
+        const k = Math.max(0.15, a.r / a.maxR);
+        if (a.node && a.node.isValid) a.node.setScale(k, k, 1);
         if (!a.done) {
           for (const e of this.enemies) {
             if (!e.dead && Math.hypot(e.x - a.x, e.y - a.y) < a.r + e.r) this.hitEnemy(e, a.dmg, this.bulletRt2(a.dmg));
@@ -949,8 +1449,25 @@ export class Battle extends Component {
         a.tick -= dt;
         if (a.tick <= 0) {
           a.tick = a.tickRate;
+          // 地刺：每次跳动从地里再冒一组刺（错开一点位置，像连环穿刺）
+          if (a.tag === 'spike') {
+            const rnd = this.rs.rng.range(0, Math.PI * 2);
+            const off = this.rs.rng.range(0, a.maxR * 0.35);
+            this.spawnSpikeField(a.x + Math.cos(rnd) * off, a.y + Math.sin(rnd) * off, a.maxR * 0.75);
+          }
           for (const e of this.enemies) {
-            if (!e.dead && Math.hypot(e.x - a.x, e.y - a.y) < a.r + e.r) this.hitEnemy(e, a.dmg, this.bulletRt2(a.dmg));
+            if (e.dead || Math.hypot(e.x - a.x, e.y - a.y) >= a.r + e.r) continue;
+            this.hitEnemy(e, a.dmg, this.bulletRt2(a.dmg));
+            // 灼烧（M48）：区域技能也挂状态
+            if (a.burn) {
+              e.burnT = Math.max(e.burnT, 2.0);
+              e.burnDmg = Math.max(e.burnDmg, Math.max(1, Math.round(a.dmg * 0.8)));
+            }
+            // 毒雾（M48）：站进去就挂 2s 中毒（淡绿 + 每 0.5s 掉血）
+            if (a.tag === 'poison') {
+              e.poisonT = Math.max(e.poisonT, 2.0);
+              e.poisonDmg = Math.max(e.poisonDmg, Math.max(1, Math.round(a.dmg * 0.8)));
+            }
           }
         }
       }
@@ -968,8 +1485,10 @@ export class Battle extends Component {
       split: 0, chain: 0, echo: 0, burn: 0, slow: 0, vamp: 0, thunder: 0, thornmail: 0, harvest: false };
   }
 
+  private gemT = 0;
   private updateGems(dt: number) {
     const st = this.rs.stats;
+    this.gemT += dt;
     for (const g of this.gems) {
       if (!g.node || !g.node.isValid) continue;
       if (g.pop > 0) { g.x += g.vx * dt; g.y += g.vy * dt; g.vx *= 0.88; g.vy *= 0.88; g.pop -= dt; }
@@ -979,17 +1498,29 @@ export class Battle extends Component {
       const vacuum = this.waveEnding && this.waveEndT > 0.5;
       const pick = vacuum ? 1e9 : st.pickup;
       if (d < pick) {
-        const pull = vacuum ? 1 : 1 - d / pick;
-        const sp = (170 + 430 * pull) * (vacuum ? 3.4 : 1) * dt;
+        // ★ M33 #2：波末吸取要**看得见**（参考土豆兄弟）。以前 vacuum 用 1e9 半径 + 3.4 倍速度，
+        //   相当于瞬间吸完、玩家只看到经验条跳一下。现在远处的球要飞 1~1.5 秒，
+        //   过程里还能听到一串拾取音。
+        const pull = vacuum ? 0.35 + 0.65 * Math.min(1, 40 / d) : 1 - d / pick;
+        const speed = vacuum ? (260 + 440 * pull) : (170 + 430 * pull);
+        const sp = speed * dt;
         g.x += dx / d * sp; g.y += dy / d * sp;
       }
+      // 脉动：静态背景上"会呼吸"的小宝石，远看也能注意到（乘在分档大小上）
+      const k = 1 + 0.10 * Math.sin(this.gemT * 7 + g.x * 0.05);
+      g.node.setScale(g.base * k, g.base * k, 1);
       if (d < 17) {
         g.node.destroy();
         Sfx.sfx('pickup', 0.16, 90);
+        this.addVfx('feedback/pickup/exp-gain', g.x, g.y, 0.22, 0.55);   // 拾取反馈
         // 用户要求：波次结束的**全屏吸取经验减半**（原地捡是全额）
         const gain = this.waveEnding ? g.v * 0.5 : g.v;
         const ups = this.rs.addExp(gain);
-        if (ups > 0) this.onLevelUp(ups);
+        if (ups > 0) {
+          // 波末吸到的经验先记账，**等全部吸完**再开升级卡（M33 #2）
+          if (this.waveEnding) this.waveEndUps += ups;
+          else this.onLevelUp(ups);
+        }
       } else {
         g.node.setPosition(g.x, ARENA_H - g.y, 0);
       }
@@ -1027,6 +1558,31 @@ export class Battle extends Component {
     this.beginWaveEnd();
   }
 
+  /** 波次结束：残留敌人直接移除，**不给经验 / 金币 / 掉落**（M35 #1） */
+  private despawnAllEnemies() {
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      if (e.node && e.node.isValid) e.node.destroy();
+    }
+    this.enemies = [];
+  }
+
+  /** 波次结束清场：把纯表现层的残留全部回收（经验宝石保留 —— 还要吸） */
+  private clearFieldFx() {
+    const kill = (n?: Node) => { if (n && n.isValid) n.destroy(); };
+    for (const b of this.bullets) kill(b.node);
+    this.bullets = [];
+    for (const a of this.areas) kill(a.node);
+    this.areas = [];
+    for (const f of this.fx) kill(f.node);
+    this.fx = [];
+    for (const bo of this.bolts) kill(bo.node);
+    this.bolts = [];
+    for (const m of this.meteors) kill(m.node);
+    this.meteors = [];
+    this.echoQueue = [];
+  }
+
   /**
    * 本波结束 —— 用户要求（2026-10-17）：
    *   「结束不要立刻跳下一关，等一会、把全场经验吸干净，再进奖励选择，类似土豆兄弟」
@@ -1037,11 +1593,20 @@ export class Battle extends Component {
    *    现在和普通波走同一条结束路径，商店正常出现。
    */
   private beginWaveEnd() {
-    for (const e of this.enemies) { if (!e.dead) this.killEnemy(e); }
+    // ★ 清场：飞行物 / 范围特效 / 召唤物 / 闪电都要在**本波结束时**销毁。
+    //   以前只清了敌人，毒雾、刃暴的地面环、飞着的火球会一路飘到商店甚至下一波
+    //   （用户反馈「上一波技能特效会保留到下一波」，M30 #3）。
+    //   顺序：先清残留，再让敌人死亡 —— 这样击杀特效还能正常播完（它们自己有生命周期）。
+    this.clearFieldFx();
+    // ★ M35 #1：波次结束**不再把残怪打死换经验**（用户："不要把怪物杀死再给经验"）。
+    //   经验只来自玩家之前打掉、还留在地上的球；残怪直接消失。
+    this.despawnAllEnemies();
     const gain = this.rs.waveClearGold();
     console.log(`[Battle] 第 ${this.rs.wave} 波通过  +${gain} 金币  总计 ${this.rs.gold}  Lv${this.rs.lv}`);
     this.waveEnding = true;
     this.waveEndT = 0;
+    this.waveEndUps = 0;
+    this.waveAbsorbDone = false;
   }
 
   /** 经验吸完（且升级弹窗处理完）才真正切屏 */

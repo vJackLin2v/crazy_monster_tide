@@ -3,24 +3,115 @@ import type { ModuleDef } from './Types';
 /** 18 个行为模块（docs/systems/behavior_modules.md；需求 §10 目标约 18）
  *  核心规则：可重复安装；模块自己声明叠加方式与上限；兼容性由标签决定。 */
 export const MODULES: Record<string, ModuleDef> = {
-  multi:     { name: '多重', icon: '≡', stack: 'additive', max: 4, requires: ['projectile'],               desc: '一次施放多生成 1 个攻击实例' },
-  fan:       { name: '扇射', icon: '⋔', stack: 'additive', max: 2, requires: ['projectile'],               desc: '以固定扇面同时发射，扩大覆盖' },
-  split:     { name: '分裂', icon: '⋉', stack: 'additive', max: 3, requires: ['projectile'],               desc: '命中/结束后分裂出 2 枚小子弹' },
-  bounce:    { name: '反弹', icon: '↺', stack: 'additive', max: 3, requires: ['projectile'],               desc: '命中后在附近目标间弹射 +1 次' },
+  multi:     { name: '加量', icon: '≡', stack: 'additive', max: 4, requires: ['projectile'],               desc: '一次开火多打出 1 发，全额伤害、同方向' },
+  fan:       { name: '扇射', icon: '⋔', stack: 'additive', max: 2, requires: ['projectile'],               desc: '额外散开 2 枚小子弹（55% 伤害、射程短）' },
+  split:     { name: '裂开', icon: '⋉', stack: 'additive', max: 3, requires: ['projectile'],               desc: '命中后炸成 2 枚小子弹' },
+  bounce:    { name: '反弹', icon: '↺', stack: 'additive', max: 3, requires: ['projectile'],               desc: '命中后转向另一只继续飞（弹体不消失）' },
   pierce:    { name: '穿透', icon: '⇢', stack: 'additive', max: 3, requires: ['projectile'],               desc: '可额外穿透 +1 个目标' },
-  orbit:     { name: '环绕', icon: '◌', stack: 'additive', max: 3, requires: ['projectile'],               desc: '额外生成 1 个绕身旋转的弹体' },
+  orbit:     { name: '转圈圈', icon: '◌', stack: 'additive', max: 3, requires: ['projectile'],               desc: '多 1 枚绕着角色转的子弹' },
   giant:     { name: '巨大', icon: '⬤', stack: 'additive', max: 3, requires: ['projectile','area','pulse'], desc: '体积/范围 +30%' },
-  rapid:     { name: '急速', icon: '»', stack: 'tier',     max: 3, requires: ['projectile','pulse','chain'], desc: '冷却 -12%（乘区叠加）' },
-  echo:      { name: '回响', icon: '↻', stack: 'tier',     max: 2, requires: ['area','pulse'],             desc: '施放后 0.4s 追加一次 60% 伤害' },
-  burn:      { name: '灼烧', icon: '✹', stack: 'tier',     max: 3, requires: ['fire','lightning','holy'],  desc: '命中附加持续伤害' },
-  frost:     { name: '冰缓', icon: '✽', stack: 'tier',     max: 2, requires: ['ice'],                      desc: '命中减速 35%，持续 1.2s' },
+  rapid:     { name: '起飞', icon: '»', stack: 'tier',     max: 3, requires: ['projectile','pulse','chain'], desc: '技能冷却 -12%（可叠加）' },
+  echo:      { name: '复读机', icon: '↻', stack: 'tier',     max: 2, requires: ['area','pulse'],             desc: '施放 0.4s 后再来一次（60% 伤害）' },
+  burn:      { name: '上火', icon: '✹', stack: 'tier',     max: 3, requires: ['fire','lightning','holy'],  desc: '命中附加持续伤害' },
+  frost:     { name: '冷静', icon: '✽', stack: 'tier',     max: 2, requires: ['ice'],                      desc: '命中减速 35%，持续 1.2s' },
   vamp:      { name: '吸血', icon: '♥', stack: 'unique',   max: 1, requires: ['physical','poison'],        desc: '伤害的 6% 回复自身生命' },
-  chain:     { name: '连锁', icon: '⛓', stack: 'tier',     max: 2, requires: ['projectile','chain'],       desc: '命中后跳向附近另一个目标' },
-  snipe:     { name: '狙击', icon: '⌖', stack: 'tier',     max: 2, requires: ['projectile'],               desc: '弹速 +40%，伤害 +15%' },
-  harvest:   { name: '收割', icon: '✂', stack: 'unique',   max: 1, requires: ['physical','fire','poison'],  desc: '每次击杀回复 1 点生命' },
-  thunder:   { name: '雷鸣', icon: '⚡', stack: 'tier',     max: 2, requires: ['lightning','arcane','holy'], desc: '命中时 15% 概率落雷，造成范围伤害' },
-  thornmail: { name: '荆棘', icon: '✜', stack: 'unique',   max: 1, requires: ['nature','physical'],        desc: '受击时反弹 8 点伤害给攻击者' },
+  chain:     { name: '传染', icon: '⛓', stack: 'tier',     max: 2, requires: ['projectile','chain'],       desc: '命中后跳到附近另一只身上（不再穿过去）' },
+  snipe:     { name: '点名', icon: '⌖', stack: 'tier',     max: 2, requires: ['projectile'],               desc: '弹速 +40%，伤害 +15%' },
+  harvest:   { name: '割韭菜', icon: '✂', stack: 'unique',   max: 1, requires: ['physical','fire','poison'],  desc: '每次击杀回复 1 点生命' },
+  thunder:   { name: '渡劫', icon: '⚡', stack: 'tier',     max: 2, requires: ['lightning','arcane','holy'], desc: '命中时 15% 概率落雷，造成范围伤害' },
+  thornmail: { name: '刺猬', icon: '✜', stack: 'unique',   max: 1, requires: ['nature','physical'],        desc: '被咬时反弹 8 点伤害给攻击者' },
   overload:  { name: '超载', icon: '⚠', stack: 'tier',     max: 2, requires: ['projectile','area','pulse'], desc: '伤害 +25%，但范围 -10%' },
 };
 
 export const MODULE_IDS = Object.keys(MODULES);
+
+/**
+ * 黑科技的**数值一句话**（M56）：升级卡片第二行用。
+ * 必须与 SkillCalc / Battle 里的实际系数一致（tests/run.ts 有断言防漂移）。
+ */
+export const MODULE_NUMS: Record<string, string> = {
+  multi:     '+1 发 · 全额伤害',
+  fan:       '+2 发 · 每发 55% 伤害',
+  split:     '命中后再炸 2 枚子弹',
+  bounce:    '+1 次转向弹射',
+  pierce:    '穿透 +1 个目标',
+  orbit:     '+1 枚环绕弹',
+  giant:     '体积 / 范围 +30%',
+  rapid:     '冷却 -12%',
+  echo:      '0.4s 后追加 60% 伤害',
+  burn:      '命中附加灼烧 2s',
+  frost:     '减速 35% · 1.2s',
+  vamp:      '伤害的 6% 回血',
+  chain:     '跳 1 次 · 70% 伤害',
+  snipe:     '弹速 +40% · 伤害 +15%',
+  harvest:   '击杀回复 1 HP',
+  thunder:   '15% 概率落雷',
+  thornmail: '被咬时反伤 8',
+  overload:  '伤害 +25% · 范围 -10%',
+};
+
+/**
+ * 黑科技的**运行时落点**清单（M50）。
+ *
+ * 为什么要这张表：M49 排查发现 bounce / chain / split / echo / thornmail 这 5 个模块
+ * 数据表里写得好好的，但代码里**从来没有被用过** —— 玩家装了等于没装。
+ * 这张表 + `tests/run.ts` 的断言保证：每个模块都必须至少在某一层真正生效。
+ *
+ *   calc   = SkillCalc.calcSkill 结算进 SkillRuntime（数值层）
+ *   onhit  = Battle.updateBullets 命中时生效（弹体行为）
+ *   cast   = Battle.fireSkill 施放时生效（如复读机延迟重放）
+ *   kill   = Battle.killEnemy 击杀时生效（割韭菜）
+ *   player = Battle.updateEnemies 玩家受击时生效（刺猬反伤）
+ */
+export type ModuleHook = 'calc' | 'onhit' | 'cast' | 'kill' | 'player';
+
+export const MODULE_HOOKS: Record<string, ModuleHook[]> = {
+  multi: ['calc'],
+  fan: ['calc'],
+  split: ['onhit'],
+  bounce: ['onhit'],
+  pierce: ['onhit'],
+  orbit: ['calc'],
+  giant: ['calc'],
+  rapid: ['calc'],
+  echo: ['cast'],
+  burn: ['onhit'],
+  frost: ['onhit'],
+  vamp: ['onhit'],
+  chain: ['onhit'],
+  snipe: ['calc'],
+  harvest: ['kill'],
+  thunder: ['onhit'],
+  thornmail: ['player'],
+  overload: ['calc'],
+};
+
+// ───────────── 合成（M32）─────────────
+// 规则（用户 2026-10-20 定）：**3 个同名模块 → 1 个强化模块**，强化版 = 2 份效果、只占 1 个槽位，
+// 且不能再合成（上限 ×2）。强化模块用 `<基础id>_2` 作 id，只存在于"合成产物"里，
+// 不进奖励池 / 商店池（那些地方只认 MODULES 的 18 个 id）。
+export const MERGE_COST = 3;
+
+export const MERGED_MODULES: Record<string, ModuleDef> = {};
+for (const id of MODULE_IDS) {
+  const m = MODULES[id];
+  MERGED_MODULES[id + '_2'] = {
+    ...m,
+    name: m.name,               // 等级由 UI 用「Ⅱ」后缀表示，名字本身不带
+    desc: m.desc,
+    stack: 'unique',
+    max: 1,
+  };
+}
+
+/** 基础 id（`multi_2` → `multi`） */
+export function baseOf(id: string): string {
+  return id.endsWith('_2') ? id.slice(0, -2) : id;
+}
+export function isMerged(id: string): boolean { return id.endsWith('_2'); }
+/** 一次模块条目算几份效果：普通 1，强化 2 */
+export function modPower(id: string): number { return isMerged(id) ? 2 : 1; }
+/** 统一定义查询：基础表 + 强化表 */
+export function moduleDef(id: string): ModuleDef | undefined {
+  return MODULES[id] ?? MERGED_MODULES[id];
+}

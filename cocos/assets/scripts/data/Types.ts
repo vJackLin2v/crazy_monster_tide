@@ -1,11 +1,11 @@
 /** 数据层共用类型 —— 全部来自 docs/systems/ 的规则定义 */
 
-export type SkillType = 'projectile' | 'pulse' | 'area' | 'chain' | 'summon';
+export type SkillType = 'projectile' | 'pulse' | 'area' | 'chain';
 
 /** 技能标签：用于行为模块的兼容性判定与联动（docs/systems/tags.md） */
 export type Tag =
   | 'fire' | 'ice' | 'lightning' | 'arcane' | 'physical' | 'poison' | 'nature' | 'holy'
-  | 'projectile' | 'area' | 'pulse' | 'chain' | 'summon'
+  | 'projectile' | 'area' | 'pulse' | 'chain'
   | 'dot' | 'slow' | 'homing' | 'pierceable' | 'return';
 
 export interface SkillDef {
@@ -18,6 +18,12 @@ export interface SkillDef {
   spd: number;             // 投射物速度 px/s（非投射物为 0）
   color: string;
   size: number;            // 体积 / 范围基数
+  /** 玩家向的一句话效果说明（M34 #1：卡片与构建面板都要显示） */
+  desc: string;
+  /** 持续区域时长（秒，默认 3.4）——第三轮：给持续伤害技能做定位差异 */
+  zoneLife?: number;
+  /** 持续区域跳动间隔（秒，默认 0.45） */
+  tickRate?: number;
 }
 
 /** 行为模块叠加方式（docs/systems/behavior_modules.md） */
@@ -43,7 +49,11 @@ export interface CharStats {
   // —— 收益 4 ——
   pickup: number; greed: number; expGain: number; killHeal: number;
   // —— 特效 4 ——
-  cdr: number; knockback: number; eliteDmg: number; summonPower: number;
+  cdr: number; knockback: number; eliteDmg: number; /** 范围伤害加成（area/pulse 技能） */ aoeDmg: number;
+  /** 额外弹（多重/扇射打出的第 2 发起）伤害加成（第三轮：三重镜） */
+  extraProjDmg: number;
+  /** 受到精英/BOSS 伤害减免（第三轮：屠魔者） */
+  bossArmor: number;
   // —— 标签联动（道具写入，不是可升级属性）——
   tagAll: number;
   tagBonus: Record<string, number>;
@@ -84,4 +94,8 @@ export interface SkillArt {
   hit?: string;
   aoe?: string;
   zone?: string;
+  /** 施法动作（在角色身上播，替代「直接作用到敌人身上」的突兀感） */
+  cast?: string;
+  /** 挥击特效（朝目标方向播一道斩击） */
+  swing?: string;
 }

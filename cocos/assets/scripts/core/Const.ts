@@ -45,7 +45,11 @@ export const ARENA_H = 940;
 export const UNIT_NATIVE = 32;           // 单位精灵原生尺寸（像素）
 export const UNIT_NATIVE_BIG = 40;       // 大体型单位（basilisk / boss-demonlord）
 export const BASE_SPEED = 96;            // 基础移速 px/s（横穿 360px 屏约 3.8s）
-export const BASE_PICKUP = 85;           // 经验拾取半径（靠近即吸，不必踩上去）
+// 经验拾取半径（arena px）。
+// ⚠️ 2026-10-20 M31：85 → 34。85 时半径约等于**半个屏幕宽**（相机 viewW≈178），
+//    怪一死经验球立刻被吸走，玩家根本看不到「掉落 → 拾取」这个循环（用户反馈「没有经验系统」）。
+//    34 约等于屏幕 68px，要走近才吸，和土豆兄弟 / 吸血鬼幸存者的手感一致。
+export const BASE_PICKUP = 34;
 export const PLAYER_RADIUS = 12;         // 随 ZOOM 同步上调，避免"撞上却没伤害"
 export const TARGET_RANGE = 260;         // 技能索敌半径（BOSS 生成距离必须小于它）
 

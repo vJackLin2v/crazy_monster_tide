@@ -1,4 +1,4 @@
-import { MODULES } from '../data/Modules';
+import { moduleDef, baseOf, modPower } from '../data/Modules';
 import { SKILLS } from '../data/Skills';
 import type { CharStats, SkillDef, Tag } from '../data/Types';
 
@@ -16,23 +16,24 @@ export function makeSkill(id: string): SkillInst {
   return { id, lvl: 1, mods: [] };
 }
 
-/** 某模块在该技能上装了几个 */
+/** 某模块在该技能上"值几份"（强化模块 = 2 份；用于叠加上限判定） */
 export function modCount(sk: SkillInst, mid: string): number {
+  const base = baseOf(mid);
   let n = 0;
-  for (const m of sk.mods) if (m === mid) n++;
+  for (const m of sk.mods) if (baseOf(m) === base) n += modPower(m);
   return n;
 }
 
 /** 兼容性判定：技能标签与模块 requires 有交集即兼容（docs/systems/tags.md） */
 export function isCompatible(skillId: string, mid: string): boolean {
-  const b = SKILLS[skillId], m = MODULES[mid];
+  const b = SKILLS[skillId], m = moduleDef(mid);
   if (!b || !m) return false;
   return m.requires.some(t => (b.tags as Tag[]).includes(t));
 }
 
 /** 还能不能往这个技能上装这个模块（兼容 + 槽位 + 叠加上限） */
 export function canInstall(sk: SkillInst, mid: string): { ok: boolean; why: string } {
-  const m = MODULES[mid];
+  const m = moduleDef(mid);
   if (!m) return { ok: false, why: '模块不存在' };
   if (!isCompatible(sk.id, mid)) return { ok: false, why: '不兼容' };
   if (modCount(sk, mid) >= m.max) return { ok: false, why: '已满级' };
@@ -64,6 +65,7 @@ export function calcSkill(sk: SkillInst, stats: CharStats): SkillRuntime {
 
   // 基础值随技能等级成长
   let cd = b.cd * Math.pow(0.94, sk.lvl - 1);
+  const baseCd = cd;                      // 上限计算基准（第三轮批准：总冷却不得低于基础的 35%）
   let dmg = b.dmg * (1 + 0.22 * (sk.lvl - 1));
 
   let count = 1, fan = 0, pierce = 0, bounce = 0, orbit = 0, split = 0;
@@ -71,25 +73,27 @@ export function calcSkill(sk: SkillInst, stats: CharStats): SkillRuntime {
   let chain = 0, snipe = 0, overload = 0, harvest = 0, thunder = 0, thornmail = 0;
 
   for (const mid of sk.mods) {
-    switch (mid) {
-      case 'multi':     count++; break;
-      case 'fan':       fan++; break;
-      case 'split':     split++; break;
-      case 'bounce':    bounce++; break;
-      case 'pierce':    pierce++; break;
-      case 'orbit':     orbit++; break;
-      case 'giant':     sizeMul *= 1.30; break;
-      case 'rapid':     rapid++; break;
-      case 'echo':      echo++; break;
-      case 'burn':      burn++; break;
-      case 'frost':     slow++; break;
-      case 'vamp':      vamp++; break;
-      case 'chain':     chain++; break;
-      case 'snipe':     snipe++; break;
-      case 'harvest':   harvest++; break;
-      case 'thunder':   thunder++; break;
-      case 'thornmail': thornmail++; break;
-      case 'overload':  overload++; break;
+    // 强化模块（`multi_2`）= 2 份效果，占 1 槽（M32 合成规则）
+    const n = modPower(mid);
+    switch (baseOf(mid)) {
+      case 'multi':     count += n; break;
+      case 'fan':       fan += n; break;
+      case 'split':     split += n; break;
+      case 'bounce':    bounce += n; break;
+      case 'pierce':    pierce += n; break;
+      case 'orbit':     orbit += n; break;
+      case 'giant':     sizeMul *= Math.pow(1.30, n); break;
+      case 'rapid':     rapid += n; break;
+      case 'echo':      echo += n; break;
+      case 'burn':      burn += n; break;
+      case 'frost':     slow += n; break;
+      case 'vamp':      vamp += n; break;
+      case 'chain':     chain += n; break;
+      case 'snipe':     snipe += n; break;
+      case 'harvest':   harvest += n; break;
+      case 'thunder':   thunder += n; break;
+      case 'thornmail': thornmail += n; break;
+      case 'overload':  overload += n; break;
     }
   }
 
@@ -100,9 +104,14 @@ export function calcSkill(sk: SkillInst, stats: CharStats): SkillRuntime {
     const v = stats.tagCdr[t];
     if (v) cd *= (1 - v);
   }
-  cd = cd / stats.haste;                          // 攻速属性
-  cd *= (1 - Math.min(0.6, stats.cdr ?? 0));      // ★ 冷却缩减属性（封顶 60%，防 Build 失控）
-  cd = Math.max(0.12, cd);                        // 冷却下限，防止 Build 失控
+  // ★ 第三轮批准（2026-10-21）：攻速与冷却缩减**都缩短技能 cd**，原来双双无上限，
+  //   实测 12/12 叠加把火球从 0.85s 压到 0.23s（3.7 倍频率）。现在加两道闸：
+  //   ① 攻速最多 +120%（haste ≤ 2.2）；② 冷却缩减封顶 50%；
+  //   ③ 总冷却不得低于基础 cd 的 35%（另一道绝对下限 0.12s）。
+  const hasteEff = Math.max(1, Math.min(2.2, stats.haste));
+  cd = cd / hasteEff;                             // 攻速属性
+  cd *= (1 - Math.min(0.5, stats.cdr ?? 0));      // 冷却缩减属性（封顶 50%）
+  cd = Math.max(0.12, baseCd * 0.35, cd);         // 总冷却下限
 
   // 伤害：角色攻击力 x 标签加成 x 全局标签加成
   let tagMul = 1;
@@ -111,8 +120,15 @@ export function calcSkill(sk: SkillInst, stats: CharStats): SkillRuntime {
     if (v) tagMul *= (1 + v);
   }
   if (stats.tagAll) tagMul *= (1 + stats.tagAll);
-  dmg *= stats.power * tagMul;
+  // ★ 第三轮阶段 E（用户批准）：线性无上限属性加**硬上限**，避免后期数值失控。
+  //   上限值经过"1/3/5/8 次叠加"曲线核对：8 次攻击力 = +64%，上限 +200% 留足成长空间。
+  const capMul = (v: number, max: number) => Math.max(0.1, Math.min(max, v));
+  dmg *= capMul(stats.power, 3.0) * tagMul;
 
+  // ★ 范围伤害属性：只加成 area / pulse 类技能（M44 替换掉"召唤强化"）
+  if ((b.tags as string[]).includes('area') || (b.tags as string[]).includes('pulse')) {
+    dmg *= (1 + Math.min(1.0, stats.aoeDmg ?? 0));      // 范围伤害加成上限 +100%
+  }
   if (snipe)    dmg *= Math.pow(1.15, snipe);
   if (overload) { dmg *= Math.pow(1.25, overload); sizeMul *= Math.pow(0.90, overload); }
 
@@ -126,7 +142,8 @@ export function calcSkill(sk: SkillInst, stats: CharStats): SkillRuntime {
     cd,
     dmg,
     spd: b.spd * (stats.projSpd ?? 1) * (snipe ? Math.pow(1.4, snipe) : 1),
-    size: b.size * sizeMul * (0.9 + 0.1 * stats.area) * stats.area * (stats.sizeMul ?? 1),
+    // 范围属性上限 ×2.2（+120%）：继续堆只会变难看，不会更强
+  size: b.size * sizeMul * (0.9 + 0.1 * Math.min(2.2, stats.area)) * Math.min(2.2, stats.area) * (stats.sizeMul ?? 1),
     count, fan, pierce, bounce, orbit, split, chain,
     echo, burn, slow, vamp, thunder, thornmail,
     harvest: harvest > 0,

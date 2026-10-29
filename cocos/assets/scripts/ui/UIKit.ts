@@ -1,16 +1,23 @@
 /**
- * UI 工具箱 —— 规格 v1.1 的绘制原语
+ * UI 工具箱 —— 像素九宫格 + 文本原语
  *
- * 视觉语言：**3px 纯黑描边 + 硬投影（画偏移黑块）+ 高饱和色块 + 描边粗体字**
- * 全部用 `Graphics` 画（D-32），不引入任何 UI 素材。
+ * 视觉语言（v2「像素共鸣」改造后）：
+ *   - 面板 / 按钮 / 卡槽 = **Kenney Pixel UI Pack（CC0）** 重上色的九宫格素材，
+ *     四角不拉伸，2px 近黑描边（见 ui/Art.ts）。
+ *   - 素材未就绪时自动回退到 Graphics 绘制（方形、2px 黑边、1px 斜面），保证不会"白屏"。
+ *   - 文字：系统字体 + 2px 黑描边 + 可选 4px 硬投影（中文可读性优先，见交付说明 §字体）。
  *
  * 坐标系：Canvas 原点在屏幕中心，y 向上。所有 helper 的 (x, y) 都是**节点中心**。
  * ⚠️ 位置必须锚定 `view.getVisibleSize()`，不得写死 640（KI-009 的教训）。
  */
 import { Node, Graphics, Label, LabelOutline, UITransform, Color, Sprite, SpriteFrame,
-         Texture2D, ImageAsset, Rect, Size, view } from 'cc';
+         Texture2D, ImageAsset, Rect, view, BlockInputEvents } from 'cc';
 import { COL, R, FS, BORDER, SHADOW_OFF, SHADOW_BTN } from './Tokens';
 import { Sfx } from '../engine/Audio';
+import { setUiSprite, uiArtReady, type UiArtName } from './Art';
+
+/** 像素风描边宽度（素材已内建 2px 黑边，Graphics 回退也用 2px 保持一致） */
+const PX_LINE = 2;
 
 // ---------- 基础 ----------
 export function mkNode(parent: Node, name: string, w: number, h: number, x = 0, y = 0): Node {
@@ -53,62 +60,79 @@ export function screen(parent: Node, name: string, bg?: Color): Node {
 export function mask(parent: Node, w = 360, h = 640): Node {
   const n = mkNode(parent, 'mask', w, h, 0, 0);
   const g = n.addComponent(Graphics);
+  // 规格：暗化层保留约 35~50% 的底层可见度（v2 从 .72 收到 .70，战斗氛围仍看得见）
   g.fillColor = COL.mask;
   g.rect(-w / 2, -h / 2, w, h);
   g.fill();
+  // ⚠️ 遮罩必须**真的挡住输入**，否则弹窗下层（HUD 暂停键等）照样能点到
+  n.addComponent(BlockInputEvents);
   return n;
 }
 
-// ---------- 面板（3px 黑边 + 硬投影）----------
+// ---------- 面板 ----------
 export interface PanelOpts {
   bg?: Color; line?: Color; radius?: number;
-  shadow?: boolean;      // 默认 true：画一个 y 偏移 -4 的纯黑圆角块
-  border?: boolean;      // 默认 true
+  /** 兼容旧参数：九宫格素材自带黑边，不再单独画投影 */
+  shadow?: boolean;
+  border?: boolean;
+  /** 显式指定九宫格素材（优先于 bg 推断） */
+  art?: UiArtName;
+}
+
+/** 按底色推断用哪张九宫格 */
+function resolveArt(o: PanelOpts): UiArtName | null {
+  if (o.art) return o.art;
+  const c = o.bg;
+  if (!c) return 'panel';
+  if (c === COL.bg3) return 'panel_soft';
+  if (c === COL.bg0 || c === COL.bg1) return 'well';
+  if (c === COL.accent) return 'btn_primary';
+  if (c === COL.red) return 'btn_danger';
+  return 'panel';
+}
+
+/** 在节点上画面板底（素材优先，失败回退 Graphics）；返回是否用了素材 */
+function drawPanel(n: Node, w: number, h: number, o: PanelOpts): boolean {
+  const art = resolveArt(o);
+  if (art && setUiSprite(n, art, w, h)) return true;
+  // 指定的九宫格缺失时退到通用面板，别掉回"平涂方块"（会和其他卡片长得不一样）
+  if (art !== 'panel' && setUiSprite(n, 'panel', w, h)) return true;
+  let g = n.getComponent(Graphics);
+  if (!g) g = n.addComponent(Graphics);
+  g.clear();
+  g.fillColor = o.bg ?? COL.bg2;
+  g.rect(-w / 2, -h / 2, w, h);
+  g.fill();
+  if (o.border !== false) {
+    g.lineWidth = PX_LINE;
+    g.strokeColor = o.line ?? COL.line;
+    g.rect(-w / 2, -h / 2, w, h);
+    g.stroke();
+    // 1px 顶部高光：像素面板的"斜面"感
+    g.fillColor = new Color(255, 255, 255, 16);
+    g.rect(-w / 2 + PX_LINE, h / 2 - PX_LINE - 1, w - PX_LINE * 2, 1);
+    g.fill();
+  }
+  return false;
 }
 
 export function panel(parent: Node, x: number, y: number, w: number, h: number, o: PanelOpts = {}): Node {
   const n = mkNode(parent, 'panel', w, h, x, y);
-  const g = n.addComponent(Graphics);
-  const r = o.radius ?? R.m;
-  const bg = o.bg ?? COL.bg2;
-  const ln = o.line ?? COL.line;
-  if (o.shadow !== false) {
-    g.fillColor = COL.shadow;
-    g.roundRect(-w / 2, -h / 2 - SHADOW_OFF.y, w, h, r);
-    g.fill();
-  }
-  g.fillColor = bg;
-  g.roundRect(-w / 2, -h / 2, w, h, r);
-  g.fill();
-  if (o.border !== false) {
-    g.lineWidth = BORDER;
-    g.strokeColor = ln;
-    g.roundRect(-w / 2, -h / 2, w, h, r);
-    g.stroke();
-  }
+  drawPanel(n, w, h, o);
   return n;
 }
 
-/** 重绘一个 panel 的底（用于状态切换：选中/禁用） */
+/** 重绘一个 panel 的底（用于状态切换：选中/禁用/稀有度换色） */
 export function paintPanel(n: Node, w: number, h: number, o: PanelOpts = {}): void {
-  const g = n.getComponent(Graphics);
-  if (!g) return;
-  const r = o.radius ?? R.m;
-  g.clear();
-  if (o.shadow !== false) {
-    g.fillColor = COL.shadow;
-    g.roundRect(-w / 2, -h / 2 - SHADOW_OFF.y, w, h, r);
-    g.fill();
-  }
-  g.fillColor = o.bg ?? COL.bg2;
-  g.roundRect(-w / 2, -h / 2, w, h, r);
-  g.fill();
-  if (o.border !== false) {
-    g.lineWidth = BORDER;
-    g.strokeColor = o.line ?? COL.line;
-    g.roundRect(-w / 2, -h / 2, w, h, r);
-    g.stroke();
-  }
+  const ut = n.getComponent(UITransform);
+  if (ut) ut.setContentSize(w, h);
+  drawPanel(n, w, h, o);
+}
+
+/** 直接挂一张九宫格（页面里需要"只有外框"或特殊底时用） */
+export function artPanel(parent: Node, x: number, y: number, w: number, h: number,
+                         art: UiArtName, o: { bg?: Color; line?: Color } = {}): Node {
+  return panel(parent, x, y, w, h, { ...o, art });
 }
 
 // ---------- 文字 ----------
@@ -193,132 +217,179 @@ export function titleBlock(parent: Node, t: string, sub?: string,
   return y;
 }
 
+/**
+ * 顶部标题条（各页共用）：整条像素面板 + 居中标题。
+ * 返回条节点，右侧可继续挂金币 / 关闭等控件。
+ * `top` 用设计坐标（距屏幕顶），内部按可视高度换算成节点坐标。
+ */
+export function screenHeader(parent: Node, vw: number, top: number, label: string,
+                              h = 54, sub?: string): Node {
+  const vs = view.getVisibleSize();
+  const bar = panel(parent, 0, vs.height / 2 - (top + h / 2), vw, h, { art: 'panel' });
+  if (sub) {
+    title(bar, 10, label, { width: vw - 100 });
+    text(bar, 0, -16, sub, { size: 10, color: COL.dim, width: vw - 36 });
+  } else {
+    title(bar, 1, label, { width: vw - 120 });
+  }
+  return bar;
+}
+
 // ---------- 按钮 ----------
 export interface BtnOpts {
   primary?: boolean; danger?: boolean;
   bg?: Color; line?: Color; fg?: Color; size?: number; radius?: number;
   disabled?: boolean; shadow?: boolean;
+  /** 普通按钮换别的按钮素材（如 tab 用 Outline 框） */
+  art?: UiArtName;
+}
+
+function btnArt(o: BtnOpts): { normal: UiArtName; pressed: UiArtName } {
+  if (o.disabled) return { normal: 'btn_disabled', pressed: 'btn_disabled' };
+  if (o.primary) return { normal: 'btn_primary', pressed: 'btn_primary_pressed' };
+  if (o.danger) return { normal: 'btn_danger', pressed: 'btn_danger_pressed' };
+  if (o.art) {
+    const n = o.art;
+    const p = (n.endsWith('_pressed') ? n : n + '_pressed') as UiArtName;
+    return { normal: n, pressed: p };
+  }
+  return { normal: 'btn', pressed: 'btn_pressed' };
 }
 
 /**
- * 按钮：3px 黑边 + `0 5px 0` 纯黑硬投影；主按钮 = 橙底深字。
+ * 按钮：九宫格素材 + **按下态换图 + 文字下沉 1px**（微信小游戏没有 hover，必须有按下反馈）。
  * 热区下限 44（微信硬要求）。
  */
 export function button(parent: Node, x: number, y: number, w: number, h: number,
                        str: string, o: BtnOpts = {}): { node: Node; label: Label; setEnabled: (v: boolean) => void } {
   const hh = Math.max(44, h);
-  const bg = o.disabled ? COL.bg3 : (o.bg ?? (o.primary ? COL.accent : o.danger ? COL.red : COL.bg3));
-  const fg = o.disabled ? COL.dim2 : (o.fg ?? (o.primary ? COL.ink : COL.cream));
+  const dis = !!o.disabled;
+  const bg = dis ? COL.bg3 : (o.bg ?? (o.primary ? COL.accent : o.danger ? COL.red : COL.bg3));
+  const fg = dis ? COL.dim2 : (o.fg ?? (o.primary ? COL.ink : COL.cream));
+  const { normal, pressed } = btnArt(o);
   const n = mkNode(parent, 'btn', w, hh, x, y);
-  const draw = (enabled: boolean) => {
-    let g = n.getComponent(Graphics);
-    if (!g) g = n.addComponent(Graphics);
-    const r = o.radius ?? R.m;
-    g.clear();
-    if (!o.disabled) {
+
+  let usedArt = setUiSprite(n, normal, w, hh);
+  if (!usedArt) {
+    const g = n.addComponent(Graphics);
+    const draw = (col: Color) => {
+      g.clear();
       g.fillColor = COL.shadow;
-      g.roundRect(-w / 2, -hh / 2 - SHADOW_BTN, w, hh, r);
+      g.rect(-w / 2, -hh / 2 - (o.shadow === false ? 0 : SHADOW_BTN), w, hh);
       g.fill();
-    }
-    g.fillColor = enabled ? bg : COL.bg3;
-    g.roundRect(-w / 2, -hh / 2, w, hh, r);
-    g.fill();
-    g.lineWidth = BORDER;
-    g.strokeColor = COL.line;
-    g.roundRect(-w / 2, -hh / 2, w, hh, r);
-    g.stroke();
-  };
-  draw(!o.disabled);
-  // ⚠️ 主按钮是「橙底 + 深棕字」：若再叠 2px 黑描边，字会被描边吃掉、糊成一团（用户反馈）。
-  //    所以主按钮不加描边；次/危险按钮是深底白字，保留描边反而更清晰。
+      g.fillColor = col;
+      g.rect(-w / 2, -hh / 2, w, hh);
+      g.fill();
+      g.lineWidth = PX_LINE; g.strokeColor = COL.line;
+      g.rect(-w / 2, -hh / 2, w, hh); g.stroke();
+      g.fillColor = new Color(255, 255, 255, 22);
+      g.rect(-w / 2 + PX_LINE, hh / 2 - PX_LINE - 2, w - PX_LINE * 2, 2); g.fill();
+    };
+    draw(bg);
+  }
+
+  // 主按钮是「橙底 + 深棕字」：叠加黑描边会糊字；次/危险按钮深底白字保留描边
   const l = text(n, 0, 1, str, {
     size: o.size ?? FS.s, color: fg, align: 'center', bold: true, width: w - 12, outline: !o.primary,
   });
+
+  let cur = normal;
+  const swap = (art: UiArtName, dy: number) => {
+    if (cur === art) { l.node.setPosition(0, dy); return; }
+    cur = art;
+    if (usedArt) setUiSprite(n, art, w, hh);
+    l.node.setPosition(0, dy);
+  };
+  n.on(Node.EventType.TOUCH_START, () => { if (!dis) swap(pressed, 0); }, n);
+  n.on(Node.EventType.TOUCH_END, () => { if (!dis) swap(normal, 1); }, n);
+  n.on(Node.EventType.TOUCH_CANCEL, () => { if (!dis) swap(normal, 1); }, n);
+
   return {
     node: n, label: l,
-    setEnabled: (v: boolean) => { l.color = v ? fg : COL.dim2; draw(v); },
+    setEnabled: (v: boolean) => {
+      l.color = v ? fg : COL.dim2;
+      if (usedArt) setUiSprite(n, v ? normal : 'btn_disabled', w, hh);
+    },
   };
 }
 
 // ---------- 槽位 / 标签 ----------
-/** 槽位方块：`#1b1b24` 底 + 3px 黑边 + 圆角 8；空槽用 `empty`（底色更深、内容灰色） */
+/** 槽位方块：统一 52x52 九宫格（空槽 = well 更暗） */
 export function slot(parent: Node, x: number, y: number, size: number,
                      o: { empty?: boolean; radius?: number; color?: Color } = {}): Node {
-  const n = panel(parent, x, y, size, size, {
-    bg: o.empty ? COL.bg0 : COL.bg2,
-    line: COL.line,
-    radius: o.radius ?? R.m,
-    shadow: false,
-  });
-  void o.color;
-  return n;
+  void o.radius; void o.color;
+  return panel(parent, x, y, size, size, { art: o.empty ? 'well' : 'slot' });
 }
 
-/** 标签 chip：3px 黑边 + 圆角 6，按类型换描边色 */
+/** 标签 chip：小尺寸用 Graphics 画（素材 10px 边距对 20px 高度太紧），保持方形像素边 */
 export function chip(parent: Node, x: number, y: number, str: string,
                      o: { color?: Color; bg?: Color; size?: number; dark?: boolean } = {}): Node {
   const size = o.size ?? FS.xs;
-  const w = Math.max(34, str.length * (size + 1) + 14);
-  const h = size + 11;
-  const n = panel(parent, x, y, w, h, {
-    bg: o.bg ?? COL.bg3, line: o.color ?? COL.line2, radius: R.s, shadow: false,
-  });
+  const w = Math.max(34, str.length * (size + 1) + 12);
+  const h = size + 10;
+  const n = mkNode(parent, 'chip', w, h, x, y);
+  const g = n.addComponent(Graphics);
+  g.fillColor = o.bg ?? COL.bg3;
+  g.rect(-w / 2, -h / 2, w, h);
+  g.fill();
+  g.lineWidth = PX_LINE;
+  g.strokeColor = o.color ?? COL.line2;
+  g.rect(-w / 2, -h / 2, w, h);
+  g.stroke();
   // dark = 字是深色、底是亮色 -> **不能加黑描边**（会被描边糊掉）
-  text(n, 0, 1, str, { size, color: o.color ?? COL.cream, bold: true, width: w - 6, outline: !o.dark });
+  text(n, 0, 1, str, { size, color: o.color ?? COL.cream, bold: true, width: w - 4, outline: !o.dark });
   return n;
 }
 
-// ---------- 进度条（渐变 = 切条，逐条 fill）----------
+// ---------- 进度条（像素两段式：底槽 + 主色 + 顶部高光）----------
 export interface GradBarOpts { dir: 'h' | 'v'; from: Color; to: Color; radius?: number; line?: Color }
 
 export function gradBar(parent: Node, x: number, y: number, w: number, h: number,
                         o: GradBarOpts): { node: Node; set: (v: number) => void } {
-  const r = o.radius ?? R.bar;
   const n = mkNode(parent, 'gradbar', w, h, x, y);
   const g = n.addComponent(Graphics);
-  // 底槽
   g.fillColor = COL.hpBack;
-  g.roundRect(-w / 2, -h / 2, w, h, r);
+  g.rect(-w / 2, -h / 2, w, h);
   g.fill();
-  if (o.line) {
-    g.lineWidth = BORDER; g.strokeColor = o.line;
-    g.roundRect(-w / 2, -h / 2, w, h, r);
+  if (o.line !== undefined) {
+    g.lineWidth = PX_LINE; g.strokeColor = o.line;
+    g.rect(-w / 2, -h / 2, w, h);
     g.stroke();
   }
   const inner = mkNode(n, 'fill', w, h);
   const fg = inner.addComponent(Graphics);
-  const PAD = o.line ? BORDER : 0;
+  const PAD = o.line !== undefined ? PX_LINE : 0;
   const iw = w - PAD * 2, ih = h - PAD * 2;
-
-  const lerp = (a: Color, b: Color, t: number) => new Color(
-    Math.round(a.r + (b.r - a.r) * t), Math.round(a.g + (b.g - a.g) * t),
-    Math.round(a.b + (b.b - a.b) * t), 255);
 
   const redraw = (v: number) => {
     fg.clear();
     const k = Math.max(0, Math.min(1, v));
-    if (k <= 0.001) return;
-    // ⚠️ 每条带必须**单独 rect + fill**：fillColor 在 fill() 时才作用于整条路径，
-    //    设 N 次颜色只 fill 一次 -> 只有最后一个颜色生效（渐变会退化成纯色）。
-    const STEPS = o.dir === 'h' ? 16 : 10;
-    if (o.dir === 'h') {
-      const seg = iw * k / STEPS;
-      for (let i = 0; i < STEPS; i++) {
-        fg.fillColor = lerp(o.from, o.to, i / (STEPS - 1));
-        fg.rect(-w / 2 + PAD + i * seg, -h / 2 + PAD, seg + 0.5, ih);
-        fg.fill();
-      }
-    } else {
-      const seg = ih / STEPS;
-      for (let i = 0; i < STEPS; i++) {
-        fg.fillColor = lerp(o.from, o.to, i / (STEPS - 1));
-        fg.rect(-w / 2 + PAD, -h / 2 + PAD + (STEPS - 1 - i) * seg, iw * k, seg + 0.5);
-        fg.fill();
-      }
+    if (k <= 0.001 || iw <= 0 || ih <= 0) return;
+    const fw = Math.max(1, Math.round(iw * k));
+    // 主体
+    fg.fillColor = o.to;
+    fg.rect(-w / 2 + PAD, -h / 2 + PAD, fw, ih);
+    fg.fill();
+    // 顶部 2px 高光（像素血条的标准做法：一条亮线而不是渐变）
+    if (ih > 4) {
+      fg.fillColor = o.from;
+      fg.rect(-w / 2 + PAD, h / 2 - PAD - 2, fw, 2);
+      fg.fill();
     }
   };
   redraw(1);
   return { node: n, set: redraw };
+}
+
+/** 细分隔线（像素 1px 横线） */
+export function divider(parent: Node, x: number, y: number, w: number,
+                        color: Color = COL.bg4): Node {
+  const n = mkNode(parent, 'divider', w, 1, x, y);
+  const g = n.addComponent(Graphics);
+  g.fillColor = color;
+  g.rect(-w / 2, -0.5, w, 1);
+  g.fill();
+  return n;
 }
 
 /** 运行时开关一个 Label 的黑描边（状态切换：如页签选中后底色变橙、字变深，必须去掉描边） */
@@ -356,3 +427,9 @@ export function radialGlow(parent: Node, cx: number, cy: number, radius: number,
   return n;
 }
 
+/** 素材状态（页面调试/验收用） */
+export function uiArtStatus(): boolean { return uiArtReady(); }
+/** 兼容旧引用 */
+export const RADIUS = R;
+/** 已废弃的常量，保留避免 import 断裂 */
+export const SHADOW_OFFSET = SHADOW_OFF;

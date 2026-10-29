@@ -15,6 +15,10 @@ export const ENEMIES: Record<string, EnemyDef> = {
   lizardhunter:  { unit: 'lizardhunter',  hp: 30, spd: 58, dmg: 11, r: 12, exp: 2, gold: 2, from: 13 },
   succubus:      { unit: 'succubus',      hp: 38, spd: 54, dmg: 12, r: 12, exp: 3, gold: 3, from: 15 },
   basilisk:      { unit: 'basilisk',      hp: 46, spd: 44, dmg: 13, r: 14, exp: 3, gold: 3, from: 17 },
+  observer:      { unit: 'observer',      hp: 20, spd: 52, dmg: 8,  r: 11, exp: 2, gold: 2, from: 6 },
+  claweddemon:   { unit: 'claweddemon',   hp: 40, spd: 50, dmg: 12, r: 13, exp: 2, gold: 2, from: 10 },
+  venommaw:      { unit: 'venommaw',      hp: 55, spd: 42, dmg: 13, r: 14, exp: 3, gold: 3, from: 14 },
+  cavebrute:     { unit: 'cavebrute',     hp: 80, spd: 38, dmg: 15, r: 16, exp: 4, gold: 4, from: 16 },
   gnollberserker:{ unit: 'gnollberserker',hp: 150,spd: 44, dmg: 16, r: 17, exp: 8, gold: 12, elite: true },
   boss:          { unit: 'boss-demonlord',hp: 900,spd: 48, dmg: 22, r: 26, exp: 40, gold: 45, boss: true },
 };

@@ -72,9 +72,20 @@ export class FrameAnim extends Component {
     const f = this.frames[this.frame];
     if (f && this.sprite) {
       this.sprite.spriteFrame = f;
-      // 黑色描边层（Battle 里给单位垫的剪影）要同步换帧，否则描边会停在第 1 帧
-      const ol = (this.node as unknown as { _outline?: Sprite })._outline;
-      if (ol) ol.spriteFrame = f;
+      // ⚠️ 泛光层挂在**容器节点**上（body 的父节点），而 FrameAnim 挂在 body 上：
+      //    只查 this.node 会永远取不到 → 光晕没有贴图、整层不可见（2026-10-28 查出的真因，
+      //    精英/BOSS 之前只能靠地面光圈才认得出，就是这个 bug 造成的）。
+      const holders: Record<string, unknown>[] = [this.node as unknown as Record<string, unknown>];
+      const host = this.node.parent;
+      if (host) holders.push(host as unknown as Record<string, unknown>);
+      for (const key of ['_glow', '_glow2']) {
+        for (const h of holders) {
+          const gn = h[key] as unknown as { isValid?: boolean; getComponent?: unknown } | undefined;
+          if (!gn || gn.isValid === false || typeof gn.getComponent !== 'function') continue;
+          const spr = (gn.getComponent as (k: unknown) => Sprite | null)(Sprite);
+          if (spr && spr !== this.sprite) { spr.spriteFrame = f; break; }
+        }
+      }
     }
   }
 

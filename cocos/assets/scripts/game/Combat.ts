@@ -92,8 +92,9 @@ export interface DamageResult { dmg: number; crit: boolean; }
  *     这里只负责**暴击**这一层随机 —— 保证暴击也走同一个 Rng，可复现。
  */
 export function rollDamage(base: number, stats: CharStats, rng: Rng): DamageResult {
-  const crit = rng.chance(stats.crit);
-  const dmg = Math.max(1, Math.round(base * (crit ? stats.critdmg : 1)));
+  // 阶段 E：暴击率上限 75%（永不 100%），暴击伤害上限 ×3.5
+  const crit = rng.chance(Math.min(0.75, stats.crit));
+  const dmg = Math.max(1, Math.round(base * (crit ? Math.min(3.5, stats.critdmg) : 1)));
   return { dmg, crit };
 }
 

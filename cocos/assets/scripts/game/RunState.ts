@@ -2,13 +2,13 @@ import { Rng } from '../core/Rng';
 import { RUN, SHOP_SLOTS, REROLL_BASE_COST, EXP_BASE, EXP_PER_LEVEL, isBossWave, eliteCount } from '../core/Const';
 import { CHARS } from '../data/Chars';
 import { ITEMS } from '../data/Items';
-import { MODULES } from '../data/Modules';
+import { MODULES, MERGE_COST, baseOf, modPower } from '../data/Modules';
 import { SKILLS, SKILL_IDS } from '../data/Skills';
 import { ATTRS } from '../data/Attrs';
 import { enemyPool, ENEMIES, bossUnitFor } from '../data/Enemies';
 import type { CharStats } from '../data/Types';
 import { freshStats } from './Stats';
-import { calcSkill, makeSkill, MAX_SKILLS, MAX_SLOTS, canInstall, type SkillInst } from './SkillCalc';
+import { calcSkill, makeSkill, MAX_SKILLS, MAX_SLOTS, canInstall, isCompatible, type SkillInst } from './SkillCalc';
 
 export type RewardKind = 'skill' | 'skillup' | 'module' | 'item' | 'attr';
 export interface Reward { kind: RewardKind; id: string; needReplace?: boolean; }
@@ -41,6 +41,8 @@ export class RunState {
   runTime = 0;
   endless = false;
   attrTaken: Record<string, number> = {};
+  /** 本局开局时的属性快照（属性面板的对比基准） */
+  baseStats!: CharStats;
   shopReroll = 0;
   shopStock: ShopSlot[] | null = null;
   carryOver: ShopSlot[] = [];
@@ -52,6 +54,9 @@ export class RunState {
     this.seed = seed >>> 0;
     this.rng = new Rng(this.seed);
     this.stats = freshStats(c);
+    // M67（第三轮 A2.1）：记录**本局开局基线**。属性面板的"高于/低于基础"必须以角色开局值为基准，
+    //   不能用 ATTRS.base（那是全表通用值，如生命上限写死 100，而骑士开局只有 72）。
+    this.baseStats = { ...this.stats };
     this.skills = [makeSkill(c.start)];
   }
 
@@ -59,7 +64,8 @@ export class RunState {
 
   addExp(v: number): number {
     // ★ 经验获取属性
-    this.exp += v * (1 + (this.stats.expGain ?? 0));
+    // 阶段 E：经验获取上限 +100%（避免等级雪球无上限）
+    this.exp += v * (1 + Math.min(1.0, this.stats.expGain ?? 0));
     let ups = 0;
     while (this.exp >= this.expNeed) {
       this.exp -= this.expNeed;
@@ -80,7 +86,8 @@ export class RunState {
   addKill(_exp: number, gold: number): void {
     this.kills++;
     this.waveKills++;
-    this.gold += Math.round(gold * (1 + this.stats.greed));
+    // 阶段 E：金币获取上限 +100%
+    this.gold += Math.round(gold * (1 + Math.min(1.0, this.stats.greed)));
   }
 
   nextWave(): number {
@@ -153,10 +160,43 @@ export class RunState {
     return out;
   }
 
+  /** 这个模块"值几份"（背包 + 所有技能槽；强化模块 = 2 份） */
   totalMods(mid: string): number {
-    let n = this.modsBag.filter(x => x === mid).length;
-    for (const sk of this.skills) n += sk.mods.filter(x => x === mid).length;
+    const base = baseOf(mid);
+    let n = 0;
+    for (const x of this.modsBag) if (baseOf(x) === base) n += modPower(x);
+    for (const sk of this.skills) for (const x of sk.mods) if (baseOf(x) === base) n += modPower(x);
     return n;
+  }
+
+  /** 还能合成几次：3 个同名**基础**模块 = 1 次（强化版不再参与合成，封顶 ×2） */
+  mergeReady(baseId: string): number {
+    let plain = 0;
+    for (const x of this.modsBag) if (x === baseId) plain++;
+    for (const sk of this.skills) for (const x of sk.mods) if (x === baseId) plain++;
+    return Math.floor(plain / MERGE_COST);
+  }
+
+  /**
+   * 合成（M32，用户定的规则 B）：消耗 3 个同名基础模块 → 1 个强化模块进背包。
+   * 优先扣背包里的，再从技能槽里扣（从后往前，避免索引错位）。
+   * 强化模块 = 2 份效果、只占 1 槽；因为 mergeReady 只数基础模块，所以不会再被合成。
+   */
+  mergeModule(baseId: string): boolean {
+    if (this.mergeReady(baseId) < 1) return false;
+    let need = MERGE_COST;
+    for (let i = this.modsBag.length - 1; i >= 0 && need > 0; i--) {
+      if (this.modsBag[i] === baseId) { this.modsBag.splice(i, 1); need--; }
+    }
+    for (let s = this.skills.length - 1; s >= 0 && need > 0; s--) {
+      const mods = this.skills[s].mods;
+      for (let k = mods.length - 1; k >= 0 && need > 0; k--) {
+        if (mods[k] === baseId) { mods.splice(k, 1); need--; }
+      }
+    }
+    if (need > 0) return false;
+    this.modsBag.push(baseId + '_2');
+    return true;
   }
 
   applyReward(r: Reward): void {
@@ -207,6 +247,61 @@ export class RunState {
     if (bagI >= 0) this.modsBag.splice(bagI, 1);
     sk.mods.push(mid);
     return { replaced: null };
+  }
+
+  /**
+   * 卸下：把某个技能槽上的模块**取回背包**（M36——之前只能替换，不能下架）。
+   * 返回 true 表示成功。
+   */
+  unequip(si: number, sl: number): boolean {
+    const sk = this.skills[si];
+    if (!sk) return false;
+    const mod = sk.mods[sl];
+    if (!mod) return false;
+    sk.mods.splice(sl, 1);
+    this.modsBag.push(mod);
+    return true;
+  }
+
+  /**
+   * 把**已经装在技能上**的模块挪到另一个槽位（同技能内挪位置 / 跨技能搬 / 目标已占用则交换）。
+   *
+   * 为什么需要：behavior_modules.md §1 写死「玩家可在 Build 面板中重新分配已拥有的模块」，
+   * 而暂停面板的「装模块」只能装背包里的东西 —— 背包一空就什么都做不了
+   * （用户反馈「暂停面板点装模块无法安装模块」，2026-10-20 M30 #5）。
+   * 这里保证任何情况都不让玩家损失模块：目标有模块就交换。
+   */
+  moveMod(fromSi: number, fromSl: number, toSi: number, toSl: number): boolean {
+    const a = this.skills[fromSi], b = this.skills[toSi];
+    if (!a || !b) return false;
+    if (fromSi === toSi && fromSl === toSl) return false;
+    const mod = a.mods[fromSl];
+    if (!mod) return false;
+
+    if (fromSi === toSi) {
+      const arr = a.mods;
+      if (toSl < arr.length) {
+        const t = arr[toSl];
+        if (!isCompatible(a.id, t)) return false;
+        arr[toSl] = mod; arr[fromSl] = t;
+      } else {
+        arr.splice(fromSl, 1);
+        arr.splice(toSl, 0, mod);
+      }
+      return true;
+    }
+
+    const target = b.mods[toSl] ?? null;
+    if (target !== null) {
+      if (!isCompatible(b.id, mod) || !isCompatible(a.id, target)) return false;
+      b.mods[toSl] = mod;
+      a.mods[fromSl] = target;
+    } else {
+      if (!isCompatible(b.id, mod)) return false;
+      b.mods[toSl] = mod;
+      a.mods.splice(fromSl, 1);
+    }
+    return true;
   }
 
   // ---------- 商店（固定 4 货位 + 锁定，参考 Brotato） ----------

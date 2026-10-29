@@ -28,6 +28,10 @@ export const UNIT_FRAMES: Record<string, Record<string, number>> = {
   'succubus': { attack: 9, death: 7, idle: 4, walk: 6 },
   'swordswoman': { attack: 6, death: 4, idle: 4, walk: 6 },
   'wolf': { attack: 5, death: 4, idle: 4, walk: 6 },
+  'observer': { attack: 5, death: 4, idle: 4, walk: 4 },
+  'claweddemon': { attack: 5, death: 5, idle: 4, walk: 6 },
+  'venommaw': { attack: 4, death: 6, idle: 4, walk: 5 },
+  'cavebrute': { attack: 6, death: 10, idle: 4, walk: 6 },
 };
 
 /** 各动画播放帧率 */

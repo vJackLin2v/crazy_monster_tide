@@ -10,11 +10,12 @@
  *       battle ─阵亡/通关→ result
  *       battle ─暂停键→ build 抽屉
  */
-import { _decorator, Component, Node, view, ResolutionPolicy } from 'cc';
+import { _decorator, Component, Node, view, ResolutionPolicy, Color } from 'cc';
 import { SCREEN_W, SCREEN_H, RUN, waveTime, isBossWave, isEliteWave } from './core/Const';
 import { Joystick } from './engine/Joystick';
 import { Battle } from './battle/Battle';
-import { mkNode } from './ui/UIKit';
+import { mkNode, screen } from './ui/UIKit';
+import { preloadUiArt } from './ui/Art';
 import { Hud, type HudData } from './ui/Hud';
 import { buildMenu, buildHowto, buildCharSelect, buildResult, type ResultBuildRow } from './ui/MenuScreens';
 import { buildLevelUp, buildShop, buildBuildDrawer, buildConfirm, type CardData, type ShopSlotView } from './ui/Modals';
@@ -23,13 +24,16 @@ import { CHARS } from './data/Chars';
 import { SKILLS, SKILL_ART } from './data/Skills';
 import { Assets, preloadIcons } from './engine/Assets';
 import { Sfx } from './engine/Audio';
-import { MODULES } from './data/Modules';
-import { ITEMS } from './data/Items';
+import { MODULES, MODULE_IDS, MODULE_NUMS, moduleDef, baseOf, isMerged } from './data/Modules';
+import { ITEMS, itemNumbers } from './data/Items';
 import { ITEM_ICON, MODULE_ICON, ATTR_ICON } from './data/IconMap';
 import { ATTRS } from './data/Attrs';
-import { calcSkill, isCompatible, MAX_SLOTS } from './game/SkillCalc';
+import { calcSkill, canInstall, isCompatible } from './game/SkillCalc';
 import type { Reward } from './game/RunState';
 const { ccclass } = _decorator;
+
+/** 启动占位底色（与 COL.bg1 一致，避免首帧白/黑闪） */
+const COL_BG1 = new Color(38, 38, 54, 255);
 
 type Phase = 'menu' | 'howto' | 'charselect' | 'battle' | 'shop' | 'result';
 
@@ -46,8 +50,15 @@ export class GameRoot extends Component {
   private curModal: Node | null = null;
   private phase: Phase = 'menu';
   private charId = CHARS[0].id;
-  private seed = 20261012;
+  /** 本次/下一局的随机种子：**每局都换**（原来写死 20261012 → 每局商店、奖励完全一样） */
+  private seed = (Math.random() * 0xffffffff) >>> 0;
+  /** 菜单里已经"预览"过这个种子时置 true，开局直接用；否则开局前重摇一次 */
+  private seedFresh = true;
   private pendingRewards: Reward[] = [];
+  /** 本局结算是否已经展示过（防止 onDead/onClear 重入重复弹结算） */
+  private endShown = false;
+  /** 卡死看门狗计时：战斗被暂停、却没有任何弹窗时的累计时间 */
+  private stuckT = 0;
 
   onLoad() {
     // 设计分辨率写死在代码里，不依赖编辑器设置（编辑器里是 1280x720，见 KI-005）
@@ -66,15 +77,27 @@ export class GameRoot extends Component {
 
     this.battle.hooks.onWaveCleared = () => this.showShop();
     this.battle.hooks.onLevelUp = (r) => this.showLevelUp(r);
-    this.battle.hooks.onDead = () => this.showResult(false);
-    this.battle.hooks.onClear = () => this.showResult(true);
+    // ★ 结算只允许触发一次：以前同一帧/重入时 onDead 可能被多次调用，
+    //   控制台会连刷「玩家阵亡」，还会反复重建结算页（用户 2026-10-28 反馈"看到阵亡提示但没死"）
+    this.battle.hooks.onDead = () => { if (this.endShown) return; this.endShown = true; this.showResult(false); };
+    this.battle.hooks.onClear = () => { if (this.endShown) return; this.endShown = true; this.showResult(true); };
 
     Sfx.init(this.node);
     void Sfx.preload();
-    this.showMenu();
+    // UI 九宫格素材是异步载入的，**载入完再画菜单**，否则首帧会退化成 Graphics 旧样式
+    void this.boot();
     // 用户反馈「进入游戏时会先卡顿一下」：根因是 startRun 里同步 await 加载
     // 玩家单位 + 全部技能 VFX。改成**开局就在后台预加载**，玩家在菜单停留的时间就把它偷完了。
     void this.preloadAll();
+  }
+
+  /** 启动：先载 UI 素材，再出菜单（素材失败也照常进菜单，UIKit 会回退） */
+  private async boot() {
+    const vs = view.getVisibleSize();
+    const ph = screen(this.uiRoot, 'bootbg', COL_BG1);
+    try { await preloadUiArt(); } catch (e) { console.warn('[GameRoot] UI 素材加载失败', e); }
+    if (ph.isValid) ph.destroy();
+    this.showMenu();
   }
 
   /** 后台预加载：技能 VFX + 技能图标 + 全部角色单位（不阻塞菜单） */
@@ -112,10 +135,28 @@ export class GameRoot extends Component {
     this.curModal = null;
   }
 
+  /**
+   * 弹窗字段改成 **带销毁语义的访问器**（M61）。
+   *
+   * 为什么：黑科技安装屏弹「替换确认」时，原代码直接 `this.curModal = buildConfirm(...)`，
+   * 安装屏节点从此没人引用 → closeModal 只销毁确认框，安装屏**永远留在画面上**，
+   * 叠在构建面板后面（第二轮截图 12–16 后面那层"黑科技"就是这样来的）。
+   * 现在任何赋值都会先销毁旧弹窗，从根上避免"孤儿全屏层"。
+   */
+  private _curModal: Node | null = null;
+  private get curModal(): Node | null { return this._curModal; }
+  private set curModal(n: Node | null) {
+    if (this._curModal && this._curModal.isValid && this._curModal !== n) this._curModal.destroy();
+    this._curModal = n;
+  }
+
   private showMenu() {
     this.phase = 'menu'; this.closeModal(); this.clearScreen();
     Sfx.bgm('menu');
     this.battleNode.active = false; this.joyNode.active = false;
+    // 回到菜单就摇**下一局**的种子，菜单底部显示的就是即将用的那个
+    this.seed = this.newSeed();
+    this.seedFresh = true;
     this.cur = buildMenu(this.uiRoot, this.seed, () => this.showCharSelect(), () => this.showHowto());
   }
   private showHowto() {
@@ -127,7 +168,14 @@ export class GameRoot extends Component {
     this.cur = buildCharSelect(this.uiRoot, () => this.showMenu(), (id) => { this.charId = id; void this.startBattle(); });
   }
 
+  private newSeed(): number { return (Math.random() * 0xffffffff) >>> 0; }
+
   private async startBattle() {
+    this.endShown = false;
+    this.stuckT = 0;
+    // 从结算页"再来一局"进来时没有经过菜单 → 这里重摇一次，保证每局不同
+    if (!this.seedFresh) this.seed = this.newSeed();
+    this.seedFresh = false;
     this.phase = 'battle'; this.closeModal(); this.clearScreen();
     this.battleNode.active = true; this.joyNode.active = true;
     const hudNode = mkNode(this.uiRoot, 'HudRoot', SCREEN_W, SCREEN_H);
@@ -142,10 +190,17 @@ export class GameRoot extends Component {
   // ---------- 5. 升级 3 选 1 ----------
   private showLevelUp(rewards: Reward[]) {
     this.pendingRewards = rewards;
-    const cards: CardData[] = rewards.map(r => this.toCard(r));
     this.closeModal();
-    this.curModal = buildLevelUp(this.uiRoot, this.battle.rs.lv, cards,
-      (i) => this.pickReward(i), () => this.pickReward(-1));
+    try {
+      const cards: CardData[] = rewards.map(r => this.toCard(r));
+      this.curModal = buildLevelUp(this.uiRoot, this.battle.rs.lv, cards,
+        (i) => this.pickReward(i), () => this.pickReward(-1));
+    } catch (e) {
+      // ★ 防御：任何界面构建失败都不能把游戏留在「暂停 + 没弹窗」的状态（= 看起来卡死）
+      console.error('[UI] 升级面板构建失败，自动跳过本次升级', e);
+      this.closeModal();
+      this.battle.resumeFromModal();
+    }
   }
 
   // ---------- 7. 技能替换（4 技能已满时抽到新技能）----------
@@ -158,16 +213,22 @@ export class GameRoot extends Component {
     const rs = this.battle.rs;
     const def = SKILLS[newId];
     this.battle.paused = true;
+    // ⚠️ 必须先关掉「升级 3 选 1」弹窗！之前直接覆盖 this.curModal，升级弹窗的节点
+    //    从来没被销毁 → 替换完只销毁了替换屏，升级页留在画面上且再也关不掉
+    //    （用户反馈「替换技能后无法关闭升级选项页面」就是这个原因）。
+    this.closeModal();
     this.curModal = buildReplace(this.uiRoot,
-      { name: def ? def.name : newId, desc: def ? tagText(def.tags) : '' },
+      { name: def ? def.name : newId, desc: def ? tagText(def.tags) : '', icon: def ? def.icon : undefined },
       rs.skills.map(s => ({
         name: (SKILLS[s.id] ? SKILLS[s.id].name : s.id) + '  Lv.' + s.lvl,
         modCount: s.mods.length,
+        icon: SKILLS[s.id] ? SKILLS[s.id].icon : undefined,
       })),
       (slot) => {
         const back = rs.replaceSkill(slot, newId);   // 被换掉技能上的模块**退回背包**
         if (back.length) rs.modsBag.push(...back);
-        this.installSel = rs.modsBag.length ? rs.modsBag[0] : null;
+        this.installSelIdx = null; this.installSel = null;
+        if (rs.modsBag.length) this.selectBag(0);
         this.closeModal();
         this.battle.resumeFromModal();
       },
@@ -185,8 +246,11 @@ export class GameRoot extends Component {
       // ⚠️ 模块必须**进安装屏真的装上**，不能只丢进背包。
       //    之前就是只 push 进背包、没有安装入口 —— 用户报"无法安装模块"。
       this.battle.rs.modsBag.push(r.id);
-      this.installSel = r.id;
+      this.installSelIdx = null; this.installSel = null;
       this.showInstall('levelup');
+      const bag = this.battle.rs.modsBag;
+      const idx = bag.lastIndexOf(r.id);
+      if (idx >= 0) { this.selectBag(idx); this.renderInstall(); }
       return;
     }
     if (r) this.battle.rs.applyReward(r);
@@ -195,18 +259,31 @@ export class GameRoot extends Component {
   }
 
   // ---------- 6. 模块安装（槽位级交互，规格 §3.3）----------
+  /** 选中的模块 id（背包里的某一份） */
   private installSel: string | null = null;
-  private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
+  /** 选中的是背包里**第几份**：同名模块各选各的，不再一起高亮（M32） */
+  private installSelIdx: number | null = null;
+  /** 选中的「已装在技能上的模块」——Build 面板重新分配（空槽=移动，已占用=交换） */
+  private installFromSlot: { si: number; sl: number } | null = null;
+    /** 属性页是否展开全部（P1-5） */
+  private attrShowAll = false;
+  /** 暂停抽屉当前页签（0 技能 / 1 黑科技 / 2 道具 / 3 属性）——重开面板时保持不变 */
+  private pauseTab = 0;
+private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
 
   private showInstall(returnTo: 'levelup' | 'pause' | 'shop' | 'nextwave') {
     this.installReturn = returnTo;
+    this.installFromSlot = null;              // 每次进入安装屏都从头选
     const rs = this.battle.rs;
-    if (!this.installSel || rs.modsBag.indexOf(this.installSel) < 0) {
-      this.installSel = rs.modsBag.length ? rs.modsBag[0] : null;
-    }
-    // 用户要求：**背包为空就自动返回**，不弹一个空界面
-    if (rs.modsBag.length === 0) { this.afterInstall(); return; }
+    this.installSel = null;
+    this.installSelIdx = null;
+    // 背包空 + 技能上也没装过 -> 没什么可管理的，直接回去。
+    // ⚠️ 以前只看背包：背包一空这里就静默返回，玩家点了「装模块」像没反应
+    //    （用户反馈「暂停面板点装模块无法安装模块」，2026-10-20 M30 #5）。
+    const hasInstalled = rs.skills.some(s => s.mods.length > 0);
+    if (rs.modsBag.length === 0 && !hasInstalled) { this.afterInstall(); return; }
     this.battle.paused = true;
+    if (rs.modsBag.length && this.installSelIdx === null) this.selectBag(0);
     this.renderInstall();
   }
 
@@ -219,43 +296,150 @@ export class GameRoot extends Component {
     else this.battle.resumeFromModal();
   }
 
+  /** 选中背包里的第 i 份（同名模块各自独立） */
+  private selectBag(i: number) {
+    const bag = this.battle.rs.modsBag;
+    if (i < 0 || i >= bag.length) { this.installSel = null; this.installSelIdx = null; return; }
+    this.installSelIdx = i;
+    this.installSel = bag[i];
+  }
+
+  private modName(id: string): string {
+    const d = moduleDef(id);
+    return d ? d.name : id;
+  }
+  private modIcon(id: string): string | undefined {
+    return MODULE_ICON[baseOf(id)];
+  }
+
+  /** 安装屏构建的统一入口：**任何异常都不许把游戏卡在暂停态** */
   private renderInstall() {
+    try {
+      this.renderInstallUnsafe();
+    } catch (e) {
+      console.error('[UI] 黑科技安装屏构建失败（已自动恢复）', e);
+      this.closeModal();
+      if (this.installReturn === 'levelup') this.battle.resumeFromModal();
+      else this.battle.paused = false;
+    }
+  }
+
+  private renderInstallUnsafe() {
     this.closeModal();
     const rs = this.battle.rs;
+    const from = this.installFromSlot;
+    const fromMod = from ? rs.skills[from.si]?.mods[from.sl] : null;
+    const selName = from && fromMod ? this.modName(fromMod) : (this.installSel ? this.modName(this.installSel) : '');
+    const view = (id: string) => ({ id, name: this.modName(id), icon: this.modIcon(id), merged: isMerged(id) });
     this.curModal = buildInstall(this.uiRoot, {
       skills: rs.skills.map(s => ({
         name: SKILLS[s.id] ? SKILLS[s.id].name : s.id,
         lvl: s.lvl,
-        mods: s.mods.map(m => (MODULES[m] ? MODULES[m].name : m).slice(0, 2)),
+        mods: s.mods.map(view),
       })),
-      bag: rs.modsBag.map(id => ({ id, name: (MODULES[id] ? MODULES[id].name : id).slice(0, 4) })),
-      selModule: this.installSel,
-      selModuleName: this.installSel && MODULES[this.installSel] ? MODULES[this.installSel].name : (this.installSel ?? ''),
+      bag: rs.modsBag.map(view),
+      selBag: this.installSelIdx,
+      selSlot: from,
+      selName,
+      pickedId: from && fromMod ? fromMod : this.installSel,
+      pickedDesc: (() => {
+        const id = from && fromMod ? fromMod : this.installSel;
+        const d = id ? moduleDef(id) : undefined;
+        return d ? d.desc : '';
+      })(),
+      merges: MODULE_IDS.map(id => ({
+        baseId: id,
+        name: MODULES[id].name,
+        count: rs.totalMods(id),
+        times: rs.mergeReady(id),
+        resultName: MODULES[id].name + 'Ⅱ',
+        resultIcon: MODULE_ICON[id],
+      })),
       compatible: (si, modId) => {
         const sk = rs.skills[si];
         if (!sk) return false;
-        return isCompatible(sk.id, modId) && (sk.mods.length < MAX_SLOTS || sk.mods.indexOf(modId) >= 0 || true);
+        const r = canInstall(sk, modId);
+        // ★ 2026-10-28 用户反馈：槽位装满时把技能置灰，玩家会以为"这个技能不能装"。
+        //   「需替换槽位」不是不兼容 —— 点槽位就会替换掉那一格，所以这里算可用。
+        return r.ok || r.why === '需替换槽位';
       },
     }, {
-      onSelectModule: (id) => { this.installSel = id; this.renderInstall(); },
+      onSelectBag: (i) => {
+        this.installFromSlot = null;
+        if (i === null) { this.installSel = null; this.installSelIdx = null; }
+        else this.selectBag(i);
+        this.renderInstall();
+      },
       onPickSlot: (si, sl) => this.doInstall(si, sl),
-      // 「先放背包」= 不装、直接回去。模块本来就已在背包里，之后能在 Build 面板再装。
+      onUnequip: () => {
+        const f = this.installFromSlot;
+        if (!f) return;
+        const rs2 = this.battle.rs;
+        const ok = rs2.unequip(f.si, f.sl);
+        console.log('[Install] 卸下模块 ' + ok);
+        this.installFromSlot = null;
+        if (ok && rs2.modsBag.length) this.selectBag(rs2.modsBag.length - 1);
+        this.renderInstall();
+      },
+      onMerge: (baseId) => {
+        const ok = rs.mergeModule(baseId);
+        console.log('[Merge] ' + baseId + ' ×3 → ' + baseId + '_2 : ' + ok);
+        this.installFromSlot = null;
+        const idx = rs.modsBag.lastIndexOf(baseId + '_2');
+        if (idx >= 0) this.selectBag(idx);
+        this.renderInstall();
+      },
       onBack: () => this.afterInstall(),
     });
   }
 
   private doInstall(si: number, sl: number) {
     const rs = this.battle.rs;
+    // ① 手里拿的是「已装模块」-> 移动 / 交换
+    if (this.installFromSlot) {
+      const ok = rs.moveMod(this.installFromSlot.si, this.installFromSlot.sl, si, sl);
+      if (!ok) console.warn('[Install] 不能移动：目标技能不兼容（标签不匹配）');
+      this.installFromSlot = null;
+      this.renderInstall();
+      return;
+    }
     const sk = rs.skills[si];
     const modId = this.installSel;
-    if (!sk || !modId) return;
+    // ② 没选模块时点已占用槽 = 把它拿起来（背包空也能重新分配，behavior_modules.md §1）
+    if (!modId) {
+      if (sk && sk.mods[sl]) {
+        this.installFromSlot = { si, sl };
+        this.renderInstall();
+      }
+      return;
+    }
+    if (!sk) return;
     if (!isCompatible(sk.id, modId)) return;
+    // M57（P1-4）：要**顶掉**已有黑科技时先给一次确认，明确"换什么、旧的去哪"。
+    //   RunState.installAt 会把被顶掉的模块塞回背包，所以这里可以放心承诺"不会丢"。
+    const cur = sk.mods[sl];
+    if (cur && cur !== modId) {
+      const from = this.modName(cur), to = this.modName(modId);
+      this.curModal = buildConfirm(this.uiRoot, '替换黑科技',
+        '用「' + to + '」替换「' + from + '」？\n被替换的「' + from + '」会退回背包，不会丢失。',
+        '替换',
+        () => this.renderInstall(),
+        () => { this.doInstallRaw(si, sl, modId); });
+      return;
+    }
+    this.doInstallRaw(si, sl, modId);
+  }
+
+  /** 真正执行安装（确认弹窗之后调用） */
+  private doInstallRaw(si: number, sl: number, modId: string) {
+    const rs = this.battle.rs;
     try {
       rs.installAt(si, sl, modId);          // RunState 负责：装上去 + 被顶掉的退回背包
     } catch (e) {
       console.warn('[Install] 安装失败:', e);
     }
-    this.installSel = rs.modsBag.length ? rs.modsBag[0] : null;
+    if (rs.modsBag.length) this.selectBag(0);
+    else { this.installSel = null; this.installSelIdx = null; }
     // 全部装完（背包空了）-> 自动收起，不让玩家停在空界面
     if (!this.installSel) { this.afterInstall(); return; }
     this.renderInstall();
@@ -279,14 +463,17 @@ export class GameRoot extends Component {
         const d1 = s ? Math.round(s.dmg * (1 + 0.22 * lv)) : 0;
         return {
           kind: 'skillup', title: s ? s.name : r.id, sub: 'Lv.' + lv + ' → ' + (lv + 1),
-          desc: '伤害 ' + d0 + ' → ' + d1 + '，冷却再降 6%。',
+          desc: s ? s.desc : '',
+          nums: '伤害 ' + d0 + ' → ' + d1,
+          meta: 'Lv.' + lv + ' → ' + (lv + 1) + ' · 冷却 -6%',
           icon,
         };
       }
       return {
         kind: 'skill', title: s ? s.name : r.id, sub: '新技能',
-        // 卡片高度有限：把数值放一行、标签放一行，比原来一整句更好读
-        desc: (s ? s.dmg : 0) + ' 点伤害 · 冷却 ' + (s ? s.cd : 0) + 's' + (tags ? ' ｜ ' + tags : ''),
+        desc: s ? s.desc : '',
+        nums: '伤害 ' + (s ? s.dmg : 0) + ' · 冷却 ' + (s ? s.cd : 0) + 's',
+        meta: (tags ? tags + ' · ' : '') + (r.needReplace ? '技能已满，选中后替换' : '占 1 个技能槽'),
         icon,
       };
     }
@@ -294,21 +481,33 @@ export class GameRoot extends Component {
       const m = MODULES[r.id];
       const owned = this.battle.rs.totalMods(r.id);
       return {
-        kind: 'module', title: m ? m.name : r.id, sub: r.needReplace ? '装到技能上' : '行为模块',
-        desc: (m ? m.desc : '') + '（已持有 ' + owned + ' / ' + (m ? m.max : 1) + '）',
+        kind: 'module', title: m ? m.name : r.id, sub: r.needReplace ? '装到技能上' : '黑科技',
+        desc: m ? m.desc : '',
+        nums: MODULE_NUMS[r.id] ?? '',
+        meta: '已持有 ×' + owned + ' · 上限 ' + (m ? m.max : 1) + (r.needReplace ? ' · 需装到技能槽' : ''),
         glyph: m ? m.icon : '⇢',
         art: MODULE_ICON[r.id],            // 用模块自己的图标，别写死
       };
     }
     if (r.kind === 'item') {
       const it = ITEMS[r.id];
-      return { kind: 'item', title: it ? it.name : r.id, sub: '道具', desc: it ? it.desc : '', glyph: it ? it.icon : '◆', art: ITEM_ICON[r.id] };
+      const ownedN = this.battle.rs.items.filter(i => i.id === r.id).length;
+      return {
+        kind: 'item', title: it ? it.name : r.id, sub: '道具',
+        desc: it ? it.desc : '',
+        nums: it ? itemNumbers(it, r.id) : '',
+        meta: (ownedN > 0 ? '已持有 ×' + ownedN : '尚未持有') + ' · ' + ((it && it.tier === 2) ? '高级道具' : '普通道具'),
+        glyph: it ? it.icon : '◆', art: ITEM_ICON[r.id],
+      };
     }
     const a = ATTRS[r.id];
+    const taken = this.battle.rs.attrTaken[r.id] ?? 0;
+    const stepTxt = a ? a.fmt(a.step) : '';
     return {
       kind: 'attr', title: a ? a.name : r.id, sub: '属性',
-      desc: '当前 ' + (a ? a.name : '') + ' ' + (a ? a.fmt(a.base) : '') +
-            '，提升到 ' + (a ? a.fmt(a.base + a.step) : '') + '。永久生效，可叠加。',
+      desc: a ? a.desc : '',
+      nums: (a ? (stepTxt.startsWith('+') ? stepTxt : '+' + stepTxt) : ''),
+      meta: (taken > 0 ? '已叠加 ×' + taken + ' · 可继续叠加' : '可无限叠加'),
       glyph: a ? a.icon : '★',
       art: ATTR_ICON[r.id],            // 用属性自己的图标（⚔ / » / ◎ / ♥ …）
     };
@@ -321,18 +520,39 @@ export class GameRoot extends Component {
     this.renderShop();
   }
 
+  /** 商店构建的统一入口：构建失败时直接开下一波，别把人卡在空商店里 */
   private renderShop() {
+    try {
+      this.renderShopUnsafe();
+    } catch (e) {
+      console.error('[UI] 商店面板构建失败，直接进入下一波', e);
+      this.closeModal();
+      this.phase = 'battle';
+      this.battle.paused = false;
+      this.battle.advanceWave();
+    }
+  }
+
+  private renderShopUnsafe() {
     this.closeModal();
     const rs = this.battle.rs;
     const slots: ShopSlotView[] = (rs.shopStock || []).map(s => {
       const title = s.kind === 'item' ? (ITEMS[s.id] ? ITEMS[s.id].name : s.id)
         : s.kind === 'module' ? (MODULES[s.id] ? MODULES[s.id].name : s.id)
         : s.kind === 'heal' ? '回复 40 HP' : '随机属性 +1';
-      const sub = s.kind === 'item' ? (ITEMS[s.id] ? ITEMS[s.id].desc : '')
+      // 商店里道具直接显示**具体数值**（决策要看数）；黑科技仍显示人话描述
+      const sub = s.kind === 'item'
+        ? (ITEMS[s.id] ? itemNumbers(ITEMS[s.id], s.id) || ITEMS[s.id].desc : '')
         : s.kind === 'module' ? (MODULES[s.id] ? MODULES[s.id].desc : '') : '';
       const icon = s.kind === 'item' ? ITEM_ICON[s.id]
         : s.kind === 'module' ? MODULE_ICON[s.id] : undefined;
-      return { title, sub, price: s.price, sold: s.sold, locked: s.locked, kind: s.kind, icon };
+      // M52：稀有度（1 普通 / 2 高级）+ 已持有数量（堆叠提示）
+      const ownedCount = s.kind === 'item' ? rs.items.filter(i => i.id === s.id).length : 0;
+      return {
+        title, sub, price: s.price, sold: s.sold, locked: s.locked, kind: s.kind, icon,
+        rarity: s.kind === 'item' ? ((ITEMS[s.id]?.tier ?? 1)) : 0,
+        owned: ownedCount,
+      };
     });
     // DEMO 在货架下方有一行提示：下一波时长 / 是否 BOSS 波 / 是否精英波
     const nw = rs.wave + 1;
@@ -349,7 +569,15 @@ export class GameRoot extends Component {
       () => { rs.rerollShop(); this.renderShop(); },
       rs.rerollCost(),
       () => this.nextWave(),
-      nextTip, nextLabel);
+      nextTip, nextLabel,
+      // 已有道具（用户要求：商店下方展示手上道具，参考土豆兄弟）
+      (() => {
+        const counts = new Map<string, number>();
+        for (const it of rs.items) counts.set(it.id, (counts.get(it.id) ?? 0) + 1);
+        return Array.from(counts.entries()).map(([id, count]) => ({
+          name: ITEMS[id] ? ITEMS[id].name : id, icon: ITEM_ICON[id], count,
+        }));
+      })());
   }
 
   private nextWave() {
@@ -357,7 +585,8 @@ export class GameRoot extends Component {
     // 用户指令：进下一关前**统一打开一次安装界面**，让玩家把背包里的模块装一装
     if (rs.modsBag.length > 0) {
       this.installReturn = 'nextwave';
-      this.installSel = rs.modsBag[0];
+      this.installSelIdx = null; this.installSel = null;
+      this.selectBag(0);
       this.battle.paused = true;
       this.renderInstall();
       return;
@@ -369,6 +598,12 @@ export class GameRoot extends Component {
 
   // ---------- 11. 结算 ----------
   private showResult(win: boolean) {
+    // P0 防呆：胜利只可能来自"打完最后一波"。若状态不符，说明是调试入口或状态没重置，
+    // 这里留下明确日志（上线版不弹 UI），避免以后又出现「通关 + 第 8/20 波」的截图。
+    const rs0 = this.battle.rs;
+    if (win && rs0.wave < RUN.waves) {
+      console.warn('[Result] 非法胜利状态：wave=' + rs0.wave + ' < 总波次 ' + RUN.waves + '（可能来自调试调用）');
+    }
     this.phase = 'result';
     Sfx.sfx(win ? 'victory' : 'defeat', 0.7, 800);
     Sfx.bgm('menu');
@@ -377,19 +612,24 @@ export class GameRoot extends Component {
     // 规格 v1.1 §2.9：本局 Build 每行 = 技能图标 + 名称(Lv) + 已装模块
     const build: ResultBuildRow[] = rs.skills.map(s => {
       const def = SKILLS[s.id];
-      const mods = s.mods.map(m => (MODULES[m] ? MODULES[m].name : m)).join(' · ');
+      const mods = s.mods.map(m => this.modName(m)).join(' · ');
       return {
         icon: def ? (def.icon ?? '') : '',
         name: (def ? def.name : s.id) + ' Lv.' + s.lvl,
-        sub: mods || '无行为模块',
+        sub: mods || '无黑科技',
       };
     });
     this.battleNode.active = false;
     this.joyNode.active = false;
-    this.cur = buildResult(this.uiRoot,
-      { win, wave: rs.wave, lv: rs.lv, kills: rs.kills, time: rs.runTime, build,
-        gold: rs.gold, seed: this.seed, waveTotal: RUN.waves, endless: rs.endless },
-      () => this.showMenu(), () => void this.startBattle());
+    try {
+      this.cur = buildResult(this.uiRoot,
+        { win, wave: rs.wave, lv: rs.lv, kills: rs.kills, time: rs.runTime, build,
+          gold: rs.gold, seed: this.seed, waveTotal: RUN.waves, endless: rs.endless },
+        () => this.showMenu(), () => void this.startBattle());
+    } catch (e) {
+      console.error('[UI] 结算面板构建失败，回到主菜单', e);
+      this.closeModal(); this.clearScreen(); this.showMenu();
+    }
   }
 
   // ---------- 9. 暂停 / Build 抽屉 ----------
@@ -399,41 +639,101 @@ export class GameRoot extends Component {
       { tab: '技能', lines: rs.skills.flatMap((s, i) => {
           const def = SKILLS[s.id];
           const rt = calcSkill(s, rs.stats);
-          const mods = s.mods.map(m => MODULES[m] ? MODULES[m].name : m).join('/');
+          const mods = s.mods.map(m => this.modName(m)).join('/');
           // NOTE: each entry must be a SINGLE line -- the drawer body renders one Label per line,
           //       so embedding a newline here would make one entry occupy two rows and overlap.
           const head = (i + 1) + '. ' + (def ? def.name : s.id) + '  Lv.' + s.lvl + '  [' + (mods || '空') + ']';
           const sub = '    ' + '伤害 ' + Math.round(rt.dmg) + '   冷却 ' + rt.cd.toFixed(2) + 's';
           return [head, sub];
         }) },
-      { tab: '模块', lines: rs.modsBag.length ? rs.modsBag.map(m => '· ' + (MODULES[m] ? MODULES[m].name : m) + '：' + (MODULES[m] ? MODULES[m].desc : '')) : ['（背包为空）'] },
+      { tab: '黑科技', lines: rs.modsBag.length ? rs.modsBag.map(m => { const d = moduleDef(m); return '· ' + (d ? d.name : m) + '：' + (d ? d.desc : ''); }) : ['（背包为空）'] },
       { tab: '道具', lines: rs.items.length ? rs.items.map(i => '· ' + (ITEMS[i.id] ? ITEMS[i.id].name : i.id) + '：' + (ITEMS[i.id] ? ITEMS[i.id].desc : '')) : ['（没有道具）'] },
-      // 属性页签：**从 ATTRS 表自动生成**（24 项，两列一行）
-      //   以前是手写 4 行，加了属性就会漏显示。
-      { tab: '属性', lines: (() => {
-          const st = rs.stats as unknown as Record<string, number | undefined>;
-          const ids = Object.keys(ATTRS);
-          const cell = (id: string) => {
-            const d = ATTRS[id];
-            return d.name + ' ' + d.fmt(st[id] ?? d.base);
-          };
-          // 每行 3 列：24 项 → 正好 8 行。
-          // ⚠️ 抽屉正文**实际只能显示约 8 行**（再多会被底部按钮压住）。
-          //    2 列时要 12 行，最后 4 项看不见；3 列刚好。
-          const out: string[] = [];
-          for (let i = 0; i < ids.length; i += 3) {
-            const row = ids.slice(i, i + 3).map(cell).join('  ');
-            out.push(row);
-          }
-          return out;
-        })() },
+      // 属性页签：不再拼字符串，改由抽屉渲染「2 列对齐网格」（图标 + 名称 + 数值，正绿负红）。
+      //   数据从 ATTRS 表自动生成，加属性不会漏显示。
+      { tab: '属性', lines: [] },
     ];
+    // 相对**基准值**（ATTRS.base）的差值：负数红色、正数绿色、持平白色
+    const stNow = rs.stats as unknown as Record<string, number | undefined>;
+    const baseNow = rs.baseStats as unknown as Record<string, number | undefined>;
+    const allAttrRows = Object.keys(ATTRS).map(id => {
+      const d = ATTRS[id];
+      const v = stNow[id] ?? baseNow[id] ?? d.base;
+      const baseVal = baseNow[id] ?? d.base;
+      const delta = v - baseVal;
+      // ⚠️ 不能用 fmt(delta)：fmt 是"绝对值 → 显示值"的转换（power 会做 (v-1)*100），
+      //   直接喂差值会算出 +92% 这种错数（M65 首版截图就是）。这里改成
+      //   「显示值之差」：把 fmt(v) 与 fmt(基准) 的数字部分相减，再拼回同一个单位后缀。
+      const shown = d.fmt(v), shownBase = d.fmt(baseVal);
+      const numOf = (s: string) => { const m = s.match(/-?\d+(?:\.\d+)?/); return m ? parseFloat(m[0]) : NaN; };
+      const suffix = shown.replace(/-?\d+(?:\.\d+)?/, '').trim();
+      const dv = numOf(shown) - numOf(shownBase);
+      // 基础值本来就是 0 的属性（攻击力/攻速等），总值就是加成，再显示一列纯属噪音
+      const baseNum = numOf(shownBase);
+      const dt = isFinite(dv) && Math.abs(dv) > 1e-6 && Math.abs(baseNum) > 1e-6
+        // 后缀是 % 时不留空格（"+8%" 而不是 "+8 %"），其它单位（HP/秒）保留空格
+        ? (dv > 0 ? '+' : '') + (Math.round(dv * 10) / 10) + (suffix ? (suffix.startsWith('%') ? suffix : ' ' + suffix) : '')
+        : '';
+      return {
+        name: d.name, value: shown, delta, art: ATTR_ICON[id], id,
+        deltaText: dt || undefined,
+      };
+    });
+    // P1-5：默认只显示「核心战斗属性 + 本局发生变化的」，其余收进「查看全部」（数据一项不删）
+    const CORE_ATTRS = new Set(['power', 'haste', 'maxhp', 'cdr', 'crit', 'critdmg', 'area', 'speed', 'projSpd', 'pickup']);
+    const attrRows = this.attrShowAll
+      ? allAttrRows
+      : allAttrRows.filter(r => CORE_ATTRS.has(r.id) || Math.abs(r.delta) > 1e-6);
+    const hiddenAttrs = allAttrRows.length - attrRows.length;
+    // 技能页详情（M33 #4）：点一行展开 -> 技能描述 + 已装模块的名字与描述
+    const skillDetails = rs.skills.map(s => {
+      const def = SKILLS[s.id];
+      const art = SKILL_ART[s.id];
+      const rt = calcSkill(s, rs.stats);
+      return {
+        name: def ? def.name : s.id,
+        lvl: s.lvl,
+        icon: art ? art.icon : undefined,
+        summary: '伤害 ' + Math.round(rt.dmg) + ' · 冷却 ' + rt.cd.toFixed(2) + 's · ' + (def ? tagText(def.tags) : '—'),
+        desc: def ? def.desc : '—',
+        mods: s.mods.map(m => {
+          const d = moduleDef(m);
+          return { name: d ? d.name : m, desc: d ? d.desc : '' };
+        }),
+      };
+    });
+    // 道具页详情（M42）：图标 + 名称 + 展开后的效果/类型
+    const itemDetails = rs.items.map(i => {
+      const it = ITEMS[i.id];
+      return {
+        name: it ? it.name : i.id,
+        icon: ITEM_ICON[i.id],
+        desc: it ? it.desc : '',
+        nums: it ? itemNumbers(it, i.id) : '',
+        note: it ? (it.tier === 2 ? '高级道具 · 精英 / BOSS 掉落' : '普通道具 · 商店或掉落获取') : '',
+      };
+    });
     this.battle.paused = true;
     this.curModal = buildBuildDrawer(this.uiRoot, pages,
       () => { this.closeModal(); this.confirmQuit(); },
       () => { this.closeModal(); this.battle.paused = false; },
       () => { this.showInstall('pause'); },
-      this.battle.rs.modsBag.length);
+      this.battle.rs.modsBag.length,
+      {
+        index: 3, rows: attrRows,
+        more: (hiddenAttrs > 0 || this.attrShowAll)
+          ? {
+            label: this.attrShowAll
+              ? '收起（只看核心与变化）'
+              : '查看全部属性（还有 ' + hiddenAttrs + ' 项）',
+            onTap: () => { this.attrShowAll = !this.attrShowAll; this.pauseTab = 3; this.showPause(); },
+          }
+          : undefined,
+      },
+      rs.wave,
+      skillDetails,
+      itemDetails,
+      this.pauseTab,
+      (i) => { this.pauseTab = i; });
   }
 
   private confirmQuit() {
@@ -453,7 +753,45 @@ export class GameRoot extends Component {
       this.battle.inputX = this.joy.outX;
       this.battle.inputY = this.joy.outY;
     }
-    if (this.hud && this.battle.rs && this.phase === 'battle') this.syncHud();
+    if (this.hud && this.battle.rs && this.phase === 'battle') {
+      try { this.syncHud(); } catch (e) { this.hudError(e); }
+    }
+    this.watchdog(_dt);
+  }
+
+  /**
+   * 卡死看门狗（2026-10-28 用户报"玩到一半页面卡死"）
+   *
+   * 症状：画面停住、点什么都没反应，但控制台没有明显报错。
+   * 根因类型：某个界面构建抛异常 / 弹窗被销毁但没恢复暂停 → 游戏处于
+   *          **paused=true 且 curModal=null**，玩家看不到任何可点的东西。
+   * 这里兜底：连续 2 秒处于这种状态就自动恢复，至少让玩家能继续玩。
+   */
+  private watchdog(dt: number) {
+    const b = this.battle;
+    if (!b || !b.rs) { this.stuckT = 0; return; }
+    const stuck = b.paused && !this.curModal && b.running && !!this.hud;
+    if (!stuck) { this.stuckT = 0; return; }
+    if (this.phase !== 'battle' && this.phase !== 'shop') { this.stuckT = 0; return; }
+    this.stuckT += dt;
+    if (this.stuckT < 2) return;
+    this.stuckT = 0;
+    console.warn('[GameRoot] 看门狗：phase=' + this.phase + ' 被暂停但没有弹窗 → 自动恢复');
+    if (this.phase === 'shop') {
+      // 商店页没建出来：直接开下一波，别把人卡在空商店
+      this.phase = 'battle';
+      b.paused = false;
+      b.advanceWave();
+    } else {
+      b.paused = false;
+    }
+  }
+
+  /** HUD 同步异常只刷一次日志，避免每帧刷屏把控制台冲爆 */
+  private hudErrCount = 0;
+  private hudError(e: unknown) {
+    this.hudErrCount++;
+    if (this.hudErrCount <= 3) console.error('[UI] HUD 同步失败（第 ' + this.hudErrCount + ' 次）', e);
   }
 
   private syncHud() {
@@ -496,8 +834,8 @@ const TAG_CN: Record<string, string> = {
   fire: '火', ice: '冰', lightning: '雷', physical: '物理',
   arcane: '奥术', holy: '圣', poison: '毒', nature: '自然',
   // 形态
-  projectile: '投射物', area: '范围', pulse: '脉冲', chain: '连锁',
-  summon: '召唤', melee: '近战', beam: '射线', burst: '爆发',
+  projectile: '远程', area: '范围', pulse: '周身', chain: '连锁',
+  melee: '近战', beam: '射线', burst: '爆发',
   // 特性
   pierceable: '可穿透', homing: '追踪', return: '回旋',
   slow: '减速', dot: '持续伤害',

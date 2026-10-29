@@ -78,6 +78,8 @@ export class Assets {
   private static portraitCache = new Map<string, SpriteFrame | null>();
   private static vfxCache = new Map<string, SpriteFrame[]>();
   private static audioCache = new Map<string, AudioClip | null>();
+  private static bgCache = new Map<string, SpriteFrame | null>();
+  private static uiCache = new Map<string, SpriteFrame | null>();
   static loadedCount = 0;
   static failedCount = 0;
   static firstFailLogged = 0;
@@ -115,6 +117,35 @@ export class Assets {
     if (this.portraitCache.has(unit)) return this.portraitCache.get(unit) ?? null;
     const sf = await loadSF(`art/units/${unit}/portrait`);
     this.portraitCache.set(unit, sf);
+    return sf;
+  }
+
+  /**
+   * 载入整屏/整场背景图：`art/bg/<name>`
+   *
+   * ⚠️ 背景图的 meta 是 `type: texture`（没有 `spriteFrame` 子资源），
+   * 所以不能直接 `resources.load(.../spriteFrame)`；统一走 loadSF 的双路回退。
+   */
+  static async loadBg(name: string): Promise<SpriteFrame | null> {
+    if (this.bgCache.has(name)) return this.bgCache.get(name) ?? null;
+    const sf = await loadSF(`art/bg/${name}`);
+    this.bgCache.set(name, sf);
+    return sf;
+  }
+
+  /**
+   * 载入 UI 九宫格素材：`assets/resources/ui/kenney/<name>`
+   *
+   * 这些 PNG 全是 52x52、四边 10px 边框，直接在 SpriteFrame 上写死 inset，
+   * 之后 Sprite.type = SLICED 时引擎只会拉伸中段（四角像素不变形）。
+   */
+  static async loadUi(name: string): Promise<SpriteFrame | null> {
+    if (this.uiCache.has(name)) return this.uiCache.get(name) ?? null;
+    const sf = await loadSF('ui/kenney/' + name);
+    if (sf) {
+      sf.insetLeft = 10; sf.insetRight = 10; sf.insetTop = 10; sf.insetBottom = 10;
+    }
+    this.uiCache.set(name, sf);
     return sf;
   }
 
