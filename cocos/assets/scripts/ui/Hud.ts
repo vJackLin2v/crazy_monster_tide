@@ -38,7 +38,8 @@ const C_HP_TOP = new Color(136, 214, 188, 255);    // 生命：薄荷绿（正�
 const C_HP_BOT = new Color(62, 158, 124, 255);
 const C_XP_TOP = new Color(140, 160, 255, 255);    // 经验：蓝紫
 const C_XP_BOT = new Color(64, 91, 168, 255);
-const C_HP_WARN = new Color(224, 64, 96, 255);     // 残血：危险红
+const C_HP_TEXT = new Color(240, 118, 128, 255);   // 残血文字：偏暖的珊瑚红（不刺眼）
+
 const C_SLOT_EMPTY = new Color(13, 23, 50, 255);
 
 export class Hud {
@@ -102,12 +103,12 @@ export class Hud {
     // ── 左上：HP 156×18 ──
     const HP_W = 156, HP_H = 18;
     let p = at(10 + HP_W / 2, S + 4 + HP_H / 2);
+    // ⚠️ 发光层必须先建（渲染在血条**下面**）：放在血条之后会盖住填充、把血条糊成灰块
+    const warn = mkNode(this.root, 'hpWarn', HP_W + 4, HP_H + 4, p.x, p.y);
+    this.hpWarn = warn.addComponent(Graphics);
     this.hpBar = gradBar(this.root, p.x, p.y, HP_W, HP_H, { dir: 'h', from: C_HP_TOP, to: C_HP_BOT, line: COL.line });
     this.hpText = text(this.root, p.x, p.y - 1, '100/100',
       { size: 11, color: COL.cream, width: HP_W - 8, bold: true, outline: true });
-    // 残血红框（静态，不闪烁）
-    const warn = mkNode(this.root, 'hpWarn', HP_W + 4, HP_H + 4, p.x, p.y);
-    this.hpWarn = warn.addComponent(Graphics);
 
     // ── 经验 156×12，LV 贴右端 ──
     const XP_H = 12;
@@ -202,18 +203,24 @@ export class Hud {
     this.goldText.string = String(d.gold);
     this.waveText.string = '波次 ' + d.wave + ' · 击杀 ' + d.kills;
 
-    // 残血态：数值转红 + 红框（低于 25%，静态不闪烁）
+    // 残血态：数值转红 + **柔和外发光**（低于 25%，静态不闪烁）
+    //   用户反馈（2026-10-29）：硬红框太"框"，改成泛光/阴影，且不要过饱和。
     const warn = ratio > 0 && ratio < 0.25;
     if (warn !== this.lastWarn) {
       this.lastWarn = warn;
-      this.hpText.color = warn ? C_HP_WARN : COL.cream;
+      this.hpText.color = warn ? C_HP_TEXT : COL.cream;
       this.hpWarn.clear();
       if (warn) {
-        const w = 160, h = 22;
-        this.hpWarn.lineWidth = 2;
-        this.hpWarn.strokeColor = C_HP_WARN;
-        this.hpWarn.rect(-w / 2, -h / 2, w, h);
-        this.hpWarn.stroke();
+        // 只画**血条外圈**的柔和光晕：6 层低透明度圆角矩形向外扩，越外越淡
+        // （不画内侧填充层——那会把血条本身糊成灰块）
+        const W = 156, H = 18, LAYERS = 6;
+        for (let i = LAYERS; i >= 1; i--) {
+          const pad = 3 + i * 2.4;                       // 5.4 ~ 17.4px（都在血条外侧）
+          const a = Math.round(7 + 20 * (1 - i / (LAYERS + 1)));  // ≈ 24 ~ 10
+          this.hpWarn.fillColor = new Color(198, 92, 112, a);      // 偏灰的暗红，不刺眼
+          this.hpWarn.roundRect(-(W + pad * 2) / 2, -(H + pad * 2) / 2, W + pad * 2, H + pad * 2, 8);
+          this.hpWarn.fill();
+        }
       }
     }
 
