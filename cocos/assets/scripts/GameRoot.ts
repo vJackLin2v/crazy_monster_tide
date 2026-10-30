@@ -899,10 +899,11 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
     });
     // P1-5：默认只显示「核心战斗属性 + 本局发生变化的」，其余收进「查看全部」（数据一项不删）
     const CORE_ATTRS = new Set(['power', 'haste', 'maxhp', 'cdr', 'crit', 'critdmg', 'area', 'speed', 'projSpd', 'pickup']);
-    const attrRows = this.attrShowAll
-      ? allAttrRows
-      : allAttrRows.filter(r => CORE_ATTRS.has(r.id) || Math.abs(r.delta) > 1e-6);
-    const hiddenAttrs = allAttrRows.length - attrRows.length;
+    // 用户 2026-10-30：属性页改成可滚动列表后，**默认就列全部属性**
+    //（之前只列核心 10 项，内容高度刚好等于视口，所以"滚不动"）
+    const attrRows = allAttrRows;
+    void this.attrShowAll;
+    const hiddenAttrs = 0;   // 全部可见后不再需要"还有 N 项"入口
     // 技能页详情（M33 #4）：点一行展开 -> 技能描述 + 已装模块的名字与描述
     const skillDetails = rs.skills.map(s => {
       const def = SKILLS[s.id];

@@ -501,11 +501,21 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
     const viewH = Math.max(80, viewTop - viewBottom);
     const cy = (viewTop + viewBottom) / 2;
     const contentH = Math.max(viewH, rowsAll.length * ROW_H + 10);
-    const sc = makeScroll(attrRoot, 0, cy, VW - 8, viewH, contentH);
+    // 同黑科技页：手动裁剪，避免半截行贴到底部按钮上
+    const bands: { n: Node; y: number; h: number }[] = [];
+    const baseY = viewH / 2 - contentH / 2;
+    const visibleAt = (b: { y: number; h: number }, off: number) => {
+      const y = b.y + baseY + off;
+      return (y + b.h / 2 <= viewH / 2 - 2) && (y - b.h / 2 >= -viewH / 2 + 40);
+    };
+    const sc = makeScroll(attrRoot, 0, cy, VW - 8, viewH, contentH, (off) => {
+      for (const b of bands) b.n.active = visibleAt(b, off);
+    });
     const topY = contentH / 2 - ROW_H / 2 - 2;
     rowsAll.forEach((r, i) => {
       const y = topY - i * ROW_H;
       const row = mkNode(sc.content, 'attrRow', W, ROW_H - 4, 0, y);
+      bands.push({ n: row, y, h: ROW_H });
       if (r.art) {
         const ic = mkNode(row, 'ic', 16, 16, -W / 2 + 10, 0);
         const isp = ic.addComponent(Sprite);
@@ -526,6 +536,7 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
           { size: 10, color: r.delta > 0 ? COL.mint : COL.red, align: 'right', width: 46, outline: false });
       }
     });
+    for (const b of bands) b.n.active = visibleAt(b, 0);
   }
 
   // ── 技能页专用：手风琴（点一行展开：技能描述 + 已装模块描述）──
