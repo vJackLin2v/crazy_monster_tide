@@ -145,16 +145,18 @@ export class Hud {
     const capsSane = !!caps && caps.left > 120 && caps.left < VW - 24 && caps.bottom < VH * 0.4;
     // 用户 2026-10-30：波次/倒计时**回到右侧**（之前为了避胶囊挤到中间，很丑）。
     // 胶囊只在顶部 ~46px 高，把暂停键下移到 S+62 就完全错开，文字不必再左让。
-    const rightEdge = VW - 12;
+    // 右侧分成两列：**文本列到 VW-68 结束**，右边 68px 留给暂停键，互不重叠。
+    // （上一版把文字右对齐到 VW-12、暂停也贴右，导致暂停压在倒计时上——有截图为证）
+    const rightEdge = VW - 68;
     const pauseX = VW - 30;
-    const pauseY = Math.max(S + 58, capsSane ? Math.round(caps!.bottom) + 20 : S + 62);
+    const pauseY = S + 42;
     this.waveText = text(this.root, at(rightEdge, 0).x, at(0, S + 12).y, '波次 1 · 击杀 0',
       { size: 12, color: COL.cream, align: 'right', width: 210, bold: true, outline: true });
     this.timerText = text(this.root, at(rightEdge, 0).x, at(0, S + 37).y, '0',
       { size: 26, color: COL.cream, align: 'right', width: 130, bold: true, outline: true, shadow: true });
 
     // ── 波次进度条：贴在顶部承载板底边（336×3），BOSS 出现时让位给 BOSS 血条 ──
-    const wb = at(VW / 2, S + 88);
+    const wb = at(VW / 2, S + 96);
     this.waveBarNode = mkNode(this.root, 'waveBar', 336, 3, wb.x, wb.y);
     this.waveBar = this.waveBarNode.addComponent(Graphics);
 
