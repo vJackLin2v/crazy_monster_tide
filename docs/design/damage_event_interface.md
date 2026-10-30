@@ -23,6 +23,8 @@ export interface DamageContext {
   projectileId?: string;
   /** 目标是否 BOSS：处决等模块据此分支 */
   isBoss: boolean;
+  /** 返程序号：同一弹体第几次返程，用于 returnstrike 只触发一次 */
+  returnIndex?: number;
 }
 ```
 
@@ -54,3 +56,21 @@ export interface DamageContext {
 4. 同一弹体返程命中 2 只敌人 → returnstrike 只结算 1 次；
 5. 连锁 3 跳 → shieldonhit 受 1.5s CD 限制，最多 1 次；
 6. 区域伤害（lingering）击杀敌人 → 不触发 killblast。
+
+## 5. 统一触发闸门（开发时必须只有一个入口）
+
+    export function canTriggerModule(ctx: DamageContext, mod: ModuleRuntime): boolean {
+      if (!ctx.canTriggerModules) return false;          // module / summon 来源
+      if (!mod.allowedSources.includes(ctx.source)) return false;
+      if (mod.cooldownLeft > 0) return false;            // 模块级 CD（如 shieldonhit 1.5s 全局）
+      if (mod.usedInCast(ctx.castId) >= mod.maxPerCast) return false;  // 单次施法上限
+      return true;
+    }
+
+每条模块只声明数据（allowedSources / cooldown / maxPerCast），不在 Battle 里各写一套 if。
+
+## 6. 专注核心（focused）与 echo 的关系（v4 定稿）
+
+- 专注核心是**技能伤害乘区**，对原始施法与 echo 重放**同样生效**（都算该技能的伤害）；
+- 但 echo 重放**不计入** overcharge 施法次数、不计入任何"第 N 次施法"类计数；
+- v2 里"重放不吃加成"的旧说法已作废：专注核心按技能伤害乘区，对重放同样生效；但重放不计入施法次数。

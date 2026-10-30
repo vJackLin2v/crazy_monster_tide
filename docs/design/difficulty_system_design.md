@@ -17,7 +17,7 @@
 | 商店价格 | 0.90 | 1.00 | 1.10 | 1.22 | 1.35 |
 | 刷新费用 | 0.90 | 1.00 | 1.15 | 1.30 | 1.50 |
 | 回血倍率 healMul | 1.20 | 1.00 | 0.90 | 0.80 | 0.70 |
-| 回血预算 HP/s | 8 | 8 | 8 | 6 | 5 |
+| 回血预算 HP/s | 8 | **null（不启用）** | 8 | 6 | 5 |
 
 普通难度 = 当前版本的完整复刻：实现上把普通设为基准配置（不覆盖任何字段），其他难度只写与普通不同的字段。
 
@@ -33,12 +33,13 @@
 
     基础回血 = 原始回血量 x healMul x 条件倍率（休闲低血额外 x1.2）
     实际回血 = min(基础回血, 剩余回血预算)
-    预算每秒清零一次（healBudgetPerSecond 由难度决定）
+    预算每秒清零一次；**普通难度 healBudgetPerSecond = null，表示不启用该限制，保持原版本行为**
 
 ### 商店价格
 
     价格 = 基础价格 x shopPrice x (1 + 递增系数 x (wave - 1))
-    递增系数：仅地狱 0.02（每波 +2%），其余 0；封顶 +35%
+    递增系数：仅地狱 0.02（每波 +2%），其余 0；**封顶作用于"每波递增部分"，最多 +35%**
+最终最高价 = 1.35（地狱基础价）x 1.35（增量封顶）= **1.8225 倍基础价**
 
 已购买、已锁定的商品不受后续涨价影响（价格在生成时锁定）。
 
@@ -76,7 +77,10 @@
 
 ## 4. 噩梦 BOSS 召唤状态机
 
-    状态字段：summon70Done, summon35Done, lastSummonAt, pendingSummon
+    状态字段：summon70Done, summon35Done, warningActive, warningEndAt, lastSummonAt, pendingSummonCount
+
+同一时刻只允许一个预警：
+  若 warningActive 为 true，任何新召唤请求只增加 pendingSummonCount，不启动第二个预警
 
     每次 BOSS 血量更新：
       若 hp% < 70 且 !summon70Done → 标记 summon70Done，请求召唤
@@ -87,15 +91,15 @@
       否则 → 起 1.2s 预警 → 结算召唤
 
     每帧检查 pending：
-      若 pending 且 now - lastSummonAt >= 12 → 起预警并召唤
+      若 pendingSummonCount > 0 且 !warningActive 且 now - lastSummonAt >= 12 → 起预警
 
     结算召唤：
       存活召唤物 = 当前场上召唤物数量
       可召唤数 = min(3, 6 - 存活召唤物)
       召唤 可召唤数 只（生命 = 普通怪 x0.7，伤害 = 普通怪 x0.8）
-      lastSummonAt = now, pendingSummon = false
+      lastSummonAt = now（**以实际召唤完成为准**，不是预警开始时刻），pendingSummonCount -= 1
 
-    BOSS 死亡 → pendingSummon = false（取消待执行）
+    BOSS 死亡 → warningActive = false、pendingSummonCount = 0（取消所有未执行召唤）
 
 每个阈值只触发一次；两次召唤间隔 >= 12s；同时 <= 6 只。
 
