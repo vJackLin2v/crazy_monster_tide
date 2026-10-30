@@ -607,53 +607,61 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
   modRoot.active = false;
   const maskC = modRoot.addComponent(Mask);
   maskC.type = Mask.Type.RECT;
-  // 黑科技页内容放在可拖动的容器里（用户 2026-10-30：这一页要能滚动）
-  const modScroll = mkNode(modRoot, 'modScroll', VW, 1, 0, 0);
-  // 视口中心 ≠ 抽屉原点：把子节点补偿回去，内容坐标才与抽屉坐标系一致
-  const modBaseY = -VIEW_CY;
-  modScroll.setPosition(0, modBaseY, 0);
-  let modOffset = 0;          // 当前滚动位移（<= 0）
-  let modMaxScroll = 0;       // 最大可滚距离（<= 0）
+  // 滚动：不用 Mask（试过 RECT/GRAPHICS 都不裁剪），改成**虚拟化重绘**——
+  // 每次拖动只画视口内的行，天然不会画到按钮上（和图鉴/成就是用同一套思路）
+  let modOffset = 0;
+  let modMaxScroll = 0;
   {
     let dragFrom = 0, dragging = false;
-    const onStart = () => { dragFrom = modOffset; dragging = true; };
-    const onMove = (e: { getUIDelta?: () => { y: number } }) => {
+    modRoot.on(Node.EventType.TOUCH_START, () => { dragFrom = modOffset; dragging = true; }, modRoot);
+    modRoot.on(Node.EventType.TOUCH_MOVE, (e: EventTouch) => {
       if (!dragging) return;
-      const dy = e.getUIDelta ? e.getUIDelta().y : 0;
-      // 手指上滑（dy>0）→ 内容上移（offset 变大），范围 [0, maxScroll]
-      modOffset = Math.max(0, Math.min(modMaxScroll, modOffset + dy));
-      modScroll.setPosition(0, modBaseY + modOffset, 0);
-    };
-    const onEnd = () => { dragging = false; };
-    modRoot.on(Node.EventType.TOUCH_START, onStart, modRoot);
-    modRoot.on(Node.EventType.TOUCH_MOVE, onMove, modRoot);
-    modRoot.on(Node.EventType.TOUCH_END, onEnd, modRoot);
-    modRoot.on(Node.EventType.TOUCH_CANCEL, onEnd, modRoot);
+      modOffset = Math.max(0, Math.min(modMaxScroll, dragFrom + e.getUIDelta().y));
+      renderMods(true);
+    }, modRoot);
+    modRoot.on(Node.EventType.TOUCH_END, () => { dragging = false; }, modRoot);
+    modRoot.on(Node.EventType.TOUCH_CANCEL, () => { dragging = false; }, modRoot);
   }
-  function renderMods() {
-    for (const c of modScroll.children.slice()) c.destroy();
-    modOffset = 0; modScroll.setPosition(0, modBaseY, 0); modMaxScroll = 0;
+  /** 黑科技页：平铺列表 + 虚拟化渲染（只画视口内的行） */
+  function renderMods(keepOffset = false) {
+    for (const c of modRoot.children.slice()) c.destroy();
+    if (!keepOffset) modOffset = 0;
     const W = VW - 32;
     const all = modDetails ?? [];
     if (!all.length) {
-      text(modScroll, -W / 2 + 4, bodyY - 8, '（还没有黑科技：升级三选一 / 商店可以获得）',
-        { size: 11, color: COL.dim, align: 'left', width: W });
       modMaxScroll = 0;
+      text(modRoot, 0, 0, '（还没有黑科技：升级三选一 / 商店可以获得）',
+        { size: 11, color: COL.dim, align: 'center', width: W });
       return;
     }
-    let y = bodyY - 4;
-    const section = (label: string, arr: ModDetailView[]) => {
+    type Line = { kind: 'head'; label: string } | { kind: 'row'; m: ModDetailView };
+    const lines: Line[] = [];
+    const pushSection = (label: string, arr: ModDetailView[]) => {
       if (!arr.length) return;
-      y -= 8;                       // 段标题上方留白（贴太紧会压到上一行底边）
-      text(modScroll, -W / 2 + 4, y - 2, label + '（' + arr.length + '）',
-        { size: 11, color: COL.accent, align: 'left', width: W, bold: true, outline: false });
-      y -= 22;
-      // 只渲染"可视区内放得下"的行数，避免最后一行压到抽屉底部按钮上
-      const rowH0 = 46, pitch = rowH0 + 4;
-      const maxVis = Math.max(1, Math.floor((y - VIEW_BOTTOM) / pitch));
-      arr.slice(0, maxVis).forEach((m) => {
-        const rowH = 46;   // 描述要两行（46 = 标题 14 + 描述 22 + 内边距）
-        const card = panel(modScroll, 0, y - rowH / 2, W, rowH, {
+      lines.push({ kind: 'head', label: label + '（' + arr.length + '）' });
+      for (const m of arr) lines.push({ kind: 'row', m });
+    };
+    pushSection('已装', all.filter(m => m.installed));
+    pushSection('背包', all.filter(m => !m.installed));
+
+    const HEAD_H = 24, ROW_H = 46, ROW_GAP = 4;
+    const contentH = lines.reduce((s, l) => s + (l.kind === 'head' ? HEAD_H : ROW_H + ROW_GAP), 0);
+    modMaxScroll = Math.max(0, Math.ceil(contentH - VIEW_H + 6));
+    modOffset = Math.max(0, Math.min(modMaxScroll, modOffset));
+
+    // 视口顶部 → 第一条内容的局部 y（向上为正）
+    const top = VIEW_H / 2 - 4 + modOffset;
+    let cursor = top;
+    for (const l of lines) {
+      const h = l.kind === 'head' ? HEAD_H : ROW_H + ROW_GAP;
+      // 只画视口内的项
+      if (cursor < -VIEW_H / 2 - h || cursor - h > VIEW_H / 2 + 8) { cursor -= h; continue; }
+      if (l.kind === 'head') {
+        text(modRoot, -W / 2 + 4, cursor - 4, l.label,
+          { size: 11, color: COL.accent, align: 'left', width: W, bold: true, outline: false });
+      } else {
+        const m = l.m;
+        const card = panel(modRoot, 0, cursor - ROW_H / 2, W, ROW_H, {
           bg: COL.bg3, line: COL.line2, radius: R.s, shadow: false,
         });
         if (m.icon) {
@@ -672,18 +680,9 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
         text(card, -W / 2 + 32, -12, m.desc,
           { size: 10, color: COL.dim, align: 'left', width: W - 96, h: 24 });
         if (m.installed) chip(card, W / 2 - 34, 0, '已装', { color: COL.mint, size: 9 });
-        y -= rowH + 4;
-      });
-      if (arr.length > maxVis) {
-        text(modScroll, -W / 2 + 4, y, '… 还有 ' + (arr.length - maxVis) + ' 个（去安装屏查看）',
-          { size: 10, color: COL.dim, align: 'left', width: W });
-        y -= 16;
       }
-    };
-    section('已装', all.filter(m => m.installed));
-    section('背包', all.filter(m => !m.installed));
-    // 可滚距离 = 内容底边比可视底边低多少（y 会随内容往下变小）
-    modMaxScroll = Math.max(0, Math.ceil(VIEW_BOTTOM - y));
+      cursor -= h;
+    }
   }
 
   function refresh() {
