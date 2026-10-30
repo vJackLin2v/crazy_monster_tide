@@ -13,7 +13,7 @@
  *   ✅ KI-001：死亡动画播完即回收节点（先累加计时，再跳过逻辑）
  *   ⬜ 12 屏 UI（按 docs/ui/ui-spec-approved.md v1.0）
  */
-import { _decorator, Component, Node, Sprite, UITransform, Color, Graphics, Label, view } from 'cc';
+import { _decorator, Component, Node, Sprite, UITransform, Color, Graphics, Label, view, UIOpacity } from 'cc';
 import { ZOOM, ARENA_W, ARENA_H, SCREEN_W, SCREEN_H, HITSTOP, HITSTOP_SCALE, SHAKE, DEATH_ANIM_TIME,
          TARGET_RANGE, RUN, waveTime, isBossWave } from '../core/Const';
 import { Assets, makeSolidFrame, shadowFrame, type UnitClips } from '../engine/Assets';
@@ -30,6 +30,7 @@ import { SKILLS, SKILL_ART, FX } from '../data/Skills';
 import type { SkillArt } from '../data/Types';
 import { ENEMIES, bossUnitFor } from '../data/Enemies';
 import { baseOf, modEffect } from '../data/Modules';
+import { FxPrefs } from '../game/Prefs';
 import { CHARS } from '../data/Chars';
 const { ccclass } = _decorator;
 
@@ -153,6 +154,8 @@ export class Battle extends Component {
   private hurtBoostT = 0;
   /** 本局最高同屏活怪（结算页展示，用于判断"怪潮是否失控"） */
   maxAlive = 0;
+  /** 本局出现过的敌人种类（图鉴解锁用） */
+  seenEnemies = new Set<string>();
   /** 本波玩家受到的伤害（日志用） */
   private waveDmg = 0;
   private totalDmg = 0;
@@ -548,8 +551,15 @@ export class Battle extends Component {
       void Assets.loadVfx(key);
       return null;
     }
+    // 用户 #6：特效透明度设置（0~1）。只作用于 VFX 图层，不影响敌人与判定的可读性。
+    const alpha = FxPrefs.alpha;
+    if (alpha <= 0.01) return null;
     const { node, anim } = this.mkSpriteNode('fx:' + key, this.layerFx,
       32 * scale, 32 * scale);
+    if (alpha < 0.99) {
+      const op = node.addComponent(UIOpacity);
+      op.opacity = Math.round(255 * alpha);
+    }
     anim.setClips({ play: frames });
     anim.play('play', false);
     node.setPosition(x, ARENA_H - y, 0);
@@ -641,7 +651,7 @@ export class Battle extends Component {
         1 + 0.35 * Math.floor(n / RUN.bossEvery - 1), bossUnitFor(n));
       this.bossRef = this.enemies[this.enemies.length - 1] ?? null;
       this.bossAlive = this.bossRef;
-      this.cam.addShake(SHAKE.boss);
+      this.shake(SHAKE.boss);
       this.addVfx(FX.killBig, this.px + 150, this.py - 110, 0.9, 2);
     }
   }
@@ -649,6 +659,7 @@ export class Battle extends Component {
   private spawnEnemy(kind: string, wx: number, wy: number, scale = 1, unitOverride?: string) {
     const def = ENEMIES[kind];
     if (!def) { console.warn('[Battle] 未知敌人：' + kind); return; }
+    this.seenEnemies.add(kind);
     const ws = waveScale(this.rs.wave);
     // 玩法审计 §8.5：阻路者（慢速高血量）降速但更难推走；其它单位保持原样
     const BLOCKER = kind === 'orc' || kind === 'cavebrute';
@@ -696,7 +707,7 @@ export class Battle extends Component {
       if (ol) ol.color = new Color(232, 78, 66, 255);
       this.addBossTag(node);
       this.addVfx('core/ring/zap-ring', wx, wy, 0.7, 2.4);
-      this.cam.addShake(SHAKE.boss);
+      this.shake(SHAKE.boss);
     }
     this.enemies.push(e);
     void Assets.loadUnit(unit).then((clips) => {
@@ -873,7 +884,7 @@ export class Battle extends Component {
     } else {
       // 脉冲（震荡波 / 霜爆 / 荆棘环 / 寒冰环）：冲击环 + 地面扬尘 + 镜头轻震
       this.addVfx('core/dust/landing-dust', x, y + 6, 0.32, Math.max(1.4, r / 14));
-      this.cam.addShake(SHAKE.kill);
+      this.shake(SHAKE.kill);
     }
     this.areas.push({
       node, anim, x, y, r: kind === 'pulse' ? 0 : r, maxR: r, dmg,
@@ -956,7 +967,7 @@ export class Battle extends Component {
         m.done = true;
         this.addVfx('core/burst/warm-explosion', m.toX, m.toY, 0.5, Math.max(1.6, m.size / 13));
         this.addVfx('core/burst/big-boom', m.toX, m.toY, 0.42, Math.max(1.4, m.size / 17));
-        this.cam.addShake(SHAKE.boss);
+        this.shake(SHAKE.boss);
         Sfx.sfx('hitMetal', 0.6, 90);
         this.spawnArea(m.toX, m.toY, m.size, m.dmg, m.zoneLife ?? 3.4, 'zone', m.zoneKey, m.rt, m.tickRate ?? 0.45);
       }
@@ -1010,6 +1021,11 @@ export class Battle extends Component {
    * 只露出一圈轮廓光 —— 不遮挡身体细节、不占用地面。
    * ⚠️ 泛光节点必须在上面的层级顺序里排在 body **之前**（见 mkSpriteNode）。
    */
+  /** 统一的震屏入口：被"屏幕震动"设置关掉时直接忽略（用户 #6） */
+  private shake(v: number): void {
+    if (FxPrefs.shake) this.cam.addShake(v);
+  }
+
   private setBodyGlow(node: Node, inner: Color, innerA: number, outer: Color, outerA: number): void {
     const ref = node as unknown as { _glow?: Node; _glow2?: Node };
     const g1 = ref._glow, g2 = ref._glow2;
@@ -1316,7 +1332,7 @@ export class Battle extends Component {
         this.elitesSpawned++;
         const p = this.spawnPt();
         this.spawnEnemy('gnollberserker', p.x, p.y, 1 + 0.2 * this.rs.wave);
-        this.cam.addShake(SHAKE.elite);
+        this.shake(SHAKE.elite);
       }
     }
   }
@@ -1387,7 +1403,7 @@ export class Battle extends Component {
             // 结算：玩家在半径 70 内才吃伤害（预警 0.9s 已经给足移动时间）
             const d2 = Math.hypot(this.px - e.x, this.py - e.y);
             this.addVfx('core/burst/warm-explosion', e.x, e.y, 0.5, 2.8);
-            this.cam.addShake(SHAKE.elite);
+            this.shake(SHAKE.elite);
             const AI2 = balance().ai;
             if (d2 < AI2.bossSlamRadius && this.inv <= 0) {
               const dm = playerTakenDamage(Math.round(e.dmg * AI2.bossSlamMul), this.rs.stats);
@@ -1463,10 +1479,10 @@ export class Battle extends Component {
         this.inv = Math.max(0.2, this.rs.stats.invuln ?? 0.80);   // ★ 受击无敌帧 = 属性
         this.dmgFlash = 1;
         e.atkT = 0.34;
-        this.hurtFlash = 1;                 // HUD 用它做"屏幕边缘红光一闪"
+        if (FxPrefs.hurt) this.hurtFlash = 1;   // HUD 用它做"屏幕边缘红光一闪"（可关）
         if (this.rs.charId === 'knight') this.hurtBoostT = 2.0;   // 骑士受击强化 2s
         Sfx.sfx('hitMetal', 0.4, 180);      // 玩家挨打
-        this.cam.addShake(SHAKE.hurt);
+        this.shake(SHAKE.hurt);
         // ★ 刺猬：基础 6 点/份（Ⅱ = 1.6 份 → 9.6 点），按效果份数结算
         const thorn = this.thornEffect();
         if (thorn > 0) {

@@ -18,7 +18,9 @@ import { mkNode, screen } from './ui/UIKit';
 import { preloadUiArt } from './ui/Art';
 import { Hud, type HudData } from './ui/Hud';
 import { buildMenu, buildHowto, buildCharSelect, buildResult, type ResultBuildRow } from './ui/MenuScreens';
-import { buildSettings, buildCodex, buildAchievements } from './ui/MetaScreens';
+import { buildSettings } from './ui/MetaScreens';
+import { buildCodex, buildAchievements } from './ui/CodexScreens';
+import { applyFxPrefs } from './game/Prefs';
 import { loadSave, writeSave } from './engine/Save';
 import { telemetryStart, telemetryRunEnd, listRuns, exportLogs, clearLogs, summarize } from './game/Telemetry';
 import { balance, balanceOverride, balanceReset, exportBalance, importBalance } from './core/Balance';
@@ -107,9 +109,10 @@ export class GameRoot extends Component {
     this.battle.hooks.onClear = () => { if (this.endShown) return; this.endShown = true; this.showResult(true); };
     // 成就统计（只计数，不参与战斗结算）
     this.battle.hooks.onBossKill = () => { this.save.bossKills++; writeSave(this.save); };
-    // 应用存档里的音频开关
+    // 应用存档里的音频开关 + 画面偏好（特效透明度/屏震/受击红屏）
     Sfx.setMusic(this.save.music);
     Sfx.setSfx(this.save.sfx);
+    applyFxPrefs(this.save.fxAlpha ?? 1, this.save.shakeOn !== false, this.save.hurtOn !== false);
 
     Sfx.init(this.node);
     void Sfx.preload();
@@ -197,7 +200,7 @@ export class GameRoot extends Component {
   // ---------- 元页面：图鉴 / 成就 / 设置 ----------
   private showCodex() {
     this.phase = 'codex'; this.closeModal(); this.clearScreen();
-    this.cur = buildCodex(this.uiRoot, () => this.showMenu());
+    this.cur = buildCodex(this.uiRoot, this.save, () => this.showMenu());
   }
   private showAchievements() {
     this.phase = 'ach'; this.closeModal(); this.clearScreen();
@@ -236,6 +239,10 @@ export class GameRoot extends Component {
     this.hud = new Hud(hudNode, () => this.onPausePressed());
     this.cur = hudNode;
     const t0 = performance.now();
+    // 图鉴发现：开局记下角色与初始技能
+    this.markSeen('char:' + this.charId);
+    const cdef0 = CHARS.find(c => c.id === this.charId);
+    if (cdef0) this.markSeen('skill:' + cdef0.start);
     telemetryStart(this.charId, this.seed);       // 战斗日志：本局开始
     await this.battle.startRun(this.charId, this.seed);
     console.log('[GameRoot] startRun 耗时 ' + Math.round(performance.now() - t0) + 'ms');
@@ -658,6 +665,23 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       })());
   }
 
+  /** 图鉴解锁：把发现项写进存档（去重，避免频繁写盘） */
+  private seenBuffer = new Set<string>();
+  private markSeen(id: string): void {
+    if (!id || this.save.seen.includes(id) || this.seenBuffer.has(id)) return;
+    this.seenBuffer.add(id);
+    this.save.seen.push(id);
+    writeSave(this.save);
+  }
+
+  /** 本局结束补记：技能 / 道具 / 敌人 */
+  private recordRunDiscovery(): void {
+    const rs = this.battle.rs;
+    for (const s of rs.skills) this.markSeen('skill:' + s.id);
+    for (const it of rs.items) this.markSeen('item:' + it.id);
+    for (const k of this.battle.seenEnemies) this.markSeen('enemy:' + k);
+  }
+
   /** 通关后继续无尽：把 endless 打开，回到战斗并从第 21 波开始 */
   private continueEndless() {
     const rs = this.battle.rs;
@@ -715,6 +739,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       writeSave(this.save);
       if (unlocked) console.log('[Ach] 解锁新成就：' + this.save.ach.join(','));
     }
+    this.recordRunDiscovery();      // 图鉴：补记本局遇到的内容
     // 战斗日志：本局结束（阵亡/通关）
     // ⚠️ 上面成就块里的 rsP 是块级作用域，这里必须重新取
     const rsR = this.battle.rs;

@@ -29,6 +29,12 @@ export interface SaveData {
   ach: string[];
   /** 通关过的角色 id（角色专属成就用） */
   charsWin: string[];
+  /** 图鉴已发现条目（'enemy:goblin' / 'skill:fireball' / 'item:power_s' / 'char:knight'） */
+  seen: string[];
+  /** 画面偏好：特效透明度 0~1、屏幕震动、受击红屏（真机反馈 #6） */
+  fxAlpha: number;
+  shakeOn: boolean;
+  hurtOn: boolean;
 }
 
 export function defaultSave(): SaveData {
@@ -37,5 +43,7 @@ export function defaultSave(): SaveData {
     runs: 0, wins: 0, kills: 0, bestWave: 0, bestLv: 0, bossKills: 0, merges: 0,
     ach: [],
     charsWin: [],
+    seen: [],
+    fxAlpha: 1, shakeOn: true, hurtOn: true,
   };
 }

@@ -17,6 +17,9 @@ import { ITEM_ICON } from '../data/IconMap';
 import { ENEMIES } from '../data/Enemies';
 import { Assets, iconFrame, loadIcon } from '../engine/Assets';
 import { listRuns, exportLogs } from '../game/Telemetry';
+import { DEBUG } from 'cc/env';
+import { applyFxPrefs } from '../game/Prefs';
+import { writeSave } from '../engine/Save';
 
 function at(vw: number, vh: number, x: number, y: number) {
   return { x: x - vw / 2, y: vh / 2 - y };
@@ -63,7 +66,7 @@ export function buildSettings(parent: Node, s: SaveData, onToggle: (k: 'music' |
   const root = mkNode(parent, 'scr-settings', VW, VH);
   mask(root, VW, VH);
 
-  const W = 312, H = 300;
+  const W = 312, H = 452;
   const c = at(VW, VH, 180, VH / 2);
   const box = panel(root, c.x, c.y, W, H, { art: 'panel' });
   title(box, H / 2 - 30, '设置', { width: W - 40 });
@@ -92,20 +95,64 @@ export function buildSettings(parent: Node, s: SaveData, onToggle: (k: 'music' |
     });
   });
 
-  // 战斗日志：本地已记录 N 局，一键导出（浏览器里会写剪贴板 + 控制台）
-  const runs = listRuns().length;
-  text(box, 0, -H / 2 + 108, '战斗日志：已记录 ' + runs + ' 局（每波一行，可在控制台 __logs() 查看）',
-    { size: 10, color: COL.dim, width: W - 24, outline: false });
-  const exp = button(box, 0, -H / 2 + 74, 200, 40, '导出战斗日志', { size: 14 });
-  onTap(exp.node, () => {
-    const json = exportLogs();
-    console.log('[Log] 导出 ' + runs + ' 局：\n' + json);
-    try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard) void navigator.clipboard.writeText(json);
-    } catch { /* 剪贴板不可用就只打控制台 */ }
+  // ── 画面 / 无障碍（用户 #6，参考 Brotato 的 accessibility：降低闪烁与视觉杂乱）──
+  text(box, 0, H / 2 - 186, '画面', { size: 10, color: COL.dim, width: W - 40, outline: false });
+  const FX_LEVELS = [1, 0.75, 0.5, 0.25, 0];
+  const fxRowY = H / 2 - 222;
+  text(box, -W / 2 + 18, fxRowY, '特效透明度', { size: 15, color: COL.cream, align: 'left', width: 150, bold: true, outline: true });
+  const fxVal = () => Math.round((s.fxAlpha ?? 1) * 100) + '%';
+  const fxBtn = panel(box, W / 2 - 66, fxRowY, 96, 44, { art: (s.fxAlpha ?? 1) >= 0.99 ? 'btn_primary' : 'btn' });
+  const fxLbl = text(fxBtn, 0, 1, fxVal(), { size: 14, color: (s.fxAlpha ?? 1) >= 0.99 ? COL.ink : COL.cream, width: 88, bold: true, outline: false });
+  const fxHit = mkNode(box, 'hit', 96, 44, W / 2 - 66, fxRowY);
+  onTap(fxHit, () => {
+    const cur = s.fxAlpha ?? 1;
+    const idx = FX_LEVELS.findIndex(v => Math.abs(v - cur) < 0.01);
+    const next = FX_LEVELS[(idx + 1) % FX_LEVELS.length];
+    s.fxAlpha = next;
+    writeSave(s);
+    applyFxPrefs(next, s.shakeOn, s.hurtOn);
+    paintPanel(fxBtn, 96, 44, { art: next >= 0.99 ? 'btn_primary' : 'btn' });
+    fxLbl.string = fxVal();
+    fxLbl.color = next >= 0.99 ? COL.ink : COL.cream;
   });
 
-  const cl = button(box, 0, -H / 2 + 30, 200, 44, '关闭', { primary: true, size: 16 });
+  const toggles: { key: 'shakeOn' | 'hurtOn'; label: string; y: number }[] = [
+    { key: 'shakeOn', label: '屏幕震动', y: H / 2 - 274 },
+    { key: 'hurtOn', label: '受击红屏', y: H / 2 - 326 },
+  ];
+  toggles.forEach((r) => {
+    text(box, -W / 2 + 18, r.y, r.label, { size: 15, color: COL.cream, align: 'left', width: 150, bold: true, outline: true });
+    const b = panel(box, W / 2 - 66, r.y, 96, 44, { art: s[r.key] ? 'btn_primary' : 'btn' });
+    const l = text(b, 0, 1, s[r.key] ? '开' : '关', { size: 16, color: s[r.key] ? COL.ink : COL.dim, width: 88, bold: true, outline: !s[r.key] });
+    const hit = mkNode(box, 'hit', 96, 44, W / 2 - 66, r.y);
+    onTap(hit, () => {
+      s[r.key] = !s[r.key];
+      writeSave(s);
+      applyFxPrefs(s.fxAlpha, s.shakeOn, s.hurtOn);
+      paintPanel(b, 96, 44, { art: s[r.key] ? 'btn_primary' : 'btn' });
+      l.string = s[r.key] ? '开' : '关';
+      l.color = s[r.key] ? COL.ink : COL.dim;
+      const ol = l.node.getComponent(LabelOutline);
+      if (ol) ol.enabled = !s[r.key];
+    });
+  });
+
+  // 战斗日志导出只在调试构建里出现（用户 #6：上线要隐藏）
+  if (DEBUG) {
+    const runs = listRuns().length;
+    text(box, 0, -H / 2 + 116, '战斗日志：已记录 ' + runs + ' 局（调试构建可见）',
+      { size: 10, color: COL.dim, width: W - 24, outline: false });
+    const exp = button(box, 0, -H / 2 + 82, 200, 40, '导出战斗日志', { size: 14 });
+    onTap(exp.node, () => {
+      const json = exportLogs();
+      console.log('[Log] 导出 ' + runs + ' 局：\n' + json);
+      try {
+        if (typeof navigator !== 'undefined' && navigator.clipboard) void navigator.clipboard.writeText(json);
+      } catch { /* 剪贴板不可用就只打控制台 */ }
+    });
+  }
+
+  const cl = button(box, 0, -H / 2 + 32, 200, 44, '关闭', { primary: true, size: 16 });
   onTap(cl.node, onClose);
   return root;
 }
