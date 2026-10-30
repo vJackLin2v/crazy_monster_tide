@@ -3,7 +3,7 @@
  *   05 升级3选1 / 08 二次确认 / 09 Build抽屉 / 10 波间商店
  * 统一样式：遮罩 `rgba(4,6,12,.72)` + 3px 纯黑描边 + 硬投影。
  */
-import { Node, Label, Color, Graphics, UITransform, UIOpacity, Sprite, view, EventTouch } from 'cc';
+import { Node, Label, Color, Graphics, UITransform, UIOpacity, Sprite, view, EventTouch, Mask } from 'cc';
 import { panel, text, title, button, onTap, mkNode, mask, screen, chip, slot, paintPanel, setOutline, screenHeader } from './UIKit';
 import { COL, FS, R, BORDER } from './Tokens';
 import { iconFrame, loadIcon } from '../engine/Assets';
@@ -262,7 +262,8 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
     text(row, -106, nameY, fit(s.title, 12), {
       size: 14, color: s.sold ? COL.dim2 : COL.cream, align: 'left', width: 168, bold: true, outline: true,
     });
-    text(row, -106, nameY - 27, s.sub, { size: 11, color: COL.dim, align: 'left', width: 156, h: 32 });
+    // 11px × 2 行需要 33px 行高，给 36 才不会裁掉第二行末尾（用户 2026-10-30 截图）
+    text(row, -106, nameY - 27, s.sub, { size: 11, color: COL.dim, align: 'left', width: 150, h: 36 });
     if (s.owned && s.owned > 0 && !s.sold) {
       chip(row, 64, nameY, '持有×' + s.owned, { color: COL.accent, size: 10 });
     }
@@ -473,12 +474,14 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
       text(cell, -CW / 2 + 24, 0, r.name, { size: 12, color: COL.dim, align: 'left', width: 64, outline: false });
       // 相对基准：正 = 绿、负 = 红、持平 = 白
       const vc = r.delta > 0 ? COL.mint : r.delta < 0 ? COL.red : COL.cream;
-      text(cell, CW / 2 - 32, 0, r.value, { size: 12, color: vc, align: 'right', width: 46, bold: true, outline: false });
+      // ⚠️ 原来是 CW/2-32 宽 46、差值 CW/2-2 宽 36 —— 两块在 60~71px 区间重叠，
+      //    长数值（"穿透 +0 1"）就会被挤成两行。现在数值右边界 66、差值 66~90，互不重叠。
+      text(cell, CW / 2 - 43, 0, r.value, { size: 12, color: vc, align: 'right', width: 46, bold: true, outline: false });
       // M65（6.3）：把"基础值的加成"单独一列显示，玩家能分清 总值 / 加成
       if (r.deltaText) {
         // 9px 承担"本局增减"这种判断信息太小（P1-C：重要状态 ≥10，关键说明 ≥11）
         text(cell, CW / 2 - 2, 0, r.deltaText,
-          { size: 10, color: r.delta > 0 ? COL.mint : COL.red, align: 'right', width: 36, outline: false });
+          { size: 10, color: r.delta > 0 ? COL.mint : COL.red, align: 'right', width: 26, outline: false });
       }
     });
     // M58（P1-5）：属性太多时默认只显示「核心 + 本局有变化」，底部给可点入口展开/收起全部（数据一项不删）
@@ -595,27 +598,62 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
   }
 
   // ── 黑科技页：结构化列表（图标 + 名称/数量 + 效果），**已装与背包分开** ──
-  const modRoot = mkNode(drawer, 'modDetail', VW, 1, 0, 0);
+  // 可视窗口本身要**有真实尺寸**，否则触摸事件不会落在它上面（这是滚不动的真因）
+  const VIEW_TOP = bodyY + 12;
+  const VIEW_BOTTOM = -VH / 2 + 92;
+  const VIEW_H = Math.max(40, VIEW_TOP - VIEW_BOTTOM);
+  const VIEW_CY = (VIEW_TOP + VIEW_BOTTOM) / 2;
+  const modRoot = mkNode(drawer, 'modDetail', VW - 8, VIEW_H, 0, VIEW_CY);
   modRoot.active = false;
+  const maskC = modRoot.addComponent(Mask);
+  maskC.type = Mask.Type.RECT;
+  // 黑科技页内容放在可拖动的容器里（用户 2026-10-30：这一页要能滚动）
+  const modScroll = mkNode(modRoot, 'modScroll', VW, 1, 0, 0);
+  // 视口中心 ≠ 抽屉原点：把子节点补偿回去，内容坐标才与抽屉坐标系一致
+  const modBaseY = -VIEW_CY;
+  modScroll.setPosition(0, modBaseY, 0);
+  let modOffset = 0;          // 当前滚动位移（<= 0）
+  let modMaxScroll = 0;       // 最大可滚距离（<= 0）
+  {
+    let dragFrom = 0, dragging = false;
+    const onStart = () => { dragFrom = modOffset; dragging = true; };
+    const onMove = (e: { getUIDelta?: () => { y: number } }) => {
+      if (!dragging) return;
+      const dy = e.getUIDelta ? e.getUIDelta().y : 0;
+      // 手指上滑（dy>0）→ 内容上移（offset 变大），范围 [0, maxScroll]
+      modOffset = Math.max(0, Math.min(modMaxScroll, modOffset + dy));
+      modScroll.setPosition(0, modBaseY + modOffset, 0);
+    };
+    const onEnd = () => { dragging = false; };
+    modRoot.on(Node.EventType.TOUCH_START, onStart, modRoot);
+    modRoot.on(Node.EventType.TOUCH_MOVE, onMove, modRoot);
+    modRoot.on(Node.EventType.TOUCH_END, onEnd, modRoot);
+    modRoot.on(Node.EventType.TOUCH_CANCEL, onEnd, modRoot);
+  }
   function renderMods() {
-    for (const c of modRoot.children.slice()) c.destroy();
+    for (const c of modScroll.children.slice()) c.destroy();
+    modOffset = 0; modScroll.setPosition(0, modBaseY, 0); modMaxScroll = 0;
     const W = VW - 32;
     const all = modDetails ?? [];
     if (!all.length) {
-      text(modRoot, -W / 2 + 4, bodyY - 8, '（还没有黑科技：升级三选一 / 商店可以获得）',
+      text(modScroll, -W / 2 + 4, bodyY - 8, '（还没有黑科技：升级三选一 / 商店可以获得）',
         { size: 11, color: COL.dim, align: 'left', width: W });
+      modMaxScroll = 0;
       return;
     }
     let y = bodyY - 4;
     const section = (label: string, arr: ModDetailView[]) => {
       if (!arr.length) return;
       y -= 8;                       // 段标题上方留白（贴太紧会压到上一行底边）
-      text(modRoot, -W / 2 + 4, y - 2, label + '（' + arr.length + '）',
+      text(modScroll, -W / 2 + 4, y - 2, label + '（' + arr.length + '）',
         { size: 11, color: COL.accent, align: 'left', width: W, bold: true, outline: false });
       y -= 22;
-      arr.slice(0, 3).forEach((m) => {
-        const rowH = 40;
-        const card = panel(modRoot, 0, y - rowH / 2, W, rowH, {
+      // 只渲染"可视区内放得下"的行数，避免最后一行压到抽屉底部按钮上
+      const rowH0 = 46, pitch = rowH0 + 4;
+      const maxVis = Math.max(1, Math.floor((y - VIEW_BOTTOM) / pitch));
+      arr.slice(0, maxVis).forEach((m) => {
+        const rowH = 46;   // 描述要两行（46 = 标题 14 + 描述 22 + 内边距）
+        const card = panel(modScroll, 0, y - rowH / 2, W, rowH, {
           bg: COL.bg3, line: COL.line2, radius: R.s, shadow: false,
         });
         if (m.icon) {
@@ -629,21 +667,23 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
             if (f2 && isp.isValid) isp.spriteFrame = f2;
           });
         }
-        text(card, -W / 2 + 32, 8, m.name + (m.count > 1 ? ' ×' + m.count : ''),
+        text(card, -W / 2 + 32, 12, m.name + (m.count > 1 ? ' ×' + m.count : ''),
           { size: 12, color: COL.cream, align: 'left', width: W - 110, bold: true, outline: true });
-        text(card, -W / 2 + 32, -9, m.desc,
-          { size: 10, color: COL.dim, align: 'left', width: W - 108 });
+        text(card, -W / 2 + 32, -12, m.desc,
+          { size: 10, color: COL.dim, align: 'left', width: W - 96, h: 24 });
         if (m.installed) chip(card, W / 2 - 34, 0, '已装', { color: COL.mint, size: 9 });
         y -= rowH + 4;
       });
-      if (arr.length > 3) {
-        text(modRoot, -W / 2 + 4, y, '… 还有 ' + (arr.length - 3) + ' 个（去安装屏查看）',
+      if (arr.length > maxVis) {
+        text(modScroll, -W / 2 + 4, y, '… 还有 ' + (arr.length - maxVis) + ' 个（去安装屏查看）',
           { size: 10, color: COL.dim, align: 'left', width: W });
         y -= 16;
       }
     };
     section('已装', all.filter(m => m.installed));
     section('背包', all.filter(m => !m.installed));
+    // 可滚距离 = 内容底边比可视底边低多少（y 会随内容往下变小）
+    modMaxScroll = Math.max(0, Math.ceil(VIEW_BOTTOM - y));
   }
 
   function refresh() {

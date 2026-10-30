@@ -92,13 +92,13 @@ export function buildMenu(parent: Node, seed: number, onStart: () => void, onHow
     { size: 40, color: COL.cream, bold: true, width: 354, outline: true, shadow: true });
   text(root, 0, at2(180, S + 100).y, 'C R A Z Y   M O N S T E R   T I D E',
     { size: 10, color: COL.accent, width: 354, bold: true, outline: true });
-  // P2-A：一行讲清核心循环（不填满页面、不加卡片）
-  text(root, 0, at2(180, S + 136).y, '自动开火 · 4 技能构筑 · 20 波挑战',
-    { size: 11, color: COL.dim, width: 340, outline: false });
+  // （用户 2026-10-30：去掉标题下那行小字，按钮整体上移）
   // ── 底部动作栈：**底部留白 = 标题上方留白**（用户要求上下呼吸感一致）
   //    640 参考：标题上沿 68 / CTA 398 / 次按钮 466 / 图标行 544 / 底部留白 68
   const topGap = S + 40;                 // 标题上沿到屏幕顶的距离
-  const iconRowY = VH - topGap - 28;     // 图标行中心（高 56）
+  // 用户 2026-10-30：按钮整体上移，块心落在屏高约 66%（居中偏下）
+  const LIFT = 72;
+  const iconRowY = VH - topGap - 28 - LIFT;   // 图标行中心（高 56）
   const subBtnY = iconRowY - 78;
   const ctaY = subBtnY - 68;
 
@@ -361,7 +361,8 @@ export interface ResultBuildRow { icon: string; name: string; sub: string }
 export function buildResult(parent: Node,
                             stats: { win: boolean; wave: number; lv: number; kills: number; time: number;
                                      build: ResultBuildRow[]; gold?: number; seed?: number;
-                                     waveTotal?: number; endless?: boolean; maxAlive?: number },
+                                     waveTotal?: number; endless?: boolean; maxAlive?: number;
+                                     items?: { name: string; icon?: string; count: number }[] },
                             onMenu: () => void, onRetry: () => void,
                             onContinue?: () => void): Node {
   const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
@@ -402,13 +403,40 @@ export function buildResult(parent: Node,
 
   // 金币 / 种子（小字，不抢统计卡）
   const extra = at2(180, S + 152 + CH * 2 + GAP + 18);
-  text(root, extra.x, extra.y,
-    '金币 ' + (stats.gold ?? 0) + '   ·   种子 ' + (stats.seed ?? '')
-    + (stats.maxAlive ? '   ·   同屏峰值 ' + stats.maxAlive : ''),
-    { size: 10, color: COL.dim, width: 336 });
+  // 用户 2026-10-30：去掉种子/同屏峰值，改成展示本局拿到的道具
+  const got = stats.items ?? [];
+  if (got.length) {
+    text(root, at2(12, extra.y).x, at2(12, extra.y).y, '本局道具 ' + got.length,
+      { size: 11, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
+    const CELL = 30, CGAP = 6, COLS = 9;
+    got.slice(0, COLS).forEach((it, i) => {
+      const col = i % COLS, rowi = Math.floor(i / COLS);
+      const cc = at2(180 - (COLS * (CELL + CGAP) - CGAP) / 2 + CELL / 2 + col * (CELL + CGAP),
+        extra.y + 26 + rowi * (CELL + CGAP));
+      void rowi;
+      const box = panel(root, cc.x, cc.y, CELL, CELL, { art: 'slot' });
+      if (it.icon) {
+        const n = mkNode(box, 'ic', CELL - 8, CELL - 8);
+        const sp = n.addComponent(Sprite);
+        sp.sizeMode = Sprite.SizeMode.CUSTOM; sp.trim = false;
+        const f = iconFrame(it.icon);
+        if (f) sp.spriteFrame = f;
+        else void loadIcon(it.icon).then(() => { const g2 = iconFrame(it.icon); if (g2 && sp.isValid) sp.spriteFrame = g2; });
+      }
+      if (it.count > 1) {
+        text(box, CELL / 2 - 2, -CELL / 2 + 6, '×' + it.count,
+          { size: 9, color: COL.accent, align: 'right', width: CELL - 4, bold: true, outline: false });
+      }
+    });
+    if (got.length > COLS) {
+      text(root, at2(348, extra.y + 26).x, at2(348, extra.y + 26).y,
+        '+' + (got.length - COLS), { size: 10, color: COL.dim, align: 'right', width: 60 });
+    }
+  }
 
   // 本局构筑
-  const listTop = S + 152 + CH * 2 + GAP + 40;
+  // 有道具时「本局构筑」要往下让一行（用户 2026-10-30 加的道具展示）
+  const listTop = S + 152 + CH * 2 + GAP + 40 + ((stats.items?.length ?? 0) > 0 ? 34 : 0);
   const bh = at2(12, listTop);
   text(root, bh.x, bh.y, '本局构筑', { size: 13, color: COL.accent, align: 'left', width: 312, bold: true, outline: true });
   const rowsTop = listTop + 22;

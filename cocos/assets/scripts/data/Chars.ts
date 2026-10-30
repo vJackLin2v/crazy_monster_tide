@@ -8,7 +8,8 @@ export const CHARS: CharDef[] = [
   {
     id: 'knight', name: '铁拳骑士', unit: 'swordswoman',
     pos: '受击后 2s 内攻击力 +20%', neg: '移动速度 -10%',
-    start: 'fireball',
+    // 剑士形象 → 回旋刃（physical/projectile/return），把火球留给法师系
+    start: 'blade',
     stats: { power: 1.0, speedMul: 0.90, maxhp: 72 },
   },
   {
@@ -21,14 +22,16 @@ export const CHARS: CharDef[] = [
   {
     id: 'ranger', name: '荒野游侠', unit: 'archer',
     pos: '投射物速度 +25%，拾取范围 +50%', neg: '受到伤害 +15%（更脆）',
-    start: 'ice_spear',
+    // 弓手形象 → 灵能箭（箭，且追踪，正好吃弹速加成）
+    start: 'spirit',
     // armor -0.15 = 「受到伤害 +15%」（与狂信者同一机制，之前这条负面根本没生效）
     stats: { power: 0.95, speedMul: 1.15, maxhp: 54, projSpd: 1.25, pickupMul: 1.5, armor: -0.15 },
   },
   {
     id: 'monk', name: '苦行僧', unit: 'spearman',
     pos: '生命回复 +0.5/s', neg: '攻击力 -12%',
-    start: 'thorn',
+    // 长矛形象 → 冰晶矛
+    start: 'ice_spear',
     stats: { power: 0.88, regen: 0.5, maxhp: 66 },
   },
   {

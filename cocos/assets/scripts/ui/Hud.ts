@@ -15,7 +15,7 @@ import { Node, Label, Color, Graphics, UITransform, Sprite, UIOpacity, view } fr
 import { panel, gradBar, text, mkNode, onTap, slot, paintPanel } from './UIKit';
 import { COL, FS, R, BORDER, MIN_TAP } from './Tokens';
 import { iconFrame, loadIcon } from '../engine/Assets';
-import { safeTop, safeBottom } from './Safe';
+import { safeTop, safeBottom, wxCapsuleRect } from './Safe';
 
 export interface HudData {
   hp: number; maxhp: number;
@@ -133,19 +133,26 @@ export class Hud {
       { size: 14, color: COL.cream, align: 'left', width: 96, bold: true, outline: true });
 
     // ── 右上：波次 · 击杀 / 倒计时 / 暂停 ──
-    this.waveText = text(this.root, at(300, 0).x, at(0, S + 12).y, '波次 1 · 击杀 0',
+    // ⚠️ 微信小游戏右上角有"胶囊按钮"，会盖住这块（真机截图确认）。
+    //    有胶囊时：暂停键贴到胶囊左侧，波次/倒计时也整体左让；浏览器里保持原位。
+    const caps = wxCapsuleRect();
+    const rightEdge = caps ? caps.left - 50 : 300;
+    const pauseX = caps ? caps.left - 24 : 332;
+    const pauseY = caps ? Math.round((caps.top + caps.bottom) / 2) : S + 29;
+    this.waveText = text(this.root, at(rightEdge, 0).x, at(0, S + 12).y, '波次 1 · 击杀 0',
       { size: 12, color: COL.cream, align: 'right', width: 210, bold: true, outline: true });
-    this.timerText = text(this.root, at(300, 0).x, at(0, S + 37).y, '0',
+    this.timerText = text(this.root, at(rightEdge, 0).x, at(0, S + 37).y, '0',
       { size: 26, color: COL.cream, align: 'right', width: 130, bold: true, outline: true, shadow: true });
 
     // 暂停：视觉 36×36，热区 44（微信硬要求）
-    const pauseC = at(332, S + 29);
+    const pauseC = at(pauseX, pauseY);
     const pause = panel(this.root, pauseC.x, pauseC.y, 36, 36, { art: 'panel_soft' });
     const pIcon = mkNode(pause, 'pauseIcon', 36, 36);
     const pgi = pIcon.addComponent(Graphics);
     pgi.fillColor = COL.cream;
     pgi.rect(-6, -8, 4, 16); pgi.rect(3, -8, 4, 16); pgi.fill();
     const hit = mkNode(this.root, 'pauseHit', MIN_TAP, MIN_TAP, pauseC.x, pauseC.y);
+    (hit as unknown as { __hit?: boolean }).__hit = true;
     if (onPause) onTap(hit, onPause);
 
     // ── BOSS：名字 S+64 / 血条 336×12 @S+80（无 BOSS 不占位）──

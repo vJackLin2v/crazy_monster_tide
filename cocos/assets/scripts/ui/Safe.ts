@@ -95,3 +95,34 @@ export function safeTop(): number { return safeAreaInfo().top; }
 export function safeBottom(): number { return safeAreaInfo().bottom; }
 /** 视口变化 / 测试时重置缓存 */
 export function resetSafeArea(): void { cached = null; }
+
+/**
+ * 微信小游戏右上角的"胶囊按钮"矩形（**设计像素**）。
+ *
+ * 浏览器里返回 null。真机上胶囊会盖住 HUD 右上角的波次/倒计时/暂停键
+ * （用户 2026-10-30 截图确认），所以 HUD 必须按它避让。
+ */
+export function wxCapsuleRect(): { left: number; top: number; right: number; bottom: number } | null {
+  try {
+    const g = globalThis as unknown as {
+      wx?: {
+        getMenuButtonBoundingClientRect?: () => { left: number; top: number; right: number; bottom: number };
+        getWindowInfo?: () => { windowWidth: number };
+        getSystemInfoSync?: () => { windowWidth: number };
+      };
+    };
+    const wx = g.wx;
+    if (!wx || typeof wx.getMenuButtonBoundingClientRect !== 'function') return null;
+    const r = wx.getMenuButtonBoundingClientRect();
+    const info = typeof wx.getWindowInfo === 'function' ? wx.getWindowInfo() : wx.getSystemInfoSync?.();
+    const winW = info && info.windowWidth ? info.windowWidth : 0;
+    if (!r || !winW) return null;
+    const k = view.getVisibleSize().width / winW;   // 设备 px → 设计 px
+    return {
+      left: Math.round(r.left * k), top: Math.round(r.top * k),
+      right: Math.round(r.right * k), bottom: Math.round(r.bottom * k),
+    };
+  } catch {
+    return null;
+  }
+}

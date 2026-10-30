@@ -569,11 +569,22 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
     }
     const a = ATTRS[r.id];
     const taken = this.battle.rs.attrTaken[r.id] ?? 0;
-    const stepTxt = a ? a.fmt(a.step) : '';
+    // ⚠️ 修复 "+-92%"：ATTRS[id].fmt 的入参是**绝对值**（power 会把 v 当 1.08 算 +8%）。
+    //    直接喂 step(0.08) 会被算成 (0.08-1)*100 = -92%。这里用"显示值之差"求增量。
+    const stepTxt = a ? (() => {
+      const numOf = (s: string) => { const m = s.match(/-?\d+(?:\.\d+)?/); return m ? parseFloat(m[0]) : 0; };
+      const shown0 = a.fmt(a.base);
+      const shown1 = a.fmt(a.base + a.step);
+      const suffix = shown0.replace(/-?\d+(?:\.\d+)?/, '').trim();
+      const dv = numOf(shown1) - numOf(shown0);
+      const sign = dv >= 0 ? '+' : '';
+      const unit = suffix ? (suffix.startsWith('%') ? suffix : ' ' + suffix) : '';
+      return sign + (Math.round(dv * 10) / 10) + unit;
+    })() : '';
     return {
       kind: 'attr', title: a ? a.name : r.id, sub: '属性',
       desc: a ? a.desc : '',
-      nums: (a ? (stepTxt.startsWith('+') ? stepTxt : '+' + stepTxt) : ''),
+      nums: stepTxt,
       meta: (taken > 0 ? '已叠加 ×' + taken + ' · 可继续叠加' : '可无限叠加'),
       glyph: a ? a.icon : '★',
       art: ATTR_ICON[r.id],            // 用属性自己的图标（⚔ / » / ◎ / ♥ …）
@@ -735,7 +746,14 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       this.cur = buildResult(this.uiRoot,
         { win, wave: rs.wave, lv: rs.lv, kills: rs.kills, time: rs.runTime, build,
           gold: rs.gold, seed: this.seed, waveTotal: RUN.waves, endless: rs.endless,
-          maxAlive: this.battle.maxAlive },
+          maxAlive: this.battle.maxAlive,
+          items: (() => {
+            const m = new Map<string, number>();
+            for (const it of rs.items) m.set(it.id, (m.get(it.id) ?? 0) + 1);
+            return Array.from(m.entries()).map(([id, count]) => ({
+              name: ITEMS[id] ? ITEMS[id].name : id, icon: ITEM_ICON[id], count,
+            }));
+          })() },
         () => this.showMenu(), () => void this.startBattle(),
         // 通关后进入无尽（RUN.canContinue 之前是死字段，从没人读）
         win && RUN.canContinue ? () => this.continueEndless() : undefined);

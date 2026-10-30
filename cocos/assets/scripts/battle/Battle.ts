@@ -685,12 +685,13 @@ export class Battle extends Component {
     //   用户 2026-10-28 明确要求：地面圈会盖住地面细节、还像技能范围指示；
     //   改成"同帧放大 + 染色 + 半透明"的两层光晕垫在身体后面 —— 就是《吞噬守卫》里稀有度角色的做法。
     if (e.elite) {
-      this.setBodyGlow(node, new Color(120, 255, 140), 235, new Color(52, 210, 90), 120);
+      // 用户 2026-10-30：之前 alpha 235/120 太实，三层同帧叠在一起像"三只怪"
+      this.setBodyGlow(node, new Color(120, 255, 140), 90, new Color(52, 210, 90), 52);
       const ol = (node as unknown as { _outline?: Sprite })._outline;
       if (ol) ol.color = new Color(88, 232, 120, 255);     // 描边染绿 = 清晰的绿色轮廓
     }
     if (e.boss) {
-      this.setBodyGlow(node, new Color(255, 96, 80), 235, new Color(170, 34, 26), 130);
+      this.setBodyGlow(node, new Color(255, 96, 80), 100, new Color(170, 34, 26), 60);
       const ol = (node as unknown as { _outline?: Sprite })._outline;
       if (ol) ol.color = new Color(232, 78, 66, 255);
       this.addBossTag(node);
@@ -926,9 +927,11 @@ export class Battle extends Component {
       const sk = this.rs.skills[q.slot];
       if (!sk) continue;
       const rt = { ...this.rs.skillRuntime(q.slot), dmg: this.rs.skillRuntime(q.slot).dmg * 0.6, echo: 0 };
-      this.rs.skillT[q.slot] = 0;                     // 复读不消耗真实冷却
+      // ⚠️ 真机崩溃修复：skillT 是 Battle 的字段，不是 RunState 的。
+      //    之前写 this.rs.skillT[...] → undefined[3] = 0 → TypeError: Cannot set properties of undefined
+      this.skillT[q.slot] = 0;                        // 复读不消耗真实冷却
       this.fireSkill(q.slot, rt);
-      this.rs.skillT[q.slot] = rt.cd;
+      this.skillT[q.slot] = rt.cd;
     }
   }
 
@@ -1724,11 +1727,13 @@ export class Battle extends Component {
 
   /** 波次结束：残留敌人直接移除，**不给经验 / 金币 / 掉落**（M35 #1） */
   private despawnAllEnemies() {
+    // ⚠️ 修复"怪物尸体有时不消失"：旧实现跳过 dead 的怪，但随后把 enemies 清空，
+    //    正在播死亡动画的节点就再也没人回收 → 尸体永久留在场上。
     for (const e of this.enemies) {
-      if (e.dead) continue;
       if (e.node && e.node.isValid) e.node.destroy();
     }
     this.enemies = [];
+    if (this.bossRef) { this.bossRef = null; this.bossAlive = null; }
   }
 
   /** 波次结束清场：把纯表现层的残留全部回收（经验宝石保留 —— 还要吸） */
