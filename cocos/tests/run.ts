@@ -27,7 +27,7 @@ import { VFX_FRAMES } from '../assets/scripts/data/VfxFrames';
 import { ACHIEVEMENTS, achViews, newlyUnlocked, applyUnlocks } from '../assets/scripts/game/Achievements';
 import { defaultSave } from '../assets/scripts/game/Progress';
 import { balance, balanceOverride, balanceReset, DEFAULT_BALANCE } from '../assets/scripts/core/Balance';
-import { splitBullets, echoRepeats, burnDuration, burnTickMul, frostSlowPct, frostDuration } from '../assets/scripts/game/ModuleScale';
+import { splitBullets, echoRepeats, echoDelay, burnDuration, burnTickMul, frostSlowPct, frostDuration } from '../assets/scripts/game/ModuleScale';
 import { telemetryStart, telemetryWaveEnd, telemetryRunEnd, listRuns, summarize } from '../assets/scripts/game/Telemetry';
 import type { SaveData } from '../assets/scripts/game/Progress';
 
@@ -564,6 +564,39 @@ console.log('\n== 5l. 主动丢弃技能（至少保留 1 个） ==');
   ok(!r2.ok && rs.skills.length === 1, '只剩 1 个技能时拒绝丢弃');
   const r3 = rs.dropSkill(9);
   ok(!r3.ok, '越界索引拒绝丢弃');
+}
+
+console.log('\n== 5m. 高风险构筑组合（阶段3 数学边界） ==');
+{
+  // 1) 弹体膨胀 multi+fan+split：分裂数有上限，且衍生弹不再分裂（split:0，见 Battle.ts:1588）
+  ok(splitBullets(1) === 2 && splitBullets(3) === 4, '分裂子弹数有上限（1份2枚、3份4枚）');
+  ok(splitBullets(99) === 6, '分裂子弹数被硬上限 6 夹住');
+  ok(splitBullets(2) > splitBullets(1), '分裂随份数递增');
+
+  // 2) 高频爆发 echo+rapid+multi：复读次数 ≤3，且复读伤害 60%、不会再次入队（echo:0，Battle.ts:946）
+  ok(echoRepeats(1) === 1 && echoRepeats(99) === 3, '复读次数上限 3');
+  ok(echoDelay(0) < echoDelay(1) && echoDelay(1) < echoDelay(2), '复读间隔递增（不是同帧爆发）');
+
+  // 3) 范围/控制：灼烧按份数取 max（不叠加），减速有 60% 上限（赋值而非累加）
+  ok(Math.abs(burnTickMul(1) - 0.10) < 1e-9 && Math.abs(burnTickMul(3) - 0.30) < 1e-9, '灼烧每份 +10%，上限 30%');
+  ok(frostSlowPct(99) <= 0.60 + 1e-9, '减速不超过 60%（不会叠到定身）');
+  ok(frostSlowPct(2) > frostSlowPct(1), '减速随份数递增');
+  ok(frostDuration(3) > frostDuration(1) && burnDuration(3) > burnDuration(1), '控制/灼烧持续时间随份数增长');
+
+  // 4) 回血守恒：所有回血入口都夹在 maxhp 以内（RunState 层）
+  const rs2 = new RunState('knight', 777);
+  rs2.stats.hp = rs2.stats.maxhp - 5;
+  rs2.stats.hp = Math.min(rs2.stats.maxhp, rs2.stats.hp + 999);
+  ok(rs2.stats.hp === rs2.stats.maxhp, '回血不会溢出最大生命');
+
+  // 5) 模块守恒：安装→替换→丢弃 不产生重复/丢失
+  const rs3 = new RunState('knight', 888);
+  rs3.modsBag.push('multi', 'multi', 'multi');
+  const beforeMods = rs3.modsBag.length;
+  const inst = rs3.installAt(0, 0, 'multi');
+  ok(inst.replaced === null && rs3.modsBag.length === beforeMods - 1, '安装消耗背包 1 份，不凭空产生');
+  const dropped = rs3.dropSkill(0);
+  ok(!dropped.ok || dropped.back!.length === 1, '丢弃技能时模块原样退回');
 }
 
 console.log('\n== 6. 确定性与波次规则 ==');
