@@ -19,6 +19,7 @@ import { Assets, iconFrame, loadIcon } from '../engine/Assets';
 import { listRuns, exportLogs } from '../game/Telemetry';
 import { DEBUG } from 'cc/env';
 import { BUILD_TAG } from '../core/BuildTag';
+import { updateState, applyUpdate } from '../game/Update';
 import { applyFxPrefs } from '../game/Prefs';
 import { writeSave } from '../engine/Save';
 
@@ -153,8 +154,22 @@ export function buildSettings(parent: Node, s: SaveData, onToggle: (k: 'music' |
     });
   }
 
-  // 构建标记：放在标题下方（原来是 -H/2+12，正好被"关闭"按钮盖住，用户看不到）
-  text(box, 0, H / 2 - 74, '版本 ' + BUILD_TAG, { size: 9, color: COL.dim2, width: W - 20, outline: false });
+  // 构建标记 + 更新状态：放在标题下方（原来是 -H/2+12，正好被"关闭"按钮盖住）
+  const updLabel = (() => {
+    const st = updateState();
+    return st === 'ready' ? '· 新版本已就绪，点击重启'
+      : st === 'none' ? '· 已是最新'
+      : st === 'failed' ? '· 更新下载失败'
+      : st === 'checking' ? '· 正在检查更新'
+      : st === 'unsupported' ? '' : '';
+  })();
+  text(box, 0, H / 2 - 74, '版本 ' + BUILD_TAG + ' ' + updLabel,
+    { size: 9, color: COL.dim2, width: W - 20, outline: false });
+  if (updateState() === 'ready') {
+    const hitU = mkNode(box, 'updHit', W - 40, 24, 0, H / 2 - 74);
+    (hitU as unknown as { __hit?: boolean }).__hit = true;
+    onTap(hitU, () => applyUpdate());
+  }
 
   const cl = button(box, 0, -H / 2 + 32, 200, 44, '关闭', { primary: true, size: 16 });
   onTap(cl.node, onClose);

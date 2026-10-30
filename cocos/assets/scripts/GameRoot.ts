@@ -21,6 +21,7 @@ import { buildMenu, buildHowto, buildCharSelect, buildResult, type ResultBuildRo
 import { buildSettings } from './ui/MetaScreens';
 import { buildCodex, buildAchievements } from './ui/CodexScreens';
 import { applyFxPrefs } from './game/Prefs';
+import { setupUpdate, updateState, applyUpdate } from './game/Update';
 import { loadSave, writeSave } from './engine/Save';
 import { telemetryStart, telemetryRunEnd, listRuns, exportLogs, clearLogs, summarize } from './game/Telemetry';
 import { balance, balanceOverride, balanceReset, exportBalance, importBalance } from './core/Balance';
@@ -109,6 +110,23 @@ export class GameRoot extends Component {
     this.battle.hooks.onClear = () => { if (this.endShown) return; this.endShown = true; this.showResult(true); };
     // 成就统计（只计数，不参与战斗结算）
     this.battle.hooks.onBossKill = () => { this.save.bossKills++; writeSave(this.save); };
+    // 微信版本更新：冷启动检查 → 下载完成提示重启（浏览器里自动跳过）
+    setupUpdate(() => {
+      const g = globalThis as unknown as { wx?: { showModal?: (o: unknown) => void } };
+      if (g.wx && typeof g.wx.showModal === 'function') {
+        g.wx.showModal({
+          title: '发现新版本',
+          content: '新版本已下载完成，重启后生效。',
+          confirmText: '立即重启',
+          cancelText: '稍后',
+          success: (r: { confirm?: boolean }) => { if (r.confirm) applyUpdate(); },
+        });
+      } else {
+        applyUpdate();
+      }
+    });
+    console.log('[Update] state=' + updateState());
+
     // 应用存档里的音频开关 + 画面偏好（特效透明度/屏震/受击红屏）
     Sfx.setMusic(this.save.music);
     Sfx.setSfx(this.save.sfx);
