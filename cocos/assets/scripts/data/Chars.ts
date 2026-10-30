@@ -28,20 +28,20 @@ export const CHARS: CharDef[] = [
     stats: { power: 0.95, speedMul: 1.15, maxhp: 54, projSpd: 1.25, pickupMul: 1.5, armor: -0.15 },
   },
   {
-    id: 'monk', name: '苦行僧', unit: 'spearman',
+    id: 'monk', name: '苦行僧', unit: 'adv-spearman',
     pos: '生命回复 +0.5/s', neg: '攻击力 -12%',
     // 长矛形象 → 冰晶矛
     start: 'ice_spear',
     stats: { power: 0.88, regen: 0.5, maxhp: 66 },
   },
   {
-    id: 'summoner', name: '陨星师', unit: 'jester',
+    id: 'summoner', name: '陨星师', unit: 'adv-mage',
     pos: '范围 +15%', neg: '主动技能伤害 -10%',
     start: 'meteor',
     stats: { power: 0.9, maxhp: 57, area: 1.15 },
   },
   {
-    id: 'zealot', name: '狂信者', unit: 'boss-paladin',
+    id: 'zealot', name: '狂信者', unit: 'prism-swordsman',
     pos: '暴击率 +12%，暴击伤害 +40%', neg: '受到伤害 +15%',
     start: 'holybolt',
     stats: { power: 1.05, crit: 0.17, critdmg: 1.9, maxhp: 54, armor: -0.15 },

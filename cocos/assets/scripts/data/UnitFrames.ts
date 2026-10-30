@@ -4,6 +4,10 @@
 
 /** 每个单位的各动画帧数（idle/walk/attack/death） */
 export const UNIT_FRAMES: Record<string, Record<string, number>> = {
+  // 2026-10-30 新增（来自 slotBound 素材库的进阶形象）
+  'adv-spearman': { attack: 7, death: 5, idle: 4, walk: 6 },
+  'adv-mage': { attack: 9, death: 4, idle: 4, walk: 6 },
+  'prism-swordsman': { attack: 5, death: 4, idle: 4, walk: 6 },
   'archer': { attack: 11, death: 4, idle: 4, walk: 6 },
   'axolizard': { attack: 8, death: 8, idle: 4, walk: 6 },
   'basilisk': { attack: 6, death: 7, idle: 4, walk: 5 },
