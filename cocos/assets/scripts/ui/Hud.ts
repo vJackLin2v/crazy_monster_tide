@@ -143,9 +143,11 @@ export class Hud {
     //    用户反馈"暂停按钮和倒计时都不见了"）。这里做**合法区间校验 + 回退**。
     const caps = wxCapsuleRect();
     const capsSane = !!caps && caps.left > 120 && caps.left < VW - 24 && caps.bottom < VH * 0.4;
-    const rightEdge = capsSane ? Math.max(120, Math.min(VW - 90, caps!.left - 50)) : 300;
-    const pauseX = capsSane ? Math.max(28, Math.min(VW - 28, caps!.left - 24)) : 332;
-    const pauseY = capsSane ? Math.max(S + 20, Math.min(S + 64, Math.round((caps!.top + caps!.bottom) / 2))) : S + 29;
+    // 用户 2026-10-30：波次/倒计时**回到右侧**（之前为了避胶囊挤到中间，很丑）。
+    // 胶囊只在顶部 ~46px 高，把暂停键下移到 S+62 就完全错开，文字不必再左让。
+    const rightEdge = VW - 12;
+    const pauseX = VW - 30;
+    const pauseY = Math.max(S + 58, capsSane ? Math.round(caps!.bottom) + 20 : S + 62);
     this.waveText = text(this.root, at(rightEdge, 0).x, at(0, S + 12).y, '波次 1 · 击杀 0',
       { size: 12, color: COL.cream, align: 'right', width: 210, bold: true, outline: true });
     this.timerText = text(this.root, at(rightEdge, 0).x, at(0, S + 37).y, '0',

@@ -219,9 +219,11 @@ export class Battle extends Component {
     void this.preloadVfx();
 
     this.createPlayer(charDef.unit);
-    await this.startWave(1);
+    // ⚠️ running 必须在 startWave 之前置 true：startWave 里有 "已结束就不开波" 的守卫，
+    //    顺序反了会导致第 1 波完全不刷怪（用户 2026-10-30 反馈）
     this.running = true;
     this.paused = false;
+    await this.startWave(1);
   }
 
   /**
