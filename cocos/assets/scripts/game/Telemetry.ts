@@ -26,6 +26,8 @@ export interface WaveRec {
   hp: number;
   /** 本波玩家受到的总伤害 */
   dmgTaken: number;
+  /** 本波玩家造成的总伤害（阶段2 A/B 用） */
+  dmgDealt?: number;
 }
 
 export interface RunRec {

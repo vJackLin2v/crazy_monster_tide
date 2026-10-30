@@ -87,6 +87,15 @@ B组: w1 dps=1 kills=9  | w5 dps=1.5      | w10 dps=8 | w15 dps=28 | w20 dps=0
 
 ---
 
+## 4.5 本轮已落地的两项基础设施（为 A/B 铺路）
+
+| 改动 | 文件 | 说明 |
+|---|---|---|
+| **`dmgDealt` 独立计数** | `battle/Battle.ts` | 之前 `waveDmg` 只累计**玩家承受**的伤害（1414/1478 两处都是 `hp -= dm` 之后累加），玩家造成的伤害**没有任何计数器**——这是 A/B 测不出 DPS 的根因。新增 `waveDmgDealt`，在敌人受伤的三处（`e.hp -= dmg/dot/back`）累加，并写入遥测 `dmgDealt` |
+| **调试时间倍速** | `battle/Battle.ts` | 新增 `timeScale`（默认 1），`update` 里 `dt = dtRaw × timeScale`；20 波可压缩到 30 秒内跑完，正式包保持 1 |
+
+自动 A/B 仍**未跑通**，原因记录：强制 `startWave(w)` 后如果玩家在该波内死亡，该波不会走 `waveEnd`，遥测不产生记录；脚本因此只能读到旧记录（本轮输出里 `kills=62 / dmgTaken=215` 五行相同，即同一份旧记录）。**下一步应改为"真实通关/阵亡后的 `__logDump()`"回收数据，而不是脚本内强制跳波。**
+
 ## 5. 建议（本轮不执行，等数据）
 
 1. **先补遥测**：`Telemetry` 每波记录 `waveDmg`（玩家总输出）、`kills`、`aliveMax`、`dmgTaken`、`hpEnd` —— 现在 `waveDmg` 只在本波内累计且会被重置，需要改成"单调累计 + 差值"；

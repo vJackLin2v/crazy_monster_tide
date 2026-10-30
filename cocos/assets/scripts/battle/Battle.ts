@@ -157,7 +157,10 @@ export class Battle extends Component {
   /** 本局出现过的敌人种类（图鉴解锁用） */
   seenEnemies = new Set<string>();
   /** 本波玩家受到的伤害（日志用） */
-  private waveDmg = 0;
+  private waveDmg = 0;          // 本波**玩家承受**的伤害（历史命名，勿混用）
+  private waveDmgDealt = 0;     // 本波**玩家造成**的伤害（新增，供阶段2 A/B 与遥测用）
+  /** 调试用时间倍速（1 = 正常）；真机/正式包保持 1 */
+  timeScale = 1;
   private totalDmg = 0;
 
   /** 本局玩家累计受到的伤害（结算/日志用） */
@@ -617,7 +620,7 @@ export class Battle extends Component {
     //    startWave 会铺开场怪 → 看起来还在刷。局已结束（running=false）就直接拒绝开波。
     if (!this.running) { console.log('[Battle] 已结束，忽略 startWave(' + n + ')'); return; }
     this.rs.wave = n;
-    this.waveDmg = 0; this.waveAliveMax = 0;
+    this.waveDmg = 0; this.waveDmgDealt = 0; this.waveAliveMax = 0;
     if (n === 1) this.totalDmg = 0;
     telemetryWaveStart(this.rs.kills);
     this.waveEnding = false; this.waveEndT = 0; this.waveEndPending = false;
@@ -1067,6 +1070,7 @@ export class Battle extends Component {
     // 阶段 E：精英/首领伤害加成上限 +150%
     if ((e.elite || e.boss) && this.rs.stats.eliteDmg) dmg = Math.round(dmg * (1 + Math.min(1.5, this.rs.stats.eliteDmg)));
     e.hp -= dmg;
+      this.waveDmgDealt += Math.min(dmg);
     // ★ 吸血：按伤害比例回血 + 绿色数字 + 角色身上回血动画（M39）
     if (this.rs.stats.lifesteal > 0) {
       const before = this.rs.stats.hp;
@@ -1224,7 +1228,7 @@ export class Battle extends Component {
   // ============================================================
   update(dtRaw: number) {
     if (!this.running || !this.rs || this.paused) return;
-    let dt = dtRaw;
+    let dt = dtRaw * this.timeScale;
     if (this.hitstop > 0) { dt = dtRaw * HITSTOP_SCALE; this.hitstop = Math.max(0, this.hitstop - dtRaw); }
 
     this.rs.runTime += dtRaw;
@@ -1359,6 +1363,7 @@ export class Battle extends Component {
           if (e.burnT > 0) { dot += e.burnDmg; e.burnT = Math.max(0, e.burnT - 0.5); }
           if (dot > 0) {
             e.hp -= dot;
+      this.waveDmgDealt += Math.min(dot);
             this.addDamageText(e.x, e.y - 10, dot, false, e.poisonT > 0 ? 'poison' : 'burn');
             if (e.hp <= 0) { this.killEnemy(e); continue; }
           }
@@ -1491,6 +1496,7 @@ export class Battle extends Component {
         if (thorn > 0) {
           const back = Math.round(6 * thorn);
           e.hp -= back;
+      this.waveDmgDealt += Math.min(back);
           this.addDamageText(e.x, e.y - 10, back, false);
           this.addVfx('core/spark/block-spark', e.x, e.y, 0.3, 1.2);
           if (e.hp <= 0) this.killEnemy(e);
@@ -1794,7 +1800,8 @@ export class Battle extends Component {
     // 战斗日志：每波一行（之后可在控制台 __logs() / 设置页导出）
     telemetryWaveEnd({
       wave: this.rs.wave, kills: this.rs.kills, lv: this.rs.lv, gold: this.rs.gold,
-      aliveMax: this.waveAliveMax, hp: this.rs.stats.hp, dmgTaken: this.waveDmg,
+      aliveMax: this.waveAliveMax, hp: this.rs.stats.hp,
+      dmgTaken: this.waveDmg, dmgDealt: Math.round(this.waveDmgDealt),
     });
     this.waveEnding = true;
     this.waveEndT = 0;
