@@ -258,6 +258,20 @@ export class RunState {
    *    —— 强化模块 _2 一次占 2 份，旧写法会让 max=2 的模块被装到 3 份。
    * 所有校验都在**改动任何状态之前**完成；失败抛错且不产生副作用。
    */
+  /**
+   * 主动丢弃一个技能（用户 2026-10-30 要求）。
+   * 规则：**至少保留 1 个技能**；被丢技能上的黑科技全部退回背包，不损失。
+   */
+  dropSkill(slot: number): { ok: boolean; why: string; back?: string[] } {
+    const sk = this.skills[slot];
+    if (!sk) return { ok: false, why: '技能槽越界' };
+    if (this.skills.length <= 1) return { ok: false, why: '至少要保留 1 个技能' };
+    const back = sk.mods.slice();
+    this.modsBag.push(...back);
+    this.skills.splice(slot, 1);
+    return { ok: true, why: '', back };
+  }
+
   installAt(slot: number, target: number, mid: string): { replaced: string | null } {
     const sk = this.skills[slot];
     if (!sk) throw new Error('技能槽越界：' + slot);

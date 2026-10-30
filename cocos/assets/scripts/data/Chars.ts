@@ -41,7 +41,7 @@ export const CHARS: CharDef[] = [
     stats: { power: 0.9, maxhp: 57, area: 1.15 },
   },
   {
-    id: 'zealot', name: '狂信者', unit: 'rider',
+    id: 'zealot', name: '狂信者', unit: 'boss-paladin',
     pos: '暴击率 +12%，暴击伤害 +40%', neg: '受到伤害 +15%',
     start: 'holybolt',
     stats: { power: 1.05, crit: 0.17, critdmg: 1.9, maxhp: 54, armor: -0.15 },

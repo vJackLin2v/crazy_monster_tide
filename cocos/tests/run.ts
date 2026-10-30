@@ -552,6 +552,20 @@ console.log('\n== 5k. 商店与奖励的原子性（B12） ==');
   }
 }
 
+console.log('\n== 5l. 主动丢弃技能（至少保留 1 个） ==');
+{
+  const rs = new RunState('knight', 4242);
+  rs.skills[0].mods = ['multi', 'pierce'];
+  rs.skills.push({ id: 'ice_spear', lvl: 1, mods: [] } as never);
+  const r1 = rs.dropSkill(0);
+  ok(r1.ok && rs.skills.length === 1, '丢弃技能成功（2 → 1）');
+  ok(rs.modsBag.filter(m => m === 'multi' || m === 'pierce').length === 2, '被丢技能的 2 个黑科技退回背包');
+  const r2 = rs.dropSkill(0);
+  ok(!r2.ok && rs.skills.length === 1, '只剩 1 个技能时拒绝丢弃');
+  const r3 = rs.dropSkill(9);
+  ok(!r3.ok, '越界索引拒绝丢弃');
+}
+
 console.log('\n== 6. 确定性与波次规则 ==');
 {
   const a = new RunState('mage', 4242), b = new RunState('mage', 4242);

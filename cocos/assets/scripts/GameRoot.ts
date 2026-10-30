@@ -922,7 +922,28 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       itemDetails,
       this.pauseTab,
       (i) => { this.pauseTab = i; },
-      modDetails);
+      modDetails,
+      (si) => this.askDropSkill(si));
+  }
+
+  /** 丢弃技能：二次确认 → 模型层删除（模块退回背包，至少保留 1 个技能） */
+  private askDropSkill(si: number) {
+    const rs = this.battle.rs;
+    const sk = rs.skills[si];
+    if (!sk) return;
+    if (rs.skills.length <= 1) return;
+    const name = SKILLS[sk.id] ? SKILLS[sk.id].name : sk.id;
+    const n = sk.mods.length;
+    this.curModal = buildConfirm(this.uiRoot, '丢弃技能',
+      '丢掉「' + name + '」？' + (n ? '它上面的 ' + n + ' 个黑科技会退回背包。' : '它上面没有黑科技。'),
+      '丢弃',
+      () => { this.closeModal(); this.showPause(); },
+      () => {
+        const r = rs.dropSkill(si);
+        console.log('[Drop] ' + name + ' → ' + (r.ok ? 'ok' : r.why));
+        this.closeModal();
+        this.showPause();
+      });
   }
 
   private confirmQuit() {

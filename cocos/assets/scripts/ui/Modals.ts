@@ -111,13 +111,18 @@ export function buildLevelUp(parent: Node, lv: number, cards: CardData[],
     // 具体数值（有就显示，没有就不占位）
     let cursor = CH / 2 - 50;
     if (c.nums) {
-      const h = c.nums.length > 18 ? 26 : 14;
-      text(card, txtX, cursor - 6, c.nums, { size: 12, color: COL.cream, align: 'left', width: txtW, h, bold: true, outline: true });
-      cursor -= h + 2;
+      // ⚠️ 之前用 "长度>18 才给 26"，17 个字符的长句会折成两行却被 14 高的框裁掉（用户截图）
+      const nLines = Math.max(1, Math.ceil(c.nums.length / charsPerLine(txtW, 12)));
+      const h = nLines * 17;
+      text(card, txtX, cursor - h / 2, clampLines(c.nums, txtW, 12, 2),
+        { size: 12, color: COL.cream, align: 'left', width: txtW, h, bold: true, outline: true });
+      cursor -= h + 4;
     }
-    // 效果描述：吃掉剩余高度（字号 11，符合"关键说明 ≥11px"；给足 h 不被裁）
-    const descH = Math.max(24, cursor - (-CH / 2 + (c.meta ? 28 : 10)));
-    text(card, txtX, cursor - descH / 2, c.desc,
+    // 效果描述：吃掉剩余高度，并按可用行数**截断**（宁可省略号，也不许压到卡底/被 meta 盖住）
+    const descBottom = -CH / 2 + (c.meta ? 30 : 12);
+    const descH = Math.max(18, cursor - descBottom);
+    const descLines = Math.max(1, Math.floor(descH / 17));
+    text(card, txtX, cursor - descH / 2, clampLines(c.desc, txtW, 11, descLines),
       { size: 11, color: COL.dim, align: 'left', width: txtW, h: descH });
 
     // 叠加 / 上限状态（10px：属于元数据，不承担关键说明）
@@ -138,6 +143,19 @@ export function buildLevelUp(parent: Node, lv: number, cards: CardData[],
   const sk = button(box, 0, -PH / 2 + 30, 300, 44, '跳过（+8 金币）', { size: 15 });
   onTap(sk.node, onSkip);
   return root;
+}
+
+
+/** 估算一行能放多少字符（中文按 1 个 size 宽，英文/数字按 0.55 个） */
+function charsPerLine(width: number, size: number): number {
+  return Math.max(4, Math.floor(width / (size * 0.92)));
+}
+/** 把文本截断到最多 maxLines 行，超出补省略号 */
+function clampLines(str: string, width: number, size: number, maxLines: number): string {
+  const per = charsPerLine(width, size);
+  const max = per * Math.max(1, maxLines);
+  if (str.length <= max) return str;
+  return str.slice(0, Math.max(1, max - 1)) + '…';
 }
 
 // ---------- 二次确认 ----------
@@ -263,7 +281,8 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
       size: 14, color: s.sold ? COL.dim2 : COL.cream, align: 'left', width: 168, bold: true, outline: true,
     });
     // 11px × 2 行需要 33px 行高，给 36 才不会裁掉第二行末尾（用户 2026-10-30 截图）
-    text(row, -106, nameY - 27, s.sub, { size: 11, color: COL.dim, align: 'left', width: 150, h: 36 });
+    text(row, -106, nameY - 27, clampLines(s.sub, 150, 11, 2),
+      { size: 11, color: COL.dim, align: 'left', width: 150, h: 36 });
     if (s.owned && s.owned > 0 && !s.sold) {
       chip(row, 64, nameY, '持有×' + s.owned, { color: COL.accent, size: 10 });
     }
@@ -390,7 +409,8 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
                                  itemDetails?: ItemDetailView[],
                                  startTab = 0,
                                  onTab?: (i: number) => void,
-                                 modDetails?: ModDetailView[]): Node {
+                                 modDetails?: ModDetailView[],
+                                 onDropSkill?: (si: number) => void): Node {
   const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
   const A = (x: number, y: number) => at(VW, VH, x, y);
   const root = mkNode(parent, 'scr-build', VW, VH);
@@ -527,6 +547,13 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
       text(card, -W / 2 + 32, 10, s.name + '  Lv.' + s.lvl, { size: 12, color: COL.cream, align: 'left', width: 200, bold: true, outline: true });
       text(card, -W / 2 + 32, -9, s.summary, { size: 10, color: COL.dim, align: 'left', width: W - 60 });
       text(card, W / 2 - 18, 0, open ? '▼' : '▶', { size: 10, color: COL.accent, align: 'right', width: 16 });
+      // 主动丢弃（至少保留 1 个技能时才有这个入口）
+      if (onDropSkill && (skillDetails?.length ?? 0) > 1) {
+        const del = mkNode(card, 'dropHit', 52, 44, -W / 2 + 118, 0);
+        const db = panel(del, 0, 0, 52, 24, { art: 'btn_danger' });
+        text(db, 0, 1, '丢弃', { size: 10, color: COL.cream, width: 48, bold: true, outline: false });
+        onTap(del, () => onDropSkill(i));
+      }
       onTap(card, () => { skillOpen = open ? -1 : i; renderSkills(); });
       y -= rowH + 4;
       if (open) {
