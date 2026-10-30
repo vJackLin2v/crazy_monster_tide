@@ -86,17 +86,13 @@ Write-Host ('[3/3] done: ' + $out) -ForegroundColor Green
 Write-Host '   In WeChat DevTools press Compile (Ctrl+B). No re-import needed.'
 
 if ($Open) {
-  if (-not $DevToolsCli) {
-    $cands = @(
-      'C:\Program Files (x86)\Tencent\wechat\cli.bat',
-      'C:\Program Files\Tencent\wechat\cli.bat'
-    )
-    $DevToolsCli = $cands | Where-Object { Test-Path $_ } | Select-Object -First 1
-  }
-  if ($DevToolsCli -and (Test-Path $DevToolsCli)) {
-    Write-Host 'opening WeChat DevTools ...' -ForegroundColor Cyan
-    & $DevToolsCli open --project $out
+  # Delegate to tools/devtools.ps1 (that file carries a UTF-8 BOM so it can hold the CJK CLI path;
+  # this file must stay ASCII-only or PowerShell 5.1 mangles the text).
+  $helper = Join-Path $ProjectRoot 'tools\devtools.ps1'
+  if (Test-Path $helper) {
+    Write-Host 'refreshing WeChat DevTools preview ...' -ForegroundColor Cyan
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $helper -Open
   } else {
-    Write-Host '   [hint] WeChat DevTools CLI not found; press Compile manually in DevTools.' -ForegroundColor Yellow
+    Write-Host '   [hint] tools/devtools.ps1 missing; open the project manually.' -ForegroundColor Yellow
   }
 }
