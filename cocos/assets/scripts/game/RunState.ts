@@ -3,7 +3,7 @@ import { balance } from '../core/Balance';
 import { RUN, SHOP_SLOTS, EXP_BASE, EXP_PER_LEVEL, isBossWave, eliteCount } from '../core/Const';
 import { CHARS } from '../data/Chars';
 import { ITEMS } from '../data/Items';
-import { MODULES, MERGE_COST, baseOf, modPower } from '../data/Modules';
+import { MODULES, MERGE_COST, baseOf, modPower, nextLevelId } from '../data/Modules';
 import { SKILLS, SKILL_IDS } from '../data/Skills';
 import { ATTRS } from '../data/Attrs';
 import { enemyPool, ENEMIES, bossUnitFor } from '../data/Enemies';
@@ -190,6 +190,7 @@ export class RunState {
 
   /** 还能合成几次：3 个同名**基础**模块 = 1 次（强化版不再参与合成，封顶 ×2） */
   mergeReady(baseId: string): number {
+    // 只数**完全同名同级**的副本：巨大 与 巨大_2 分开计数，所以不能混着合
     let plain = 0;
     for (const x of this.modsBag) if (x === baseId) plain++;
     for (const sk of this.skills) for (const x of sk.mods) if (x === baseId) plain++;
@@ -214,7 +215,7 @@ export class RunState {
       }
     }
     if (need > 0) return false;
-    this.modsBag.push(baseId + '_2');
+    this.modsBag.push(nextLevelId(baseId));   // 3 个 N 级 -> 1 个 N+1 级（可无限）
     return true;
   }
 

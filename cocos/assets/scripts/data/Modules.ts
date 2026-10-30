@@ -38,9 +38,16 @@ export const MODULE_IDS = Object.keys(MODULES);
  */
 export const TIER2_EFFECT = 1.6;
 
-/** 该模块提供几"份"**实际效果**（普通 1，强化 1.6） */
+/** 等级：无后缀 = 1，_2 = 2，_3 = 3 ……（无限模式可继续往上合） */
+export function levelOf(id: string): number {
+  const m = /_(\d+)$/.exec(id);
+  return m ? Math.max(1, parseInt(m[1], 10)) : 1;
+}
+
+/** 每级 +0.6 份效果（Ⅱ=1.6、Ⅲ=2.2、Ⅳ=2.8 …），线性不爆炸 */
+export const EFFECT_PER_LEVEL = 0.6;
 export function modEffect(id: string): number {
-  return id.endsWith('_2') ? TIER2_EFFECT : 1;
+  return 1 + EFFECT_PER_LEVEL * (levelOf(id) - 1);
 }
 
 /**
@@ -124,12 +131,14 @@ for (const id of MODULE_IDS) {
 
 /** 基础 id（`multi_2` → `multi`） */
 export function baseOf(id: string): string {
-  return id.endsWith('_2') ? id.slice(0, -2) : id;
+  return id.replace(/_(\d+)$/, '');
 }
-export function isMerged(id: string): boolean { return id.endsWith('_2'); }
+export function isMerged(id: string): boolean { return levelOf(id) > 1; }
+/** 下一级 id：multi -> multi_2，multi_3 -> multi_4 */
+export function nextLevelId(id: string): string { return baseOf(id) + '_' + (levelOf(id) + 1); }
 /** 一次模块条目算几份效果：普通 1，强化 2 */
-export function modPower(id: string): number { return isMerged(id) ? 2 : 1; }
+export function modPower(id: string): number { return levelOf(id) > 1 ? 2 : 1; }
 /** 统一定义查询：基础表 + 强化表 */
 export function moduleDef(id: string): ModuleDef | undefined {
-  return MODULES[id] ?? MERGED_MODULES[id];
+  return MODULES[baseOf(id)] ?? MERGED_MODULES[id];
 }

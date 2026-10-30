@@ -597,6 +597,19 @@ console.log('\n== 5m. 高风险构筑组合（阶段3 数学边界） ==');
   const beforeMods = rs3.modsBag.length;
   const inst = rs3.installAt(0, 0, 'multi');
   ok(inst.replaced === null && rs3.modsBag.length === beforeMods - 1, '安装消耗背包 1 份，不凭空产生');
+  // 分级合成：3×L1 -> L2；3×L2 -> L3；2×L1 + 1×L2 不能合
+  const rsM = new RunState('knight', 2024);
+  rsM.modsBag.push('giant', 'giant', 'giant');
+  ok(rsM.mergeModule('giant') && rsM.modsBag.includes('giant_2'), '3 个一级 -> 二级');
+  rsM.modsBag.length = 0;
+  rsM.modsBag.push('giant_2', 'giant_2', 'giant_2');
+  ok(rsM.mergeModule('giant_2') && rsM.modsBag.includes('giant_3'), '3 个二级 -> 三级（可继续往上）');
+  rsM.modsBag.length = 0;
+  rsM.modsBag.push('giant', 'giant', 'giant_2');
+  ok(!rsM.mergeModule('giant'), '2 个一级 + 1 个二级不能合成');
+  ok(Math.abs(modEffect('giant_3') - 2.2) < 1e-9, '三级效果 = 1 + 0.6x2 = 2.2');
+  ok(modPower('giant_3') === 2, '三级容量仍算 2 份');
+
   const dropped = rs3.dropSkill(0);
   ok(!dropped.ok || dropped.back!.length === 1, '丢弃技能时模块原样退回');
 }

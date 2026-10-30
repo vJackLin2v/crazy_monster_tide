@@ -32,7 +32,7 @@ import { CHARS } from './data/Chars';
 import { SKILLS, SKILL_ART } from './data/Skills';
 import { Assets, preloadIcons } from './engine/Assets';
 import { Sfx } from './engine/Audio';
-import { MODULES, MODULE_IDS, MODULE_NUMS, moduleDef, baseOf, isMerged } from './data/Modules';
+import { MODULES, MODULE_IDS, MODULE_NUMS, moduleDef, baseOf, isMerged, levelOf, nextLevelId } from './data/Modules';
 import { ITEMS, itemNumbers } from './data/Items';
 import { ITEM_ICON, MODULE_ICON, ATTR_ICON } from './data/IconMap';
 import { ATTRS } from './data/Attrs';
@@ -400,7 +400,11 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
 
   private modName(id: string): string {
     const d = moduleDef(id);
-    return d ? d.name : id;
+    const base = d ? d.name : baseOf(id);
+    const lv = levelOf(id);
+    // 等级用罗马数字后缀显示：巨大 / 巨大 Ⅱ / 巨大 Ⅲ / 巨大 Ⅳ …
+    const R = ['', '', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ', 'Ⅶ', 'Ⅷ', 'Ⅸ', 'Ⅹ'];
+    return lv > 1 ? base + ' ' + (R[lv] ?? lv) : base;
   }
   private modIcon(id: string): string | undefined {
     return MODULE_ICON[baseOf(id)];
@@ -443,14 +447,29 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       })(),
       // 只列「max >= 3」的模块：max 1~2 的模块永远凑不到 3 个同名，
       // 列出来只会显示"还差 1 个"却永远凑不齐（B4 的体验问题）
-      merges: MODULE_IDS.filter(id => MODULES[id].max >= 3).map(id => ({
-        baseId: id,
-        name: MODULES[id].name,
-        count: rs.totalMods(id),
-        times: rs.mergeReady(id),
-        resultName: MODULES[id].name + 'Ⅱ',
-        resultIcon: MODULE_ICON[id],
-      })),
+      // 用户 2026-10-30：等级要**分开列出且可无限往上合**。
+      // 这里枚举"背包 + 已装"里实际出现的所有等级 id（giant / giant_2 / giant_3 …），
+      // 每行只统计同级数量，因此 3 个 Ⅱ 会单独出现并合成 Ⅲ。
+      merges: (() => {
+        const seen = new Map<string, number>();
+        for (const x of rs.modsBag) seen.set(x, (seen.get(x) ?? 0) + 1);
+        for (const sk of rs.skills) for (const x of sk.mods) seen.set(x, (seen.get(x) ?? 0) + 1);
+        const out: { baseId: string; name: string; count: number; times: number; resultName: string; resultIcon?: string }[] = [];
+        for (const [id, count] of seen) {
+          if (count < 3) continue;                       // 不够 3 个不显示（避免永远凑不齐的无效项）
+          const lv = levelOf(id);
+          out.push({
+            baseId: id,
+            name: this.modName(id),
+            count,
+            times: rs.mergeReady(id),
+            resultName: this.modName(nextLevelId(id)),
+            resultIcon: MODULE_ICON[baseOf(id)],
+          });
+          void lv;
+        }
+        return out.sort((a, b) => a.name.localeCompare(b.name));
+      })(),
       compatible: (si, modId) => {
         const sk = rs.skills[si];
         if (!sk) return false;
