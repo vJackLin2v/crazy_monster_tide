@@ -601,15 +601,19 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
     const taken = this.battle.rs.attrTaken[r.id] ?? 0;
     // ⚠️ 修复 "+-92%"：ATTRS[id].fmt 的入参是**绝对值**（power 会把 v 当 1.08 算 +8%）。
     //    直接喂 step(0.08) 会被算成 (0.08-1)*100 = -92%。这里用"显示值之差"求增量。
+    // 用"把格式化模板里的数字换成增量"的方式，避免拼出 "+7+%"（模板里本来带 + 号）
     const stepTxt = a ? (() => {
       const numOf = (s: string) => { const m = s.match(/-?\d+(?:\.\d+)?/); return m ? parseFloat(m[0]) : 0; };
       const shown0 = a.fmt(a.base);
       const shown1 = a.fmt(a.base + a.step);
-      const suffix = shown0.replace(/-?\d+(?:\.\d+)?/, '').trim();
-      const dv = numOf(shown1) - numOf(shown0);
-      const sign = dv >= 0 ? '+' : '';
-      const unit = suffix ? (suffix.startsWith('%') ? suffix : ' ' + suffix) : '';
-      return sign + (Math.round(dv * 10) / 10) + unit;
+      const dv = Math.round((numOf(shown1) - numOf(shown0)) * 10) / 10;
+      // 模板本身就带符号（如 "+8%"），所以**只替换数字**，不要再补一个 '+'（否则变成 "++8%"）
+      const abs = String(Math.abs(dv));
+      if (/-?\d+(?:\.\d+)?/.test(shown1)) {
+        const out = shown1.replace(/-?\d+(?:\.\d+)?/, abs);
+        return dv < 0 ? out.replace(/^\+/, '-') : out;
+      }
+      return (dv >= 0 ? '+' : '-') + abs;
     })() : '';
     return {
       kind: 'attr', title: a ? a.name : r.id, sub: '属性',
