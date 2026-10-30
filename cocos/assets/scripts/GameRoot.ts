@@ -922,16 +922,22 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       };
     });
     // 道具页详情（M42）：图标 + 名称 + 展开后的效果/类型
-    const itemDetails = rs.items.map(i => {
-      const it = ITEMS[i.id];
-      return {
-        name: it ? it.name : i.id,
-        icon: ITEM_ICON[i.id],
-        desc: it ? it.desc : '',
-        nums: it ? itemNumbers(it, i.id) : '',
-        note: it ? (it.tier === 2 ? '高级道具 · 精英 / BOSS 掉落' : '普通道具 · 商店或掉落获取') : '',
-      };
-    });
+    // 同名道具**合并成一行并计数**（之前每个都是 ×1）
+    const itemDetails = (() => {
+      const cnt = new Map<string, number>();
+      for (const i of rs.items) cnt.set(i.id, (cnt.get(i.id) ?? 0) + 1);
+      return Array.from(cnt.entries()).map(([id, count]) => {
+        const it = ITEMS[id];
+        return {
+          id, count,
+          name: it ? it.name : id,
+          icon: ITEM_ICON[id],
+          desc: it ? it.desc : '',
+          nums: it ? itemNumbers(it, id) : '',
+          note: it ? (it.tier === 2 ? '高级道具 · 精英 / BOSS 掉落' : '普通道具 · 商店或掉落获取') : '',
+        };
+      });
+    })();
     // 黑科技页的结构化数据：已装（按技能逐个列）+ 背包（按同名合并计数）
     const modDetails = (() => {
       const out: { name: string; icon?: string; count: number; desc: string; installed: boolean }[] = [];

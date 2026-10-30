@@ -610,11 +610,21 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
     const viewH = Math.max(80, viewTop - viewBottom);
     const cy = (viewTop + viewBottom) / 2;
     const contentH = Math.max(viewH, itemDetails.length * (ROW_H + 4) + 10);
-    const sc = makeScroll(itemRoot, 0, cy, VW - 8, viewH, contentH);
+    // 与黑科技/属性页一致：手动裁剪，底部留 40px 不给按钮带
+    const bands: { n: Node; y: number; h: number }[] = [];
+    const baseY = viewH / 2 - contentH / 2;
+    const visibleAt = (b: { y: number; h: number }, off: number) => {
+      const y = b.y + baseY + off;
+      return (y + b.h / 2 <= viewH / 2 - 2) && (y - b.h / 2 >= -viewH / 2 + 40);
+    };
+    const sc = makeScroll(itemRoot, 0, cy, VW - 8, viewH, contentH, (off) => {
+      for (const b of bands) b.n.active = visibleAt(b, off);
+    });
     const topY = contentH / 2 - ROW_H / 2 - 2;
     itemDetails.forEach((it, i) => {
       const y = topY - i * (ROW_H + 4);
       const row = panel(sc.content, 0, y, W, ROW_H, { bg: COL.bg3, line: COL.line2, radius: R.s, shadow: false });
+      bands.push({ n: row, y, h: ROW_H });
       if (it.icon) {
         const ic = mkNode(row, 'ic', 22, 22, -W / 2 + 18, 0);
         const isp = ic.addComponent(Sprite);
@@ -628,8 +638,9 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
       }
       text(row, -W / 2 + 36, 8, it.name, { size: 12, color: COL.cream, align: 'left', width: W - 120, bold: true, outline: true });
       text(row, -W / 2 + 36, -10, it.nums || it.desc, { size: 10, color: COL.dim, align: 'left', width: W - 90, outline: false });
-      if (i >= 0) text(row, W / 2 - 10, 0, '×' + ((it as unknown as { count?: number }).count ?? 1), { size: 11, color: COL.accent, align: 'right', width: 50, bold: true, outline: false });
+      if (it.count > 1) text(row, W / 2 - 10, 0, '×' + it.count, { size: 11, color: COL.accent, align: 'right', width: 50, bold: true, outline: false });
     });
+    for (const b of bands) b.n.active = visibleAt(b, 0);
   }
 
   // ── 黑科技页：结构化列表（图标 + 名称/数量 + 效果），**已装与背包分开** ──
