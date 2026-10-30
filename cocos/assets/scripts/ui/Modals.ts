@@ -208,6 +208,26 @@ const RARITY_COL = {
 
 const KIND_ICON: Record<string, string> = { item: '🛡', module: '⛓', heal: '＋', attr: '★' };
 
+/** 金币图标（14px）：价格 chip / 刷新按钮都用它，替代之前的"◆"棱形字符 */
+function coinGlyph(parent: Node, x: number, y: number, size = 13): Node {
+  const n = mkNode(parent, 'coin', size, size, x, y);
+  const sp = n.addComponent(Sprite);
+  sp.sizeMode = Sprite.SizeMode.CUSTOM; sp.trim = false;
+  const f = iconFrame('ui-gold.png');
+  if (f) sp.spriteFrame = f;
+  else void loadIcon('ui-gold.png').then(() => { const g = iconFrame('ui-gold.png'); if (g && sp.isValid) sp.spriteFrame = g; });
+  return n;
+}
+
+/** 价格 chip：金币图标 + 数字（不再用 "◆ 20" 这种字符占位） */
+function priceChip(parent: Node, x: number, y: number, price: number, color: Color): Node {
+  const w = Math.max(52, String(price).length * 9 + 40);
+  const c = panel(parent, x, y, w, 24, { bg: COL.bg3, line: color, radius: 3, shadow: false });
+  coinGlyph(c, -w / 2 + 12, 0, 13);
+  text(c, 10, 1, String(price), { size: 12, color, width: w - 30, align: 'center', bold: true, outline: false });
+  return c;
+}
+
 /** 10. 波间商店 —— 规格 §2.8：竖向 4 行，买完置灰不消失 */
 export function buildShop(parent: Node, wave: number, gold: number, slots: ShopSlotView[],
                           onBuy: (i: number) => void, onLock: (i: number) => void,
@@ -219,10 +239,10 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
   const S = safeTop(), B = safeBottom();
   const root = screen(parent, 'scr-shop', COL.bg1);
 
-  // ── 标题条（整条像素面板）+ 右侧金币 ──
+  // ── 标题条（整条像素面板）+ **左侧金币**（右侧会被微信胶囊/内容压住，用户 2026-10-30）──
   const header = screenHeader(root, VW, S, '商店');
   const hw = VW / 2;
-  const coin = mkNode(header, 'coin', 17, 17, hw - 96, 0);
+  const coin = mkNode(header, 'coin', 17, 17, -hw + 24, 0);
   const csp = coin.addComponent(Sprite);
   csp.sizeMode = Sprite.SizeMode.CUSTOM; csp.trim = false;
   const cfi = iconFrame('ui-gold.png');
@@ -231,7 +251,7 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
     const f2 = iconFrame('ui-gold.png');
     if (f2 && csp.isValid) csp.spriteFrame = f2;
   });
-  text(header, hw - 10, 1, String(gold), { size: 15, color: COL.cream, align: 'right', width: 76, bold: true, outline: true });
+  text(header, -hw + 38, 1, String(gold), { size: 15, color: COL.cream, align: 'left', width: 96, bold: true, outline: true });
 
   // ── 已有道具：先算它的位置（贴底），货架的高度再按剩余空间自适应 ──
   const btnY = -VH / 2 + B + 25;
@@ -291,7 +311,7 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
       text(row, 128, 0, '已购买', { size: 12, color: COL.red, align: 'right', width: 70, bold: true, outline: true });
     } else {
       const afford = gold >= s.price;
-      chip(row, 88, 0, '◆ ' + s.price, { color: afford ? COL.accent : COL.red, size: 12 });
+      priceChip(row, 88, 0, s.price, afford ? COL.accent : COL.red);
       // 锁定：视觉 32，热区 44（微信硬要求）
       const lockArt: UiArtName = s.locked ? 'btn_primary' : 'btn';
       const lk = panel(row, 144, 0, 32, 32, { art: lockArt });
@@ -356,7 +376,12 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
   }
 
   // 底部：刷新(112) + 下一波(216)
-  const rf = button(root, A(12 + 56, 0).x, btnY, 112, 50, '刷新 ◆' + rerollCost, { size: 14 });
+  const rf = button(root, A(12 + 56, 0).x, btnY, 112, 50, '刷新', { size: 14 });
+  // 布局：文字靠左、图标居中偏右、数字靠右（之前图标压在"刷新"上）
+  const rfLabel = rf.node.getComponentInChildren(Label);
+  if (rfLabel) { rfLabel.node.setPosition(-24, 1); (rfLabel.node.getComponent(UITransform))?.setContentSize(64, 20); }
+  coinGlyph(rf.node, 12, 1, 14);
+  text(rf.node, 30, 1, String(rerollCost), { size: 14, color: COL.cream, width: 34, align: 'left', bold: true, outline: true });
   onTap(rf.node, onReroll);
   const nx = button(root, A(132 + 108, 0).x, btnY, 216, 50, nextLabel || '下一波', { primary: true, size: 17 });
   onTap(nx.node, onNext);
