@@ -657,11 +657,14 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
     // 抽屉里的 Mask 裁剪不稳（实测会漏出半行到底部按钮上），这里**手动裁剪**：
     // 每次滚动回调只把"完整落在视口内"的行设为可见。
     const bands: { n: Node; y: number; h: number }[] = [];
-    const sc = makeScroll(modHost, 0, 0, VW - 8, VIEW_H, contentH, () => {
-      // 只显示**完整落在视口内**的行（留 2px 余量），半截行直接隐藏，否则会漏到按钮带上
-      for (const b of bands) {
-        b.n.active = (b.y + b.h / 2 <= VIEW_H / 2 - 2) && (b.y - b.h / 2 >= -VIEW_H / 2 + 2);
-      }
+    // 行坐标是 content 局部坐标；要先换算到视口坐标：baseY + off
+    const baseY = VIEW_H / 2 - contentH / 2;
+    const visibleAt = (b: { y: number; h: number }, off: number) => {
+      const y = b.y + baseY + off;
+      return (y + b.h / 2 <= VIEW_H / 2 - 2) && (y - b.h / 2 >= -VIEW_H / 2 + 40);
+    };
+    const sc = makeScroll(modHost, 0, 0, VW - 8, VIEW_H, contentH, (off) => {
+      for (const b of bands) b.n.active = visibleAt(b, off);
     });
     modScrollNode = sc.view;
     let cursor = contentH / 2 - 4;
@@ -697,6 +700,8 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
       }
       cursor -= h;
     }
+    // 创建完后先按 off=0 跑一次判定（否则所有行默认 active，会有一截露在按钮带上）
+    for (const b of bands) b.n.active = visibleAt(b, 0);
   }
 
   function refresh() {
@@ -736,19 +741,6 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
   //    左右边距 12，按钮间距 8，可用宽 336：
   //      两个按钮：96 + 8 + 232 = 336
   //      三个按钮：96 + 8 + 96 + 8 + 128 = 336
-  // 底部按钮带垫一块**不透明底板**：滚动页的溢出内容会被它挡住（虚拟化仍会漏半行）
-  {
-    const plateY = -VH / 2 + B + 60;      // 覆盖按钮带并往上多 40px
-    const plate = mkNode(drawer, 'btnPlate', VW, 128, 0, plateY);
-    const pg = plate.addComponent(Graphics);
-    pg.fillColor = COL.bg2;
-    pg.rect(-VW / 2, -64, VW, 128);
-    pg.fill();
-  }
-
-  // 底部按钮带垫不透明底板：滚动内容即使漏出一行也会被盖住（用户截图：主菜单那行被压）
-  panel(drawer, 0, -VH / 2 + B + 28, VW, 62, { art: 'panel' });
-
   const by = -VH / 2 + B + 0;
   const m = button(root, A(12 + 48, 0).x, by + 25, 96, 50, '主菜单', { size: 14 });
   onTap(m.node, onMenu);
