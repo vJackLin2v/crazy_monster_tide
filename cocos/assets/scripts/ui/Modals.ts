@@ -8,6 +8,7 @@ import { panel, text, title, button, onTap, mkNode, mask, screen, chip, slot, pa
 import { COL, FS, R, BORDER } from './Tokens';
 import { iconFrame, loadIcon } from '../engine/Assets';
 import { Sfx } from '../engine/Audio';
+import { makeScroll } from './ScrollView';
 import { safeTop, safeBottom } from './Safe';
 import type { UiArtName } from './Art';
 
@@ -655,34 +656,18 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
   const VIEW_BOTTOM = -VH / 2 + 120;   // 让列表停在按钮带更上方，配合底部底板彻底不重叠
   const VIEW_H = Math.max(40, VIEW_TOP - VIEW_BOTTOM);
   const VIEW_CY = (VIEW_TOP + VIEW_BOTTOM) / 2;
-  const modRoot = mkNode(drawer, 'modDetail', VW - 8, VIEW_H, 0, VIEW_CY);
-  modRoot.active = false;
-  const maskC = modRoot.addComponent(Mask);
-  maskC.type = Mask.Type.RECT;
-  // 滚动：不用 Mask（试过 RECT/GRAPHICS 都不裁剪），改成**虚拟化重绘**——
-  // 每次拖动只画视口内的行，天然不会画到按钮上（和图鉴/成就是用同一套思路）
-  let modOffset = 0;
-  let modMaxScroll = 0;
-  {
-    let dragFrom = 0, dragging = false;
-    modRoot.on(Node.EventType.TOUCH_START, () => { dragFrom = modOffset; dragging = true; }, modRoot);
-    modRoot.on(Node.EventType.TOUCH_MOVE, (e: EventTouch) => {
-      if (!dragging) return;
-      modOffset = Math.max(0, Math.min(modMaxScroll, dragFrom + e.getUIDelta().y));
-      renderMods(true);
-    }, modRoot);
-    modRoot.on(Node.EventType.TOUCH_END, () => { dragging = false; }, modRoot);
-    modRoot.on(Node.EventType.TOUCH_CANCEL, () => { dragging = false; }, modRoot);
-  }
-  /** 黑科技页：平铺列表 + 虚拟化渲染（只画视口内的行） */
-  function renderMods(keepOffset = false) {
-    for (const c of modRoot.children.slice()) c.destroy();
-    if (!keepOffset) modOffset = 0;
+  const modHost = mkNode(drawer, 'modDetail', VW - 8, VIEW_H, 0, VIEW_CY);
+  modHost.active = false;
+  // 本页滚动的宿主（真正的滚动区由 makeScroll 创建在 modHost 内）
+  let modScrollNode: Node | null = null;
+  /** 黑科技页：全量渲染进滚动内容（裁切交给 Mask，拖动交给全局 input） */
+  function renderMods() {
+    if (modScrollNode && modScrollNode.isValid) modScrollNode.destroy();
+    for (const c of modHost.children.slice()) c.destroy();
     const W = VW - 32;
     const all = modDetails ?? [];
     if (!all.length) {
-      modMaxScroll = 0;
-      text(modRoot, 0, 0, '（还没有黑科技：升级三选一 / 商店可以获得）',
+      text(modHost, 0, 0, '（还没有黑科技：升级三选一 / 商店可以获得）',
         { size: 11, color: COL.dim, align: 'center', width: W });
       return;
     }
@@ -697,25 +682,18 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
     pushSection('背包', all.filter(m => !m.installed));
 
     const HEAD_H = 24, ROW_H = 58, ROW_GAP = 4;   // 58 = 标题 16 + 描述两行 30 + 上下边距
-    const contentH = lines.reduce((s, l) => s + (l.kind === 'head' ? HEAD_H : ROW_H + ROW_GAP), 0);
-    modMaxScroll = Math.max(0, Math.ceil(contentH - VIEW_H + 6));
-    modOffset = Math.max(0, Math.min(modMaxScroll, modOffset));
-
-    // 视口顶部 → 第一条内容的局部 y（向上为正）
-    const top = VIEW_H / 2 - 4 + modOffset;
-    let cursor = top;
+    const contentH = Math.max(VIEW_H, lines.reduce((s, l) => s + (l.kind === 'head' ? HEAD_H : ROW_H + ROW_GAP), 0) + 8);
+    const sc = makeScroll(modHost, 0, 0, VW - 8, VIEW_H, contentH);
+    modScrollNode = sc.view;
+    let cursor = contentH / 2 - 4;
     for (const l of lines) {
       const h = l.kind === 'head' ? HEAD_H : ROW_H + ROW_GAP;
-      // 只画**完整落在视口内**的项：半截行会溢到下面的按钮带上（用户 2026-10-30 截图）
-      const bottom = cursor - h;
-      if (l.kind === 'row' && (bottom < -VIEW_H / 2 + 2 || cursor > VIEW_H / 2 - 2)) { cursor -= h; continue; }
-      if (l.kind === 'head' && (bottom < -VIEW_H / 2 + 2 || cursor > VIEW_H / 2 - 2)) { cursor -= h; continue; }
       if (l.kind === 'head') {
-        text(modRoot, -W / 2 + 4, cursor - 4, l.label,
+        text(sc.content, -W / 2 + 4, cursor - 4, l.label,
           { size: 11, color: COL.accent, align: 'left', width: W, bold: true, outline: false });
       } else {
         const m = l.m;
-        const card = panel(modRoot, 0, cursor - ROW_H / 2, W, ROW_H, {
+        const card = panel(sc.content, 0, cursor - ROW_H / 2, W, ROW_H, {
           bg: COL.bg3, line: COL.line2, radius: R.s, shadow: false,
         });
         if (m.icon) {
@@ -757,7 +735,7 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
     itemRoot.active = isItems;
     if (isItems) renderItems();
     const isMods = cur === 1 && !!modDetails;
-    modRoot.active = isMods;
+    modHost.active = isMods;
     if (isMods) renderMods();
     const lines = (isAttr || isSkills || isItems || isMods) ? [] : (pages[cur]?.lines ?? []);
     bodyLines.forEach((l, i) => {

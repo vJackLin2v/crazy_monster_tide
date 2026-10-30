@@ -1,15 +1,12 @@
 /**
- * 图鉴 / 成就（滚动版，2026-10-30 按真机反馈重做）
+ * 图鉴 / 成就（滚动版 v2，2026-10-30）
  *
- * 相对旧版：
- *   · 图鉴**不再分页**，改为上下拖动滚动（虚拟化：只渲染视口内的行，最多 70 条也不卡）
- *   · **未发现的条目显示「？？？」**（存档里记 seen），点击已发现的才弹详情卡
- *   · 点击任意已发现条目 → 弹出详情卡（图标 / 名称 / 描述 / 数值）
- *   · 怪物图标在格子里**居中**（旧版节点锚点偏移导致偏左上）
- *   · 成就页同样改为滚动
+ * 滚动实现换成 ui/ScrollView.ts（Mask 裁剪 + 全局 input 监听），
+ * 与《行囊守卫》同款做法——之前的节点 TOUCH_MOVE 在微信小游戏里收不到事件，所以"全都滚不动"。
  */
-import { Node, Label, Sprite, UITransform, view, EventTouch, LabelOutline, SpriteFrame } from 'cc';
+import { Node, Label, Sprite, UITransform, view, LabelOutline, SpriteFrame } from 'cc';
 import { panel, text, title, button, onTap, mkNode, mask, screen, screenHeader, paintPanel } from './UIKit';
+import { makeScroll } from './ScrollView';
 import { COL, FS, MIN_TAP } from './Tokens';
 import { safeTop, safeBottom } from './Safe';
 import type { SaveData } from '../game/Progress';
@@ -25,7 +22,6 @@ function at(vw: number, vh: number, x: number, y: number) {
   return { x: x - vw / 2, y: vh / 2 - y };
 }
 
-/** 敌人 id → 中文名 */
 const ENEMY_CN: Record<string, string> = {
   goblin: '哥布林', wolf: '野狼', eyebat: '眼球蝠', orc: '兽人', imp: '小恶魔',
   stingerbat: '刺蝠', hyena: '鬣狗', axolizard: '六角蜥', lizardhunter: '蜥蜴猎手',
@@ -34,7 +30,7 @@ const ENEMY_CN: Record<string, string> = {
 };
 
 export interface CodexEntry {
-  id: string;          // 存档里的发现键，如 'enemy:goblin'
+  id: string;
   name: string;
   sub: string;
   desc?: string;
@@ -85,7 +81,6 @@ export function codexData(tab: string): CodexEntry[] {
   });
 }
 
-/** 图标/立绘：**在格子内居中**（旧版用固定左上偏移，怪物偏了） */
 function drawEntryArt(parent: Node, entry: CodexEntry, box: number, known: boolean): void {
   for (const c of parent.children.slice()) c.destroy();
   if (!known) {
@@ -103,7 +98,7 @@ function drawEntryArt(parent: Node, entry: CodexEntry, box: number, known: boole
       const w = (f.rect && f.rect.width) || 32, h = (f.rect && f.rect.height) || 32;
       const k = Math.max(1, Math.floor(Math.min((box - 6) / h, (box - 6) / w)));
       if (ut) ut.setContentSize(w * k, h * k);
-      n.setPosition(0, 0, 0);      // ★ 居中
+      n.setPosition(0, 0, 0);
     };
     if (entry.portrait) void Assets.loadPortrait(entry.unit).then(apply).catch(() => { /* 忽略 */ });
     else void Assets.loadUnit(entry.unit).then(c => apply((c.idle && c.idle[0]) || null)).catch(() => { /* 忽略 */ });
@@ -119,7 +114,6 @@ function drawEntryArt(parent: Node, entry: CodexEntry, box: number, known: boole
   }
 }
 
-/** 详情卡：点击图鉴条目弹出 */
 function showDetail(parent: Node, vw: number, vh: number, e: CodexEntry, onClose: () => void): Node {
   const root = mkNode(parent, 'codexDetail', vw, vh);
   mask(root, vw, vh);
@@ -130,7 +124,6 @@ function showDetail(parent: Node, vw: number, vh: number, e: CodexEntry, onClose
   drawEntryArt(art, e, 64, true);
   title(box, H / 2 - 104, e.name, { width: W - 30 });
   text(box, 0, H / 2 - 130, e.sub, { size: 10, color: COL.dim, width: W - 30, outline: false });
-  // 描述单独占一块（原来和 sub 都在 y≈-6，两行字直接叠在一起）
   text(box, 0, -22, e.desc ?? '', { size: 11, color: COL.cream, width: W - 36, h: 68 });
   const btn = button(box, 0, -H / 2 + 32, 180, 44, '关闭', { primary: true, size: 15 });
   onTap(btn.node, onClose);
@@ -145,6 +138,7 @@ export function buildCodex(parent: Node, save: SaveData, onBack: () => void): No
   screenHeader(root, VW, S, '图鉴', 58);
 
   let tab = 0;
+  let detail: Node | null = null;
   const TAB_W = 78, TAB_GAP = 6, TAB_H = 34;
   const tabsW = TAB_W * 4 + TAB_GAP * 3;
   const tabY = S + 58 + 16 + TAB_H / 2;
@@ -156,45 +150,42 @@ export function buildCodex(parent: Node, save: SaveData, onBack: () => void): No
     const l = text(n, 0, 1, t.label, { size: 12, color: COL.cream, width: TAB_W - 10, bold: true, outline: true });
     tabNodes.push({ n, l, i });
     const hit = mkNode(root, 'tabHit', TAB_W, MIN_TAP, p.x + x, p.y);
-    onTap(hit, () => { tab = i; refresh(true); });
+    onTap(hit, () => { tab = i; refresh(); });
   });
 
-  // 滚动视口：从页签下面到返回键上面（**必须有真实尺寸**，否则收不到拖动）
-  // ⚠️ 全部用"从屏幕顶往下"的坐标，别再和局部 y 混用（第一版就是这么把视口放到屏幕外的）
   const viewTop = tabY + TAB_H / 2 + 12;
-  const viewBottom = VH - B - 60;                 // 返回键上方
+  const viewBottom = VH - B - 60;
   const viewH = Math.max(80, viewBottom - viewTop);
   const vc = A(VW / 2, viewTop + viewH / 2);
-  const viewport = mkNode(root, 'codexView', VW - 8, viewH, vc.x, vc.y);
   const ROW_H = 50, PITCH = 56, ROW_W = 336;
-  let offset = 0, maxOffset = 0, dragFrom = 0, dragging = false;
 
   const back = button(root, 0, -VH / 2 + B + 24, 336, 48, '返回', { size: FS.m });
   onTap(back.node, onBack);
 
-  function rows(): CodexEntry[] { return codexData(TABS[tab].key); }
+  let scrollNode: Node | null = null;
 
-  function refresh(reset = false): void {
-    if (reset) { offset = 0; }
-    tabNodes.forEach(t => {
-      paintTab(t.i === tab);
+  function paintTab(): void {
+    tabNodes.forEach(k => {
+      const sel = k.i === tab;
+      paintPanel(k.n, TAB_W, TAB_H, { art: sel ? 'btn_primary' : 'btn' });
+      k.l.color = sel ? COL.ink : COL.cream;
+      const ol = k.l.node.getComponent(LabelOutline);
+      if (ol) ol.enabled = !sel;
     });
-    for (const c of viewport.children.slice()) c.destroy();
-    const data = rows();
-    const contentH = Math.max(0, data.length * PITCH - (PITCH - ROW_H));
-    maxOffset = Math.max(0, contentH - viewH + 12);
-    offset = Math.max(0, Math.min(maxOffset, offset));
-    const first = Math.max(0, Math.floor(offset / PITCH));
-    const last = Math.min(data.length - 1, first + Math.max(1, Math.floor((viewH - 10) / PITCH)));
-    const topY = viewH / 2 - ROW_H / 2 - 4 + offset;   // 第 0 行的 y（随滚动上移）
-    for (let i = first; i <= last; i++) {
-      const e = data[i];
-      if (!e) continue;
+  }
+
+  function refresh(): void {
+    paintTab();
+    if (scrollNode && scrollNode.isValid) scrollNode.destroy();
+    const data = codexData(TABS[tab].key);
+    const contentH = Math.max(viewH, data.length * PITCH + 8);
+    const sc = makeScroll(root, vc.x, vc.y, VW - 8, viewH, contentH);
+    scrollNode = sc.view;
+    const topY = contentH / 2 - ROW_H / 2 - 4;
+    data.forEach((e, i) => {
       const known = (save.seen ?? []).includes(e.id);
       const y = topY - i * PITCH;
-      // 只画完整落在视口内的行（半截行会压到下方的返回键上）
-      if (y - ROW_H / 2 < -viewH / 2 + 2 || y + ROW_H / 2 > viewH / 2 - 2) continue;
-      const row = panel(viewport, 0, y, ROW_W, ROW_H, { art: known ? 'panel_soft' : 'well' });
+      const row = panel(sc.content, 0, y, ROW_W, ROW_H, { art: known ? 'panel_soft' : 'well' });
       const iconHost = mkNode(row, 'iconHost', 34, 34, -ROW_W / 2 + 25, 0);
       drawEntryArt(iconHost, e, 34, known);
       text(row, -ROW_W / 2 + 50, 8, known ? e.name : '？？？',
@@ -203,36 +194,15 @@ export function buildCodex(parent: Node, save: SaveData, onBack: () => void): No
         { size: 10, color: COL.dim, align: 'left', width: 250, outline: false });
       if (known) {
         text(row, ROW_W / 2 - 12, 0, '›', { size: 16, color: COL.accent, align: 'right', width: 20, outline: false });
-        onTap(row, () => { this_detail = showDetail(root, VW, VH, e, () => { if (this_detail) { this_detail.destroy(); this_detail = null; } }); });
+        onTap(row, () => {
+          if (detail && detail.isValid) detail.destroy();
+          detail = showDetail(root, VW, VH, e, () => { if (detail && detail.isValid) detail.destroy(); detail = null; });
+        });
       }
-    }
-  }
-  // 闭包变量（避免在 onTap 里引用未定义）
-  let this_detail: Node | null = null;
-
-  function paintTab(on: boolean): void {
-    const t = tabNodes.find(k => k.i === tab);
-    tabNodes.forEach(k => {
-      const sel = k.i === tab;
-      paintPanel(k.n, TAB_W, TAB_H, { art: sel ? 'btn_primary' : 'btn' });
-      k.l.color = sel ? COL.ink : COL.cream;
-      const ol = k.l.node.getComponent(LabelOutline);
-      if (ol) ol.enabled = !sel;
     });
-    void t; void on;
   }
 
-  // 拖动
-  viewport.on(Node.EventType.TOUCH_START, () => { dragging = true; dragFrom = offset; }, viewport);
-  viewport.on(Node.EventType.TOUCH_MOVE, (e: EventTouch) => {
-    if (!dragging) return;
-    offset = Math.max(0, Math.min(maxOffset, dragFrom + e.getUIDelta().y));
-    refresh();
-  }, viewport);
-  viewport.on(Node.EventType.TOUCH_END, () => { dragging = false; }, viewport);
-  viewport.on(Node.EventType.TOUCH_CANCEL, () => { dragging = false; }, viewport);
-
-  refresh(true);
+  refresh();
   return root;
 }
 
@@ -249,51 +219,30 @@ export function buildAchievements(parent: Node, save: SaveData, onBack: () => vo
   const viewBottom = VH - B - 60;
   const viewH = Math.max(80, viewBottom - viewTop);
   const vc = A(VW / 2, viewTop + viewH / 2);
-  const viewport = mkNode(root, 'achView', VW - 8, viewH, vc.x, vc.y);
   const ROW_H = 50, PITCH = 56, ROW_W = 336;
-  let offset = 0, maxOffset = 0, dragFrom = 0, dragging = false;
 
   const back = button(root, 0, -VH / 2 + B + 24, 336, 48, '返回', { size: FS.m });
   onTap(back.node, onBack);
 
-  function refresh(): void {
-    for (const c of viewport.children.slice()) c.destroy();
-    const views = achViews(save);
-    const contentH = Math.max(0, views.length * PITCH - (PITCH - ROW_H));
-    maxOffset = Math.max(0, contentH - viewH + 12);
-    offset = Math.max(0, Math.min(maxOffset, offset));
-    const first = Math.max(0, Math.floor(offset / PITCH));
-    const last = Math.min(views.length - 1, first + Math.ceil(viewH / PITCH) + 1);
-    const topY = viewH / 2 - ROW_H / 2 - 4 + offset;
-    for (let i = first; i <= last; i++) {
-      const v = views[i];
-      if (!v) continue;
-      const y = topY - i * PITCH;
-      if (y - ROW_H / 2 < -viewH / 2 + 2 || y + ROW_H / 2 > viewH / 2 - 2) continue;
-      const row = panel(viewport, 0, y, ROW_W, ROW_H, { art: v.done ? 'rim_gold' : 'panel_soft' });
-      text(row, -ROW_W / 2 + 12, 8, v.def.name,
-        { size: 13, color: v.done ? COL.accent : COL.cream, align: 'left', width: 200, bold: true, outline: true });
-      text(row, -ROW_W / 2 + 12, -11, v.def.desc,
-        { size: 10, color: COL.dim, align: 'left', width: 220, outline: false });
-      if (v.done) {
-        const b = panel(row, ROW_W / 2 - 40, 0, 60, 24, { art: 'btn_primary' });
-        text(b, 0, 1, '已解锁', { size: 10, color: COL.ink, width: 56, bold: true, outline: false });
-      } else {
-        text(row, ROW_W / 2 - 10, 0, v.cur + ' / ' + v.def.target,
-          { size: 11, color: COL.dim2, align: 'right', width: 72, bold: true, outline: false });
-      }
+  const views = achViews(save);
+  const contentH = Math.max(viewH, views.length * PITCH + 8);
+  const sc = makeScroll(root, vc.x, vc.y, VW - 8, viewH, contentH);
+  const topY = contentH / 2 - ROW_H / 2 - 4;
+  views.forEach((v, i) => {
+    const y = topY - i * PITCH;
+    const row = panel(sc.content, 0, y, ROW_W, ROW_H, { art: 'panel_soft' });
+    text(row, -ROW_W / 2 + 12, 8, v.def.name,
+      { size: 13, color: v.done ? COL.accent : COL.cream, align: 'left', width: 200, bold: true, outline: true });
+    text(row, -ROW_W / 2 + 12, -11, v.def.desc,
+      { size: 10, color: COL.dim, align: 'left', width: 220, outline: false });
+    if (v.done) {
+      const b = panel(row, ROW_W / 2 - 40, 0, 60, 24, { art: 'btn_primary' });
+      text(b, 0, 1, '已解锁', { size: 10, color: COL.ink, width: 56, bold: true, outline: false });
+    } else {
+      text(row, ROW_W / 2 - 10, 0, v.cur + ' / ' + v.def.target,
+        { size: 11, color: COL.dim2, align: 'right', width: 72, bold: true, outline: false });
     }
-  }
+  });
 
-  viewport.on(Node.EventType.TOUCH_START, () => { dragging = true; dragFrom = offset; }, viewport);
-  viewport.on(Node.EventType.TOUCH_MOVE, (e: EventTouch) => {
-    if (!dragging) return;
-    offset = Math.max(0, Math.min(maxOffset, dragFrom + e.getUIDelta().y));
-    refresh();
-  }, viewport);
-  viewport.on(Node.EventType.TOUCH_END, () => { dragging = false; }, viewport);
-  viewport.on(Node.EventType.TOUCH_CANCEL, () => { dragging = false; }, viewport);
-
-  refresh();
   return root;
 }

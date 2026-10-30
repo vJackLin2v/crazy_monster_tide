@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "types": [],
+    "lib": ["ES2019", "DOM"]
+  },
+  "include": [
+    "temp/declarations/cc.d.ts",
+    "temp/declarations/cc.env.d.ts",
+    "assets/scripts/ui/ScrollView.ts",
+    "assets/scripts/ui/CodexScreens.ts",
+    "assets/scripts/ui/Modals.ts",
+    "assets/scripts/ui/MetaScreens.ts"
+  ]
+}

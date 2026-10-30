@@ -4,7 +4,7 @@
  * 只读现有数据表与本地存档；不改任何玩法数值、不引入新素材。
  * 视觉沿用 UIKit 的九宫格（panel / slot / btn）+ screenHeader，与其它页面同一套规范。
  */
-import { Node, Label, Color, Graphics, Sprite, UITransform, view, LabelOutline } from 'cc';
+import { Node, Label, Color, Graphics, Sprite, SpriteFrame, UITransform, view, LabelOutline } from 'cc';
 import { panel, text, title, button, onTap, mkNode, mask, screen, screenHeader, paintPanel } from './UIKit';
 import { COL, FS, MIN_TAP } from './Tokens';
 import { safeTop, safeBottom } from './Safe';
@@ -67,11 +67,11 @@ export function buildSettings(parent: Node, s: SaveData, onToggle: (k: 'music' |
   const root = mkNode(parent, 'scr-settings', VW, VH);
   mask(root, VW, VH);
 
-  const W = 312, H = 452;
+  const W = 312, H = 470;
   const c = at(VW, VH, 180, VH / 2);
   const box = panel(root, c.x, c.y, W, H, { art: 'panel' });
   title(box, H / 2 - 30, '设置', { width: W - 40 });
-  text(box, 0, H / 2 - 56, '音频开关会立刻生效并记住', { size: 10, color: COL.dim, width: W - 30, outline: false });
+  text(box, 0, H / 2 - 54, '音频开关会立刻生效并记住', { size: 10, color: COL.dim, width: W - 30, outline: false });
 
   const rows: { key: 'music' | 'sfx'; label: string; y: number }[] = [
     { key: 'music', label: '音乐', y: H / 2 - 96 },
@@ -153,8 +153,8 @@ export function buildSettings(parent: Node, s: SaveData, onToggle: (k: 'music' |
     });
   }
 
-  // 构建标记：用来一眼确认"开发者工具里跑的是不是最新包"
-  text(box, 0, -H / 2 + 12, '版本 ' + BUILD_TAG, { size: 9, color: COL.dim2, width: W - 20, outline: false });
+  // 构建标记：放在标题下方（原来是 -H/2+12，正好被"关闭"按钮盖住，用户看不到）
+  text(box, 0, H / 2 - 74, '版本 ' + BUILD_TAG, { size: 9, color: COL.dim2, width: W - 20, outline: false });
 
   const cl = button(box, 0, -H / 2 + 32, 200, 44, '关闭', { primary: true, size: 16 });
   onTap(cl.node, onClose);
@@ -319,7 +319,7 @@ export function buildAchievements(parent: Node, s: SaveData, onBack: () => void)
   achViews(s).forEach((v, i) => {
     const cy = listTop + ROW_H / 2 + i * (ROW_H + ROW_GAP);
     const c = at2(180, cy);
-    const row = panel(root, c.x, c.y, ROW_W, ROW_H, { art: v.done ? 'rim_gold' : 'panel_soft' });
+    const row = panel(root, c.x, c.y, ROW_W, ROW_H, { art: 'panel_soft' });
     text(row, -ROW_W / 2 + 12, 8, v.def.name,
       { size: 13, color: v.done ? COL.accent : COL.cream, align: 'left', width: 200, bold: true, outline: true });
     text(row, -ROW_W / 2 + 12, -10, v.def.desc,
