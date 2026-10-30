@@ -90,3 +90,42 @@
 | staged_meteor | 裂空陨星 | 二次爆炸 | 与陨石定位重叠 |
 | frost_prison | 冰封牢笼 | 定身 1.2s | 控制过强，需 BOSS 抗性规则 |
 | boomerang_axe | 回旋战斧 | 返程 120% | 与回旋刃重叠 |
+## 五、四个新技能 × 18 黑科技 兼容矩阵（v5 定稿）
+
+图例：Y = 有效（安装后改变行为）；N = 无效（**禁止安装并显示原因**）；S = 特殊（可装但有专门规则）
+
+| 模块 | 环刃 | 地雷阵 | 哨兵 | 蓄能脉冲 |
+|---|---|---|---|---|
+| multi | N | N | Y | N |
+| fan | N | N | Y | N |
+| split | N | S | Y | N |
+| bounce | N | N | Y | N |
+| pierce | N | N | Y | N |
+| orbit | S | N | N | N |
+| giant | Y | Y | N | Y |
+| rapid | Y | Y | Y | N |
+| echo | N | S | N | S |
+| burn | Y | Y | Y | Y |
+| frost | Y | Y | Y | Y |
+| vamp | Y | Y | S | Y |
+| chain | Y | N | Y | Y |
+| snipe | N | N | Y | N |
+| harvest | Y | Y | Y | Y |
+| thunder | Y | Y | Y | Y |
+| thornmail | Y | Y | N | Y |
+| overload | N | S | N | Y |
+
+### 特殊（S）规则明细
+
+- orbit × 环刃：环绕弹额外 +1 片，但受"最多 4 片"上限约束；
+- split × 地雷阵：地雷引爆时额外炸出 2 枚小子弹（伤害 40%），衍生物不再分裂；
+- echo × 地雷阵：重放只允许 1 次（否则雷区会瞬间铺满 4 枚上限）；
+- echo × 蓄能脉冲：重放**不重新蓄力**，直接以已蓄满数值结算一次；
+- vamp × 哨兵：哨兵伤害可以为玩家回血，但来源仍为 summon（不触发玩家 onhit 模块）。
+
+### 哨兵（召唤物）专项规则
+
+1. 哨兵弹体伤害来源 = summon，**不触发玩家任何 onhit 模块**；
+2. 明确允许的弹体类模块（multi/fan/pierce/bounce/split/snipe/burn/frost/chain/thunder/vamp）作用于**哨兵的弹体**，但只按哨兵自己的伤害计算；
+3. 哨兵**不能被 multi/split/echo 复制自身**（同时只有 1 个）；
+4. 召唤物击杀计入玩家击杀数，但 killblast / harvest 的触发规则以"来源 summon 不触发模块"为准（harvest 属 kill 钩子，按 v5 规则**仍可回血**，需在实现时显式确认）。

@@ -74,3 +74,29 @@ export interface DamageContext {
 - 专注核心是**技能伤害乘区**，对原始施法与 echo 重放**同样生效**（都算该技能的伤害）；
 - 但 echo 重放**不计入** overcharge 施法次数、不计入任何"第 N 次施法"类计数；
 - v2 里"重放不吃加成"的旧说法已作废：专注核心按技能伤害乘区，对重放同样生效；但重放不计入施法次数。
+
+
+## 7. canTriggerModules 的赋值规则（v5 定稿）
+
+**不允许调用方自由填写**，统一由伤害入口根据来源推导：
+
+    function canSourceTriggerModules(src: DamageSource): boolean {
+      return src !== "module" && src !== "summon";
+    }
+
+    function makeContext(src: DamageSource, castId: string, extra?: Partial<DamageContext>): DamageContext {
+      return { source: src, canTriggerModules: canSourceTriggerModules(src), castId, isBoss: false, ...extra };
+    }
+
+- 调用方只能传 source/castId/projectileId/returnIndex/isBoss，**不能传 canTriggerModules**；
+- 模块再用自己的 allowedSources 过滤（例如 M5 只接受 normal/split）；
+- 特殊豁免（如未来允许某来源触发）必须走**白名单配置**，不得临时传 true。
+
+## 8. M1 目标筛选流程（性能）
+
+    1. 用范围查询取爆炸半径内候选敌人（不做全场排序）
+    2. 候选 <= 60 → 全部处理
+    3. 候选 > 60 → 只在候选中按距离取最近 60 只
+    4. 仅对选中的 60 只执行伤害
+
+禁止"每次爆炸遍历全场敌人再排序"。

@@ -77,10 +77,10 @@
 
 ## 4. 噩梦 BOSS 召唤状态机
 
-    状态字段：summon70Done, summon35Done, warningActive, warningEndAt, lastSummonAt, pendingSummonCount
+    状态字段：summon70Done, summon35Done, warningActive, warningEndAt, lastSummonAt, pendingSummonWaves
 
 同一时刻只允许一个预警：
-  若 warningActive 为 true，任何新召唤请求只增加 pendingSummonCount，不启动第二个预警
+  若 warningActive 为 true，任何新召唤请求只增加 pendingSummonWaves，不启动第二个预警
 
     每次 BOSS 血量更新：
       若 hp% < 70 且 !summon70Done → 标记 summon70Done，请求召唤
@@ -91,15 +91,15 @@
       否则 → 起 1.2s 预警 → 结算召唤
 
     每帧检查 pending：
-      若 pendingSummonCount > 0 且 !warningActive 且 now - lastSummonAt >= 12 → 起预警
+      若 pendingSummonWaves > 0 且 !warningActive 且 now - lastSummonAt >= 12 → 起预警
 
     结算召唤：
       存活召唤物 = 当前场上召唤物数量
       可召唤数 = min(3, 6 - 存活召唤物)
       召唤 可召唤数 只（生命 = 普通怪 x0.7，伤害 = 普通怪 x0.8）
-      lastSummonAt = now（**以实际召唤完成为准**，不是预警开始时刻），pendingSummonCount -= 1
+      lastSummonAt = now（**以实际召唤完成为准**，不是预警开始时刻），pendingSummonWaves -= 1
 
-    BOSS 死亡 → warningActive = false、pendingSummonCount = 0（取消所有未执行召唤）
+    BOSS 死亡 → warningActive = false、pendingSummonWaves = 0（取消所有未执行召唤）
 
 每个阈值只触发一次；两次召唤间隔 >= 12s；同时 <= 6 只。
 
@@ -114,12 +114,12 @@
 
 迁移（只在字段缺失时执行，不覆盖已有值）：
 
-    if (!progress.difficulties) {
+    if (progress.difficulties == null) {
       const d = ["casual", "normal"];
       if (progress.wins >= 1) d.push("hard");
       progress.difficulties = d;
     }
-    if (!progress.difficulty) progress.difficulty = "normal";
+    if (progress.selectedDifficulty == null) progress.selectedDifficulty = "normal";
 
 区分两个字段：Progress.difficulties = 永久解锁列表；RunState.difficulty = 本局难度（不写回永久进度）。
 
@@ -129,3 +129,66 @@
 - 里程碑 30 / 40 / 50 波：每个难度每个里程碑只记录一次，只记录达到过的最高波次；
 - 不计入 20 波通关次数；
 - 不给任何局内数值奖励。
+
+
+## 7. 存档字段最终约定（v5，唯一写法）
+
+    interface Progress {
+      selectedDifficulty: DifficultyId;
+      difficulties: DifficultyId[];
+    }
+
+    interface RunState {
+      difficulty: DifficultyId;
+    }
+
+规则：
+
+1. 难度选择页只写 Progress.selectedDifficulty；解锁状态只写 Progress.difficulties；
+2. 开始新局时 runState.difficulty = progress.selectedDifficulty；
+3. 战斗 / 商店 / 结算 / 无尽只读 RunState.difficulty，且不可修改；
+4. 除上述三个字段外，任何其他存档字段写法都已删除，不得再使用。
+
+
+## 8. BOSS 召唤状态机（v5 定稿）
+
+字段：
+
+    summon70Done: boolean
+    summon35Done: boolean
+    warningActive: boolean
+    warningEndAt: number
+    lastSummonCompletedAt: number
+    pendingSummonWaves: number   // 待执行的**召唤波次**数量，不是怪物数量
+
+规则：
+
+1. 每个血量阈值（<70%、<35%）**最多提交 1 个召唤请求**，每个请求 = 1 个波次；
+2. 同一时刻只允许 1 个预警（warningActive）；有新请求时只让 pendingSummonWaves +1，不启动第二个预警；
+3. 两次**实际召唤完成时刻**至少间隔 12 秒（lastSummonCompletedAt 在召唤执行完时更新，不是预警开始时）；
+4. 执行召唤时：
+      空位 = 6 - 当前存活召唤物数量
+      本次召唤数量 = min(3, 空位)
+     若空位 <= 0 → 该请求直接完成（pendingSummonWaves -1），**不永久挂起**；
+5. BOSS 死亡：warningActive = false、pendingSummonWaves = 0（取消所有未执行请求）。
+
+
+## 9. 普通难度 = 不介入原版本（v5 定稿）
+
+普通难度**不是**"把所有倍率重新乘一遍 1.0"，而是**完全不介入**现有逻辑：
+
+| 系统 | 普通难度行为 |
+|---|---|
+| 刷怪间隔 | 不重新计算，直接用原版本公式 |
+| 怪物成长 | 不重复乘 1.0 |
+| 商店价格 / 刷新 | 不应用任何倍率 |
+| 回血 | 不进入新增预算系统（healBudgetPerSecond = null） |
+| 精英生成 | 不增加额外随机判定 |
+| 奖励池 / 掉落 | 不改变权重 |
+
+实现建议（概念示意，实际用配置合并而不是到处散落 if）：
+
+    const diff = runState.difficulty;
+    if (diff !== "normal") applyDifficultyOverrides(diff);
+
+即：普通走原分支，非普通才叠加覆盖项。
