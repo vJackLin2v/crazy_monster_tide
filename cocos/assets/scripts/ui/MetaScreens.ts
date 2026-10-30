@@ -18,6 +18,7 @@ import { ENEMIES } from '../data/Enemies';
 import { Assets, iconFrame, loadIcon } from '../engine/Assets';
 import { listRuns, exportLogs } from '../game/Telemetry';
 import { DEBUG } from 'cc/env';
+import { BUILD_TAG } from '../core/BuildTag';
 import { applyFxPrefs } from '../game/Prefs';
 import { writeSave } from '../engine/Save';
 
@@ -151,6 +152,9 @@ export function buildSettings(parent: Node, s: SaveData, onToggle: (k: 'music' |
       } catch { /* 剪贴板不可用就只打控制台 */ }
     });
   }
+
+  // 构建标记：用来一眼确认"开发者工具里跑的是不是最新包"
+  text(box, 0, -H / 2 + 12, '版本 ' + BUILD_TAG, { size: 9, color: COL.dim2, width: W - 20, outline: false });
 
   const cl = button(box, 0, -H / 2 + 32, 200, 44, '关闭', { primary: true, size: 16 });
   onTap(cl.node, onClose);
