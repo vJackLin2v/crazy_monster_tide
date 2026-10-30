@@ -9,7 +9,7 @@ import { ENEMIES, BOSS_UNITS } from '../assets/scripts/data/Enemies';
 const L: string[] = [];
 const p = (s = '') => L.push(s);
 
-p('# 《疯狂怪潮》设计说明（供外部评审）');
+p('# 《疯狂鸽王》设计说明（供外部评审）');
 p('');
 p('> 自动生成：直接读取项目源码数据表，保证与实际运行一致。');
 p('> 游戏：竖屏像素风自动射击 roguelike；玩家只控制走位，4 个主动技能自动开火。');

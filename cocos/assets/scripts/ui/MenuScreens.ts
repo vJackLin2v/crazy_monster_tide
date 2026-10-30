@@ -89,9 +89,9 @@ export function buildMenu(parent: Node, seed: number, onStart: () => void, onHow
 
   // ── 标题区（从安全区往下排）──
   // 用户 2026-10-30：标题整体下移 24px（原来贴得太靠上）
-  text(root, 0, at2(180, S + 84).y, '疯狂怪潮',
+  text(root, 0, at2(180, S + 84).y, '疯狂鸽王',
     { size: 40, color: COL.cream, bold: true, width: 354, outline: true, shadow: true });
-  text(root, 0, at2(180, S + 124).y, 'C R A Z Y   M O N S T E R   T I D E',
+  text(root, 0, at2(180, S + 124).y, 'C R A Z Y   P I G E O N   K I N G',
     { size: 10, color: COL.accent, width: 354, bold: true, outline: true });
   // （用户 2026-10-30：去掉标题下那行小字，按钮整体上移）
   // ── 底部动作栈：**底部留白 = 标题上方留白**（用户要求上下呼吸感一致）

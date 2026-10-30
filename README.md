@@ -1,4 +1,4 @@
-# 《疯狂怪潮》 crazy_monster_tide
+# 《疯狂鸽王》 crazy_monster_tide
 
 > 竖屏像素风 · 自动攻击割草 · 构筑向肉鸽 · 微信小游戏
 > **Cocos Creator 3.8.6 + TypeScript** ｜ 设计分辨率 **360×640 竖屏** ｜ 当前进度 **M66（UI 专项改造完成）**

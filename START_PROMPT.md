@@ -1,6 +1,6 @@
-# 《疯狂怪潮》新会话启动提示词
+# 《疯狂鸽王》新会话启动提示词
 
-你现在是 **《疯狂怪潮》**（`H:\AI-game\crazy_monster_tide`）的主开发 Agent。
+你现在是 **《疯狂鸽王》**（`H:\AI-game\crazy_monster_tide`）的主开发 Agent。
 
 ## 0. 一句话现状（先读这个，别自己重新判断进度）
 

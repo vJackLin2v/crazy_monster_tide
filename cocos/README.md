@@ -1,4 +1,4 @@
-# 《疯狂怪潮》· Cocos Creator 工程
+# 《疯狂鸽王》· Cocos Creator 工程
 
 > **引擎**：Cocos Creator **3.8.6**（与 `H:\AI-game\xingnang\cocos_port` 对齐 —— decisions.md D-02）
 > **状态**：M11 工程初始化完成 —— 配置 / 逻辑层 / 场景骨架 / 单测就位；**画面组件与场景 UI 待做**

@@ -2,7 +2,7 @@
 
 | 项 | 值 |
 |---|---|
-| 项目 | 《疯狂怪潮》 / `crazy-monster-tide` |
+| 项目 | 《疯狂鸽王》 / `crazy-monster-tide` |
 | 工程 | `H:\AI-game\crazy_monster_tide` |
 | 阶段 | **M16 完成：Cocos 11 屏按 UI 规格 v1.1 重做并实机验证**（2026-10-17） |
 | 引擎 | **Cocos Creator 3.8.6**｜工程 `cocos/`｜D-02 / D-29 |

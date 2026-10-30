@@ -1,6 +1,6 @@
 # UI 素材清单与授权记录（asset_usage_manifest）
 
-> 项目：《疯狂怪潮》（crazy_monster_tide）·UI 专项改造
+> 项目：《疯狂鸽王》（crazy_monster_tide）·UI 专项改造
 > 记录人：开发 Agent　｜　更新：2026-10-28
 > 规则：只有**实际检查过许可证并实际使用**的文件才标记「已核实 / 已使用」。
 

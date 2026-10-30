@@ -13,7 +13,7 @@
 #>
 param(
   [string]$ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
-  [string]$AppId = 'wx458e7364d6b249cc',
+  [string]$AppId = 'wx8a25bc49632e9b92',
   [string]$LibVersion = '3.17.5',
   [string]$Creator = 'C:\ProgramData\cocos\editors\Creator\3.8.6\CocosCreator.exe',
   [string]$DevToolsCli = '',
@@ -42,7 +42,7 @@ Write-Host '[2/3] writing project.config.json (BOM-less UTF-8) ...' -ForegroundC
 $cfg = [ordered]@{
   description     = 'crazy-monster-tide (wechat build)'
   miniprogramRoot = './'
-  projectname     = 'crazy_monster_tide'
+  projectname     = 'crazy_pigeon_king'
   appid           = $AppId
   libVersion      = $LibVersion
   compileType     = 'game'

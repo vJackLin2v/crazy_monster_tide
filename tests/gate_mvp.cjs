@@ -1,4 +1,4 @@
-/* 疯狂怪潮 · 静态门禁（波次闯关版）
+/* 疯狂鸽王 · 静态门禁（波次闯关版）
    能代码量的一律量，不问模型：对比度 / 热区 / 波次 / 像素可读性 / 因果链 / 确定性 / 合规 */
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path');
