@@ -410,8 +410,10 @@ export function buildResult(parent: Node,
     text(root, at2(12, skillTop).x, at2(12, skillTop).y, '本局技能',
       { size: 11, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
     const SC = 34, SGAP = 8, SCOLS = 4;
+    // ⚠️ 左对齐（原来按 4 格居中排，只有一个技能时会飘到屏幕中间，看起来"错位"）
+    const startLeft = 12;
     sk.slice(0, SCOLS).forEach((s, i) => {
-      const cx = 180 - (SCOLS * (SC + SGAP) - SGAP) / 2 + SC / 2 + i * (SC + SGAP);
+      const cx = startLeft + SC / 2 + i * (SC + SGAP);
       const c2 = at2(cx, skillTop + 16 + SC / 2);
       const cell = panel(root, c2.x, c2.y, SC, SC, { art: 'slot' });
       if (s.icon) {
@@ -423,7 +425,7 @@ export function buildResult(parent: Node,
         else void loadIcon(s.icon).then(() => { const g3 = iconFrame(s.icon); if (g3 && sp.isValid) sp.spriteFrame = g3; });
       }
       // 已装数量：贴右上角小徽章（原来放在底部压住图标）
-      const badge = mkNode(cell, 'modBadge', 18, 12, SC / 2 - 8, SC / 2 - 6);
+      const badge = mkNode(cell, 'modBadge', 18, 12, SC / 2 - 1, SC / 2 - 1);
       const bg2 = badge.addComponent(Graphics);
       bg2.fillColor = new Color(16, 20, 30, 220); bg2.rect(-9, -6, 18, 12); bg2.fill();
       text(badge, 0, 0, String(s.mods), { size: 9, color: COL.accent, width: 18, bold: true, outline: false });
@@ -465,7 +467,9 @@ export function buildResult(parent: Node,
 
   // 本局构筑
   // 有道具时「本局构筑」要往下让一行（用户 2026-10-30 加的道具展示）
-  const listTop = extra.y + 20 + ((stats.items?.length ?? 0) > 0 ? 34 : 0);
+  // ⚠️ 必须用**设计坐标**（从屏幕顶算），不能拿 at2() 返回的节点 y 再算——那样会把"本局构筑"
+  //    画到屏幕顶部，压住标题和统计卡（用户截图确认"结算页技能都错位"）
+  const listTop = skillTop + (sk.length ? 46 : 0) + 20 + ((stats.items?.length ?? 0) > 0 ? 34 : 0);
   const bh = at2(12, listTop);
   text(root, bh.x, bh.y, '本局构筑', { size: 13, color: COL.accent, align: 'left', width: 312, bold: true, outline: true });
   const rowsTop = listTop + 22;

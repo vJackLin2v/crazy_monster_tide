@@ -727,6 +727,11 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
 
   // ---------- 11. 结算 ----------
   private showResult(win: boolean) {
+    // 结算前清掉所有残留屏（暂停抽屉/升级卡/商店），否则它们会浮在结算页上方（用户截图确认）
+    if (this.cur && this.cur.isValid) { this.cur.destroy(); this.cur = null; }
+    if (this.curModal && this.curModal.isValid) { this.curModal.destroy(); this.curModal = null; }
+    if (this.battleNode) this.battleNode.active = false;
+    if (this.joyNode) this.joyNode.active = false;
     // P0 防呆：胜利只可能来自"打完最后一波"。若状态不符，说明是调试入口或状态没重置，
     // 这里留下明确日志（上线版不弹 UI），避免以后又出现「通关 + 第 8/20 波」的截图。
     const rs0 = this.battle.rs;
