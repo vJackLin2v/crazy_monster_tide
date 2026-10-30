@@ -123,9 +123,10 @@ export function buildLevelUp(parent: Node, lv: number, cards: CardData[],
         { size: 11, color: COL.dim, align: 'left', width: txtW, h: 18 });
     }
 
-    // 叠加 / 上限状态（10px：属于元数据，不承担关键说明）
+    // 叠加 / 上限状态：紧贴数值行下方（之前贴在卡片底部，中间留一大块空白）
     if (c.meta) {
-      text(card, txtX, -CH / 2 + 16, c.meta, { size: 10, color: COL.dim, align: 'left', width: txtW, h: 16 });
+      const metaY = hasDesc ? CH / 2 - 108 : numsY - 30;
+      text(card, txtX, metaY, c.meta, { size: 10, color: COL.dim, align: 'left', width: txtW, h: 16 });
     }
 
     // 按下反馈：整卡压暗一档 + 点击

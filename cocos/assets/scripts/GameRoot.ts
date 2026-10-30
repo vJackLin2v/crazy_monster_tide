@@ -637,7 +637,8 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       // 商店里道具直接显示**具体数值**（决策要看数）；黑科技仍显示人话描述
       const sub = s.kind === 'item'
         ? (ITEMS[s.id] ? itemNumbers(ITEMS[s.id], s.id) || ITEMS[s.id].desc : '')
-        : s.kind === 'module' ? (MODULES[s.id] ? MODULES[s.id].desc : '') : '';
+        // 用户 2026-10-30：商店也只留"一句话"——黑科技显示数值短句，不再显示长效果描述
+        : s.kind === 'module' ? (MODULE_NUMS[s.id] ?? (MODULES[s.id] ? MODULES[s.id].name : '')) : '';
       const icon = s.kind === 'item' ? ITEM_ICON[s.id]
         : s.kind === 'module' ? MODULE_ICON[s.id] : undefined;
       // M52：稀有度（1 普通 / 2 高级）+ 已持有数量（堆叠提示）
