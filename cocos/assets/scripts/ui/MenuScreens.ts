@@ -474,7 +474,8 @@ export function buildResult(parent: Node,
   text(root, bh.x, bh.y, '本局构筑', { size: 13, color: COL.accent, align: 'left', width: 312, bold: true, outline: true });
   const rowsTop = listTop + 22;
   const availH = (VH - B - 60) - rowsTop;
-  const maxRows = Math.max(1, Math.floor(availH / 42));
+  // 预留 18px 给"还有 N 项"提示，避免提示压到底部按钮上（回归截图确认）
+  const maxRows = Math.max(1, Math.floor((availH - 18) / 42));
   const list = stats.build.slice(0, maxRows);
   if (list.length) {
     list.forEach((r, i) => {
