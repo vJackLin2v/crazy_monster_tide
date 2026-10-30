@@ -190,7 +190,10 @@ export function buildCodex(parent: Node, save: SaveData, onBack: () => void): No
       drawEntryArt(iconHost, e, 34, known);
       text(row, -ROW_W / 2 + 50, 8, known ? e.name : '？？？',
         { size: 13, color: known ? COL.cream : COL.dim2, align: 'left', width: 240, bold: true, outline: known });
-      text(row, -ROW_W / 2 + 50, -11, known ? e.sub : '尚未发现',
+      // 未解锁只给"怎么解锁"，不泄露属性（用户审核意见 阶段1-5）
+      const hint = tab === 3 ? '击败该怪物后解锁' : tab === 2 ? '获得该道具后解锁'
+        : tab === 1 ? '学会该技能后解锁' : '使用该角色通关后解锁';
+      text(row, -ROW_W / 2 + 50, -11, known ? e.sub : hint,
         { size: 10, color: COL.dim, align: 'left', width: 250, outline: false });
       if (known) {
         text(row, ROW_W / 2 - 12, 0, '›', { size: 16, color: COL.accent, align: 'right', width: 20, outline: false });

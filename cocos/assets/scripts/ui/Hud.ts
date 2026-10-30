@@ -21,6 +21,8 @@ export interface HudData {
   hp: number; maxhp: number;
   lv: number; exp: number; expNeed: number;
   gold: number; wave: number; waveTotal: number; waveLeft: number;
+  /** 本波总时长（用于波次进度条；0 时不画） */
+  waveDur: number;
   /** 本波击杀数 */
   kills: number;
   /** 受击闪屏强度 0~1（Battle.hurtFlash） */
@@ -53,6 +55,8 @@ export class Hud {
   private goldText!: Label;
   private waveText!: Label;
   private timerText!: Label;
+  private waveBarNode!: Node;
+  private waveBar!: Graphics;
   private bossBox!: Node;
   private bossBar!: ReturnType<typeof gradBar>;
   private bossName!: Label;
@@ -146,6 +150,11 @@ export class Hud {
       { size: 12, color: COL.cream, align: 'right', width: 210, bold: true, outline: true });
     this.timerText = text(this.root, at(rightEdge, 0).x, at(0, S + 37).y, '0',
       { size: 26, color: COL.cream, align: 'right', width: 130, bold: true, outline: true, shadow: true });
+
+    // ── 波次进度条：贴在顶部承载板底边（336×3），BOSS 出现时让位给 BOSS 血条 ──
+    const wb = at(VW / 2, S + 88);
+    this.waveBarNode = mkNode(this.root, 'waveBar', 336, 3, wb.x, wb.y);
+    this.waveBar = this.waveBarNode.addComponent(Graphics);
 
     // 暂停：视觉 36×36，热区 44（微信硬要求）
     const pauseC = at(pauseX, pauseY);
@@ -241,6 +250,21 @@ export class Hud {
           this.hpWarn.roundRect(-W / 2 - pad, -H / 2 - pad, W + pad * 2, H + pad * 2, 4 + pad);
           this.hpWarn.fill();
         }
+      }
+    }
+
+    // 波次进度：剩余时间占比（BOSS 波隐藏，避免和 BOSS 血条打架）
+    if (this.waveBarNode) {
+      const show = !d.bossName && d.waveDur > 0 && d.waveLeft > 0;
+      this.waveBarNode.active = show;
+      if (show) {
+        const pct = Math.max(0, Math.min(1, 1 - d.waveLeft / d.waveDur));
+        const W = 336;
+        this.waveBar.clear();
+        this.waveBar.fillColor = new Color(32, 38, 56, 190);
+        this.waveBar.rect(-W / 2, 0, W, 3); this.waveBar.fill();
+        this.waveBar.fillColor = new Color(255, 176, 74, 235);
+        this.waveBar.rect(-W / 2, 0, W * pct, 3); this.waveBar.fill();
       }
     }
 

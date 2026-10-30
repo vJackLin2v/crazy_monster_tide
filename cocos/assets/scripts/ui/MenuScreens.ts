@@ -363,7 +363,8 @@ export function buildResult(parent: Node,
                             stats: { win: boolean; wave: number; lv: number; kills: number; time: number;
                                      build: ResultBuildRow[]; gold?: number; seed?: number;
                                      waveTotal?: number; endless?: boolean; maxAlive?: number;
-                                     items?: { name: string; icon?: string; count: number }[] },
+                                     items?: { name: string; icon?: string; count: number }[];
+  skills?: { name: string; icon?: string; mods: number }[] },
                             onMenu: () => void, onRetry: () => void,
                             onContinue?: () => void): Node {
   const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
@@ -402,8 +403,35 @@ export function buildResult(parent: Node,
     text(card, 0, -10, v, { size: 22, color: COL.cream, width: CW - 16, bold: true, outline: true });
   });
 
-  // 金币 / 种子（小字，不抢统计卡）
-  const extra = at2(180, S + 152 + CH * 2 + GAP + 18);
+  // 本局技能：4 个技能图标 + 每个技能已装黑科技数（x/3）
+  const sk = stats.skills ?? [];
+  const skillTop = S + 152 + CH * 2 + GAP + 18;
+  if (sk.length) {
+    text(root, at2(12, skillTop).x, at2(12, skillTop).y, '本局技能',
+      { size: 11, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
+    const SC = 34, SGAP = 8, SCOLS = 4;
+    sk.slice(0, SCOLS).forEach((s, i) => {
+      const cx = 180 - (SCOLS * (SC + SGAP) - SGAP) / 2 + SC / 2 + i * (SC + SGAP);
+      const c2 = at2(cx, skillTop + 16 + SC / 2);
+      const cell = panel(root, c2.x, c2.y, SC, SC, { art: 'slot' });
+      if (s.icon) {
+        const n = mkNode(cell, 'ic', SC - 10, SC - 10);
+        const sp = n.addComponent(Sprite);
+        sp.sizeMode = Sprite.SizeMode.CUSTOM; sp.trim = false;
+        const f = iconFrame(s.icon);
+        if (f) sp.spriteFrame = f;
+        else void loadIcon(s.icon).then(() => { const g3 = iconFrame(s.icon); if (g3 && sp.isValid) sp.spriteFrame = g3; });
+      }
+      // 已装数量：贴右上角小徽章（原来放在底部压住图标）
+      const badge = mkNode(cell, 'modBadge', 18, 12, SC / 2 - 8, SC / 2 - 6);
+      const bg2 = badge.addComponent(Graphics);
+      bg2.fillColor = new Color(16, 20, 30, 220); bg2.rect(-9, -6, 18, 12); bg2.fill();
+      text(badge, 0, 0, String(s.mods), { size: 9, color: COL.accent, width: 18, bold: true, outline: false });
+    });
+  }
+
+  // 本局道具（技能区存在时整体下移）
+  const extra = at2(180, skillTop + (sk.length ? 46 : 0));
   // 用户 2026-10-30：去掉种子/同屏峰值，改成展示本局拿到的道具
   const got = stats.items ?? [];
   if (got.length) {
@@ -437,7 +465,7 @@ export function buildResult(parent: Node,
 
   // 本局构筑
   // 有道具时「本局构筑」要往下让一行（用户 2026-10-30 加的道具展示）
-  const listTop = S + 152 + CH * 2 + GAP + 40 + ((stats.items?.length ?? 0) > 0 ? 34 : 0);
+  const listTop = extra.y + 20 + ((stats.items?.length ?? 0) > 0 ? 34 : 0);
   const bh = at2(12, listTop);
   text(root, bh.x, bh.y, '本局构筑', { size: 13, color: COL.accent, align: 'left', width: 312, bold: true, outline: true });
   const rowsTop = listTop + 22;

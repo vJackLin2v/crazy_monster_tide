@@ -785,6 +785,10 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         { win, wave: rs.wave, lv: rs.lv, kills: rs.kills, time: rs.runTime, build,
           gold: rs.gold, seed: this.seed, waveTotal: RUN.waves, endless: rs.endless,
           maxAlive: this.battle.maxAlive,
+          skills: rs.skills.map(s => {
+            const def = SKILLS[s.id];
+            return { name: def ? def.name : s.id, icon: def ? def.icon : undefined, mods: s.mods.length };
+          }),
           items: (() => {
             const m = new Map<string, number>();
             for (const it of rs.items) m.set(it.id, (m.get(it.id) ?? 0) + 1);
@@ -1015,6 +1019,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       hp: rs.stats.hp, maxhp: rs.stats.maxhp,
       lv: rs.lv, exp: rs.exp, expNeed: rs.expNeed,
       gold: rs.gold, wave: rs.wave, waveTotal: RUN.waves, waveLeft: this.battle.waveLeftSec,
+      waveDur: waveTime(rs.wave),
       kills: rs.waveKills,
       hurtFlash: this.battle.hurtFlash,
       bossName: boss ? ('BOSS · 第 ' + rs.wave + ' 波') : null, bossHp: boss ? boss.hp : 0, bossMax: boss ? boss.maxhp : 0,
