@@ -127,7 +127,7 @@ export function buildLevelUp(parent: Node, lv: number, cards: CardData[],
 
     // 叠加 / 上限状态（10px：属于元数据，不承担关键说明）
     if (c.meta) {
-      text(card, txtX, -CH / 2 + 15, c.meta, { size: 10, color: COL.dim, align: 'left', width: txtW, h: 13 });
+      text(card, txtX, -CH / 2 + 16, c.meta, { size: 10, color: COL.dim, align: 'left', width: txtW, h: 16 });
     }
 
     // 按下反馈：整卡压暗一档 + 点击
@@ -280,9 +280,9 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
     text(row, -106, nameY, fit(s.title, 12), {
       size: 14, color: s.sold ? COL.dim2 : COL.cream, align: 'left', width: 168, bold: true, outline: true,
     });
-    // 11px × 2 行需要 33px 行高，给 36 才不会裁掉第二行末尾（用户 2026-10-30 截图）
-    text(row, -106, nameY - 27, clampLines(s.sub, 150, 11, 2),
-      { size: 11, color: COL.dim, align: 'left', width: 150, h: 36 });
+    // ⚠️ 宽度 150 → 168：「扇射」这类 30 字描述在 150 宽会折成 3 行、第三行被裁（用户 2026-10-30 截图）
+    text(row, -106, nameY - 27, clampLines(s.sub, 168, 11, 2),
+      { size: 11, color: COL.dim, align: 'left', width: 168, h: 36 });
     if (s.owned && s.owned > 0 && !s.sold) {
       chip(row, 64, nameY, '持有×' + s.owned, { color: COL.accent, size: 10 });
     }
@@ -671,7 +671,7 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
     pushSection('已装', all.filter(m => m.installed));
     pushSection('背包', all.filter(m => !m.installed));
 
-    const HEAD_H = 24, ROW_H = 46, ROW_GAP = 4;
+    const HEAD_H = 24, ROW_H = 58, ROW_GAP = 4;   // 58 = 标题 16 + 描述两行 30 + 上下边距
     const contentH = lines.reduce((s, l) => s + (l.kind === 'head' ? HEAD_H : ROW_H + ROW_GAP), 0);
     modMaxScroll = Math.max(0, Math.ceil(contentH - VIEW_H + 6));
     modOffset = Math.max(0, Math.min(modMaxScroll, modOffset));
@@ -704,10 +704,11 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
             if (f2 && isp.isValid) isp.spriteFrame = f2;
           });
         }
-        text(card, -W / 2 + 32, 12, m.name + (m.count > 1 ? ' ×' + m.count : ''),
+        text(card, -W / 2 + 32, 16, m.name + (m.count > 1 ? ' ×' + m.count : ''),
           { size: 12, color: COL.cream, align: 'left', width: W - 110, bold: true, outline: true });
-        text(card, -W / 2 + 32, -12, m.desc,
-          { size: 10, color: COL.dim, align: 'left', width: W - 96, h: 24 });
+        // 10px × 2 行需要 30px；原来给 24 会裁掉第二行（审计脚本实测 need=30 > box=24）
+        text(card, -W / 2 + 32, -10, m.desc,
+          { size: 10, color: COL.dim, align: 'left', width: W - 96, h: 32 });
         if (m.installed) chip(card, W / 2 - 34, 0, '已装', { color: COL.mint, size: 9 });
       }
       cursor -= h;

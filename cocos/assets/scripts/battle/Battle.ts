@@ -613,6 +613,9 @@ export class Battle extends Component {
   }
 
   private async startWave(n: number) {
+    // ⚠️ 用户反馈"一局结束还会刷怪"：result 之后仍有排队中的 finishWave/advanceWave 走到这里，
+    //    startWave 会铺开场怪 → 看起来还在刷。局已结束（running=false）就直接拒绝开波。
+    if (!this.running) { console.log('[Battle] 已结束，忽略 startWave(' + n + ')'); return; }
     this.rs.wave = n;
     this.waveDmg = 0; this.waveAliveMax = 0;
     if (n === 1) this.totalDmg = 0;
@@ -1808,6 +1811,7 @@ export class Battle extends Component {
 
   /** 由 GameRoot 在商店点"下一波"时调用 */
   advanceWave() {
+    if (!this.running) return;      // 局已结束：不再推进波次
     const next = this.rs.wave + 1;
     if (next > RUN.waves && !this.rs.endless) { this.running = false; this.hooks.onClear?.(); return; }
     console.log('[Battle] 进入第 ' + next + ' 波');

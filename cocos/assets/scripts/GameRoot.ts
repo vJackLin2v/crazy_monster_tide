@@ -733,6 +733,9 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       console.warn('[Result] 非法胜利状态：wave=' + rs0.wave + ' < 总波次 ' + RUN.waves + '（可能来自调试调用）');
     }
     this.phase = 'result';
+    // 结算后彻底停战：不再刷怪、不再结算波次（否则 result 背后还会冒出敌人）
+    this.battle.running = false;
+    this.battle.paused = true;
     // ★ 成就统计：只在结算时累计一次（不影响分数/奖励）
     {
       const rsP = this.battle.rs;

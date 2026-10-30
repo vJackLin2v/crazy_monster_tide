@@ -135,10 +135,13 @@ export class Hud {
     // ── 右上：波次 · 击杀 / 倒计时 / 暂停 ──
     // ⚠️ 微信小游戏右上角有"胶囊按钮"，会盖住这块（真机截图确认）。
     //    有胶囊时：暂停键贴到胶囊左侧，波次/倒计时也整体左让；浏览器里保持原位。
+    // ⚠️ 胶囊给的值在个别机型/开发者工具里可能不是设计像素（曾导致暂停键与倒计时跑到屏幕外，
+    //    用户反馈"暂停按钮和倒计时都不见了"）。这里做**合法区间校验 + 回退**。
     const caps = wxCapsuleRect();
-    const rightEdge = caps ? caps.left - 50 : 300;
-    const pauseX = caps ? caps.left - 24 : 332;
-    const pauseY = caps ? Math.round((caps.top + caps.bottom) / 2) : S + 29;
+    const capsSane = !!caps && caps.left > 120 && caps.left < VW - 24 && caps.bottom < VH * 0.4;
+    const rightEdge = capsSane ? Math.max(120, Math.min(VW - 90, caps!.left - 50)) : 300;
+    const pauseX = capsSane ? Math.max(28, Math.min(VW - 28, caps!.left - 24)) : 332;
+    const pauseY = capsSane ? Math.max(S + 20, Math.min(S + 64, Math.round((caps!.top + caps!.bottom) / 2))) : S + 29;
     this.waveText = text(this.root, at(rightEdge, 0).x, at(0, S + 12).y, '波次 1 · 击杀 0',
       { size: 12, color: COL.cream, align: 'right', width: 210, bold: true, outline: true });
     this.timerText = text(this.root, at(rightEdge, 0).x, at(0, S + 37).y, '0',
