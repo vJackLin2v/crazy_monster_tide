@@ -251,6 +251,11 @@ export class GameRoot extends Component {
 
   // ---------- 5. 升级 3 选 1 ----------
   private showLevelUp(rewards: Reward[]) {
+    // 图鉴：升级卡里出现过的内容也算"见过"（不用拿）
+    for (const r of rewards) {
+      if (r.kind === 'skill' || r.kind === 'skillup') this.markSeen('skill:' + r.id);
+      else if (r.kind === 'item') this.markSeen('item:' + r.id);
+    }
     this.pendingRewards = rewards;
     this.closeModal();
     try {
@@ -607,6 +612,10 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
 
   /** 商店构建的统一入口：构建失败时直接开下一波，别把人卡在空商店里 */
   private renderShop() {
+    // 图鉴：商店货架上摆出来的东西也算"见过"
+    for (const s2 of this.battle.rs.shopStock ?? []) {
+      if (s2.kind === 'item') this.markSeen('item:' + s2.id);
+    }
     try {
       this.renderShopUnsafe();
     } catch (e) {

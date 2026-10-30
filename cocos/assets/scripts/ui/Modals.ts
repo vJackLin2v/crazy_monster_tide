@@ -600,7 +600,7 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
   // ── 黑科技页：结构化列表（图标 + 名称/数量 + 效果），**已装与背包分开** ──
   // 可视窗口本身要**有真实尺寸**，否则触摸事件不会落在它上面（这是滚不动的真因）
   const VIEW_TOP = bodyY + 12;
-  const VIEW_BOTTOM = -VH / 2 + 92;
+  const VIEW_BOTTOM = -VH / 2 + 120;   // 让列表停在按钮带更上方，配合底部底板彻底不重叠
   const VIEW_H = Math.max(40, VIEW_TOP - VIEW_BOTTOM);
   const VIEW_CY = (VIEW_TOP + VIEW_BOTTOM) / 2;
   const modRoot = mkNode(drawer, 'modDetail', VW - 8, VIEW_H, 0, VIEW_CY);
@@ -654,8 +654,10 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
     let cursor = top;
     for (const l of lines) {
       const h = l.kind === 'head' ? HEAD_H : ROW_H + ROW_GAP;
-      // 只画视口内的项
-      if (cursor < -VIEW_H / 2 - h || cursor - h > VIEW_H / 2 + 8) { cursor -= h; continue; }
+      // 只画**完整落在视口内**的项：半截行会溢到下面的按钮带上（用户 2026-10-30 截图）
+      const bottom = cursor - h;
+      if (l.kind === 'row' && (bottom < -VIEW_H / 2 + 2 || cursor > VIEW_H / 2 - 2)) { cursor -= h; continue; }
+      if (l.kind === 'head' && (bottom < -VIEW_H / 2 + 2 || cursor > VIEW_H / 2 - 2)) { cursor -= h; continue; }
       if (l.kind === 'head') {
         text(modRoot, -W / 2 + 4, cursor - 4, l.label,
           { size: 11, color: COL.accent, align: 'left', width: W, bold: true, outline: false });
@@ -722,6 +724,16 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
   //    左右边距 12，按钮间距 8，可用宽 336：
   //      两个按钮：96 + 8 + 232 = 336
   //      三个按钮：96 + 8 + 96 + 8 + 128 = 336
+  // 底部按钮带垫一块**不透明底板**：滚动页的溢出内容会被它挡住（虚拟化仍会漏半行）
+  {
+    const plateY = -VH / 2 + B + 60;      // 覆盖按钮带并往上多 40px
+    const plate = mkNode(drawer, 'btnPlate', VW, 128, 0, plateY);
+    const pg = plate.addComponent(Graphics);
+    pg.fillColor = COL.bg2;
+    pg.rect(-VW / 2, -64, VW, 128);
+    pg.fill();
+  }
+
   const by = -VH / 2 + B + 0;
   const m = button(root, A(12 + 48, 0).x, by + 25, 96, 50, '主菜单', { size: 14 });
   onTap(m.node, onMenu);

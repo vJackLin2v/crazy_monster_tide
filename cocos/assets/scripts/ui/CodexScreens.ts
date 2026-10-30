@@ -128,9 +128,10 @@ function showDetail(parent: Node, vw: number, vh: number, e: CodexEntry, onClose
   const box = panel(root, c.x, c.y, W, H, { art: 'panel' });
   const art = mkNode(box, 'art', 64, 64, 0, H / 2 - 58);
   drawEntryArt(art, e, 64, true);
-  title(box, H / 2 - 108, e.name, { width: W - 30 });
-  text(box, 0, H / 2 - 132, e.sub, { size: 10, color: COL.dim, width: W - 30, outline: false });
-  text(box, 0, -6, e.desc ?? '', { size: 11, color: COL.cream, width: W - 36, h: 76 });
+  title(box, H / 2 - 104, e.name, { width: W - 30 });
+  text(box, 0, H / 2 - 130, e.sub, { size: 10, color: COL.dim, width: W - 30, outline: false });
+  // 描述单独占一块（原来和 sub 都在 y≈-6，两行字直接叠在一起）
+  text(box, 0, -22, e.desc ?? '', { size: 11, color: COL.cream, width: W - 36, h: 68 });
   const btn = button(box, 0, -H / 2 + 32, 180, 44, '关闭', { primary: true, size: 15 });
   onTap(btn.node, onClose);
   return root;
@@ -191,6 +192,8 @@ export function buildCodex(parent: Node, save: SaveData, onBack: () => void): No
       if (!e) continue;
       const known = (save.seen ?? []).includes(e.id);
       const y = topY - i * PITCH;
+      // 只画完整落在视口内的行（半截行会压到下方的返回键上）
+      if (y - ROW_H / 2 < -viewH / 2 + 2 || y + ROW_H / 2 > viewH / 2 - 2) continue;
       const row = panel(viewport, 0, y, ROW_W, ROW_H, { art: known ? 'panel_soft' : 'well' });
       const iconHost = mkNode(row, 'iconHost', 34, 34, -ROW_W / 2 + 25, 0);
       drawEntryArt(iconHost, e, 34, known);
@@ -266,6 +269,7 @@ export function buildAchievements(parent: Node, save: SaveData, onBack: () => vo
       const v = views[i];
       if (!v) continue;
       const y = topY - i * PITCH;
+      if (y - ROW_H / 2 < -viewH / 2 + 2 || y + ROW_H / 2 > viewH / 2 - 2) continue;
       const row = panel(viewport, 0, y, ROW_W, ROW_H, { art: v.done ? 'rim_gold' : 'panel_soft' });
       text(row, -ROW_W / 2 + 12, 8, v.def.name,
         { size: 13, color: v.done ? COL.accent : COL.cream, align: 'left', width: 200, bold: true, outline: true });
