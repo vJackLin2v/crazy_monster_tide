@@ -1,29 +1,26 @@
 /**
- * 通用滚动区（2026-10-30 重写）
+ * 通用滚动区（2026-10-30 v2：加惯性）
  *
- * ⚠️ 为什么不用 cc.ScrollView、也不用节点 TOUCH_MOVE：
- *    参考《行囊守卫》的实现（xingnang/cocos_port/assets/scripts/ui/UiKit.ts::scrollArea）——
- *    那边明确写了"本场景节点触摸派发有问题"，所以它用的是
- *    ① Mask(Type.GRAPHICS_RECT) 裁剪 + ② **全局 cc.input 监听** + 自己在触摸点做命中测试。
- *    我们在微信小游戏里同样遇到"节点收不到 TOUCH_MOVE"，所以照这套做。
- *
- * 用法：
- *   const sc = makeScroll(parent, cx, cy, w, h, contentH);
- *   // 往 sc.content 里放内容，坐标以 content 中心为原点（content 高度 = contentH）
+ * 为什么不用 cc.ScrollView：参考《行囊守卫》UiKit.scrollArea 的注释——
+ * 本场景节点触摸派发不可靠，所以用 Mask(GRAPHICS_RECT) 裁剪 + 全局 cc.input 监听 + 自己命中测试。
+ * v2 在此基础上补：拖动速度采样 → 松手后按 0.9^frames 衰减滑行，到边界立即停。
  */
-import { Node, Mask, UITransform, input, Input, EventTouch } from 'cc';
-/* 双通道：全局 input（全屏页用）+ 节点事件（模态抽屉里用，那里节点事件是通的） */
+import { Node, Mask, UITransform, input, Input, EventTouch, director, Director } from 'cc';
 import { mkNode } from './UIKit';
 
 interface Area {
   view: Node; content: Node;
   w: number; h: number; contentH: number;
   off: number; dragging: boolean; startY: number; startOff: number;
+  lastY: number; lastT: number; flingV: number;
 }
 
 const areas: Area[] = [];
 let bound = false;
-
+/** 惯性参数：低于 FLING_MIN 不滑行；每帧乘 FLING_DAMP；低于 FLING_STOP 直接停 */
+const FLING_MIN = 300;
+const FLING_DAMP = 0.90;
+const FLING_STOP = 30;
 function wrect(n: Node): { x0: number; x1: number; y0: number; y1: number } {
   const ut = n.getComponent(UITransform)!;
   const wp = n.getWorldPosition();
@@ -34,8 +31,12 @@ function wrect(n: Node): { x0: number; x1: number; y0: number; y1: number } {
 }
 
 function apply(a: Area): void {
-  // content 顶部对齐视口顶部，再按 offset 上移（与参考实现一致）
   a.content.setPosition(0, a.h / 2 - a.contentH / 2 + a.off, 0);
+}
+
+function clampOff(a: Area, v: number): number {
+  const max = Math.max(0, a.contentH - a.h);
+  return Math.max(0, Math.min(max, v));
 }
 
 function bind(): void {
@@ -48,6 +49,7 @@ function bind(): void {
       const r = wrect(a.view);
       if (p.x >= r.x0 && p.x <= r.x1 && p.y >= r.y0 && p.y <= r.y1) {
         a.dragging = true; a.startY = p.y; a.startOff = a.off;
+        a.lastY = p.y; a.lastT = performance.now(); a.flingV = 0;
         return;
       }
     }
@@ -56,13 +58,37 @@ function bind(): void {
     const a = areas.find(x => x.dragging);
     if (!a || !a.content.isValid) return;
     const p = e.getUILocation();
-    const max = Math.max(0, a.contentH - a.h);
-    a.off = Math.max(0, Math.min(max, a.startOff + (p.y - a.startY)));
+    const now = performance.now();
+    const dtm = (now - a.lastT) / 1000;
+    if (dtm > 0.004) { a.flingV = (p.y - a.lastY) / dtm; a.lastY = p.y; a.lastT = now; }
+    a.off = clampOff(a, a.startOff + (p.y - a.startY));
     apply(a);
   });
-  const end = () => { for (const a of areas) a.dragging = false; };
-  input.on(Input.EventType.TOUCH_END, end);
-  input.on(Input.EventType.TOUCH_CANCEL, end);
+  const endAll = () => {
+    for (const a of areas) {
+      if (!a.dragging) continue;
+      a.dragging = false;
+      if (Math.abs(a.flingV) < FLING_MIN) a.flingV = 0;
+    }
+  };
+  input.on(Input.EventType.TOUCH_END, endAll);
+  input.on(Input.EventType.TOUCH_CANCEL, endAll);
+
+  // 惯性滑行
+  director.on(Director.EVENT_AFTER_UPDATE, () => {
+    const dt = Math.min(0.05, director.getDeltaTime());
+    for (const a of areas) {
+      if (!a.flingV || !a.content.isValid) continue;
+      const max = Math.max(0, a.contentH - a.h);
+      let next = a.off + a.flingV * dt;
+      if (next <= 0) { next = 0; a.flingV = 0; }
+      else if (next >= max) { next = max; a.flingV = 0; }
+      a.off = next;
+      apply(a);
+      a.flingV *= Math.pow(FLING_DAMP, dt * 60);
+      if (Math.abs(a.flingV) < FLING_STOP) a.flingV = 0;
+    }
+  });
 }
 
 export interface ScrollHandle { view: Node; content: Node; contentH: number }
@@ -76,18 +102,28 @@ export function makeScroll(parent: Node, cx: number, cy: number, w: number, h: n
   const a: Area = {
     view, content, w, h, contentH: Math.max(h, contentH),
     off: 0, dragging: false, startY: 0, startOff: 0,
+    lastY: 0, lastT: 0, flingV: 0,
   };
   areas.push(a);
   apply(a);
-  // 节点级兜底：抽屉/弹窗里节点触摸是通的（按钮能点），直接用节点事件更可靠
-  const start = (e: EventTouch) => { a.dragging = true; a.startY = e.getUILocation().y; a.startOff = a.off; };
+  const start = (e: EventTouch) => {
+    const p = e.getUILocation();
+    a.dragging = true; a.startY = p.y; a.startOff = a.off;
+    a.lastY = p.y; a.lastT = performance.now(); a.flingV = 0;
+  };
   const move = (e: EventTouch) => {
     if (!a.dragging) return;
-    const max = Math.max(0, a.contentH - a.h);
-    a.off = Math.max(0, Math.min(max, a.startOff + (e.getUILocation().y - a.startY)));
+    const p = e.getUILocation();
+    const now = performance.now();
+    const dtm = (now - a.lastT) / 1000;
+    if (dtm > 0.004) { a.flingV = (p.y - a.lastY) / dtm; a.lastY = p.y; a.lastT = now; }
+    a.off = clampOff(a, a.startOff + (p.y - a.startY));
     apply(a);
   };
-  const end = () => { a.dragging = false; };
+  const end = () => {
+    a.dragging = false;
+    if (Math.abs(a.flingV) < FLING_MIN) a.flingV = 0;
+  };
   view.on(Node.EventType.TOUCH_START, start, view);
   view.on(Node.EventType.TOUCH_MOVE, move, view);
   view.on(Node.EventType.TOUCH_END, end, view);
@@ -95,8 +131,8 @@ export function makeScroll(parent: Node, cx: number, cy: number, w: number, h: n
   return { view, content, contentH: a.contentH };
 }
 
-/** 让某个滚动区回到顶部（切换页签时用） */
+/** 回到顶部（切换页签时用） */
 export function resetScroll(h: ScrollHandle): void {
   const a = areas.find(x => x.content === h.content);
-  if (a) { a.off = 0; apply(a); }
+  if (a) { a.off = 0; a.flingV = 0; apply(a); }
 }

@@ -41,6 +41,12 @@ export function frostSlowPct(n: number): number {
 }
 
 /** 冷静：减速持续时间（秒）。1.2 / 1.6 / 2.0 */
+/** 实际减速比例：BOSS 单独封顶 30%（阶段3 结论：避免被永久冻住站桩打） */
+export function slowFor(isBoss: boolean, stacks: number): number {
+  const p = frostSlowPct(stacks);
+  return isBoss ? Math.min(p, 0.30) : p;
+}
+
 export function frostDuration(n: number): number {
   return 1.2 + 0.4 * Math.max(0, n - 1);
 }

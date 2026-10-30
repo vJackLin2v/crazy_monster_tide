@@ -27,7 +27,7 @@ import { VFX_FRAMES } from '../assets/scripts/data/VfxFrames';
 import { ACHIEVEMENTS, achViews, newlyUnlocked, applyUnlocks } from '../assets/scripts/game/Achievements';
 import { defaultSave } from '../assets/scripts/game/Progress';
 import { balance, balanceOverride, balanceReset, DEFAULT_BALANCE } from '../assets/scripts/core/Balance';
-import { splitBullets, echoRepeats, echoDelay, burnDuration, burnTickMul, frostSlowPct, frostDuration } from '../assets/scripts/game/ModuleScale';
+import { splitBullets, echoRepeats, echoDelay, burnDuration, burnTickMul, frostSlowPct, frostDuration, slowFor } from '../assets/scripts/game/ModuleScale';
 import { telemetryStart, telemetryWaveEnd, telemetryRunEnd, listRuns, summarize } from '../assets/scripts/game/Telemetry';
 import type { SaveData } from '../assets/scripts/game/Progress';
 
@@ -580,6 +580,8 @@ console.log('\n== 5m. 高风险构筑组合（阶段3 数学边界） ==');
   // 3) 范围/控制：灼烧按份数取 max（不叠加），减速有 60% 上限（赋值而非累加）
   ok(Math.abs(burnTickMul(1) - 0.10) < 1e-9 && Math.abs(burnTickMul(3) - 0.30) < 1e-9, '灼烧每份 +10%，上限 30%');
   ok(frostSlowPct(99) <= 0.60 + 1e-9, '减速不超过 60%（不会叠到定身）');
+  ok(Math.abs(slowFor(true, 3) - 0.30) < 1e-9, 'BOSS 减速封顶 30%');
+  ok(Math.abs(slowFor(false, 3) - frostSlowPct(3)) < 1e-9, '普通怪减速仍按份数');
   ok(frostSlowPct(2) > frostSlowPct(1), '减速随份数递增');
   ok(frostDuration(3) > frostDuration(1) && burnDuration(3) > burnDuration(1), '控制/灼烧持续时间随份数增长');
 
