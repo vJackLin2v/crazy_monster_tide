@@ -1,11 +1,15 @@
 <#
-  build-wechat.ps1 - one-click WeChat mini-game build for this project.
+  build-wechat.ps1 - one-click WeChat mini-game build.
 
   1) Builds platform=wechatgame into cocos/build/wechatgame
-  2) Rewrites project.config.json (libVersion/appid) - newer DevTools rejects libVersion="game"
-  3) Optional -Open: launches WeChat DevTools CLI on the same folder (no re-import needed)
+  2) Rewrites project.config.json as BOM-less UTF-8 with libVersion/appid (DevTools rejects libVersion="game")
+  3) Verifies the JSON parses, checks package sizes, optionally opens DevTools via -Open
 
-  Usage: powershell -ExecutionPolicy Bypass -File tools\build-wechat.ps1 -Open
+  Usage (change code, then):
+    powershell -ExecutionPolicy Bypass -File tools\build-wechat.ps1 -Open
+
+  Keep this file ASCII-only: Windows PowerShell 5.1 reads .ps1 as ANSI when there is no BOM,
+  and non-ASCII text breaks the parser.
 #>
 param(
   [string]$ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
@@ -21,25 +25,20 @@ $ErrorActionPreference = 'Stop'
 $cocos = Join-Path $ProjectRoot 'cocos'
 $out   = Join-Path $cocos 'build\wechatgame'
 
-if (-not (Test-Path $Creator)) {
-  throw "Cocos Creator not found: $Creator (pass -Creator <path>)"
-}
+if (-not (Test-Path $Creator)) { throw "Cocos Creator not found: $Creator (pass -Creator <path>)" }
 
-Write-Host "[1/3] building wechatgame (~60s)..." -ForegroundColor Cyan
+Write-Host '[1/3] building wechatgame (~60s) ...' -ForegroundColor Cyan
 Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
 $env:ELECTRON_RUN_AS_NODE = ''
-# Creator CLI 会往 stderr 打无害的 AxiosError；在 $ErrorActionPreference=Stop 下会被当成异常中止
+# Creator CLI writes a harmless AxiosError to stderr; with ErrorActionPreference=Stop that aborts us.
 $prevEap = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 $log = & $Creator --project $cocos --build 'platform=wechatgame;debug=false;md5Cache=false' 2>&1 | Out-String
 $ErrorActionPreference = $prevEap
-if ($log -notmatch 'build success') {
-  Write-Host $log
-  throw 'build failed (check log above; editor may still be open)'
-}
+if ($log -notmatch 'build success') { Write-Host $log; throw 'build failed (see log above; is the editor still open?)' }
 if (-not (Test-Path (Join-Path $out 'game.js'))) { throw "missing output: $out" }
 
-Write-Host "[2/3] patching project.config.json ..." -ForegroundColor Cyan
+Write-Host '[2/3] writing project.config.json (BOM-less UTF-8) ...' -ForegroundColor Cyan
 $cfg = [ordered]@{
   description     = 'crazy-monster-tide (wechat build)'
   miniprogramRoot = './'
@@ -55,11 +54,35 @@ $cfg = [ordered]@{
   condition   = [ordered]@{}
   packOptions = [ordered]@{ ignore = @(); include = @() }
 }
-$cfg | ConvertTo-Json -Depth 8 | Set-Content -Path (Join-Path $out 'project.config.json') -Encoding utf8
-$orient = (Get-Content (Join-Path $out 'game.json') -Raw | ConvertFrom-Json).deviceOrientation
-Write-Host ("   appid=$AppId  libVersion=$LibVersion  orientation=$orient")
+$cfgPath = Join-Path $out 'project.config.json'
+$json = $cfg | ConvertTo-Json -Depth 8
+[System.IO.File]::WriteAllText($cfgPath, $json, (New-Object System.Text.UTF8Encoding($false)))
 
-Write-Host "[3/3] done: $out" -ForegroundColor Green
+# Self-check: no BOM, parses as JSON (this exact failure broke DevTools once).
+$bytes = [System.IO.File]::ReadAllBytes($cfgPath)
+if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+  throw 'project.config.json still has a UTF-8 BOM; WeChat DevTools cannot parse it'
+}
+try { Get-Content $cfgPath -Raw | ConvertFrom-Json | Out-Null } catch {
+  throw ('project.config.json is not valid JSON: ' + $_.Exception.Message)
+}
+
+$orient = (Get-Content (Join-Path $out 'game.json') -Raw | ConvertFrom-Json).deviceOrientation
+Write-Host ('   appid=' + $AppId + '  libVersion=' + $LibVersion + '  orientation=' + $orient)
+
+$all = Get-ChildItem $out -Recurse -File | Measure-Object Length -Sum
+$sub = Get-ChildItem (Join-Path $out 'subpackages') -Recurse -File -ErrorAction SilentlyContinue | Measure-Object Length -Sum
+$mainMB = [math]::Round(($all.Sum - $sub.Sum) / 1MB, 2)
+$allMB = [math]::Round($all.Sum / 1MB, 2)
+$sizeLine = '   main package ' + $mainMB + 'MB (limit 4MB)   total ' + $allMB + 'MB (limit 20MB)'
+if ($mainMB -gt 4) {
+  Write-Host $sizeLine -ForegroundColor Red
+  Write-Host '   [warn] main package exceeds 4MB - split into subpackages before upload' -ForegroundColor Red
+} else {
+  Write-Host $sizeLine -ForegroundColor Green
+}
+
+Write-Host ('[3/3] done: ' + $out) -ForegroundColor Green
 Write-Host '   In WeChat DevTools press Compile (Ctrl+B). No re-import needed.'
 
 if ($Open) {
