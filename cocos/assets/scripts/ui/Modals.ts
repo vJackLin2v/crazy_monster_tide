@@ -493,19 +493,21 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
   const attrRoot = mkNode(drawer, 'attrGrid', VW, 1, 0, 0);
   attrRoot.active = false;
   if (attr) {
-    // 展开全部时行距压到 19（12 行 × 19 = 228），否则「查看全部/收起」条带会被底部按钮压住
-    // M63（6.3）：明确"显示的是当前总值"，避免玩家分不清基础值 / 总值 / 额外加成
-    text(attrRoot, -VW / 2 + 16, bodyY + 9, '绿色 = 高于基础 · 红色 = 低于基础 · 数值为当前总值（部分属性有上限）',
-      { size: 9, color: COL.dim, align: 'left', width: VW - 32, outline: false });
-    const COLS = 2, ROW_H = attr.rows.length > 20 ? 19 : 22, GAP_X = 16;
-    const CW = (VW - 32 - GAP_X) / 2;      // 156：两列之间留 16px，避免左列数值贴住右列图标
-    attr.rows.slice(0, COLS * 12).forEach((r, i) => {
-      const col = i % COLS, row = Math.floor(i / COLS);
-      const cx = -VW / 2 + 16 + CW / 2 + col * (CW + GAP_X);
-      const cy = bodyY - 18 - row * ROW_H;
-      const cell = mkNode(attrRoot, 'attrCell', CW, ROW_H, cx, cy);
+    // 用户 2026-10-30：改成**一行一个属性**（名称左、数值右），去掉"绿色=高于基础"图例，支持滚动看全部
+    const ROW_H = 30, W = VW - 32;
+    const rowsAll = attr.rows;
+    const viewTop = bodyY + 6;
+    const viewBottom = -VH / 2 + B + 150;
+    const viewH = Math.max(80, viewTop - viewBottom);
+    const cy = (viewTop + viewBottom) / 2;
+    const contentH = Math.max(viewH, rowsAll.length * ROW_H + 10);
+    const sc = makeScroll(attrRoot, 0, cy, VW - 8, viewH, contentH);
+    const topY = contentH / 2 - ROW_H / 2 - 2;
+    rowsAll.forEach((r, i) => {
+      const y = topY - i * ROW_H;
+      const row = mkNode(sc.content, 'attrRow', W, ROW_H - 4, 0, y);
       if (r.art) {
-        const ic = mkNode(cell, 'ic', 14, 14, -CW / 2 + 9, 0);
+        const ic = mkNode(row, 'ic', 16, 16, -W / 2 + 10, 0);
         const isp = ic.addComponent(Sprite);
         isp.sizeMode = Sprite.SizeMode.CUSTOM; isp.trim = false;
         const f0 = iconFrame(r.art);
@@ -515,31 +517,15 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
           if (f1 && isp.isValid) isp.spriteFrame = f1;
         });
       }
-      text(cell, -CW / 2 + 24, 0, r.name, { size: 12, color: COL.dim, align: 'left', width: 64, outline: false });
-      // 相对基准：正 = 绿、负 = 红、持平 = 白
+      text(row, -W / 2 + 24, 0, r.name, { size: 12, color: COL.dim, align: 'left', width: 120, outline: false });
       const vc = r.delta > 0 ? COL.mint : r.delta < 0 ? COL.red : COL.cream;
-      // ⚠️ 原来是 CW/2-32 宽 46、差值 CW/2-2 宽 36 —— 两块在 60~71px 区间重叠，
-      //    长数值（"穿透 +0 1"）就会被挤成两行。现在数值右边界 66、差值 66~90，互不重叠。
-      text(cell, CW / 2 - 43, 0, r.value, { size: 12, color: vc, align: 'right', width: 46, bold: true, outline: false });
-      // M65（6.3）：把"基础值的加成"单独一列显示，玩家能分清 总值 / 加成
+      // 数值统一右对齐到行右边界；长数字（如 1,234 / 55.5%）也不会挤到名称
+      text(row, W / 2 - 52, 0, r.value, { size: 12, color: vc, align: 'right', width: 100, bold: true, outline: false });
       if (r.deltaText) {
-        // 9px 承担"本局增减"这种判断信息太小（P1-C：重要状态 ≥10，关键说明 ≥11）
-        text(cell, CW / 2 - 2, 0, r.deltaText,
-          { size: 10, color: r.delta > 0 ? COL.mint : COL.red, align: 'right', width: 26, outline: false });
+        text(row, W / 2 - 4, 0, r.deltaText,
+          { size: 10, color: r.delta > 0 ? COL.mint : COL.red, align: 'right', width: 46, outline: false });
       }
     });
-    // M58（P1-5）：属性太多时默认只显示「核心 + 本局有变化」，底部给可点入口展开/收起全部（数据一项不删）
-    if (attr.more) {
-      const rowsShown = Math.ceil(Math.min(attr.rows.length, COLS * 12) / COLS);
-      // 位置：网格下方 18px。展开到 12 行时要再抬高一点，否则会被「主菜单/继续」按钮压住
-      //（M58 首版截图：展开后条带下半截被按钮盖住）
-      const my = bodyY - 18 - rowsShown * ROW_H - 12;
-      // 视觉条只有 26 高，热区单独给 44（P1-B），避免"看得见点不到"
-      const strip = mkNode(attrRoot, 'attrMore', VW - 32, 44, 0, my);
-      panel(strip, 0, 2, VW - 32, 26, { bg: COL.bg3, line: COL.line2, radius: R.s, shadow: false });
-      text(strip, 0, 3, attr.more.label, { size: 11, color: COL.accent, width: VW - 46, bold: true, outline: false });
-      onTap(strip, attr.more.onTap);
-    }
   }
 
   // ── 技能页专用：手风琴（点一行展开：技能描述 + 已装模块描述）──
@@ -568,12 +554,14 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
           if (f2 && isp.isValid) isp.spriteFrame = f2;
         });
       }
-      text(card, -W / 2 + 32, 10, s.name + '  Lv.' + s.lvl, { size: 12, color: COL.cream, align: 'left', width: 200, bold: true, outline: true });
-      text(card, -W / 2 + 32, -9, s.summary, { size: 10, color: COL.dim, align: 'left', width: W - 60 });
+      // 右侧要给「丢弃」按钮留位置（用户截图：按钮压在技能名上）
+      const dropW = (onDropSkill && (skillDetails?.length ?? 0) > 1) ? 64 : 0;
+      text(card, -W / 2 + 32, 10, s.name + '  Lv.' + s.lvl, { size: 12, color: COL.cream, align: 'left', width: W - 60 - dropW, bold: true, outline: true });
+      text(card, -W / 2 + 32, -9, s.summary, { size: 10, color: COL.dim, align: 'left', width: W - 70 - dropW });
       text(card, W / 2 - 18, 0, open ? '▼' : '▶', { size: 10, color: COL.accent, align: 'right', width: 16 });
       // 主动丢弃（至少保留 1 个技能时才有这个入口）
       if (onDropSkill && (skillDetails?.length ?? 0) > 1) {
-        const del = mkNode(card, 'dropHit', 52, 44, -W / 2 + 118, 0);
+        const del = mkNode(card, 'dropHit', 52, 44, W / 2 - 40, 0);
         const db = panel(del, 0, 0, 52, 24, { art: 'btn_danger' });
         text(db, 0, 1, '丢弃', { size: 10, color: COL.cream, width: 48, bold: true, outline: false });
         onTap(del, () => onDropSkill(i));
@@ -599,22 +587,25 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
   function renderItems() {
     if (!itemDetails) return;
     for (const c of itemRoot.children.slice()) c.destroy();
-    const W = VW - 32;
+    const W = VW - 32, ROW_H = 44;
     if (!itemDetails.length) {
-      text(itemRoot, -W / 2 + 4, bodyY - 8, '（还没有道具：精英 / BOSS 会掉，商店也能买）',
-        { size: 11, color: COL.dim, align: 'left', width: W });
+      text(itemRoot, 0, 0, '（还没有道具：精英 / BOSS 会掉，商店也能买）',
+        { size: 11, color: COL.dim, align: 'center', width: W });
       return;
     }
-    let y = bodyY - 6;
-    const MAX = 5;                        // 一屏最多 5 行（展开后仍放得下）
-    itemDetails.slice(0, MAX).forEach((it, i) => {
-      const open = itemOpen === i;
-      const rowH = 36;
-      const card = panel(itemRoot, 0, y - rowH / 2, W, rowH, {
-        bg: COL.bg3, line: open ? COL.accent : COL.line2, radius: R.s, shadow: false,
-      });
+    // 用户 2026-10-30：道具页要看**全部**，改成滚动列表（一行一件：图标 + 名称×数量 + 数值）
+    const viewTop = bodyY + 6;
+    const viewBottom = -VH / 2 + B + 150;
+    const viewH = Math.max(80, viewTop - viewBottom);
+    const cy = (viewTop + viewBottom) / 2;
+    const contentH = Math.max(viewH, itemDetails.length * (ROW_H + 4) + 10);
+    const sc = makeScroll(itemRoot, 0, cy, VW - 8, viewH, contentH);
+    const topY = contentH / 2 - ROW_H / 2 - 2;
+    itemDetails.forEach((it, i) => {
+      const y = topY - i * (ROW_H + 4);
+      const row = panel(sc.content, 0, y, W, ROW_H, { bg: COL.bg3, line: COL.line2, radius: R.s, shadow: false });
       if (it.icon) {
-        const ic = mkNode(card, 'ic', 18, 18, -W / 2 + 16, 0);
+        const ic = mkNode(row, 'ic', 22, 22, -W / 2 + 18, 0);
         const isp = ic.addComponent(Sprite);
         isp.sizeMode = Sprite.SizeMode.CUSTOM; isp.trim = false;
         const f = iconFrame(it.icon);
@@ -624,34 +615,16 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
           if (f2 && isp.isValid) isp.spriteFrame = f2;
         });
       }
-      text(card, -W / 2 + 32, 0, it.name, { size: 12, color: COL.cream, align: 'left', width: 190, bold: true, outline: true });
-      text(card, W / 2 - 10, 0, open ? '▼' : '▶', { size: 10, color: COL.accent, align: 'right', width: 16 });
-      onTap(card, () => { itemOpen = open ? -1 : i; renderItems(); });
-      y -= rowH + 4;
-      if (open) {
-        // 三行：人话效果 / 具体数值 / 类型来源（用户要求"更详细的数值描述"）
-        const rows: { t: string; c: Color }[] = [
-          { t: it.desc, c: COL.mint },
-          { t: it.nums, c: COL.cream },
-          { t: it.note, c: COL.dim },
-        ].filter(r => !!r.t);
-        rows.slice(0, 3).forEach((r, k) => {
-          text(itemRoot, -W / 2 + 12, y - 6 - k * 14, r.t,
-            { size: 10, color: r.c, align: 'left', width: W - 20, h: 16 });
-        });
-        y -= rows.length * 14 + 8;
-      }
+      text(row, -W / 2 + 36, 8, it.name, { size: 12, color: COL.cream, align: 'left', width: W - 120, bold: true, outline: true });
+      text(row, -W / 2 + 36, -10, it.nums || it.desc, { size: 10, color: COL.dim, align: 'left', width: W - 90, outline: false });
+      if (i >= 0) text(row, W / 2 - 10, 0, '×' + ((it as unknown as { count?: number }).count ?? 1), { size: 11, color: COL.accent, align: 'right', width: 50, bold: true, outline: false });
     });
-    if (itemDetails.length > MAX) {
-      text(itemRoot, -W / 2 + 12, y - 4, '… 还有 ' + (itemDetails.length - MAX) + ' 件（结算页可看全部）',
-        { size: 10, color: COL.dim, align: 'left', width: W - 20 });
-    }
   }
 
   // ── 黑科技页：结构化列表（图标 + 名称/数量 + 效果），**已装与背包分开** ──
   // 可视窗口本身要**有真实尺寸**，否则触摸事件不会落在它上面（这是滚不动的真因）
   const VIEW_TOP = bodyY + 12;
-  const VIEW_BOTTOM = -VH / 2 + 120;   // 让列表停在按钮带更上方，配合底部底板彻底不重叠
+  const VIEW_BOTTOM = -VH / 2 + 150;   // 再往上收 30px，避免半截行贴到按钮带   // 让列表停在按钮带更上方，配合底部底板彻底不重叠
   const VIEW_H = Math.max(40, VIEW_TOP - VIEW_BOTTOM);
   const VIEW_CY = (VIEW_TOP + VIEW_BOTTOM) / 2;
   const modHost = mkNode(drawer, 'modDetail', VW - 8, VIEW_H, 0, VIEW_CY);
@@ -681,19 +654,29 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
 
     const HEAD_H = 24, ROW_H = 58, ROW_GAP = 4;   // 58 = 标题 16 + 描述两行 30 + 上下边距
     const contentH = Math.max(VIEW_H, lines.reduce((s, l) => s + (l.kind === 'head' ? HEAD_H : ROW_H + ROW_GAP), 0) + 8);
-    const sc = makeScroll(modHost, 0, 0, VW - 8, VIEW_H, contentH);
+    // 抽屉里的 Mask 裁剪不稳（实测会漏出半行到底部按钮上），这里**手动裁剪**：
+    // 每次滚动回调只把"完整落在视口内"的行设为可见。
+    const bands: { n: Node; y: number; h: number }[] = [];
+    const sc = makeScroll(modHost, 0, 0, VW - 8, VIEW_H, contentH, () => {
+      // 只显示**完整落在视口内**的行（留 2px 余量），半截行直接隐藏，否则会漏到按钮带上
+      for (const b of bands) {
+        b.n.active = (b.y + b.h / 2 <= VIEW_H / 2 - 2) && (b.y - b.h / 2 >= -VIEW_H / 2 + 2);
+      }
+    });
     modScrollNode = sc.view;
     let cursor = contentH / 2 - 4;
     for (const l of lines) {
       const h = l.kind === 'head' ? HEAD_H : ROW_H + ROW_GAP;
       if (l.kind === 'head') {
-        text(sc.content, -W / 2 + 4, cursor - 4, l.label,
+        const hl = text(sc.content, -W / 2 + 4, cursor - 4, l.label,
           { size: 11, color: COL.accent, align: 'left', width: W, bold: true, outline: false });
+        bands.push({ n: hl.node, y: cursor - 4, h: 20 });
       } else {
         const m = l.m;
         const card = panel(sc.content, 0, cursor - ROW_H / 2, W, ROW_H, {
           bg: COL.bg3, line: COL.line2, radius: R.s, shadow: false,
         });
+        bands.push({ n: card, y: cursor - ROW_H / 2, h: ROW_H });
         if (m.icon) {
           const ic = mkNode(card, 'ic', 18, 18, -W / 2 + 16, 0);
           const isp = ic.addComponent(Sprite);
@@ -762,6 +745,9 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
     pg.rect(-VW / 2, -64, VW, 128);
     pg.fill();
   }
+
+  // 底部按钮带垫不透明底板：滚动内容即使漏出一行也会被盖住（用户截图：主菜单那行被压）
+  panel(drawer, 0, -VH / 2 + B + 28, VW, 62, { art: 'panel' });
 
   const by = -VH / 2 + B + 0;
   const m = button(root, A(12 + 48, 0).x, by + 25, 96, 50, '主菜单', { size: 14 });

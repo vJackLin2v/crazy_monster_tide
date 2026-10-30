@@ -13,6 +13,7 @@ interface Area {
   w: number; h: number; contentH: number;
   off: number; dragging: boolean; startY: number; startOff: number;
   lastY: number; lastT: number; flingV: number;
+  onScroll?: (off: number) => void;
 }
 
 const areas: Area[] = [];
@@ -32,6 +33,7 @@ function wrect(n: Node): { x0: number; x1: number; y0: number; y1: number } {
 
 function apply(a: Area): void {
   a.content.setPosition(0, a.h / 2 - a.contentH / 2 + a.off, 0);
+  try { a.onScroll?.(a.off); } catch (e) { /* 回调不能影响滚动 */ }
 }
 
 function clampOff(a: Area, v: number): number {
@@ -93,7 +95,7 @@ function bind(): void {
 
 export interface ScrollHandle { view: Node; content: Node; contentH: number }
 
-export function makeScroll(parent: Node, cx: number, cy: number, w: number, h: number, contentH: number): ScrollHandle {
+export function makeScroll(parent: Node, cx: number, cy: number, w: number, h: number, contentH: number, onScroll?: (off: number) => void): ScrollHandle {
   bind();
   const view = mkNode(parent, 'scrollView', w, h, cx, cy);
   const mask = view.addComponent(Mask);
@@ -105,6 +107,7 @@ export function makeScroll(parent: Node, cx: number, cy: number, w: number, h: n
     lastY: 0, lastT: 0, flingV: 0,
   };
   areas.push(a);
+  a.onScroll = onScroll;
   apply(a);
   const start = (e: EventTouch) => {
     const p = e.getUILocation();

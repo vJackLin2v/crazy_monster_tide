@@ -158,9 +158,19 @@ export class Battle extends Component {
   seenEnemies = new Set<string>();
   /** 本波玩家受到的伤害（日志用） */
   private waveDmg = 0;          // 本波**玩家承受**的伤害（历史命名，勿混用）
-  /** 击杀回血（harvest）每秒预算：阶段3 结论 ≤8HP/s，防止"站桩不死" */
+  /** 统一回血预算：吸血 + 击杀回血合计 ≤8HP/s（阶段3 结论：不改就"站桩不死"） */
   private healBudgetSpent = 0;
   private healBudgetSec = 0;
+
+  /** 所有自我回血都走这里：受每秒预算 + 最大生命双重夹取 */
+  private healPlayer(amount: number): void {
+    if (!(amount > 0)) return;
+    const allow = Math.max(0, 8 - this.healBudgetSpent);
+    const heal = Math.min(amount, allow);
+    if (heal <= 0) return;
+    this.healBudgetSpent += heal;
+    this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + heal);
+  }
   private waveDmgDealt = 0;     // 本波**玩家造成**的伤害（新增，供阶段2 A/B 与遥测用）
   /** 调试用时间倍速（1 = 正常）；真机/正式包保持 1 */
   timeScale = 1;
@@ -1111,7 +1121,7 @@ export class Battle extends Component {
       e.slowPct = slowFor(!!e.boss, rt.slow);   // 普通 35/45/55%，BOSS 封顶 30%
     }
     // 吸血：基础 4%/份（唯一模块可合成，Ⅱ = 1.6 份 → 6.4%，低于两份普通）
-    if (rt.vamp) this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + dmg * 0.04 * rt.vamp);
+    if (rt.vamp) this.healPlayer(dmg * 0.03 * rt.vamp);   // 每份 3%（原 4%），且受每秒 8HP 预算限制
     // ★ B7：原来只有特效、**没有伤害**（描述写"造成范围伤害"）。
     //   现在按 15%×份数 触发，对落点 60 半径内的敌人结算 50% 伤害。
     //   ⚠️ 这两个数值（半径/倍率）在 docs/systems 里没有规定，是候选值，已列入审计报告待确认；
@@ -1167,12 +1177,7 @@ export class Battle extends Component {
     this.addVfx(FX.killDust, e.x, e.y + 4, 0.55, big ? 2.2 : 1.2);
     if (big) this.addVfx(FX.killRing, e.x, e.y, 0.55, e.boss ? 3.2 : 2.2);
     // 割韭菜：基础 1 点/份（Ⅱ = 1.6 点）
-    if (rt && rt.harvest) {
-      // 每秒最多回 8 点（同帧多次击杀也不会超预算）
-      const allow = Math.max(0, 8 - this.healBudgetSpent);
-      const heal = Math.min(rt.harvest, allow);
-      if (heal > 0) { this.healBudgetSpent += heal; this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + heal); }
-    }
+    if (rt && rt.harvest) this.healPlayer(rt.harvest);   // 每击杀 1 点，和吸血共享 8HP/s 预算
     // ★ M41：经验球换成**素材动画**（Sunny Land 宝石，CC0，5 帧循环），按经验值分档大小：
     //   普通 1×、精英 1.12×、BOSS/大额 1.35×。不再用程序化绘制的菱形。
     const gemFrames = Assets.vfxFrames('pickup/gem');
