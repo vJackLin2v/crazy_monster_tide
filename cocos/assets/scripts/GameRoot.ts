@@ -292,7 +292,14 @@ export class GameRoot extends Component {
       () => { this.closeModal(); this.battle.resumeFromModal(); });
   }
 
+  /** 上一次生效的选卡时间（防双击/重复回调把同一张卡应用两次） */
+  private lastPickAt = 0;
+
   private pickReward(i: number) {
+    // ⚠️ B12：连点/重复回调守卫。同一次升级只允许生效一次（150ms 内的第二次直接忽略）。
+    const now = Date.now();
+    if (now - this.lastPickAt < 150) return;
+    this.lastPickAt = now;
     const r = i >= 0 ? this.pendingRewards[i] : null;
     // 4 技能已满时抽到新技能 -> 走替换屏
     if (r && r.kind === 'skill' && r.needReplace) {

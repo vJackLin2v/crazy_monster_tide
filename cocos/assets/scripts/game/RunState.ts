@@ -402,6 +402,14 @@ export class RunState {
     const s = this.shopStock?.[i];
     if (!s) return { ok: false, why: '货位为空' };
     if (s.sold) return { ok: false, why: '已购买' };
+    // ⚠️ B12：**先校验商品能否兑现，再扣钱**。
+    //    旧实现在扣钱之后才走 kind 分支，如果 id 在数据表里不存在（存档损坏、版本回退、
+    //    手改过的 shopStock），会先扣钱、再抛异常 → 钱没了东西也没拿到。
+    if (s.id !== 'heal' && s.id !== 'attr') {
+      if (s.kind === 'item' && !ITEMS[s.id]) return { ok: false, why: '道具不存在：' + s.id };
+      if (s.kind === 'module' && !MODULES[baseOf(s.id)]) return { ok: false, why: '模块不存在：' + s.id };
+      if (s.kind !== 'item' && s.kind !== 'module') return { ok: false, why: '商品类型非法：' + s.kind };
+    }
     if (this.gold < s.price) return { ok: false, why: '金币不足' };
     this.gold -= s.price;
     s.sold = true;

@@ -513,6 +513,45 @@ console.log('\n== 5j. 唯一模块可合成 + 合成收益递减 ==');
     '装上之后 rt.vamp：普通 1、Ⅱ 1.6（吸血 = 伤害 × 4% × 该值）');
 }
 
+console.log('\n== 5k. 商店与奖励的原子性（B12） ==');
+{
+  const mk = () => new RunState('knight', 777);
+  // 非法道具 id：不能扣钱、不能标记已售
+  {
+    const rs = mk();
+    rs.gold = 500;
+    const stock: any[] = [{ kind: 'item', id: 'not_an_item', price: 50, sold: false, locked: false }];
+    rs.shopStock = stock as never;
+    const r = rs.buySlot(0);
+    ok(!r.ok && rs.gold === 500 && !stock[0].sold, 'B12 道具 id 非法时拒绝购买且不扣钱');
+  }
+  // 非法 kind
+  {
+    const rs = mk();
+    rs.gold = 500;
+    rs.shopStock = [{ kind: 'weird', id: 'x', price: 50, sold: false, locked: false }] as never;
+    const r = rs.buySlot(0);
+    ok(!r.ok && rs.gold === 500, 'B12 非法 kind 拒绝且不扣钱');
+  }
+  // 金币不足
+  {
+    const rs = mk();
+    rs.gold = 10;
+    rs.shopStock = [{ kind: 'heal', id: 'heal', price: 50, sold: false, locked: false }] as never;
+    const r = rs.buySlot(0);
+    ok(!r.ok && rs.gold === 10, 'B12 金币不足时不扣钱');
+  }
+  // 正常购买仍然成功
+  {
+    const rs = mk();
+    rs.gold = 500;
+    const stock2: any[] = [{ kind: 'heal', id: 'heal', price: 50, sold: false, locked: false }];
+    rs.shopStock = stock2 as never;
+    const r = rs.buySlot(0);
+    ok(r.ok && rs.gold === 450 && stock2[0].sold, 'B12 正常购买：扣钱 + 标记已售');
+  }
+}
+
 console.log('\n== 6. 确定性与波次规则 ==');
 {
   const a = new RunState('mage', 4242), b = new RunState('mage', 4242);
