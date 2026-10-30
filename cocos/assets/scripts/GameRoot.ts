@@ -542,7 +542,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         const d1 = s ? Math.round(s.dmg * (1 + 0.22 * lv)) : 0;
         return {
           kind: 'skillup', title: s ? s.name : r.id, sub: 'Lv.' + lv + ' → ' + (lv + 1),
-          desc: s ? s.desc : '',
+          desc: '',                      // 用户 2026-10-30：卡片只留一句话，详情去暂停面板看
           nums: '伤害 ' + d0 + ' → ' + d1,
           meta: 'Lv.' + lv + ' → ' + (lv + 1) + ' · 冷却 -6%',
           icon,
@@ -550,7 +550,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       }
       return {
         kind: 'skill', title: s ? s.name : r.id, sub: '新技能',
-        desc: s ? s.desc : '',
+        desc: '',
         nums: '伤害 ' + (s ? s.dmg : 0) + ' · 冷却 ' + (s ? s.cd : 0) + 's',
         meta: (tags ? tags + ' · ' : '') + (r.needReplace ? '技能已满，选中后替换' : '占 1 个技能槽'),
         icon,
@@ -561,7 +561,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       const owned = this.battle.rs.totalMods(r.id);
       return {
         kind: 'module', title: m ? m.name : r.id, sub: r.needReplace ? '装到技能上' : '黑科技',
-        desc: m ? m.desc : '',
+        desc: '',
         nums: MODULE_NUMS[r.id] ?? '',
         meta: '已持有 ×' + owned + ' · 上限 ' + (m ? m.max : 1) + (r.needReplace ? ' · 需装到技能槽' : ''),
         glyph: m ? m.icon : '⇢',
@@ -573,7 +573,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       const ownedN = this.battle.rs.items.filter(i => i.id === r.id).length;
       return {
         kind: 'item', title: it ? it.name : r.id, sub: '道具',
-        desc: it ? it.desc : '',
+        desc: '',
         nums: it ? itemNumbers(it, r.id) : '',
         meta: (ownedN > 0 ? '已持有 ×' + ownedN : '尚未持有') + ' · ' + ((it && it.tier === 2) ? '高级道具' : '普通道具'),
         glyph: it ? it.icon : '◆', art: ITEM_ICON[r.id],
@@ -595,7 +595,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
     })() : '';
     return {
       kind: 'attr', title: a ? a.name : r.id, sub: '属性',
-      desc: a ? a.desc : '',
+      desc: '',
       nums: stepTxt,
       meta: (taken > 0 ? '已叠加 ×' + taken + ' · 可继续叠加' : '可无限叠加'),
       glyph: a ? a.icon : '★',

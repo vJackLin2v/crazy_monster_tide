@@ -109,22 +109,19 @@ export function buildLevelUp(parent: Node, lv: number, cards: CardData[],
     const chipW = Math.max(34, label.length * 11 + 12);
     chip(card, CW / 2 - 8 - chipW / 2, CH / 2 - 27, label, { color: col, size: 10 });
 
-    // 具体数值（有就显示，没有就不占位）
-    let cursor = CH / 2 - 50;
+    // 一句话数值（用户 2026-10-30：卡片只保留这一行，长说明去暂停面板看）
+    const hasDesc = !!c.desc && c.desc.trim().length > 0;
+    const numsY = hasDesc ? CH / 2 - 56 : -2;
     if (c.nums) {
-      // ⚠️ 之前用 "长度>18 才给 26"，17 个字符的长句会折成两行却被 14 高的框裁掉（用户截图）
-      const nLines = Math.max(1, Math.ceil(c.nums.length / charsPerLine(txtW, 12)));
-      const h = nLines * 17;
-      text(card, txtX, cursor - h / 2, clampLines(c.nums, txtW, 12, 2),
-        { size: 12, color: COL.cream, align: 'left', width: txtW, h, bold: true, outline: true });
-      cursor -= h + 4;
+      const nLines = Math.max(1, Math.ceil(c.nums.length / charsPerLine(txtW, 14)));
+      const h = nLines * 19;
+      text(card, txtX, numsY, clampLines(c.nums, txtW, 14, 2),
+        { size: 14, color: COL.cream, align: 'left', width: txtW, h, bold: true, outline: true });
     }
-    // 效果描述：吃掉剩余高度，并按可用行数**截断**（宁可省略号，也不许压到卡底/被 meta 盖住）
-    const descBottom = -CH / 2 + (c.meta ? 30 : 12);
-    const descH = Math.max(18, cursor - descBottom);
-    const descLines = Math.max(1, Math.floor(descH / 17));
-    text(card, txtX, cursor - descH / 2, clampLines(c.desc, txtW, 11, descLines),
-      { size: 11, color: COL.dim, align: 'left', width: txtW, h: descH });
+    if (hasDesc) {
+      text(card, txtX, CH / 2 - 82, clampLines(c.desc, txtW, 11, 1),
+        { size: 11, color: COL.dim, align: 'left', width: txtW, h: 18 });
+    }
 
     // 叠加 / 上限状态（10px：属于元数据，不承担关键说明）
     if (c.meta) {
