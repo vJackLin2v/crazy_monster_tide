@@ -2,21 +2,30 @@
 
 ## 当前阶段
 
-**阶段3（2026-10-31）内容扩展 + 难度系统（已完成开发，等真机复测）**
-- 伤害事件：game/DamageContext.ts（来源推导 canTriggerModules、canHarvest/canVamp、ModuleUsage 闸门）；
-- 黑科技 M1–M6：溢出爆裂 / 残影护盾 / 处决 / 返程斩 / 焚烧地带 / 蓄势（数值表 game/ModuleValues.ts）；
-- 难度：五档 data/Difficulties.ts（普通=基准、回血预算 null）、BOSS 召唤状态机 game/BossSummon.ts、
-  难度页 ui/DifficultyScreens.ts（视觉 40 / 热区 44）、通关解锁、结算显示难度；
-- 新技能：ring_blade / mine_field / sentry / charge_pulse（各带实体上限与来源规则）+ 黑科技白名单；
-- 新道具 10 件 + game/SpecialItems.ts（专注核心伤害/冷却、碎冰、落雷追加、刷新省钱、低血强化、
-  金币转攻击、共鸣、余烬、反伤）；
-- UI：ui/ModalList.ts（安装屏背包 + 商店已有道具滚动）、结算布局重排、命名去梗、BOSS 通关先结算；
-- 数值：怪少而强（间隔 .92 / 批量 2 / 同屏 24~34 / HP 成长 .34）、波时 22~46s、商店涨价加速、
-  回血上限 5HP/s、吸血 2%、每波回血 6%、击退 26→12、5 波起每 2 波精英；
-- 测试 264 PASS / 0 FAIL；tsc 双配置 0；微信包 3.06MB / 10.89MB。
-- 2026-10-31 13:38 接手复查：`tsconfig.ui-check.json` 原本 3 个错误（提交 88363bc 引入）——
-  `ui/Modals.ts` 缺 `modEffect` import（技能卡展开→ReferenceError）、`SkillDetailView.mods` 缺 `id`、
-  商店 `owned` 形参缺 `desc`。已补 import + 类型与 `GameRoot` 传参，双配置 0，264 PASS，
-  已按 `build-wechat.bat -nopause` 重新出包（index.js 13:38:06）。
-- 构建只认 build-wechat.bat -nopause（直接调 CocosCreator CLI 会静默不产出）。
+**阶段3（2026-10-31）收尾完成 — 交付后等真机复测**
 
+### 本轮（阶段3 收尾 / 任务书执行）已完成
+- P0-1 兼容矩阵：6 条 S 规则全部有定义 + 实现 + 测试；overload×地雷降为 Y；harvest×哨兵改 S；
+  `SkillCalc.NEW_SKILL_ALLOW` 与矩阵逐格一致（tests §15，72 格）。
+- P0-2 伤害事件：`DamageContext` v7（canHarvest/canVamp 变字段、工厂 freeze、哨兵 summonKind 例外）；
+  `killEnemy` 接收来源（哨兵击杀不再触发 harvest/killblast/击杀回血）；echo 不再计入蓄势。
+- P0-3 BOSS 召唤：文档只留一套状态机（旧 Boolean 版删除）；测试补"请求不丢 / 空位 0 / 12s / 死亡取消"。
+- P0-4 存档：`Progress.parseSave` 读全字段 + 校验 + 迁移（此前难度/图鉴/角色通关/偏好/徽章全部读不回来）。
+- P1-2 精英词缀：新 `game/EliteAffix.ts`（护盾 +20% 生命 / 加速 +25% 移速 / 分裂出 2 只小怪）；
+  难度 `eliteChanceMul` 真正接入，普通难度不掷骰。
+- P1-3 传说道具：`RunState.legendaryTaken`，商店/升级池共享计数，刷新绕不过。
+- P1-5 无尽徽章：`Progress.badgesForRun`（30/40/50，幂等、按难度隔离），结算页显示。
+- P4 经济遥测：`Telemetry` 记录进店/原价/成交/购买/刷新/离店/难度 + `economySummary()`。
+- 截图：web-mobile 真实构建 + headless Chrome，5 张（主菜单/战斗/商店/结算/无尽）。
+- 交付包：`crazy_pigeon_king_stage3_final_20261031_1449.zip`（含 docs / test_reports / build_reports / screenshots）。
+
+### 验证
+- `tsc -p tsconfig.check.json` = 0；`-p tsconfig.ui-check.json` = 0
+- `tsx tests/run.ts` = **349 PASS / 0 FAIL**
+- 微信包 3.06MB / 10.90MB（14:47 构建，commit `49a929a`）
+
+### 未完成 / 待真机
+- 地狱 1.8225 倍：暂定，等真机 `[TELEMETRY]` 经济数据；
+- 普通难度逐项等于旧版：**无法证明**（仓库缺阶段2 基线），只能证明公式层 + 旧断言回归；
+- 微信真机：难度页 / 精英词缀辨识 / 滚动 / 商店详情 / BOSS→结算→无尽 / 徽章文案；
+- 图鉴技能分类筛选、文档由代码生成：未做（见 expansion_acceptance_criteria）。
