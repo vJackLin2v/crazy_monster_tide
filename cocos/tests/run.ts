@@ -1619,6 +1619,15 @@ console.log('\n== 28. M2-A 战斗遥测 ==');
       'lingering 触发归属父技能');
     ok(ar.modules.find(m => m.moduleId === 'shieldonhit')!.relatedSkillIds.indexOf('unknown') >= 0,
       '无可靠来源标记 unknown');
+
+    const kk = mk('kill-run');
+    kk.kill('unknown');
+    kk.kill('fireball');
+    const kr = kk.toRecord();
+    ok(kr.summary.killTotal === 2, '击杀总数含 unknown');
+    ok(kr.skills.find(s => s.skillId === 'unknown')!.killCount === 1
+      && kr.skills.find(s => s.skillId === 'fireball')!.killCount === 1,
+      'unknown 击杀不污染具体技能');
   }
 
   // 续玩：同 runId 恢复已有统计，不新开对局

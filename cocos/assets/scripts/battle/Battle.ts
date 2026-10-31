@@ -103,6 +103,9 @@ interface Enemy {
   /** 状态层（M48）：中毒淡绿 / 灼烧淡红，持续期间每 0.5s 掉血 */
   poisonT: number; burnT: number; dotTick: number;
   poisonDmg: number; burnDmg: number;
+  /** M2-A.3：DoT 施加者来源（刷新时采用最新来源） */
+  poisonTelSkill?: string;
+  burnTelSkill?: string;
   /** 视觉缩放（M64）：精英/BOSS 只放大**显示**，不动碰撞半径 r */
   visScale: number;
   /** AI（玩法审计 §8.5/§8.6）：冲锋/BOSS 技能的预警-执行-恢复状态机 */
@@ -442,6 +445,7 @@ export class Battle extends Component {
         affixes: e.affixes ? e.affixes.slice() : undefined,
         slowPct: e.slowPct, burnT: e.burnT, poisonT: e.poisonT,
         burnDmg: e.burnDmg, poisonDmg: e.poisonDmg,
+        burnTelSkill: e.burnTelSkill, poisonTelSkill: e.poisonTelSkill,
       });
     }
     return {
@@ -471,6 +475,7 @@ export class Battle extends Component {
     e.slowPct = es.slowPct ?? e.slowPct;
     e.burnT = es.burnT ?? 0; e.poisonT = es.poisonT ?? 0;
     e.burnDmg = es.burnDmg ?? 0; e.poisonDmg = es.poisonDmg ?? 0;
+    e.burnTelSkill = es.burnTelSkill; e.poisonTelSkill = es.poisonTelSkill;
     e.spawnT = 0;
     if (e.boss) { this.bossRef = e; this.bossAlive = e; }
   }
@@ -1541,6 +1546,7 @@ export class Battle extends Component {
     if (rt.burn) {
       e.burnT = Math.max(e.burnT, burnDuration(rt.burn));              // 2 / 2.6 / 3.2 秒
       e.burnDmg = Math.max(e.burnDmg, Math.max(1, Math.round(dmg * burnTickMul(rt.burn))));  // 10/20/30%
+      e.burnTelSkill = telSid;   // 刷新时采用最新施加来源（文档规则）
     }
     if (rt.slow) {
       e.slow = frostDuration(rt.slow);       // 1.2 / 1.6 / 2.0 秒
@@ -1618,7 +1624,8 @@ export class Battle extends Component {
    */
   private killEnemy(e: Enemy, rt?: SkillRuntime, src: DamageSource = 'normal', summonKind?: SummonKind, telSkill?: string) {
     if (e.dead) return;
-    const killTel = telSkill ?? this.telSkillId;
+    // 非即时击杀必须显式传入来源；缺省用 unknown，绝不回退"最后释放技能"
+    const killTel = telSkill ?? 'unknown';
     this.telemetry?.kill(killTel, !!e.boss);
     if (e.boss) this.telemetry?.bossDeath();
     e.dead = true; e.deathT = 0;
@@ -2201,13 +2208,22 @@ export class Battle extends Component {
         if (e.dotTick <= 0) {
           e.dotTick = 0.5;
           let dot = 0;
-          if (e.poisonT > 0) { dot += e.poisonDmg; e.poisonT = Math.max(0, e.poisonT - 0.5); }
-          if (e.burnT > 0) { dot += e.burnDmg; e.burnT = Math.max(0, e.burnT - 0.5); }
+          let dotTel = 'unknown';
+          if (e.poisonT > 0) {
+            dot += e.poisonDmg;
+            e.poisonT = Math.max(0, e.poisonT - 0.5);
+            dotTel = e.poisonTelSkill ?? 'unknown';
+          }
+          if (e.burnT > 0) {
+            dot += e.burnDmg;
+            e.burnT = Math.max(0, e.burnT - 0.5);
+            if (e.burnDmg >= e.poisonDmg) dotTel = e.burnTelSkill ?? 'unknown';
+          }
           if (dot > 0) {
             e.hp -= dot;
       this.waveDmgDealt += Math.min(dot);
             this.addDamageText(e.x, e.y - 10, dot, false, e.poisonT > 0 ? 'poison' : 'burn');
-            if (e.hp <= 0) { this.killEnemy(e); continue; }
+            if (e.hp <= 0) { this.killEnemy(e, undefined, 'normal', undefined, dotTel); continue; }
           }
         }
       } else {
@@ -2353,7 +2369,7 @@ export class Battle extends Component {
       this.waveDmgDealt += Math.min(back);
           this.addDamageText(e.x, e.y - 10, back, false);
           this.addVfx('core/spark/block-spark', e.x, e.y, 0.3, 1.2);
-          if (e.hp <= 0) this.killEnemy(e);
+          if (e.hp <= 0) this.killEnemy(e, undefined, 'normal', undefined, 'unknown');
         }
         if (this.rs.stats.hp <= 0 && this.running) { this.running = false; this.paused = true; console.log('[Battle] 玩家阵亡'); this.hooks.onDead?.(); }
       }
@@ -2522,11 +2538,13 @@ export class Battle extends Component {
             if (a.burn) {
               e.burnT = Math.max(e.burnT, 2.0);
               e.burnDmg = Math.max(e.burnDmg, Math.max(1, Math.round(a.dmg * 0.8)));
+              e.burnTelSkill = a.telSkill ?? 'unknown';
             }
             // 毒雾（M48）：站进去就挂 2s 中毒（淡绿 + 每 0.5s 掉血）
             if (a.tag === 'poison') {
               e.poisonT = Math.max(e.poisonT, 2.0);
               e.poisonDmg = Math.max(e.poisonDmg, Math.max(1, Math.round(a.dmg * 0.8)));
+              e.poisonTelSkill = a.telSkill ?? 'unknown';
             }
           }
         }

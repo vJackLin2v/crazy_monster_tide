@@ -1,6 +1,6 @@
 # M2-A 测试报告
 
-> 结论：**517 PASS / 0 FAIL**（M2-A.2）；tsc check/ui-check = 0；微信构建成功；浏览器运行时遥测落盘成功。
+> 结论：**519 PASS / 0 FAIL**（M2-A.3）；tsc check/ui-check = 0；微信构建成功；浏览器运行时遥测落盘成功。
 > M2-A.1 修复：来源绑定、商店展示分母、eventsPerSec 累计计数、波次技能/模块统计、移除恒 0 的 triggerCount。
 > 未做微信真机。
 
@@ -9,7 +9,7 @@
     cd cocos
     tsc -p tsconfig.check.json      -> 0
     tsc -p tsconfig.ui-check.json   -> 0
-    tsx tests/run.ts                -> 517 PASS / 0 FAIL
+    tsx tests/run.ts                -> 519 PASS / 0 FAIL
 
 ## 新增测试（§28）
 
@@ -52,6 +52,8 @@
 - 延迟弹体来源绑定（浏览器）：火球发射后释放冰晶矛，火球伤害仍归火球（50），冰晶矛 0。
 - M2-A.2：lingering 区域 telSkill=fireball；区域/execute 触发归属 fireball，冰晶矛 0；
 - 模块触发/伤害携带父技能、unknown 保留（单测）。
+- M2-A.3：灼烧击杀归属 fireball（ice 0）、刺猬反伤 unknown（ice 0）、chain/split relatedSkillIds=fireball；
+- unknown 击杀不污染具体技能。
 
 ## 浏览器运行时（web-mobile）
 

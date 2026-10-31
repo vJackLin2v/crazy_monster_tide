@@ -2,7 +2,7 @@
 
 ## 数据归因
 
-1. **延迟弹体/区域的技能归因**：M2-A.2 已改为攻击对象创建时绑定 `telSkill`，命中读自身来源；hitEnemy 内部模块使用 `telSid`；lingering 区域继承父来源。仅无来源召唤物/模块击杀标 unknown。
+1. **延迟弹体/区域的技能归因**：M2-A.2 已绑定攻击对象来源；M2-A.3 补齐 DoT/反伤击杀归因，killEnemy 缺省 unknown，不再回退最近施法。仅无来源召唤物/模块伤害标 unknown。
 2. **模块加成拆分**：shatter/emberstack/execute 等“乘区加成”只增加总伤害，未拆成 module_damage；技能 damageTotal 包含加成，moduleBonus 仅记录了显式传入值（当前未传）。模块直接伤害（killblast/voltloop/thunder）有独立 module_damage。
 3. **item_effect 事件未实现**：道具生效点分散，当前仅记录 item_purchase/item_acquire。
 4. **减伤/护盾避免伤害**：damagePrevented 未精确统计，列入 unsupportedMetrics。

@@ -31,6 +31,8 @@ export interface EnemySave {
   slowPct?: number;
   burnT?: number; poisonT?: number;
   burnDmg?: number; poisonDmg?: number;
+  /** M2-A.3：DoT 施加来源（旧档缺失 → unknown） */
+  burnTelSkill?: string; poisonTelSkill?: string;
 }
 
 /** BOSS 召唤状态机快照（噩梦难度） */
