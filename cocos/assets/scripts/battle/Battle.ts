@@ -34,14 +34,13 @@ import { baseOf, modEffect } from '../data/Modules';
 import { FxPrefs } from '../game/Prefs';
 import { focusedMods, shatterMul, VOLTLOOP_CHANCE, VOLTLOOP_DMG, VOLTLOOP_CD, lastbreathCdMul, greedPowerBonus, EMBERSTACK_MUL, THORNCOAT_DMG, THORNCOAT_CD } from '../game/SpecialItems';
 import { MODULE_HOOKS } from '../data/Modules';
-import { difficultyOf, healAmount, healBudget, spawnInterval } from '../data/Difficulties';
+import { difficultyOf, spawnInterval } from '../data/Difficulties';
 import { BossSummonState } from '../game/BossSummon';
 import type { DifficultyId } from '../data/Difficulties';
 import { DamageContext, DamageSource, SummonKind, makeDamageContext, canVamp, nextCastId, ModuleUsage } from '../game/DamageContext';
 import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, CHARGE_ECHO_MUL, sentryShotPlan, SENTRY_FAN_DMG_MUL, SENTRY_FAN_SPREAD, MINE_SPLIT_MUL } from '../game/SkillRules';
 import { rollEliteAffixes, affixHpMul, affixSpeedMul, affixSplits, AFFIX_SPLIT_COUNT, AFFIX_SPLIT_HP_MUL, AFFIX_SPLIT_SPEED_MUL, type EliteAffix } from '../game/EliteAffix';
 import { killOutcome, vampAllowed } from '../game/CombatRules';
-import { healStep } from '../game/HealRules';
 import { normalizeRestoredStats } from '../game/RunRestore';
 import { killblastDamage, killblastRadius, shieldAmount, SHIELD_CAP, SHIELD_COOLDOWN, SHIELD_DURATION, executePct, returnstrikePct, overchargePeriod, overchargeMul, lingeringChance, LINGER_TICKS, LINGER_TICK_DMG, LINGER_MAX_ZONES, VAMP_HEAL_PER_STACK, thornmailBack } from '../game/ModuleValues';
 import { CHARS } from '../data/Chars';
@@ -223,9 +222,7 @@ export class Battle extends Component {
   seenEnemies = new Set<string>();
   /** 本波玩家受到的伤害（日志用） */
   private waveDmg = 0;          // 本波**玩家承受**的伤害（历史命名，勿混用）
-  /** 统一回血预算：吸血 + 击杀回血合计 ≤8HP/s（阶段3 结论：不改就"站桩不死"） */
-  private healBudgetSpent = 0;
-  private healBudgetSec = 0;
+  // 回血预算状态已统一收口到 RunState.healWindow / healSpent（可随存档恢复）
 
   /** 本局难度 id（由 GameRoot 在 begin 前设置） */
   difficultyId: DifficultyId = 'normal';
@@ -244,16 +241,13 @@ export class Battle extends Component {
   /** 荆棘外衣上次反弹时间 */
   private thorncoatAt = -9;
 
-  /** 所有自我回血都走这里：受每秒预算 + 最大生命双重夹取 */
+  /**
+   * 所有战斗内回血的统一入口：属性吸血 / 黑科技吸血 / 击杀回血 / 波末恢复都走这里。
+   * 预算与夹取在 RunState.heal（唯一实现），这里只负责表现反馈。
+   */
   private healPlayer(amount: number): void {
-    if (!(amount > 0)) return;
-    const id = this.rs.difficulty;
-    const hpPct = this.rs.stats.maxhp > 0 ? this.rs.stats.hp / this.rs.stats.maxhp : 1;
-    // 预算统一在 healStep 里：普通难度 null → 默认 8HP/s，且单秒硬夹 5（A4 修复）
-    const step = healStep(amount, id, hpPct, this.healBudgetSpent);
-    if (step.heal <= 0) return;
-    this.healBudgetSpent = step.spent;
-    this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + step.heal);
+    const healed = this.rs.heal(amount);
+    if (healed >= 0.5) this.healFeedback(healed);
   }
   private waveDmgDealt = 0;     // 本波**玩家造成**的伤害（新增，供阶段2 A/B 与遥测用）
   /** 调试用时间倍速（1 = 正常）；真机/正式包保持 1 */
@@ -405,7 +399,12 @@ export class Battle extends Component {
 
     this.currentCastId = nextCastId();
     this.modUsage.reset();
-    this.healBudgetSpent = 0; this.healBudgetSec = 0;
+    // 回血预算随存档恢复：同秒内继续沿用已用额度，跨秒自动开新窗口
+    const curWin = Math.floor(this.rs.runTime);
+    this.rs.healWindow = typeof save.battle.healWindow === 'number' ? save.battle.healWindow : curWin;
+    this.rs.healSpent = typeof save.battle.healSpent === 'number' && Number.isFinite(save.battle.healSpent)
+      ? Math.max(0, save.battle.healSpent) : 0;
+    if (this.rs.healWindow !== curWin) { this.rs.healWindow = curWin; this.rs.healSpent = 0; }
     this.waveEnding = false; this.waveEndT = 0; this.waveEndPending = false;
     this.inv = 1.2;
     this.running = true;
@@ -432,6 +431,9 @@ export class Battle extends Component {
       enemies,
       bossSummon: this.bossSummon ? this.bossSummon.snapshot() : undefined,
       bossDefeated: this.bossDefeated,
+      // 回血预算随存档保存：续玩同一秒内不能"刷新"预算
+      healWindow: this.rs.healWindow,
+      healSpent: this.rs.healSpent,
     };
   }
 
@@ -509,7 +511,6 @@ export class Battle extends Component {
     this.castCount = {};
     this.echoQueue = [];
     this.runTime = 0;
-    this.healBudgetSpent = 0; this.healBudgetSec = 0;
     this.healAccum = 0; this.healFxCd = 0;
     this.thorncoatAt = -9; this.voltloopAt = -9;
     this.running = false; this.paused = false;
@@ -1482,10 +1483,8 @@ export class Battle extends Component {
     this.totalDmgDealt += dmg;
     // ★ 吸血：按伤害比例回血 + 绿色数字 + 角色身上回血动画（M39）
     if (this.rs.stats.lifesteal > 0) {
-      const before = this.rs.stats.hp;
-      this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + dmg * this.rs.stats.lifesteal);
-      const healed = this.rs.stats.hp - before;
-      if (healed >= 0.5) this.healFeedback(healed);
+      // 属性吸血必须与黑科技吸血共享同一预算，禁止直接改 HP
+      this.healPlayer(dmg * this.rs.stats.lifesteal);
     }
     e.flash = 0.12;
     this.addDamageText(e.x, e.y - 10, dmg, crit);
@@ -1592,10 +1591,8 @@ export class Battle extends Component {
     // ★ 击杀回血属性：和 harvest 同一条规则 —— 召唤物击杀不算玩家击杀，不回血
     const kh = this.rs.stats.killHeal ?? 0;
     if (kh > 0 && outcome.harvestHeal) {
-      const before = this.rs.stats.hp;
-      this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + kh);
-      const healed = this.rs.stats.hp - before;
-      if (healed >= 0.5) this.healFeedback(healed);
+      // 击杀回血同样受统一预算限制
+      this.healPlayer(kh);
     }
     // M1 溢出爆裂：只由玩家可直接造成的伤害（可触发模块的来源）击杀触发；
     //   module（爆炸自身）与 summon（召唤物）都不触发，避免连锁与"借召唤物白嫖"。
@@ -1729,8 +1726,6 @@ export class Battle extends Component {
       this.shieldT -= dt;
       if (this.shieldT <= 0) { this.shield = 0; this.shieldT = 0; }
     }
-    this.healBudgetSec += dt;
-    if (this.healBudgetSec >= 1) { this.healBudgetSec -= 1; this.healBudgetSpent = 0; }
 
     this.rs.runTime += dtRaw;
     this.updatePlayer(dt);
@@ -1796,7 +1791,8 @@ export class Battle extends Component {
     this.place(this.playerNode, this.px, this.py);
     const s = this.playerNode.scale;
     this.playerNode.setScale(this.face < 0 ? -Math.abs(s.x) : Math.abs(s.x), s.y, 1);
-    if (st.regen > 0) st.hp = Math.min(st.maxhp, st.hp + st.regen * dt);
+    // 自然恢复同样走统一入口（受每秒预算/上限约束，不允许直接改 HP）
+    if (st.regen > 0) this.healPlayer(st.regen * dt);
   }
 
   private updateSkills(dt: number) {
@@ -2631,8 +2627,8 @@ export class Battle extends Component {
   private waveClearHeal(): void {
     const st = this.rs.stats;
     const heal = Math.min(Math.max(4, Math.round(st.maxhp * 0.06)), st.maxhp - st.hp);
-    if (heal > 0) {
-      st.hp += heal;
+    // 波末节奏恢复：走统一入口，但作为"瞬时治疗"不消耗战斗每秒预算（保留原设计数值）
+    if (this.rs.heal(heal, true) > 0) {
       this.addVfx(FX.killBig, this.px, this.py, 0.4, 1.6);
     }
   }

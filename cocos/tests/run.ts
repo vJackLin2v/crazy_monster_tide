@@ -1384,6 +1384,51 @@ console.log('\n== 24. 回血预算（A4）与 vamp/反伤数值（A6） ==');
   ok(MODULE_NUMS.vamp.indexOf('4%') >= 0, '黑科技数值行写 4%');
   ok(MODULE_NUMS.thornmail.indexOf('6') >= 0, '黑科技数值行写 6');
 }
+
+console.log('\n== 25. 统一回血入口（M1） ==');
+{
+  const mk = (diff: 'normal' | 'hard' = 'normal') => {
+    const rs = new RunState('knight', 12345, diff);
+    rs.stats.maxhp = 100; rs.stats.hp = 50; rs.runTime = 10.2;
+    rs.healWindow = -1; rs.healSpent = 0;
+    return rs;
+  };
+  const rs = mk();
+  const h1 = rs.heal(10);
+  ok(h1 > 0 && h1 <= 5 + 1e-9, '属性吸血走统一入口且受 5HP/s 硬上限');
+  ok(rs.healSpent > 0, '回血会记账到 RunState.healSpent');
+  const h2 = rs.heal(10);
+  ok(h1 + h2 <= 5 + 1e-9, '同一秒多次回血总和不超过硬上限');
+  rs.stats.hp = 100;
+  ok(rs.heal(10) === 0, '满血时不再增加生命');
+  rs.stats.hp = 99;
+  ok(Math.abs(rs.heal(10, true) - 1) < 1e-9, '治疗量按最大生命截断');
+
+  const rs2 = mk();
+  ok(rs2.heal(NaN) === 0 && rs2.heal(Infinity) === 0 && rs2.heal(-5) === 0, 'NaN / Infinity / 负数不会回血');
+  ok(Number.isFinite(rs2.stats.hp), '异常输入后生命仍为有限数');
+
+  const rs3 = mk();
+  rs3.runTime = 10.99;
+  const a = rs3.heal(3);
+  const b = rs3.heal(3);
+  ok(a + b <= 5 + 1e-9, '跨秒前同一窗口仍受预算限制');
+  rs3.runTime = 11.0;
+  ok(rs3.heal(3) > 0, '进入下一秒后预算窗口重置');
+
+  const rs4 = mk();
+  rs4.stats.hp = 10; rs4.healSpent = 5; rs4.healWindow = 10;
+  const shop = rs4.heal(40, true);
+  ok(Math.abs(shop - 40) < 1e-9 && rs4.stats.hp === 50, '商店瞬时治疗 40 生效且不占战斗预算');
+
+  const rs5 = mk();
+  rs5.runTime = 10.4; rs5.healWindow = 10; rs5.healSpent = 4;
+  ok(rs5.heal(10) <= 1 + 1e-9, '恢复后同一秒沿用已用额度（预算不重置）');
+  const rs6 = mk();
+  rs6.runTime = 11.4; rs6.healWindow = 10; rs6.healSpent = 5;
+  ok(rs6.heal(10) > 0, '恢复后跨秒开启新预算窗口');
+}
+
 console.log('\n================ 结果 ================');
 console.log(`PASS ${pass} / FAIL ${fail}`);
 if (fail) throw new Error(`有 ${fail} 项失败`);

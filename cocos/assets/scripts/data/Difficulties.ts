@@ -41,7 +41,7 @@ export interface DifficultyConfig {
   shopPricePerWave: number;
   rerollCostMul: number;
   healMul: number;
-  /** null = 不启用回血预算（普通难度） */
+  /** 每秒回血预算；null = 使用默认值 8（普通难度），并非不限制 */
   healBudgetPerSecond: number | null;
   rules: DifficultyRule[];
   unlock: { type: 'default' } | { type: 'win'; difficulty: DifficultyId };
@@ -152,7 +152,7 @@ export function healAmount(base: number, id: DifficultyId, hpPct: number): numbe
   return v;
 }
 
-/** 回血预算（null = 不限制） */
+/** 每秒回血预算（null = 使用 HealRules.DEFAULT_HEAL_BUDGET = 8，不是不限制） */
 export function healBudget(id: DifficultyId): number | null {
   return difficultyOf(id).healBudgetPerSecond;
 }

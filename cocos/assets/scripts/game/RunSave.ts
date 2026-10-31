@@ -50,6 +50,9 @@ export interface BattleSave {
   enemies: EnemySave[];
   bossSummon?: BossSummonSave;
   bossDefeated?: boolean;
+  /** 统一回血的秒窗口与已用额度（旧存档缺失时按当前窗口从 0 开始） */
+  healWindow?: number;
+  healSpent?: number;
 }
 
 export interface ShopSlotSave {

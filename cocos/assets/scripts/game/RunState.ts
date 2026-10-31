@@ -13,6 +13,7 @@ import { enemyPool, ENEMIES, bossUnitFor } from '../data/Enemies';
 import type { CharStats } from '../data/Types';
 import { freshStats } from './Stats';
 import { calcSkill, makeSkill, MAX_SKILLS, MAX_SLOTS, canInstall, isCompatible, modCount, type SkillInst } from './SkillCalc';
+import { healStep, HEAL_HARD_CAP } from './HealRules';
 import type { RunMilestone } from './RunHistory';
 
 export type RewardKind = 'skill' | 'skillup' | 'module' | 'item' | 'attr';
@@ -34,6 +35,9 @@ export class RunState {
   rng: Rng;
   charId: string;
   stats: CharStats;
+  /** 统一回血：当前秒窗口（floor(runTime)）与本窗口已回量；存档恢复需保留 */
+  healWindow = -1;
+  healSpent = 0;
   skills: SkillInst[] = [];
   items: { id: string }[] = [];
   modsBag: string[] = [];
@@ -111,6 +115,42 @@ export class RunState {
     //   不能用 ATTRS.base（那是全表通用值，如生命上限写死 100，而骑士开局只有 72）。
     this.baseStats = { ...this.stats };
     this.skills = [makeSkill(c.start)];
+  }
+
+  /**
+   * 唯一玩家回血入口（战斗吸血/击杀回血/波末恢复/商店治疗/道具都走这里）。
+   *
+   * @param amount 原始回血量（会校验 finite / 正数 / 上限）
+   * @param instant true = 瞬时治疗（商店/波末节奏恢复），不吃战斗每秒预算；仍受最大生命夹取
+   * @returns 实际增加的生命
+   */
+  heal(amount: number, instant = false): number {
+    const st = this.stats;
+    if (!Number.isFinite(amount) || amount <= 0) return 0;
+    if (!Number.isFinite(st.maxhp) || st.maxhp <= 0) return 0;
+    if (!Number.isFinite(st.hp)) st.hp = 1;
+    const win = Math.floor(this.runTime);
+    if (win !== this.healWindow) { this.healWindow = win; this.healSpent = 0; }
+    let want = amount;
+    if (!instant) {
+      const hpPct = st.hp / st.maxhp;
+      const step = healStep(amount, this.difficulty, hpPct, this.healSpent);
+      want = step.heal;
+      this.healSpent = Math.min(HEAL_HARD_CAP, Math.max(0, step.spent));
+    }
+    const room = Math.max(0, st.maxhp - st.hp);
+    const healed = Math.min(want, room);
+    if (healed > 0) st.hp += healed;
+    return healed;
+  }
+
+  /**
+   * 清空当前秒回血预算（进入商店等安全区时调用）。
+   * 只是开启一个新的预算窗口，不改变任何回血数值。
+   */
+  resetHealBudget(): void {
+    this.healWindow = Math.floor(this.runTime);
+    this.healSpent = 0;
   }
 
   get expProgress(): number { return Math.min(1, this.exp / this.expNeed); }
@@ -534,7 +574,7 @@ export class RunState {
       this.noteItemTaken(s.id);          // 商店与升级池共享传说计数
     }
     else if (s.kind === 'module') this.modsBag.push(s.id);
-    else if (s.kind === 'heal') this.stats.hp = Math.min(this.stats.maxhp, this.stats.hp + 40);
+    else if (s.kind === 'heal') this.heal(40, true);   // 商店治疗：走唯一回血入口（瞬时，不占战斗预算）
     else {
       const id = this.rng.pick(Object.keys(ATTRS));
       const a = ATTRS[id];

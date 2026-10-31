@@ -1,5 +1,5 @@
 /**
- * 回血预算（纯函数，Battle.healPlayer 与单测共用）
+ * 回血预算（纯函数，RunState.heal 与单测共用；Battle.healPlayer 只是表现层包装）
  *
  * 规则（2026-10-31 修复 A4）：
  *  · 所有难度都有**每秒预算**；普通难度配置为 null 时按默认 8 HP/s 处理；
