@@ -49,6 +49,7 @@ import { validateActiveRun, continueInfoOf, assertRestorable, newRunId, RUN_SAVE
 import { TelemetryRecorder } from '../assets/scripts/game/telemetry/TelemetryRecorder';
 import { loadRecords, saveRecord, exportAllJson, exportRunJson, aggregate, clearAll, skillTotals, TELEMETRY_MAX_RUNS, type TelemetryStorageLike } from '../assets/scripts/game/telemetry/TelemetryStore';
 import { TELEMETRY_SCHEMA_VERSION } from '../assets/scripts/game/telemetry/TelemetryTypes';
+import { pickDotSource } from '../assets/scripts/game/telemetry/DotAttribution';
 import { emptyHistory, addRun, buildSummary, validateHistory, filterRuns, historyStats, hasRun, HISTORY_MAX, type RunSummary, type RunDetail } from '../assets/scripts/game/RunHistory';
 
 let pass = 0, fail = 0;
@@ -1619,6 +1620,23 @@ console.log('\n== 28. M2-A 战斗遥测 ==');
       'lingering 触发归属父技能');
     ok(ar.modules.find(m => m.moduleId === 'shieldonhit')!.relatedSkillIds.indexOf('unknown') >= 0,
       '无可靠来源标记 unknown');
+
+
+  // M2-A.3b：DoT 来源只考虑本次实际生效的 tick
+  {
+    ok(pickDotSource({ poisonActive: false, poisonDmg: 99, poisonSkill: 'ice', burnActive: true, burnDmg: 5, burnSkill: 'fireball' }) === 'fireball',
+      'poison 已结束：不被残留 dmg 影响，归 burn');
+    ok(pickDotSource({ poisonActive: true, poisonDmg: 5, poisonSkill: 'ice', burnActive: false, burnDmg: 99, burnSkill: 'fireball' }) === 'ice',
+      'burn 已结束：不被残留 dmg 影响，归 poison');
+    ok(pickDotSource({ poisonActive: true, poisonDmg: 10, poisonSkill: 'ice', burnActive: true, burnDmg: 20, burnSkill: 'fireball' }) === 'fireball',
+      '两者都有效：高伤害层来源');
+    ok(pickDotSource({ poisonActive: true, poisonDmg: 20, poisonSkill: 'ice', burnActive: true, burnDmg: 10, burnSkill: 'fireball' }) === 'ice',
+      '两者都有效：poison 更高时归 poison');
+    ok(pickDotSource({ poisonActive: true, poisonDmg: 10, poisonSkill: '', burnActive: true, burnDmg: 20, burnSkill: '' }) === 'unknown',
+      '两者来源缺失 → unknown');
+    ok(pickDotSource({ poisonActive: false, poisonDmg: 10, poisonSkill: 'ice', burnActive: false, burnDmg: 20, burnSkill: 'fireball' }) === 'unknown',
+      '无生效 DoT → unknown');
+  }
 
     const kk = mk('kill-run');
     kk.kill('unknown');

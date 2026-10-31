@@ -16,10 +16,12 @@
 - Enemy 新增 `burnTelSkill / poisonTelSkill`；
 - 施加/刷新时记录**最新施加来源**（同一状态下后施加者覆盖，稳定且可解释）；
 - 区域灼烧/毒雾使用区域创建时的 `telSkill`；
-- 击杀时：
-  - 仅一种 DoT → 该来源；
-  - 同时存在 → 伤害更高的一层来源（`burnDmg >= poisonDmg` 取 burn，否则 poison）；
-  - 旧存档/来源缺失 → `unknown`；
+- 击杀时**只看本次实际参与 tick 的 DoT**（先记录 `poisonActive/burnActive`，再结算）：
+  - 仅 burn 生效 → `burnTelSkill`；
+  - 仅 poison 生效 → `poisonTelSkill`；
+  - 两者都生效 → 伤害较高的一层来源（相等取 burn）；
+  - 已结束的 DoT 即使残留 `dmg` 也不参与比较；
+  - 缺失 → `unknown`；
 - 不改变 DoT 数值、持续时间、刷新与 tick 频率。
 
 ## killEnemy 回退
@@ -41,3 +43,6 @@ hitEnemy 的即时调用仍可用当前施法来源；延迟攻击均显式传 `
 - 火球挂灼烧、切冰晶矛后灼烧击杀：fireball 1 / ice 0；
 - 刺猬反伤击杀：unknown 1 / ice 0；
 - chain/split 模块归因 fireball。
+- DoT 边界（poison 结束但残留 dmg 高）：burn 击杀仍归 fireball；
+- burn 结束但残留 dmg 高：poison 击杀归 ice；
+- 两者来源缺失：unknown。

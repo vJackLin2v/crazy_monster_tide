@@ -37,6 +37,7 @@ import { MODULE_HOOKS } from '../data/Modules';
 import { difficultyOf, spawnInterval } from '../data/Difficulties';
 import { BossSummonState } from '../game/BossSummon';
 import type { TelemetryRecorder } from '../game/telemetry/TelemetryRecorder';
+import { pickDotSource } from '../game/telemetry/DotAttribution';
 import type { DifficultyId } from '../data/Difficulties';
 import { DamageContext, DamageSource, SummonKind, makeDamageContext, canVamp, nextCastId, ModuleUsage } from '../game/DamageContext';
 import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, CHARGE_ECHO_MUL, sentryShotPlan, SENTRY_FAN_DMG_MUL, SENTRY_FAN_SPREAD, MINE_SPLIT_MUL } from '../game/SkillRules';
@@ -2208,17 +2209,21 @@ export class Battle extends Component {
         if (e.dotTick <= 0) {
           e.dotTick = 0.5;
           let dot = 0;
-          let dotTel = 'unknown';
-          if (e.poisonT > 0) {
+          // 先记录本次 tick 是否真的生效（结算后 T 可能归零，不能再用残留 dmg 参与比较）
+          const poisonActive = e.poisonT > 0;
+          const burnActive = e.burnT > 0;
+          if (poisonActive) {
             dot += e.poisonDmg;
             e.poisonT = Math.max(0, e.poisonT - 0.5);
-            dotTel = e.poisonTelSkill ?? 'unknown';
           }
-          if (e.burnT > 0) {
+          if (burnActive) {
             dot += e.burnDmg;
             e.burnT = Math.max(0, e.burnT - 0.5);
-            if (e.burnDmg >= e.poisonDmg) dotTel = e.burnTelSkill ?? 'unknown';
           }
+          const dotTel = pickDotSource({
+            poisonActive, poisonDmg: e.poisonDmg, poisonSkill: e.poisonTelSkill,
+            burnActive, burnDmg: e.burnDmg, burnSkill: e.burnTelSkill,
+          });
           if (dot > 0) {
             e.hp -= dot;
       this.waveDmgDealt += Math.min(dot);
