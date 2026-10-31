@@ -1,6 +1,6 @@
 # 阶段3 最终复核报告（stage3_final_review_report）
 
-> 日期：2026-10-31 ｜ 交付 commit：`49a929a` ｜ 环境：Windows / Cocos Creator 3.8.6 / 微信小游戏
+> 日期：2026-10-31 ｜ 代码 commit：`49a929a` ｜ 文档 commit：`3f901b0` ｜ 环境：Windows / Cocos Creator 3.8.6 / 微信小游戏
 > 结论先行：**除"地狱 1.8225 倍待真机经济验证"与"普通难度旧版逐项对照缺基线"外，阶段3 验收项全部满足。**
 
 ---
