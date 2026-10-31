@@ -201,11 +201,23 @@
 
 ```
 AGENTS.md                  ← 本文件（地图）
+README.md                  ← 人类入口（怎么跑、怎么构建）
 START_PROMPT.md            ← 新会话启动提示词
+build-wechat.bat           ← 微信小游戏唯一正确的出包入口
+cocos/                     ← Cocos 工程（assets/scripts、tests/run.ts、build/）
 docs/requirements.md       ← 唯一需求来源
+docs/design/               ← 设计与最终裁决（FINAL_DESIGN_DECISIONS 等）
+docs/review/               ← 阶段评审报告（初审 / 最终复核）
 docs/systems/              ← 玩法规则（按需读）
 docs/ui/                   ← UI 流程与规格（做 UI 前必读）
 docs/assets/               ← 素材门禁与清单
 docs/testing/              ← 测试协议
+docs/implementation_status.md ← 设计 → 实现 → 测试 对照表
+docs/HANDOFF.md            ← 新会话接手入口
 memory-bank/               ← 实时状态：project / architecture / decisions / rules / tasks / HANDOFF
+tools/                     ← 构建 / 截图 / 素材索引 / 分析脚本
+tests/                     ← 早期 HTML 原型的 E2E 与门禁脚本
+screenshots/               ← 历史 UI 截图（按批次分子目录）
+deliverables/              ← 交付包（本机，已 gitignore）
+archive/                   ← 调试日志与旧评审包（本机，已 gitignore）
 ```

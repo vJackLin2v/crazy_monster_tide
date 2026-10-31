@@ -1,12 +1,15 @@
 # 《疯狂鸽王》 crazy_monster_tide
 
 > 竖屏像素风 · 自动攻击割草 · 构筑向肉鸽 · 微信小游戏
-> **Cocos Creator 3.8.6 + TypeScript** ｜ 设计分辨率 **360×640 竖屏** ｜ 当前进度 **M66（UI 专项改造完成）**
+> **Cocos Creator 3.8.6 + TypeScript** ｜ 设计分辨率 **360×640 竖屏** ｜ 当前进度 **阶段3 收尾（349 PASS / 0 FAIL）**
 
 **一句话玩法**：你只负责走位，技能自动开火；4 个主动技能 × 每个 3 个可插拔「黑科技」槽，
 怪潮铺满屏幕，撑过 20 波就算通关（每 3 波精英，第 10 / 20 波 BOSS）。
 
 ![主菜单](screenshots/ui-redesign/390x844-01-menu.png)
+
+> **当前状态（2026-10-31）**：阶段3 收尾完成，测试 **349 PASS / 0 FAIL**，微信包 **3.06MB / 10.90MB**。
+> 接手先读 `docs/HANDOFF.md`；本轮交付包在 `deliverables/stage3_2026-10-31/`（含复核报告与真实截图）。
 
 ---
 
@@ -30,25 +33,34 @@
 ## 目录结构
 
 ```
-cocos/                     Cocos Creator 工程（真正的游戏本体）
-  assets/scripts/          全部 TypeScript
-    battle/Battle.ts       战斗主循环（敌人/子弹/技能/波次/掉落）
-    ui/                    UIKit + 11 个页面（Hud / MenuScreens / Modals / ManageScreens …）
-    data/                 技能、道具、黑科技、敌人、属性的数据表
-    game/                  RunState（一局的状态）/ SkillCalc（伤害与冷却结算）
-    engine/                资源加载、帧动画、摇杆、相机、音频
-  assets/resources/        运行时要加载的素材（单位 / 特效 / 图标 / UI 九宫格 / 背景）
-  tests/run.ts             纯逻辑单测（不需要编辑器，111 条断言）
-  build/, library/         Cocos 生成物（已 .gitignore，不入库）
-
-docs/                      规格与规则（需求、系统、UI、素材、测试）
-docs/ui-redesign/          ★ UI 专项改造的完整交付包（本仓库最近一轮工作）
-memory-bank/               项目实时状态（进度 / 决策 / 硬规则 / 架构）
-prototype-html/            早期的竖屏 HTML 可玩原型
-screenshots/               实机截图（本次 UI 改造的三档视口截图在 screenshots/ui-redesign/）
-tools/                     素材索引、美术生成、目视确认等脚本
-assets/ui/third_party/     第三方素材原始包（含 License，见下方授权）
+AGENTS.md                  Agent 地图：路由表 + 红线（开工必读）
+README.md                  本文件
+START_PROMPT.md            新会话启动提示词
+build-wechat.bat           微信小游戏一键构建（唯一正确的出包入口）
 LICENSE                    MIT
+
+cocos/                     Cocos Creator 工程（真正的游戏本体）
+  assets/scripts/          TypeScript：battle / ui / data / game / engine
+  tests/run.ts             纯逻辑单测（349 条断言，不需要编辑器）
+  build/                   构建产物：wechatgame（导入微信开发者工具）/ web-mobile（截图用）
+  library/, temp/          Cocos 生成物（已 gitignore）
+
+docs/                      规格、设计、评审与状态
+  design/                  设计文档 + 最终裁决（FINAL_DESIGN_DECISIONS / 技能 / 难度 / 伤害接口）
+  review/                  阶段3 初审 + 最终复核报告
+  systems/ ui/ assets/ …   按需读取的规则仓库
+  implementation_status.md 设计 → 实现 → 测试 对照表
+  HANDOFF.md               新会话接手入口
+
+memory-bank/               项目实时状态（tasks / decisions / rules / architecture / HANDOFF）
+tools/                     构建、截图、素材索引、数值分析脚本
+tests/                     早期 HTML 原型的 E2E / 门禁脚本（e2e_mvp.cjs / gate_mvp.cjs）
+assets/                    素材源与第三方包（含 License；assets_index/ 为素材索引）
+prototype-html/            早期竖屏 HTML 可玩原型
+screenshots/               历史 UI 截图（按批次分子目录）
+reports/                   历史数值 / 工程报告
+archive/                   ★ 本机杂物：调试日志、旧评审包（已 gitignore，不进仓库）
+deliverables/              ★ 交付包：阶段交付目录与 zip（已 gitignore，不进仓库）
 ```
 
 ---
@@ -60,10 +72,14 @@ LICENSE                    MIT
 1. 用 Cocos Creator 打开 `cocos/` 目录（首次会自动导入资源、生成 `library/`，约 1~3 分钟）。
 2. 打开 `assets/scenes/Boot.scene`，点预览即可（竖屏，建议窗口比例接近 9:19.5）。
 
-**构建**（CLI，需先关闭编辑器）：
+**构建**（需先关闭编辑器）：
 
-```bash
-# Windows 示例
+```bat
+REM 微信小游戏：唯一正确入口（直接调 Creator CLI 可能静默不产出）
+cmd /c "build-wechat.bat -nopause"
+REM 产物：cocos/build/wechatgame（微信开发者工具导入这个目录）
+
+REM 网页包（截图 / 浏览器调试）
 CocosCreator.exe --project <仓库>/cocos --build "platform=web-mobile;debug=false"
 ```
 
@@ -73,12 +89,13 @@ CocosCreator.exe --project <仓库>/cocos --build "platform=web-mobile;debug=fal
 **单测**（纯逻辑层，不需要编辑器）：
 
 ```bash
-node <tsx-cli> tests/run.ts     # 当前：PASS 111 / FAIL 0
+cd cocos
+node <tsx-cli> tests/run.ts     # 当前：PASS 349 / FAIL 0
 ```
 
 ---
 
-## 最近一轮工作：UI 专项改造（M66）
+## 历史一轮：UI 专项改造（M66）
 
 原来的 UI 是「程序化圆角方块」拼的，这次换成一整套**真实像素九宫格素材**并重排了所有页面。
 

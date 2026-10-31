@@ -6,7 +6,7 @@
 const path = require('path');
 const { chromium } = require('H:/AI-game/xingnang/cocos_port/node_modules/playwright-core');
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-const OUT = 'H:/AI-game/crazy_monster_tide/stage3_delivery/screenshots';
+const OUT = 'H:/AI-game/crazy_monster_tide/deliverables/stage3_2026-10-31/screenshots';
 
 (async () => {
   const browser = await chromium.launch({

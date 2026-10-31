@@ -89,7 +89,7 @@ PASS 264 / FAIL 0
 ```
 
 - 执行：`tsx tests/run.ts`
-- 原始输出已保存：`stage3_delivery/test_reports/test_execution.log`
+- 原始输出已保存：`deliverables/stage3_2026-10-31/test_reports/test_execution.log`
 - 264 条中与本次任务直接相关的分组：5n（伤害上下文）、5o（M1–M6 数值）、5p（难度 + 召唤状态机）、5q（新技能白名单）、5r（特殊道具）
 - **测试覆盖的盲区**（本轮必须补）：
   1. `killEnemy` 的来源传递（哨兵击杀是否触发 harvest）没有测试；

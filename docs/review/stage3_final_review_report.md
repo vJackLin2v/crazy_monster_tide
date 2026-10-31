@@ -1,6 +1,6 @@
 # 阶段3 最终复核报告（stage3_final_review_report）
 
-> 日期：2026-10-31 ｜ 代码 commit：`49a929a` ｜ 文档 commit：`3f901b0` ｜ 环境：Windows / Cocos Creator 3.8.6 / 微信小游戏
+> 日期：2026-10-31 ｜ 代码 commit：`49a929a` ｜ 文档 commit：`fad15f4` ｜ 环境：Windows / Cocos Creator 3.8.6 / 微信小游戏
 > 结论先行：**除"地狱 1.8225 倍待真机经济验证"与"普通难度旧版逐项对照缺基线"外，阶段3 验收项全部满足。**
 
 ---
@@ -29,7 +29,7 @@
 - 文件：`cocos/tests/run.ts`（新增 §7–§15，共 85 条断言）
 - 命令：`tsx tests/run.ts`
 - 结果：**349 PASS / 0 FAIL / 0 SKIP**
-- 原始输出：`stage3_delivery/test_reports/test_execution.log`
+- 原始输出：`deliverables/stage3_2026-10-31/test_reports/test_execution.log`
 - 覆盖：
   - §7 伤害事件权限（来源、哨兵 vamp/harvest、伪造字段、castId）
   - §8 6 条 S 规则纯函数
@@ -95,6 +95,6 @@
 - [x] 新增功能测试（85 条）
 - [x] 集成测试：类型检查双配置 0 + 微信构建成功
 - [x] 文档与代码一致（doc_conflict_check 关键词 0、断言 18/18）
-- [ ] 交付包内容完整 —— 见 `stage3_delivery/README.md`（截图已真实采集）
+- [x] 交付包内容完整 —— 见 `deliverables/stage3_2026-10-31/README.md` + 同名 zip（截图已真实采集）
 
 > 保留状态：**地狱商店 1.8225 倍 = 数值待真机验收**（不得标记最终通过）。
