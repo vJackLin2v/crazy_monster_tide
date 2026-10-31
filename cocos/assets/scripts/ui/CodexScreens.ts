@@ -154,7 +154,7 @@ export function buildCodex(parent: Node, save: SaveData, onBack: () => void): No
   });
 
   const viewTop = tabY + TAB_H / 2 + 12;
-  const viewBottom = VH - B - 60;
+  const viewBottom = VH - B - 74;
   const viewH = Math.max(80, viewBottom - viewTop);
   const vc = A(VW / 2, viewTop + viewH / 2);
   const ROW_H = 50, PITCH = 56, ROW_W = 336;
@@ -219,7 +219,7 @@ export function buildAchievements(parent: Node, save: SaveData, onBack: () => vo
     { size: 11, color: COL.dim, width: 320, outline: false });
 
   const viewTop = S + 58 + 38;
-  const viewBottom = VH - B - 60;
+  const viewBottom = VH - B - 74;
   const viewH = Math.max(80, viewBottom - viewTop);
   const vc = A(VW / 2, viewTop + viewH / 2);
   const ROW_H = 50, PITCH = 56, ROW_W = 336;

@@ -96,7 +96,7 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
   // 标题 + 操作提示
   text(box, 0, TOPY - 24, '黑科技', { size: 24, color: COL.cream, width: 300, bold: true, outline: true, shadow: true });
   text(box, 0, TOPY - 50, d.selSlot ? '已拿起「' + holding + '」→ 点槽位：空槽=移动，占用=交换'
-    : d.selBag !== null ? '已选中「' + holding + '」→ 点槽位：空槽=装上，占用=替换（满槽也能换）'
+    : d.selBag !== null ? '已选中「' + holding + '」→ 点槽位：空槽=装上，占用=替换'
       : '点背包里的黑科技，或点技能上的黑科技把它拿起来',
   { size: 11, color: picking ? COL.mint : COL.dim, width: 316, h: 28 });
 

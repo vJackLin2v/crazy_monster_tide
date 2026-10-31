@@ -72,14 +72,20 @@ export function buildDifficultySelect(
     for (const c of detailHost.children.slice()) c.destroy();
     const c = DIFFICULTIES.find(d => d.id === cur) ?? DIFFICULTIES[1];
     panel(detailHost, 0, 0, ROW_W, 136, { art: 'panel_soft' });
-    text(detailHost, -ROW_W / 2 + 12, 48, c.name + ' · ' + c.tagline,
-      { size: 12, color: COL.accent, align: 'left', width: ROW_W - 24, bold: true, outline: true });
+    // D4：内容整体垂直居中，避免标题与奖励之间大片留白
     const lines: string[] = [...multLines(c), ...c.rules.map(ruleText)].filter(Boolean).slice(0, 4);
+    const blockH = 20 + lines.length * 18 + 10 + 12;
+    const top = blockH / 2;
+    const titleY = top - 10;
+    const firstLineY = titleY - 22;
+    const rewardY = firstLineY - Math.max(0, lines.length - 1) * 18 - 16;
+    text(detailHost, -ROW_W / 2 + 12, titleY, c.name + ' · ' + c.tagline,
+      { size: 12, color: COL.accent, align: 'left', width: ROW_W - 24, bold: true, outline: true });
     lines.forEach((ln, i) => {
-      text(detailHost, -ROW_W / 2 + 12, 24 - i * 18, '· ' + ln,
+      text(detailHost, -ROW_W / 2 + 12, firstLineY - i * 18, '· ' + ln,
         { size: 10, color: COL.cream, align: 'left', width: ROW_W - 24, outline: false });
     });
-    text(detailHost, -ROW_W / 2 + 12, -58, c.reward ? ('通关奖励：' + c.reward) : '通关奖励：无',
+    text(detailHost, -ROW_W / 2 + 12, rewardY, c.reward ? ('通关奖励：' + c.reward) : '通关奖励：无',
       { size: 10, color: COL.dim, align: 'left', width: ROW_W - 24, outline: false });
   }
 

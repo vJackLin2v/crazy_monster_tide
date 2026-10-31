@@ -154,7 +154,16 @@ export class RunState {
   }
   get isBossWaveNow(): boolean { return isBossWave(this.wave); }
   get elitesThisWave(): number { return this.wave > 0 && !isBossWave(this.wave) ? eliteCount(this.wave) : 0; }
-  get spawnPool(): string[] { return enemyPool(this.wave); }
+  /** C7：按波次缓存刷怪池（同波多次读取不再重建数组） */
+  private poolWave = -1;
+  private poolCache: string[] = [];
+  get spawnPool(): string[] {
+    if (this.poolWave !== this.wave) {
+      this.poolCache = enemyPool(this.wave);
+      this.poolWave = this.wave;
+    }
+    return this.poolCache;
+  }
   get bossUnit(): string { return bossUnitFor(this.wave); }
 
   waveClearGold(bonus = 0): number {

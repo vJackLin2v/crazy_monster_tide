@@ -94,6 +94,8 @@ export class GameRoot extends Component {
   private resuming = false;
   /** 主菜单点角色：进入选角页只更换展示角色，不直接开局 */
   private charPreview = false;
+  /** C6：复用同一个 HudData，避免每帧 new */
+  private hudData: HudData | null = null;
 
   onLoad() {
     // 设计分辨率写死在代码里，不依赖编辑器设置（编辑器里是 1280x720，见 KI-005）
@@ -1569,25 +1571,29 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
   private syncHud() {
     const rs = this.battle.rs;
     const boss = this.battle.bossAlive;
-    const d: HudData = {
-      hp: rs.stats.hp, maxhp: rs.stats.maxhp,
-      lv: rs.lv, exp: rs.exp, expNeed: rs.expNeed,
-      gold: rs.gold, wave: rs.wave, waveTotal: RUN.waves, waveLeft: this.battle.waveLeftSec,
-      waveDur: waveTime(rs.wave),
-      kills: rs.waveKills,
-      hurtFlash: this.battle.hurtFlash,
-      bossName: boss ? ('BOSS · 第 ' + rs.wave + ' 波') : null, bossHp: boss ? boss.hp : 0, bossMax: boss ? boss.maxhp : 0,
-      skills: [0, 1, 2, 3].map(i => {
-        const s = rs.skills[i];
-        const def = s ? SKILLS[s.id] : null;
-        return {
-          name: def ? def.name : '',
-          icon: def ? (def.icon || '') : '',
-          cdPct: this.battle.skillCdPct[i] || 0, lvl: s ? s.lvl : 0,
-          modCount: s ? s.mods.length : 0,
-        };
-      }),
-    };
+    // C1：冷却只取一次（getter 内部已是缓存值，不再 16 次 calcSkill）
+    const cds = this.battle.skillCdPct;
+    const d: HudData = this.hudData ?? ({} as HudData);
+    d.hp = rs.stats.hp; d.maxhp = rs.stats.maxhp;
+    d.lv = rs.lv; d.exp = rs.exp; d.expNeed = rs.expNeed;
+    d.gold = rs.gold; d.wave = rs.wave; d.waveTotal = RUN.waves; d.waveLeft = this.battle.waveLeftSec;
+    d.waveDur = waveTime(rs.wave);
+    d.kills = rs.waveKills;
+    d.hurtFlash = this.battle.hurtFlash;
+    d.bossName = boss ? ('BOSS · 第 ' + rs.wave + ' 波') : null;
+    d.bossHp = boss ? boss.hp : 0; d.bossMax = boss ? boss.maxhp : 0;
+    d.skills = d.skills ?? [];
+    for (let i = 0; i < 4; i++) {
+      const s = rs.skills[i];
+      const def = s ? SKILLS[s.id] : null;
+      d.skills[i] = {
+        name: def ? def.name : '',
+        icon: def ? (def.icon || '') : '',
+        cdPct: cds[i] || 0, lvl: s ? s.lvl : 0,
+        modCount: s ? s.mods.length : 0,
+      };
+    }
+    this.hudData = d;
     this.hud!.sync(d);
   }
 

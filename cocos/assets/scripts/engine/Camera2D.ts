@@ -52,8 +52,19 @@ export class Camera2D extends Component {
            wy >= this.camY - pad && wy <= this.camY + this.vh + pad;
   }
 
+  /** C7：画布尺寸缓存，0.5s 轮询一次（窗口旋转/分辨率变化时才更新） */
+  private lastVW = 0; private lastVH = 0; private resizeT = 0;
+
   update(dt: number) {
-    const vs = view.getVisibleSize();
+    this.resizeT += dt;
+    if (this.resizeT >= 0.5 || this.lastVW === 0) {
+      this.resizeT = 0;
+      const vsNow = view.getVisibleSize();
+      if (vsNow.width !== this.lastVW || vsNow.height !== this.lastVH) {
+        this.lastVW = vsNow.width; this.lastVH = vsNow.height;
+      }
+    }
+    const vs = { width: this.lastVW, height: this.lastVH };
     const s = Math.max(vs.width / VIEW_W, vs.height / VIEW_H) * ZOOM_MUL;
     this.scale = s;
     this.vw = vs.width / s;

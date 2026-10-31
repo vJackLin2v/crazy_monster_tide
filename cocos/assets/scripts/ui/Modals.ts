@@ -391,10 +391,11 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
   // 底部：刷新(112) + 下一波(216)
   const rf = button(root, A(12 + 56, 0).x, btnY, 112, 50, '刷新', { size: 14 });
   // 布局：文字靠左、图标居中偏右、数字靠右（之前图标压在"刷新"上）
+  // D6：文字左 / 金币+数字右，子节点各自定位，2~3 位数都不会错位
   const rfLabel = rf.node.getComponentInChildren(Label);
-  if (rfLabel) { rfLabel.node.setPosition(-24, 1); (rfLabel.node.getComponent(UITransform))?.setContentSize(64, 20); }
-  coinGlyph(rf.node, 12, 1, 14);
-  text(rf.node, 30, 1, String(rerollCost), { size: 14, color: COL.cream, width: 34, align: 'left', bold: true, outline: true });
+  if (rfLabel) { rfLabel.node.setPosition(-30, 1); (rfLabel.node.getComponent(UITransform))?.setContentSize(52, 20); }
+  coinGlyph(rf.node, -4, 1, 13);
+  text(rf.node, 13, 1, String(rerollCost), { size: 13, color: COL.cream, width: 40, align: 'left', bold: true, outline: true });
   onTap(rf.node, onReroll);
   const nx = button(root, A(132 + 108, 0).x, btnY, 216, 50, nextLabel || '下一波', { primary: true, size: 17 });
   onTap(nx.node, onNext);
@@ -667,7 +668,7 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
   // ── 黑科技页：结构化列表（图标 + 名称/数量 + 效果），**已装与背包分开** ──
   // 可视窗口本身要**有真实尺寸**，否则触摸事件不会落在它上面（这是滚不动的真因）
   const VIEW_TOP = bodyY + 12;
-  const VIEW_BOTTOM = -VH / 2 + 196;   // 再往上收 30px，避免半截行贴到按钮带   // 让列表停在按钮带更上方，配合底部底板彻底不重叠
+  const VIEW_BOTTOM = -VH / 2 + 210;   // D3：再上收 14px，避免半行贴按钮带
   const VIEW_H = Math.max(40, VIEW_TOP - VIEW_BOTTOM);
   const VIEW_CY = (VIEW_TOP + VIEW_BOTTOM) / 2;
   const modHost = mkNode(drawer, 'modDetail', VW - 8, VIEW_H, 0, VIEW_CY);

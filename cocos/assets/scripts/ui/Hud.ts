@@ -63,6 +63,8 @@ export class Hud {
   private hurtVig!: Node;
   private hurtOp!: UIOpacity;
   private lastWarn = false;
+  /** C6：上一帧的数据签名；不变就跳过重绘 */
+  private lastSig = '';
   private slots: {
     node: Node; cd: Graphics; lvl: Label; icon: Sprite;
     modDots: Graphics; name: Label; plus: Label;
@@ -213,14 +215,26 @@ export class Hud {
       const dots = mkNode(box, 'mods', 42, 9, 0, -SLOT / 2 + 7);
       const dg = dots.addComponent(Graphics);
 
-      const nm = text(sk, 0, -34, '', { size: 10, color: COL.dim, width: SLOT + 6 });
-      nm.node.active = false;
+      // D5：技能名常显（9px dim），4 技能时也能辨认同伴
+      const nm = text(sk, 0, -34, '', { size: 9, color: COL.dim, width: SLOT + 10 });
+      nm.node.active = true;
 
       this.slots.push({ node: sk, cd: g, lvl: lv, icon: isp, modDots: dg, name: nm, plus });
     }
   }
 
   sync(d: HudData) {
+    // 受击红屏每帧都要更新（其余元素值不变时跳过）
+    this.hurtOp.opacity = Math.round(255 * Math.max(0, Math.min(1, d.hurtFlash)));
+    let sig = [Math.round(d.hp), d.maxhp, d.lv, Math.round(d.exp), d.gold, d.wave, d.kills,
+      d.waveLeft.toFixed(1), d.bossName ?? '', Math.round(d.bossHp), Math.round(d.bossMax)].join('|');
+    for (let i = 0; i < d.skills.length; i++) {
+      const s = d.skills[i];
+      sig += '|' + (s ? s.name + ':' + s.lvl + ':' + s.modCount + ':' + s.cdPct.toFixed(2) + ':' + s.icon : '-');
+    }
+    if (sig === this.lastSig) return;
+    this.lastSig = sig;
+
     const ratio = d.maxhp > 0 ? Math.max(0, d.hp) / d.maxhp : 0;
     this.hpBar.set(ratio);
     this.hpText.string = Math.max(0, Math.round(d.hp)) + ' / ' + Math.round(d.maxhp);
@@ -281,8 +295,6 @@ export class Hud {
     this.timerText.color = urgent ? COL.red : COL.cream;
     this.timerText.node.setScale(urgent ? 1.12 : 1, urgent ? 1.12 : 1, 1);
 
-    this.hurtOp.opacity = Math.round(255 * Math.max(0, Math.min(1, d.hurtFlash)));
-
     if (d.bossName) {
       this.bossBox.active = true;
       this.bossName.string = d.bossName;
@@ -327,6 +339,7 @@ export class Hud {
         }
       }
 
+      s.name.string = sk.name || '';
       s.lvl.string = sk.lvl > 1 ? String(sk.lvl) : '';
       s.lvl.node.parent!.active = sk.lvl > 1;
 
