@@ -9,7 +9,7 @@ export function emptyStats(): CharStats {
     projSpd: 1, pierce: 0, bounce: 0, count: 0, sizeMul: 1,
     armor: 0, regen: 0, invuln: 0.80, lifesteal: 0,
     pickup: BASE_PICKUP, greed: 0, expGain: 0, killHeal: 0,
-    cdr: 0, knockback: 26, eliteDmg: 0, aoeDmg: 0, extraProjDmg: 0, bossArmor: 0,
+    cdr: 0, knockback: 12, eliteDmg: 0, aoeDmg: 0, extraProjDmg: 0, bossArmor: 0,
     tagAll: 0,
     tagBonus: {}, tagCdr: {}, hp: 60,
   };

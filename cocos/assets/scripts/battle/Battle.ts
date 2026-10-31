@@ -199,7 +199,8 @@ export class Battle extends Component {
     const budget = healBudget(id);                       // null = 普通难度，不启用预算
     const hpPct = this.rs.stats.maxhp > 0 ? this.rs.stats.hp / this.rs.stats.maxhp : 1;
     const scaled = healAmount(amount, id, hpPct);        // 基础 x healMul x 条件倍率
-    const allow = budget === null ? Infinity : Math.max(0, budget - this.healBudgetSpent);
+    const cap = budget === null ? 5 : Math.min(budget, 5);   // 2026-10-31：全局回血上限再压到 5HP/s
+    const allow = Math.max(0, cap - this.healBudgetSpent);
     const heal = Math.min(scaled, allow);
     if (heal <= 0) return;
     if (budget !== null) this.healBudgetSpent += heal;
@@ -1243,7 +1244,7 @@ export class Battle extends Component {
       e.slowPct = slowFor(!!e.boss, rt.slow);   // 普通 35/45/55%，BOSS 封顶 30%
     }
     // 吸血：基础 4%/份（唯一模块可合成，Ⅱ = 1.6 份 → 6.4%，低于两份普通）
-    if (rt.vamp && canVamp(ctx)) this.healPlayer(dmg * 0.03 * rt.vamp);
+    if (rt.vamp && canVamp(ctx)) this.healPlayer(dmg * 0.02 * rt.vamp);
     if (this.rs.hasItem('voltloop') && this.runTime - this.voltloopAt >= VOLTLOOP_CD && this.rs.rng.chance(VOLTLOOP_CHANCE)) {
       this.voltloopAt = this.runTime;
       this.applyRawDamage(e, dmg * VOLTLOOP_DMG);
@@ -2133,7 +2134,7 @@ export class Battle extends Component {
   /** 每波结束的固定恢复（不吃难度回血预算，属于节奏设计） */
   private waveClearHeal(): void {
     const st = this.rs.stats;
-    const heal = Math.min(Math.max(6, Math.round(st.maxhp * 0.12)), st.maxhp - st.hp);
+    const heal = Math.min(Math.max(4, Math.round(st.maxhp * 0.06)), st.maxhp - st.hp);
     if (heal > 0) {
       st.hp += heal;
       this.addVfx(FX.killBig, this.px, this.py, 0.4, 1.6);

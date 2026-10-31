@@ -73,7 +73,12 @@ export function waveTime(n: number): number {
   return w.baseTime + Math.floor((n - 1) / w.timeEvery) * w.timeStep;
 }
 export function isBossWave(n: number): boolean { return n % RUN.bossEvery === 0; }
-export function isEliteWave(n: number): boolean { return !isBossWave(n) && n % RUN.eliteEvery === 0; }
+export function isEliteWave(n: number): boolean {
+  if (isBossWave(n)) return false;
+  // 2026-10-31：玩家反馈"第五波开始可以多出精英" → 5 波起每 2 波一只
+  const every = n >= 5 ? 2 : RUN.eliteEvery;
+  return n % every === 0;
+}
 export function eliteCount(n: number): number { return n >= RUN.eliteDoubleFrom ? 2 : 1; }
 
 // ---------- 战斗手感 ----------

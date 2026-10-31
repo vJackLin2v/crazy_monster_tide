@@ -152,13 +152,16 @@ export class Hud {
     const pauseY = S + 42;
     this.waveText = text(this.root, at(rightEdge, 0).x, at(0, S + 12).y, '波次 1 · 击杀 0',
       { size: 12, color: COL.cream, align: 'right', width: 210, bold: true, outline: true });
-    this.timerText = text(this.root, at(rightEdge, 0).x, at(0, S + 37).y, '0',
+    // ⚠️ 初始必须是空串：以前占位写 '0'，商店/波间会留下一个黑 0（用户反馈）
+    this.timerText = text(this.root, at(rightEdge, 0).x, at(0, S + 37).y, '',
       { size: 26, color: COL.cream, align: 'right', width: 130, bold: true, outline: true, shadow: true });
 
     // ── 波次进度条：贴在顶部承载板底边（336×3），BOSS 出现时让位给 BOSS 血条 ──
     const wb = at(VW / 2, S + 96);
     this.waveBarNode = mkNode(this.root, 'waveBar', 336, 3, wb.x, wb.y);
     this.waveBar = this.waveBarNode.addComponent(Graphics);
+    // 用户问"金币下面那条橙色横条是什么" —— 这条波次进度条信息重复且干扰，直接隐藏
+    this.waveBarNode.active = false;
 
     // 暂停：视觉 36×36，热区 44（微信硬要求）
     const pauseC = at(pauseX, pauseY);

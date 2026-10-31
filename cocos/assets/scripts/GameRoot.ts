@@ -870,6 +870,8 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       dmgTaken: this.battle.totalDmgTaken(),
       durSec: rsR.runTime,
     });
+    // 真机日志里直接落一份结构化数据，方便把 console log 发回来分析
+    try { console.log('[TELEMETRY]' + exportLogs()); } catch (e) { console.warn('[TELEMETRY] dump failed', e); }
     Sfx.sfx(win ? 'victory' : 'defeat', 0.7, 800);
     Sfx.bgm('menu');
     this.closeModal(); this.clearScreen();

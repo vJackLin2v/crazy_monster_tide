@@ -59,13 +59,14 @@ export interface Balance {
 
 export const DEFAULT_BALANCE: Balance = {
   spawn: {
-    baseInterval: 0.62, perWave: 0.016, minInterval: 0.34,
-    batchEvery: 4, batchMax: 3,
-    openBase: 5, openEvery: 2, openMax: 12,
-    aliveSoft: 40, aliveHard: 60, slowMul: 1.6,
+    // 2026-10-31 调优：怪少而强（原 0.62/3只/60上限 → 卡顿主因）
+    baseInterval: 0.92, perWave: 0.012, minInterval: 0.52,
+    batchEvery: 6, batchMax: 2,
+    openBase: 4, openEvery: 3, openMax: 7,
+    aliveSoft: 24, aliveHard: 34, slowMul: 1.7,
   },
-  growth: { hpPerWave: 0.18, dmgPerWave: 0.10 },
-  wave: { baseTime: 18, timeStep: 3, timeEvery: 3 },
+  growth: { hpPerWave: 0.34, dmgPerWave: 0.15 },
+  wave: { baseTime: 22, timeStep: 4, timeEvery: 3 },
   reward: {
     earlyMax: 5, midMax: 12,
     early: { skill: 0.35, module: 0.25, item: 0.25, attr: 0.15 },
@@ -74,12 +75,12 @@ export const DEFAULT_BALANCE: Balance = {
   },
   shop: {
     slots: 4,
-    itemBase: 12, itemRand: 6, itemPerWave: 2,
-    modBase: 16, modRand: 7, modPerWave: 3,
+    itemBase: 14, itemRand: 6, itemPerWave: 3.4,
+    modBase: 18, modRand: 7, modPerWave: 5.0,
     healBase: 8, healPerWave: 1,
     attrBase: 16, attrPerWave: 3,
-    rerollBase: 2,
-    clearGoldBase: 12, clearGoldPerWave: 5,
+    rerollBase: 3,
+    clearGoldBase: 9, clearGoldPerWave: 3.5,
   },
   ai: {
     eliteChargeTele: 0.7, eliteChargeDash: 0.35, eliteChargeRec: 0.55, eliteChargeCd: 4.5,
