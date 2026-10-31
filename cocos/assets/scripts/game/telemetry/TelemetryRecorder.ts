@@ -28,6 +28,12 @@ export class TelemetryRecorder {
   private waveStartMs: number;
   private events: TelemetryEvent[] = [];
   private eventSeq = 0;
+  /** 累计事件数（不受事件环裁剪影响，用于 eventsPerSec） */
+  private eventTotal = 0;
+  /** 当前波次技能伤害 / 黑科技触发 */
+  private waveSkillDamage: Record<string, number> = {};
+  private waveModuleTriggers: Record<string, number> = {};
+  private endedWaves = new Set<number>();
 
   private summary: RunTelemetry;
   private waves: WaveTelemetry[] = [];
@@ -64,6 +70,7 @@ export class TelemetryRecorder {
       this.startMs = r.summary.startTime || this.startMs;
       this.summary = { ...r.summary, endTime: 0, result: 'unknown', durationMs: 0 };
       this.waves = r.waves.map(w => ({ ...w }));
+      this.endedWaves = new Set(this.waves.map(w => w.wave));
       this.skills.clear();
       for (const s of r.skills) this.skills.set(s.skillId, { ...s });
       this.modules.clear();
@@ -86,6 +93,8 @@ export class TelemetryRecorder {
   get isEnded(): boolean { return this.ended; }
   get wave(): number { return this.currentWave; }
   get eventCount(): number { return this.events.length; }
+  /** 累计事件数（含已被环裁剪的） */
+  get totalEventCount(): number { return this.eventTotal; }
 
   private elapsedMs(): number { return Math.max(0, nowMs() - this.startMs); }
 
@@ -93,6 +102,7 @@ export class TelemetryRecorder {
     try {
       if (this.events.length >= EVENT_CAP) this.events.shift();
       this.eventSeq++;
+      this.eventTotal++;
       this.events.push({
         eventId: this.eventSeq, runId: this.runId, timestamp: nowMs(),
         elapsedMs: this.elapsedMs(), wave: this.currentWave, type,
@@ -106,7 +116,7 @@ export class TelemetryRecorder {
     if (!s) {
       s = {
         skillId: id, castCount: 0, hitCount: 0, damageTotal: 0, damageAverage: 0,
-        damageMax: 0, killCount: 0, triggerCount: 0, firstCastTime: 0, lastCastTime: 0,
+        damageMax: 0, killCount: 0, firstCastTime: 0, lastCastTime: 0,
         moduleBonus: 0,
       };
       this.skills.set(id, s);
@@ -132,6 +142,8 @@ export class TelemetryRecorder {
     try {
       this.currentWave = Math.max(1, Math.floor(wave));
       this.waveStartMs = nowMs();
+      this.waveSkillDamage = {};
+      this.waveModuleTriggers = {};
       this.summary.maxWave = Math.max(this.summary.maxWave, this.currentWave);
       this.push('wave_start', { value: this.currentWave });
     } catch { /* ignore */ }
@@ -144,14 +156,16 @@ export class TelemetryRecorder {
   }): void {
     try {
       const w = Math.max(1, Math.floor(wave));
+      if (this.endedWaves.has(w)) return;
+      this.endedWaves.add(w);
       const end = nowMs();
       this.waves.push({
         wave: w, startMs: this.waveStartMs, endMs: end,
         durationMs: Math.max(0, end - this.waveStartMs),
         kills: Math.max(0, d.kills | 0), damageTaken: Math.max(0, d.damageTaken || 0),
         healing: Math.max(0, d.healing || 0),
-        skillDamage: d.skillDamage ?? {},
-        moduleTriggers: d.moduleTriggers ?? {},
+        skillDamage: d.skillDamage ?? { ...this.waveSkillDamage },
+        moduleTriggers: d.moduleTriggers ?? { ...this.waveModuleTriggers },
         bossKilled: !!d.bossKilled,
         completed: true,
       });
@@ -212,7 +226,9 @@ export class TelemetryRecorder {
       if (dmg > s.damageMax) s.damageMax = dmg;
       s.damageAverage = s.hitCount > 0 ? s.damageTotal / s.hitCount : 0;
       if (moduleBonus > 0) s.moduleBonus += moduleBonus;
-      this.push('skill_hit', { sourceId: skillId, targetId, value: dmg });
+      const key = skillId || 'unknown';
+      this.waveSkillDamage[key] = (this.waveSkillDamage[key] ?? 0) + dmg;
+      this.push('skill_hit', { sourceId: key, targetId, value: dmg });
     } catch { /* ignore */ }
   }
 
@@ -249,6 +265,7 @@ export class TelemetryRecorder {
       if (!m.firstTriggerTime) m.firstTriggerTime = t;
       m.lastTriggerTime = t;
       if (skillId && m.relatedSkillIds.indexOf(skillId) < 0) m.relatedSkillIds.push(skillId);
+      this.waveModuleTriggers[id] = (this.waveModuleTriggers[id] ?? 0) + 1;
       this.push('module_trigger', { sourceId: id, targetId: skillId });
     } catch { /* ignore */ }
   }
@@ -300,11 +317,19 @@ export class TelemetryRecorder {
     try {
       this.shop.enters++;
       this.shop.goldIn += Math.max(0, gold);
+      this.shopDisplay(stock);
+      this.push('shop_open', { value: stock.length, extra: { gold } });
+    } catch { /* ignore */ }
+  }
+
+  /** 记录一次"货架展示"（进入商店 / 刷新后的新货架；锁定保留项不要重复计） */
+  shopDisplay(stock: { id: string; kind: string }[]): void {
+    try {
       for (const s of stock) {
         const key = s.kind + ':' + s.id;
         this.shop.displays[key] = (this.shop.displays[key] ?? 0) + 1;
       }
-      this.push('shop_open', { value: stock.length, extra: { gold } });
+      this.push('shop_display', { value: stock.length });
     } catch { /* ignore */ }
   }
 

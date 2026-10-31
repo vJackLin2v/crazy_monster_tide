@@ -1,7 +1,7 @@
 /**
  * M2-A 战斗遥测类型（纯数据，不依赖 cc，可单测）
  */
-export const TELEMETRY_SCHEMA_VERSION = 1;
+export const TELEMETRY_SCHEMA_VERSION = 2;
 
 export type RunResult = 'victory' | 'death' | 'quit' | 'unknown';
 export type Completeness = 'complete' | 'interrupted' | 'partial' | 'corrupted';
@@ -27,7 +27,6 @@ export interface SkillTelemetry {
   damageAverage: number;
   damageMax: number;
   killCount: number;
-  triggerCount: number;
   firstCastTime: number;
   lastCastTime: number;
   /** 黑科技加成估算（仅记录可计算的增量，不并入 damageTotal） */

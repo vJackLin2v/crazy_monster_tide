@@ -9,11 +9,12 @@
 | wave_end | Battle.finishWave | extra.kills/damageTaken | 波次聚合 |
 | skill_cast | Battle.fireSkill | sourceId=skillId | echo 在 extra.echo=true |
 | skill_hit | Battle.hitEnemy | value=最终伤害 | 一次命中一条（事件环内） |
-| skill_kill | Battle.killEnemy | sourceId=skill, extra.boss | 击杀归属当前施法技能 |
+| skill_kill | Battle.killEnemy | sourceId=skill, extra.boss | 击杀归属攻击对象自身来源 |
 | module_acquire | GameRoot 升级/商店 | sourceId=moduleId | 获得黑科技 |
 | module_trigger | 各模块触发点 | sourceId/targetId | echo/split/chain/thunder/voltloop/killblast/lingering/shield/execute 等 |
 | module_damage | 模块直接伤害 | value | killblast/voltloop 等（不并入技能伤害） |
 | module_heal | playerHeal 来源为模块 | value | vamp/harvest 由玩家治疗入口反推 |
+| shop_display | shopOpen / 刷新成功后 | value=展示数 | 刷新后只记非锁定新货架 |
 | item_purchase | 商店购买 | value=price | 含 kind |
 | item_acquire | 升级拿道具 | sourceId=itemId | — |
 | player_damage_taken | 受击 3 处 | value/来源 | 弹幕/BOSS 砸地/近战 |

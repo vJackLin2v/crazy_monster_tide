@@ -1,10 +1,10 @@
-# 数据 Schema（schemaVersion 1）
+# 数据 Schema（schemaVersion 2）
 
 ## 单局记录
 
 ```ts
 interface RunTelemetryRecord {
-  schemaVersion: 1;
+  schemaVersion: 2;
   runId: string;
   summary: RunTelemetry;      // 对局总览
   waves: WaveTelemetry[];
@@ -26,7 +26,7 @@ interface RunTelemetryRecord {
 
 - `summary`：characterId/difficultyId/start/end/duration/maxWave/result/damageTaken/healing/killTotal/bossKillTotal/gold/finalHp/finalMaxHp；
 - `waves[]`：wave/startMs/endMs/durationMs/kills/damageTaken/healing/skillDamage/moduleTriggers/bossKilled/completed；
-- `skills[]`：cast/hit/damageTotal/damageAverage/damageMax/kill/trigger/moduleBonus/first/lastCast；
+- `skills[]`：cast/hit/damageTotal/damageAverage/damageMax/kill/moduleBonus/first/lastCast（**triggerCount 已移除**，见 M2-A.1）；
 - `modules[]`：acquire/trigger/damage/heal/relatedSkillIds/first/last；
 - `shop`：enters/displays/purchases（key = kind:id）/purchaseByKind/goldIn/goldOut/rerolls/locks/heals/attrs；
 - `performance`：samples/peakEnemies/peakBullets/peakAreas/peakEventsPerSec/peakUpdateMs/telemetryMs。

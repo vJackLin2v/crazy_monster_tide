@@ -18,7 +18,7 @@ ui/TelemetryScreen.ts      # DEBUG 构建的只读查看页（不常驻战斗 HU
 | `GameRoot.continueGame` | 同 runId 创建，并从 Store 读取旧记录 `resumeFrom` |
 | `GameRoot.finishRun` | end + saveRecord（历史写失败不影响遥测；反之亦然） |
 | `Battle.fireSkill` | `cast(skillId, echoReplay)` |
-| `Battle.hitEnemy` | `hit(当前施法技能, 最终伤害)` |
+| `Battle.hitEnemy` | `hit(攻击对象自身 telSkill, 最终伤害)` |
 | `Battle.killEnemy` | `kill(skill, boss)` / `bossDeath` |
 | `Battle.healPlayer` | `playerHeal(实际治疗, 来源)` |
 | 玩家受击 3 处 | `playerDamage(实际伤害, 来源)` |
@@ -30,6 +30,7 @@ ui/TelemetryScreen.ts      # DEBUG 构建的只读查看页（不常驻战斗 HU
 ## 不影响战斗的保证
 
 1. Recorder 只读参数并累加，不写回战斗字段；
+2. 延迟攻击（弹体/区域/地雷/哨兵/环刃/蓄能/陨石）创建时绑定 `telSkill`，命中读自身来源，不再用全局最后施法；
 2. 不调用 `Rng`/`Math.random`（事件时间用 `Date.now`）；
 3. 所有调用为可选链 `this.telemetry?.x()`；未接入/关闭时零调用；
 4. Recorder 内部全部 try/catch，异常不冒泡；

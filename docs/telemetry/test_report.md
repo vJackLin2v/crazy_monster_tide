@@ -1,6 +1,7 @@
 # M2-A 测试报告
 
-> 结论：**503 PASS / 0 FAIL**；tsc check/ui-check = 0；微信构建成功；浏览器运行时遥测落盘成功。
+> 结论：**513 PASS / 0 FAIL**（M2-A.1）；tsc check/ui-check = 0；微信构建成功；浏览器运行时遥测落盘成功。
+> M2-A.1 修复：来源绑定、商店展示分母、eventsPerSec 累计计数、波次技能/模块统计、移除恒 0 的 triggerCount。
 > 未做微信真机。
 
 ## 命令
@@ -8,7 +9,7 @@
     cd cocos
     tsc -p tsconfig.check.json      -> 0
     tsc -p tsconfig.ui-check.json   -> 0
-    tsx tests/run.ts                -> 503 PASS / 0 FAIL
+    tsx tests/run.ts                -> 513 PASS / 0 FAIL
 
 ## 新增测试（§28）
 
@@ -41,6 +42,14 @@
 25. 续玩沿用原 runId 与已有统计；
 26. 续玩结束前不是 complete；
 27. 续玩结束仍是同一局。
+
+## M2-A.1 新增
+
+- 波次技能伤害分技能累计、下一波独立、重复 waveEnd 不重复；
+- 事件环 300 后累计事件数继续增长（eventsPerSec 不依赖环长度）；
+- 商店首次/刷新展示分别计数、购买分子只计成功；
+- 技能记录不再包含 triggerCount；
+- 延迟弹体来源绑定（浏览器）：火球发射后释放冰晶矛，火球伤害仍归火球（50），冰晶矛 0。
 
 ## 浏览器运行时（web-mobile）
 

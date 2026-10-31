@@ -133,6 +133,8 @@ interface Bullet {
   outT?: number;
   /** 回程自转角度（让刃"转着回来"） */
   spinAngle?: number;
+  /** M2-A：创建时绑定的技能来源（延迟命中不依赖全局当前施法） */
+  telSkill?: string;
 }
 interface Area {
   node: Node; anim: FrameAnim; x: number; y: number; r: number; maxR: number;
@@ -142,6 +144,8 @@ interface Area {
   tag?: string;
   /** 灼烧层数（区域技能命中时也要挂灼烧状态） */
   burn?: number;
+  /** M2-A：来源技能 */
+  telSkill?: string;
 }
 interface Gem { node: Node; x: number; y: number; v: number; pop: number; vx: number; vy: number; base: number; }
 interface Fx {
@@ -155,6 +159,7 @@ interface Meteor {
   t: number; dur: number; size: number; dmg: number; rt: SkillRuntime;
   zoneLife?: number; tickRate?: number;
   zoneKey?: string; trailT: number; done: boolean;
+  telSkill?: string;
 }
 @ccclass('Battle')
 export class Battle extends Component {
@@ -284,13 +289,13 @@ export class Battle extends Component {
   /** 蓄能脉冲的蓄力指示圈（按技能槽） */
   private chargeFx: Record<number, Node> = {};
   /** 环刃状态（按技能槽） */
-  private orbits: Record<number, { n: number; radius: number; dmg: number; rot: number; tick: number; rt: SkillRuntime }> = {};
+  private orbits: Record<number, { n: number; radius: number; dmg: number; rot: number; tick: number; rt: SkillRuntime; telSkill?: string }> = {};
   /** 地雷（同屏上限 4） */
-  private traps: { x: number; y: number; t: number; armed: boolean; dmg: number; rt: SkillRuntime }[] = [];
+  private traps: { x: number; y: number; t: number; armed: boolean; dmg: number; rt: SkillRuntime; telSkill?: string }[] = [];
   /** 哨兵（同时 1 个） */
-  private sentries: { x: number; y: number; t: number; cd: number; dmg: number; rt: SkillRuntime }[] = [];
+  private sentries: { x: number; y: number; t: number; cd: number; dmg: number; rt: SkillRuntime; telSkill?: string }[] = [];
   /** 蓄能脉冲状态（按技能槽） */
-  private charges: Record<number, { t: number; dmg: number; r: number; rt: SkillRuntime }> = {};
+  private charges: Record<number, { t: number; dmg: number; r: number; rt: SkillRuntime; telSkill?: string }> = {};
   /** 当前 fireSkill 是否由复读机（echo）发起：echo 不计蓄势、不再触发 echo */
   private echoReplay = false;
   private bossDefeated = false;
@@ -1147,12 +1152,12 @@ export class Battle extends Component {
     } else if (def.type === 'orbit') {
       // 环刃：常驻，随等级加片（上限 4）；orbit × 环刃（S）= 额外 +1 片，仍受 4 片上限
       const n = ringBladeCount(sk.lvl, rt.orbit);
-      this.orbits[slot] = { n, radius: Math.max(30, rt.size), dmg: rt.dmg, rot: 0, tick: 0, rt };
+      this.orbits[slot] = { n, radius: Math.max(30, rt.size), dmg: rt.dmg, rot: 0, tick: 0, rt, telSkill: this.telSkillId };
     } else if (def.type === 'trap') {
       // 地雷：同屏上限 4，超出时最早的一枚立即引爆
       // echo × 地雷阵（S）：最多复制 1 次；复制品自身 echo = 0，不会再次复制
       const echoOnce = this.echoReplay ? 0 : mineEchoRepeats(rt.echo);
-      this.traps.push({ x: this.px, y: this.py, t: 0, armed: false, dmg: rt.dmg, rt: { ...rt, echo: 0 } });
+      this.traps.push({ x: this.px, y: this.py, t: 0, armed: false, dmg: rt.dmg, rt: { ...rt, echo: 0 }, telSkill: this.telSkillId });
       if (echoOnce > 0) this.queueEcho(slot, echoOnce);
       if (this.traps.length > 4) {
         const old = this.traps.shift();
@@ -1160,10 +1165,10 @@ export class Battle extends Component {
       }
     } else if (def.type === 'summon') {
       // 哨兵：同时 1 个，重复施放移动并刷新时长
-      this.sentries = [{ x: this.px, y: this.py, t: 0, cd: 0, dmg: rt.dmg, rt }];
+      this.sentries = [{ x: this.px, y: this.py, t: 0, cd: 0, dmg: rt.dmg, rt, telSkill: this.telSkillId }];
     } else if (def.type === 'charge') {
       // 蓄能脉冲：进入蓄力（无目标也允许，结算时空放返还冷却）
-      this.charges[slot] = { t: 0, dmg: rt.dmg, r: Math.max(60, rt.size), rt };
+      this.charges[slot] = { t: 0, dmg: rt.dmg, r: Math.max(60, rt.size), rt, telSkill: this.telSkillId };
       // 蓄力指示：青色收缩圈，3 秒内收拢 → 让玩家看出"正在蓄能"
       if (this.chargeFx[slot] && this.chargeFx[slot].isValid) this.chargeFx[slot].destroy();
       const ring = new Node('chargeFx');
@@ -1239,7 +1244,7 @@ export class Battle extends Component {
   private spawnBullet(x: number, y: number, vx: number, vy: number, rt: SkillRuntime,
                       vfxKey: string | undefined, hitVfx: string | undefined,
                       homing: boolean, orbit = false, life = 1.6,
-                      src: DamageSource = 'normal', summonKind?: SummonKind) {
+                      src: DamageSource = 'normal', summonKind?: SummonKind, telSkill?: string) {
     const key = vfxKey ?? FX.killSmall;
     const frames = Assets.vfxFrames(key);
     const sc = Math.max(1, Math.round(rt.size / 5));
@@ -1253,6 +1258,7 @@ export class Battle extends Component {
       life: orbit ? 3.2 : life, t: 0, hitVfx: hitVfx ?? 'core/spark/hit-spark',
       hit: new Set(), homing, src, summonKind,
       burn: rt.burn, slow: rt.slow, vamp: rt.vamp, thunder: rt.thunder,
+      telSkill: telSkill ?? (src === 'summon' ? 'unknown' : this.telSkillId),
     };
     this.bullets.push(b);
     return b;
@@ -1260,7 +1266,7 @@ export class Battle extends Component {
 
   private spawnArea(x: number, y: number, r: number, dmg: number, life: number,
                     kind: 'pulse' | 'zone', vfxKey: string | undefined, _rt: SkillRuntime,
-                    tickRate = 0.45) {
+                    tickRate = 0.45, telSkill?: string) {
     const frames = vfxKey ? Assets.vfxFrames(vfxKey) : [];
     // 地面持续区域（zone）本身只是个"环/地面贴图"，很安静 —— 用户反馈「刃爆看不出特效」。
     // 这里补一发**起手爆发**：落下瞬间的冲击环 + 闪光，让"打出去了"这件事有明确反馈。
@@ -1282,6 +1288,7 @@ export class Battle extends Component {
     this.areas.push({
       node, anim, x, y, r: kind === 'pulse' ? 0 : r, maxR: r, dmg,
       life, t: 0, tick: 0, tickRate, kind, done: false, burn: _rt.burn,
+      telSkill: telSkill ?? this.telSkillId,
     });
   }
 
@@ -1308,6 +1315,7 @@ export class Battle extends Component {
       node,
       fromX: x, fromY: y - 320, toX: x, toY: y,
       t: 0, dur: 0.55, size, dmg, rt, zoneKey: art.zone ?? art.aoe, trailT: 0, done: false,
+      telSkill: this.telSkillId,
       zoneLife: SKILLS.meteor.zoneLife, tickRate: SKILLS.meteor.tickRate,
     });
   }
@@ -1380,7 +1388,7 @@ export class Battle extends Component {
         this.addVfx('core/burst/big-boom', m.toX, m.toY, 0.42, Math.max(1.4, m.size / 17));
         this.shake(SHAKE.boss);
         Sfx.sfx('hitMetal', 0.6, 90);
-        this.spawnArea(m.toX, m.toY, m.size, m.dmg, m.zoneLife ?? 3.4, 'zone', m.zoneKey, m.rt, m.tickRate ?? 0.45);
+        this.spawnArea(m.toX, m.toY, m.size, m.dmg, m.zoneLife ?? 3.4, 'zone', m.zoneKey, m.rt, m.tickRate ?? 0.45, m.telSkill);
       }
     }
     compact(this.meteors, m => {
@@ -1485,8 +1493,9 @@ export class Battle extends Component {
 
   /** 一次伤害结算（走 Combat.rollDamage，暴击也吃同一个 Rng） */
   private hitEnemy(e: Enemy, base: number, rt: SkillRuntime, hitVfx?: string, noThunder = false,
-                   src: DamageSource = 'normal', summonKind?: SummonKind) {
+                   src: DamageSource = 'normal', summonKind?: SummonKind, telSkill?: string) {
     if (e.dead) return;
+    const telSid = telSkill ?? this.telSkillId;
     // 统一伤害上下文：调用方只能声明"来源"，三个 can* 权限一律由 makeDamageContext 推导（设计 v7）
     const ctx: DamageContext = makeDamageContext(src, this.currentCastId, { isBoss: !!e.boss, summonKind });
     let { dmg, crit } = rollDamage(base, this.rs.stats, this.rs.rng);
@@ -1502,7 +1511,7 @@ export class Battle extends Component {
     // ★ 精英伤害：对精英/BOSS 额外加成
     // 阶段 E：精英/首领伤害加成上限 +150%
     if ((e.elite || e.boss) && this.rs.stats.eliteDmg) dmg = Math.round(dmg * (1 + Math.min(1.5, this.rs.stats.eliteDmg)));
-    this.telemetry?.hit(this.telSkillId, dmg);
+    this.telemetry?.hit(telSid, dmg);
     e.hp -= dmg;
       this.waveDmgDealt += Math.min(dmg);
     this.totalDmgDealt += dmg;
@@ -1599,7 +1608,7 @@ export class Battle extends Component {
     }
     // ⚠️ 必须把来源一并传下去：否则 summon 击杀会被当成 normal，
     //    harvest / killblast / 击杀回血属性都会错误生效（阶段3 审查 P0-2）。
-    if (e.hp <= 0) this.killEnemy(e, rt, ctx.source, ctx.summonKind);
+    if (e.hp <= 0) this.killEnemy(e, rt, ctx.source, ctx.summonKind, telSid);
   }
 
   /**
@@ -1607,9 +1616,9 @@ export class Battle extends Component {
    * ⚠️ KI-001 教训：死亡后**先累加 deathT**，再跳过其它逻辑，否则实体永远回收不掉。
    *    见 docs/known-issues.md
    */
-  private killEnemy(e: Enemy, rt?: SkillRuntime, src: DamageSource = 'normal', summonKind?: SummonKind) {
+  private killEnemy(e: Enemy, rt?: SkillRuntime, src: DamageSource = 'normal', summonKind?: SummonKind, telSkill?: string) {
     if (e.dead) return;
-    this.telemetry?.kill(this.telSkillId, !!e.boss);
+    this.telemetry?.kill(telSkill ?? this.telSkillId, !!e.boss);
     if (e.boss) this.telemetry?.bossDeath();
     e.dead = true; e.deathT = 0;
     // ★ 死亡动画：单位素材每套都有 death 帧（UNIT_FRAMES），以前从来没人播（M30 #2）
@@ -1783,7 +1792,7 @@ export class Battle extends Component {
     this.telPerfAcc += dtRaw;
     if (this.telemetry && this.telPerfAcc >= 1) {
       this.telPerfAcc -= 1;
-      const ev = this.telemetry.eventCount;
+      const ev = this.telemetry.totalEventCount;
       this.telemetry.performanceSample({
         enemies: this.enemies.length,
         bullets: this.bullets.length,
@@ -1887,7 +1896,7 @@ export class Battle extends Component {
       for (const e of this.enemies) {
         if (e.dead) continue;
         const d = Math.hypot(e.x - this.px, e.y - this.py);
-        if (d <= band) this.hitEnemy(e, 1.5 * o.n, o.rt, undefined, true);
+        if (d <= band) this.hitEnemy(e, 1.5 * o.n, o.rt, undefined, true, undefined, undefined, o.telSkill);
       }
     }
     // 地雷：0.6s 后进入待触发，敌人踩到即爆
@@ -1922,13 +1931,13 @@ export class Battle extends Component {
       for (let k = 0; k < plan.shots; k++) {
         const a = ang + (k - (plan.shots - 1) / 2) * spread;
         this.spawnBullet(sn.x, sn.y, Math.cos(a) * plan.speed, Math.sin(a) * plan.speed,
-          sn.rt, 'projectile/arcane/magic-missile', 'core/spark/hit-spark', false, false, 1.1, 'summon', 'sentry');
+          sn.rt, 'projectile/arcane/magic-missile', 'core/spark/hit-spark', false, false, 1.1, 'summon', 'sentry', sn.telSkill);
       }
       for (let k = 0; k < plan.fanShots; k++) {
         const a = ang + (k - (plan.fanShots - 1) / 2) * SENTRY_FAN_SPREAD;
         this.spawnBullet(sn.x, sn.y, Math.cos(a) * plan.speed * 0.85, Math.sin(a) * plan.speed * 0.85,
           { ...sn.rt, dmg: sn.rt.dmg * SENTRY_FAN_DMG_MUL, pierce: 0, bounce: 0, chain: 0, split: 0 },
-          'projectile/arcane/magic-missile', 'core/spark/hit-spark', false, false, 0.9, 'summon', 'sentry');
+          'projectile/arcane/magic-missile', 'core/spark/hit-spark', false, false, 0.9, 'summon', 'sentry', sn.telSkill);
       }
     }
     // 蓄能：3s 后结算（目标死亡则溅射；空放返还剩余冷却 50%）
@@ -1954,13 +1963,13 @@ export class Battle extends Component {
    * 蓄能脉冲结算（主动施放与 echo 重放共用）。
    * 空放（没有目标）返还剩余冷却 50%。
    */
-  private resolveCharge(slot: number, c: { dmg: number; r: number; rt: SkillRuntime }): void {
+  private resolveCharge(slot: number, c: { dmg: number; r: number; rt: SkillRuntime; telSkill?: string }): void {
     if (this.chargeFx[slot] && this.chargeFx[slot].isValid) this.chargeFx[slot].destroy();
     delete this.chargeFx[slot];
     this.addVfx('core/ring/zap-ring', this.px, this.py, 0.35, Math.max(1.2, c.r / 30));
     const tgt = this.nearestEnemy(this.px, this.py, 200);
     if (!tgt) { this.skillT[slot] = Math.max(0, (this.skillT[slot] ?? 0) * 0.5); return; }
-    this.hitEnemy(tgt, c.dmg, c.rt, undefined, true);
+    this.hitEnemy(tgt, c.dmg, c.rt, undefined, true, undefined, undefined, c.telSkill);
     for (const e of this.enemies) {
       if (e.dead || e === tgt) continue;
       if (Math.hypot(e.x - tgt.x, e.y - tgt.y) <= c.r) this.applyRawDamage(e, c.dmg * 0.4);
@@ -1968,11 +1977,11 @@ export class Battle extends Component {
   }
 
   /** 地雷引爆：48px 内全部受伤（来源 normal，可吃常规加成） */
-  private explodeTrap(tr: { x: number; y: number; dmg: number; rt: SkillRuntime }): void {
+  private explodeTrap(tr: { x: number; y: number; dmg: number; rt: SkillRuntime; telSkill?: string }): void {
     this.addVfx(FX.killBig, tr.x, tr.y, 0.45, 2.2);
     for (const e of this.enemies) {
       if (e.dead) continue;
-      if (Math.hypot(e.x - tr.x, e.y - tr.y) <= 48) this.hitEnemy(e, tr.dmg, tr.rt, undefined, true);
+      if (Math.hypot(e.x - tr.x, e.y - tr.y) <= 48) this.hitEnemy(e, tr.dmg, tr.rt, undefined, true, undefined, undefined, tr.telSkill);
     }
     // split × 地雷阵（S）：引爆后向四周炸出分裂弹（伤害 40%，split:0 不再递归）
     const n = mineSplitCount(tr.rt.split);
@@ -2402,7 +2411,7 @@ export class Battle extends Component {
         if (e.dead || b.hit.has(e)) continue;
         if (Math.hypot(e.x - b.x, e.y - b.y) < e.r + b.r) {
           b.hit.add(e);
-          this.hitEnemy(e, b.dmg, this.bulletRt(b), b.hitVfx);
+          this.hitEnemy(e, b.dmg, this.bulletRt(b), b.hitVfx, false, undefined, undefined, b.telSkill);
           // ★ 传染（M49）：**不是穿过去**，而是从这只怪身上"跳"到附近的另一只——
           //   劈一道链式闪电 + 追加 80% 伤害，本体到此结束（和穿透/反弹完全不同）
           if (b.chain > 0) {
@@ -2417,7 +2426,7 @@ export class Battle extends Component {
               b.hit.add(nx);
               this.spawnBolt(from.x, from.y, nx.x, nx.y);
               this.addVfx('chain/chain-node', nx.x, nx.y, 0.3, 1);
-              this.hitEnemy(nx, b.dmg * 0.7, this.bulletRt(b), b.hitVfx);
+              this.hitEnemy(nx, b.dmg * 0.7, this.bulletRt(b), b.hitVfx, false, undefined, undefined, b.telSkill);
               from = nx;
             }
             b.life = 0;
@@ -2444,7 +2453,7 @@ export class Battle extends Component {
               this.spawnBullet(b.x, b.y, Math.cos(ang) * 170, Math.sin(ang) * 170,
                 // 第三轮批准：衍生弹伤害 40%（原 50%），且 split:0 保证不再递归
                 { ...this.bulletRt(b), dmg: b.dmg * 0.4, pierce: 0, bounce: 0, chain: 0, split: 0, burn: 0 },
-                undefined, b.hitVfx, false, false, 0.55);
+                undefined, b.hitVfx, false, false, 0.55, 'normal', undefined, b.telSkill);
             }
           }
           // ★ 反弹（M49）：弹体不消失，**转向**附近另一个敌人继续飞
@@ -2491,7 +2500,7 @@ export class Battle extends Component {
         if (a.node && a.node.isValid) a.node.setScale(k, k, 1);
         if (!a.done) {
           for (const e of this.enemies) {
-            if (!e.dead && Math.hypot(e.x - a.x, e.y - a.y) < a.r + e.r) this.hitEnemy(e, a.dmg, this.bulletRt2(a.dmg));
+            if (!e.dead && Math.hypot(e.x - a.x, e.y - a.y) < a.r + e.r) this.hitEnemy(e, a.dmg, this.bulletRt2(a.dmg), undefined, false, undefined, undefined, a.telSkill);
           }
           a.done = true;
         }
@@ -2507,7 +2516,7 @@ export class Battle extends Component {
           }
           for (const e of this.enemies) {
             if (e.dead || Math.hypot(e.x - a.x, e.y - a.y) >= a.r + e.r) continue;
-            this.hitEnemy(e, a.dmg, this.bulletRt2(a.dmg));
+            this.hitEnemy(e, a.dmg, this.bulletRt2(a.dmg), undefined, false, undefined, undefined, a.telSkill);
             // 灼烧（M48）：区域技能也挂状态
             if (a.burn) {
               e.burnT = Math.max(e.burnT, 2.0);

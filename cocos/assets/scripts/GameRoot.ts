@@ -1241,6 +1241,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         if (rs.rerollShop()) {
           telemetryShopReroll();
           this.telemetry?.shopReroll();
+          this.telemetry?.shopDisplay((rs.shopStock ?? []).filter(s => !s.locked).map(s => ({ id: s.id, kind: s.kind })));
           logEvent('shop_reroll', { cost: rs.rerollCost });
           this.saveActiveRunNow();
         }

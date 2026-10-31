@@ -1560,6 +1560,51 @@ console.log('\n== 28. M2-A 战斗遥测 ==');
   const json = tel.exportJson();
   ok(JSON.parse(json).runId === 'run-1', '单局 JSON 可解析');
 
+
+  // M2-A.1：波次统计、事件计数、展示分母、来源分离
+  {
+    const t = mk('wave-run');
+    t.waveStart(1);
+    t.hit('fireball', 10);
+    t.hit('fireball', 15);
+    t.hit('ice_spear', 7);
+    t.moduleTrigger('chain', 'fireball');
+    t.moduleTrigger('chain', 'fireball');
+    t.waveEnd(1, { kills: 3, damageTaken: 4, healing: 1 });
+    const w1 = t.toRecord().waves[0];
+    ok(w1.skillDamage.fireball === 25 && w1.skillDamage.ice_spear === 7, '波次技能伤害分别累计');
+    ok(w1.moduleTriggers.chain === 2, '波次黑科技触发计数正确');
+    t.waveStart(2);
+    t.hit('fireball', 5);
+    t.waveEnd(2, { kills: 1, damageTaken: 0, healing: 0 });
+    const w2 = t.toRecord().waves[1];
+    ok(w2.skillDamage.fireball === 5 && !w2.skillDamage.ice_spear, '下一波数据独立');
+    t.waveEnd(2, { kills: 99, damageTaken: 0, healing: 0 });
+    ok(t.toRecord().waves.length === 2, '波次结束后重复调用不重复统计');
+
+    const e = mk('evt-run');
+    for (let i = 0; i < 400; i++) e.cast('fireball');
+    ok(e.stats.events === 300 && e.totalEventCount >= 401, '事件环 300，但累计事件数仍继续增长');
+    ok(e.totalEventCount > e.stats.events, 'eventsPerSec 不依赖事件环长度');
+
+    const s = mk('shop-run');
+    s.shopOpen([{ id: 'a', kind: 'item' }, { id: 'b', kind: 'item' }], 50);
+    s.shopDisplay([{ id: 'c', kind: 'item' }, { id: 'd', kind: 'item' }]);
+    s.shopPurchase('item', 'a', 10, 50, 40);
+    s.shopPurchase('item', 'a', 10, 40, 30);
+    const shop = s.toRecord().shop;
+    ok(shop.displays['item:a'] === 1 && shop.displays['item:c'] === 1, '首次/刷新展示分别计数');
+    ok(shop.purchases['item:a'] === 2 && shop.purchases['item:b'] === undefined, '购买分子只计成功购买');
+    ok(shop.displays['item:c'] === 1, '刷新商品分母正确');
+
+    const f = mk('skill-run');
+    f.hit('fireball', 11);
+    f.hit('ice_spear', 22);
+    const rec2 = f.toRecord();
+    const fb2 = rec2.skills.find(x => x.skillId === 'fireball')!;
+    ok(fb2.damageTotal === 11 && !('triggerCount' in fb2), '技能来源分开且不存在恒 0 的 triggerCount');
+  }
+
   // 续玩：同 runId 恢复已有统计，不新开对局
   const resumed = mk('run-1');
   resumed.resumeFrom(rec);

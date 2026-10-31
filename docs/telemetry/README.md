@@ -4,7 +4,7 @@
 > 本轮只做采集/存储/导出/查看，不改任何平衡数值。
 
 - 代码：`cocos/assets/scripts/game/telemetry/`、`ui/TelemetryScreen.ts`
-- 数据版本：schemaVersion 1
+- 数据版本：schemaVersion 2（M2-A.1：来源绑定/波次明细/展示分母）
 - 存储：localStorage `cmt_telemetry_v1`，最多 50 局
 - 查看：DEBUG 构建主菜单右上「数据」；或控制台 `__m2a()` / `__m2aJson()`
 - 关闭：不创建 Recorder 时所有调用点均为 `telemetry?.xxx`，零开销
