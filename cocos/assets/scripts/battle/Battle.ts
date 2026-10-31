@@ -212,6 +212,14 @@ export class Battle extends Component {
   private bossRef: Enemy | null = null;
   /** 噩梦 BOSS 召唤状态机 */
   private bossSummon: BossSummonState | null = null;
+  /** 环刃状态（按技能槽） */
+  private orbits: Record<number, { n: number; radius: number; dmg: number; rot: number; tick: number; rt: SkillRuntime }> = {};
+  /** 地雷（同屏上限 4） */
+  private traps: { x: number; y: number; t: number; armed: boolean; dmg: number; rt: SkillRuntime }[] = [];
+  /** 哨兵（同时 1 个） */
+  private sentries: { x: number; y: number; t: number; cd: number; dmg: number; rt: SkillRuntime }[] = [];
+  /** 蓄能脉冲状态（按技能槽） */
+  private charges: Record<number, { t: number; dmg: number; r: number; rt: SkillRuntime }> = {};
   private bossDefeated = false;
   private hitstop = 0;
   private running = false;
@@ -854,6 +862,23 @@ export class Battle extends Component {
       // 0.45s 让扩散过程看得见；再补一圈更大的冲击环和尘土
       this.spawnArea(this.px, this.py, rt.size + 26, rt.dmg, 0.45, 'pulse', art.aoe, rt);
       this.addVfx('core/ring/shockwave', this.px, this.py, 0.38, Math.max(1.6, (rt.size + 26) / 12));
+    } else if (def.type === 'orbit') {
+      // 环刃：常驻，随等级加片（上限 4）
+      const n = Math.min(4, 1 + sk.lvl);
+      this.orbits[slot] = { n, radius: Math.max(30, rt.size), dmg: rt.dmg, rot: 0, tick: 0, rt };
+    } else if (def.type === 'trap') {
+      // 地雷：同屏上限 4，超出时最早的一枚立即引爆
+      this.traps.push({ x: this.px, y: this.py, t: 0, armed: false, dmg: rt.dmg, rt });
+      if (this.traps.length > 4) {
+        const old = this.traps.shift();
+        if (old) this.explodeTrap(old);
+      }
+    } else if (def.type === 'summon') {
+      // 哨兵：同时 1 个，重复施放移动并刷新时长
+      this.sentries = [{ x: this.px, y: this.py, t: 0, cd: 0, dmg: rt.dmg, rt }];
+    } else if (def.type === 'charge') {
+      // 蓄能脉冲：进入蓄力（无目标也允许，结算时空放返还冷却）
+      this.charges[slot] = { t: 0, dmg: rt.dmg, r: Math.max(60, rt.size), rt };
     } else if (def.type === 'area') {
       const ax = tgt ? tgt.x : this.px, ay = tgt ? tgt.y : this.py;
       // ★ 施法动作（用户反馈「刃爆看不出施法，像直接作用到敌人身上」）：
@@ -1372,6 +1397,7 @@ export class Battle extends Component {
     this.updateSkills(dt);
     this.updateSpawn(dt);
     this.updateBossMechanics();
+    this.updateNewSkillTypes(dt);
     this.updateEnemies(dt);
     this.updateBullets(dt);
     this.updateAreas(dt);
@@ -1451,6 +1477,75 @@ export class Battle extends Component {
     if (n > this.maxAlive) this.maxAlive = n;
     if (n > this.waveAliveMax) this.waveAliveMax = n;
     return n;
+  }
+
+  /** 四个新技能类型的运行时（环刃 / 地雷 / 哨兵 / 蓄能） */
+  private updateNewSkillTypes(dt: number): void {
+    // 环刃：旋转 + 每 0.25s 结算一次环带内的敌人
+    for (const key of Object.keys(this.orbits)) {
+      const slot = Number(key);
+      const o = this.orbits[slot];
+      o.rot += dt * 1.4 * Math.PI * 2;
+      o.tick += dt;
+      if (o.tick < 0.25) continue;
+      o.tick = 0;
+      const band = o.radius + 10;
+      for (const e of this.enemies) {
+        if (e.dead) continue;
+        const d = Math.hypot(e.x - this.px, e.y - this.py);
+        if (d <= band) this.hitEnemy(e, 1.5 * o.n, o.rt, undefined, true);
+      }
+    }
+    // 地雷：0.6s 后进入待触发，敌人踩到即爆
+    for (let i = this.traps.length - 1; i >= 0; i--) {
+      const tr = this.traps[i];
+      tr.t += dt;
+      if (!tr.armed) { if (tr.t >= 0.6) tr.armed = true; continue; }
+      for (const e of this.enemies) {
+        if (e.dead) continue;
+        if (Math.hypot(e.x - tr.x, e.y - tr.y) <= 16) {
+          this.explodeTrap(tr);
+          this.traps.splice(i, 1);
+          break;
+        }
+      }
+    }
+    // 哨兵：每 0.9s 射一发，8s 后消失；伤害来源 summon（不触发玩家 onhit）
+    for (let i = this.sentries.length - 1; i >= 0; i--) {
+      const sn = this.sentries[i];
+      sn.t += dt;
+      if (sn.t >= 8) { this.sentries.splice(i, 1); continue; }
+      sn.cd -= dt;
+      if (sn.cd > 0) continue;
+      const tgt = this.nearestEnemy(sn.x, sn.y, 160);
+      if (!tgt) continue;
+      sn.cd = 0.9;
+      this.hitEnemy(tgt, sn.dmg, sn.rt, undefined, true, 'summon');
+    }
+    // 蓄能：3s 后结算（目标死亡则溅射；空放返还剩余冷却 50%）
+    for (const key of Object.keys(this.charges)) {
+      const slot = Number(key);
+      const c = this.charges[slot];
+      c.t += dt;
+      if (c.t < 3) continue;
+      delete this.charges[slot];
+      const tgt = this.nearestEnemy(this.px, this.py, 200);
+      if (!tgt) { this.skillT[slot] = Math.max(0, (this.skillT[slot] ?? 0) * 0.5); continue; }
+      this.hitEnemy(tgt, c.dmg, c.rt, undefined, true);
+      for (const e of this.enemies) {
+        if (e.dead || e === tgt) continue;
+        if (Math.hypot(e.x - tgt.x, e.y - tgt.y) <= c.r) this.applyRawDamage(e, c.dmg * 0.4);
+      }
+    }
+  }
+
+  /** 地雷引爆：48px 内全部受伤（来源 normal，可吃常规加成） */
+  private explodeTrap(tr: { x: number; y: number; dmg: number; rt: SkillRuntime }): void {
+    this.addVfx(FX.killBig, tr.x, tr.y, 0.45, 2.2);
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      if (Math.hypot(e.x - tr.x, e.y - tr.y) <= 48) this.hitEnemy(e, tr.dmg, tr.rt, undefined, true);
+    }
   }
 
   /** BOSS 难度机制：地狱狂怒 / 噩梦召唤（状态机驱动） */

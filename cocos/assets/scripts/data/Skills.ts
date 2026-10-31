@@ -2,6 +2,15 @@ import type { SkillDef, SkillArt } from './Types';
 
 /** 16 个基础主动技能（docs/systems/skill_types.md；需求 §10 目标 16） */
 export const SKILLS: Record<string, SkillDef> = {
+  // ── 第一批新技能（设计 v6）──
+  ring_blade: { name: '环刃', icon: 'skill-whirlwind.png', type: 'orbit', tags: ['physical','orbit','melee'], cd: 1.6, dmg: 6, spd: 0, color: '#E8DCC8', size: 40,
+                desc: '两片刀刃绕身旋转，贴脸的敌人持续掉血。' },
+  mine_field: { name: '地雷阵', icon: 'skill-flame_field.png', type: 'trap', tags: ['physical','trap','area'], cd: 2.6, dmg: 22, spd: 0, color: '#F0C46A', size: 44,
+                desc: '在脚下埋雷，敌人踩到才引爆；同屏最多 4 枚。' },
+  sentry:     { name: '哨戒哨兵', icon: 'skill-arcane_missile.png', type: 'summon', tags: ['arcane','summon','projectile'], cd: 1.2, dmg: 6, spd: 0, color: '#8C63CF', size: 8,
+                desc: '放一个哨兵自动射击，持续 8 秒；同时只能有 1 个。' },
+  charge_pulse: { name: '蓄能脉冲', icon: 'skill-thunder_beam.png', type: 'charge', tags: ['lightning','charge','burst'], cd: 4.0, dmg: 26, spd: 0, color: '#9BE7FF', size: 90,
+                desc: '蓄力 3 秒后对锁定目标爆发，附带小范围溅射。' },
   fireball:    { name: '火球',     icon: 'skill-fireball.png',        type: 'projectile', tags: ['fire','projectile'],              cd: 0.85, dmg: 12, spd: 190, color: '#FFA84B', size: 5,
                  desc: '向最近的敌人扔出火球，命中时炸开一团火。' },
   ice_spear:   { name: '冰晶矛',   icon: 'skill-ice_spear.png',       type: 'projectile', tags: ['ice','projectile','pierceable'],   cd: 1.25, dmg: 14, spd: 240, color: '#88D6BC', size: 4,
@@ -45,6 +54,10 @@ export const SKILLS: Record<string, SkillDef> = {
  *      回旋刃（刀/刃）     → melee/slash/wide-cleave（月牙刃光，会跟着飞行方向转）
  */
 export const SKILL_ART: Record<string, SkillArt> = {
+  ring_blade:  { icon: 'skill-whirlwind.png',      proj: 'melee/slash/wide-cleave',    hit: 'feedback/hit/slash-hit' },
+  mine_field:  { icon: 'skill-flame_field.png',    aoe: 'core/burst/warm-explosion',   hit: 'feedback/hit/fire-hit' },
+  sentry:      { icon: 'skill-arcane_missile.png', proj: 'projectile/arcane/magic-missile', hit: 'core/spark/hit-spark' },
+  charge_pulse:{ icon: 'skill-thunder_beam.png',   aoe: 'core/ring/shockwave',         hit: 'feedback/hit/shock-hit' },
   fireball:    { icon: 'skill-fireball.png',        proj: 'projectile/fire/fireball-shot',    hit: 'feedback/hit/fire-hit' },
   ice_spear:   { icon: 'skill-ice_spear.png',       proj: 'projectile/ice/ice-shard-shot',    hit: 'feedback/hit/ice-hit' },
   arcane:      { icon: 'skill-arcane_missile.png',  proj: 'projectile/arcane/magic-missile',  hit: 'core/spark/hit-spark' },

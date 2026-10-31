@@ -1,6 +1,6 @@
 /** 数据层共用类型 —— 全部来自 docs/systems/ 的规则定义 */
 
-export type SkillType = 'projectile' | 'pulse' | 'area' | 'chain';
+export type SkillType = 'projectile' | 'pulse' | 'area' | 'chain' | 'orbit' | 'trap' | 'summon' | 'charge';
 
 /** 技能标签：用于行为模块的兼容性判定与联动（docs/systems/tags.md） */
 export type Tag =
