@@ -10,6 +10,9 @@
 | 主菜单 V3（LOGO/继续卡或开始按钮/四个像素图标） | `ui/MenuScreens.buildMenu` | 截图 menu_no_save / menu_has_save |
 | 功能图标（卷轴/书/奖杯/齿轮，16×16 Graphics） | `ui/MenuIcons.ts` | `docs/ui/menu_v3_icons_preview.png` + 截图 |
 | 玩法说明移入设置 | `ui/MetaScreens.buildSettings` | 截图 settings.png |
+| 真机行为日志 | `game/DeviceLog.ts` + GameRoot 埋点 | localStorage + 微信实时日志 |
+| 日志分析工具 | `tools/analyze_device_log.cjs` | 样例日志输出漏斗/死亡波/商店/升级摘要 |
+| 日志说明文档 | `docs/testing/device_log_monitoring.md` | 真机取日志步骤 |
 | 开始新冒险确认（不静默覆盖存档） | `buildStartNewConfirm` + `GameRoot.requestStart` | 截图 start_confirm |
 | 战绩档案 V2（统计面板/Tab/卡片/空态） | `ui/HistoryScreens.buildHistoryList` | 截图 history_list / history_empty |
 | 对局详情 V2（结果标题/2×3/图标/展开） | `ui/HistoryScreens.buildHistoryDetail` | 截图 detail_victory / defeat / abandon |

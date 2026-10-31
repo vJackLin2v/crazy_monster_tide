@@ -34,6 +34,7 @@ import { loadActiveRun, saveActiveRun, clearActiveRun, loadRunHistory, saveRunHi
 import { RUN_SAVE_VERSION, assertRestorable, continueInfoOf, newRunId, type ActiveRunSave, type LoadCheck } from './game/RunSave';
 import { addRun, buildSummary, emptyHistory, endReasonText, type HistoryFilter, type RunDetail, type RunHistoryData, type RunResult, type RunSummary } from './game/RunHistory';
 import { telemetryStart, telemetryRunEnd, telemetryShopEnter, telemetryShopBuy, telemetryShopReroll, telemetryShopLeave, listRuns, exportLogs, clearLogs, summarize } from './game/Telemetry';
+import { initDeviceLog, logEvent, dumpDeviceLog, clearDeviceLog, deviceLogCount, deviceInfo } from './game/DeviceLog';
 import { balance, balanceOverride, balanceReset, exportBalance, importBalance } from './core/Balance';
 import { applyUnlocks } from './game/Achievements';
 import { buildLevelUp, buildShop, buildBuildDrawer, buildConfirm, type CardData, type ShopSlotView } from './ui/Modals';
@@ -112,11 +113,19 @@ export class GameRoot extends Component {
     dbg.__logDump = () => console.log(exportLogs());
     dbg.__logClear = () => { clearLogs(); console.log('[Log] 已清空'); };
     dbg.__logSummary = () => summarize();
+    // 真机行为日志：导出/清空/条数（微信里也可以直接用「实时日志」看）
+    dbg.__deviceLogDump = () => console.log(dumpDeviceLog());
+    dbg.__deviceLogClear = () => { clearDeviceLog(); console.log('[DeviceLog] 已清空'); };
+    dbg.__deviceLogCount = () => deviceLogCount();
     dbg.__bal = () => balance();
     dbg.__balSet = (p: unknown) => balanceOverride(p as never);
     dbg.__balReset = () => balanceReset();
     dbg.__balExport = () => exportBalance();
     dbg.__balImport = (j: string) => importBalance(j);
+
+    // 真机行为日志：初始化实时日志通道，并记录本次启动（机型/平台，不含账号）
+    initDeviceLog();
+    logEvent('session_start', deviceInfo());
 
     this.battleNode = new Node('Battle');
     this.battleNode.parent = this.node;
@@ -129,12 +138,23 @@ export class GameRoot extends Component {
     this.joy = this.joyNode.addComponent(Joystick);
     this.joyNode.active = false;
 
-    this.battle.hooks.onWaveCleared = () => this.showShop();
+    this.battle.hooks.onWaveCleared = () => {
+      try { logEvent('wave_clear', { wave: this.battle.rs.wave }); } catch { /* ignore */ }
+      this.showShop();
+    };
     this.battle.hooks.onLevelUp = (r) => this.showLevelUp(r);
     // ★ 结算只允许触发一次：以前同一帧/重入时 onDead 可能被多次调用，
     //   控制台会连刷「玩家阵亡」，还会反复重建结算页（用户 2026-10-28 反馈"看到阵亡提示但没死"）
-    this.battle.hooks.onDead = () => { if (this.endShown) return; this.endShown = true; this.showResult(false); };
-    this.battle.hooks.onClear = () => { if (this.endShown) return; this.endShown = true; this.showResult(true); };
+    this.battle.hooks.onDead = () => {
+      if (this.endShown) return; this.endShown = true;
+      try { logEvent('player_dead', { wave: this.battle.rs.wave, difficulty: this.battle.rs.difficulty }); } catch { /* ignore */ }
+      this.showResult(false);
+    };
+    this.battle.hooks.onClear = () => {
+      if (this.endShown) return; this.endShown = true;
+      try { logEvent('run_clear', { wave: this.battle.rs.wave, difficulty: this.battle.rs.difficulty }); } catch { /* ignore */ }
+      this.showResult(true);
+    };
     // 成就统计（只计数，不参与战斗结算）
     this.battle.hooks.onBossKill = () => { this.save.bossKills++; writeSave(this.save); };
 
@@ -298,14 +318,16 @@ export class GameRoot extends Component {
       vm.corruptNote = this.activeCheck.message;
     }
 
+    logEvent('menu_shown', { save: vm.saveState, wave: vm.info ? vm.info.wave : 0, char: this.charId });
     this.cur = buildMenu(this.uiRoot, this.seed, vm, {
-      onContinue: () => void this.continueGame(),
-      onStart: () => this.requestStart(),
-      onHistory: () => this.showHistory(),
-      onCodex: () => this.showCodex(),
-      onAchievements: () => this.showAchievements(),
-      onSettings: () => this.showSettings(),
+      onContinue: () => { logEvent('menu_continue'); void this.continueGame(); },
+      onStart: () => { logEvent('menu_start'); this.requestStart(); },
+      onHistory: () => { logEvent('page_view', { page: 'history' }); this.showHistory(); },
+      onCodex: () => { logEvent('page_view', { page: 'codex' }); this.showCodex(); },
+      onAchievements: () => { logEvent('page_view', { page: 'achievements' }); this.showAchievements(); },
+      onSettings: () => { logEvent('page_view', { page: 'settings' }); this.showSettings(); },
       onDiscardSave: () => {
+        logEvent('save_discard');
         clearActiveRun();
         this.activeCheck = { status: 'none' };
         this.showMenu();
@@ -401,6 +423,7 @@ export class GameRoot extends Component {
       this.phase = 'battle';
       this.battle.paused = false;
     }
+    logEvent('run_resume', { char: save.charId, wave: save.wave, phase: save.phase, difficulty: save.difficulty });
     console.log('[Resume] 恢复 ' + save.charId + ' 第 ' + save.wave + ' 波（' + save.phase + '）');
   }
 
@@ -408,6 +431,10 @@ export class GameRoot extends Component {
   private finishRun(result: RunResult): void {
     const rs = this.battle.rs;
     if (!rs) return;
+    logEvent('run_end', {
+      result, wave: rs.wave, duration: Math.round(rs.runTime), kills: rs.kills,
+      char: rs.charId, difficulty: rs.difficulty,
+    });
     const runId = this.runId || newRunId();
     const badges = this.save.endlessBadges.filter(b => b.startsWith(rs.difficulty + ':'));
     const summary = buildSummary({
@@ -463,10 +490,12 @@ export class GameRoot extends Component {
   private requestStart(): void {
     this.activeCheck = loadActiveRun();
     if (this.activeCheck.status === 'ok') {
+      logEvent('start_confirm_shown', { wave: this.activeCheck.save.wave });
       this.curModal = buildStartNewConfirm(this.uiRoot,
-        () => this.closeModal(),
-        () => { this.closeModal(); void this.continueGame(); },
+        () => { logEvent('start_confirm_back'); this.closeModal(); },
+        () => { logEvent('start_confirm_continue'); this.closeModal(); void this.continueGame(); },
         () => {
+          logEvent('start_confirm_abandon');
           this.closeModal();
           this.abandonActiveRun();
           this.showDifficulty();
@@ -560,6 +589,7 @@ export class GameRoot extends Component {
     }, () => this.closeModal(), () => { this.closeModal(); this.showHowto(); });
   }
   private showHowto() {
+    logEvent('page_view', { page: 'howto' });
     this.phase = 'howto'; this.clearScreen();
     this.cur = buildHowto(this.uiRoot, () => this.showMenu());
   }
@@ -584,6 +614,7 @@ export class GameRoot extends Component {
       this.save.selectedDifficulty ?? 'normal',
       () => this.showMenu(),
       (id: DifficultyId) => {
+        logEvent('difficulty_pick', { id });
         this.save.selectedDifficulty = id;
         writeSave(this.save);
         this.showCharSelect();
@@ -593,7 +624,9 @@ export class GameRoot extends Component {
 
   private showCharSelect() {
     this.phase = 'charselect'; this.clearScreen();
+    logEvent('char_shown', { difficulty: this.save.selectedDifficulty ?? 'normal' });
     this.cur = buildCharSelect(this.uiRoot, () => { this.charPreview = false; this.showMenu(); }, (id) => {
+      logEvent('char_pick', { id, preview: this.charPreview });
       this.charId = id;
       if (this.charPreview) {
         // 从主菜单点角色进来：只更换展示角色，回到菜单；真正开局仍走"开始冒险"
@@ -632,6 +665,7 @@ export class GameRoot extends Component {
     const cdef0 = CHARS.find(c => c.id === this.charId);
     if (cdef0) this.markSeen('skill:' + cdef0.start);
     telemetryStart(this.charId, this.seed, this.battle.difficultyId);   // 战斗日志：本局开始
+    logEvent('run_start', { char: this.charId, difficulty: this.battle.difficultyId, seed: this.seed, resume: false });
     await this.battle.startRun(this.charId, this.seed);
     console.log('[GameRoot] startRun 耗时 ' + Math.round(performance.now() - t0) + 'ms');
     this.battle.paused = false;
@@ -646,6 +680,9 @@ export class GameRoot extends Component {
       else if (r.kind === 'item') this.markSeen('item:' + r.id);
     }
     this.pendingRewards = rewards;
+    try {
+      logEvent('levelup_open', { lv: this.battle.rs.lv, cards: rewards.map(r => r.kind + ':' + r.id) });
+    } catch { /* ignore */ }
     this.closeModal();
     this.phase = 'levelup';
     try {
@@ -708,6 +745,7 @@ export class GameRoot extends Component {
     if (now - this.lastPickAt < 150) return;
     this.lastPickAt = now;
     const r = i >= 0 ? this.pendingRewards[i] : null;
+    try { logEvent('levelup_pick', { pick: i, kind: r ? r.kind : 'skip', id: r ? r.id : '' }); } catch { /* ignore */ }
     // 4 技能已满时抽到新技能 -> 走替换屏
     if (r && r.kind === 'skill' && r.needReplace) {
       this.showReplace(r.id);
@@ -1052,6 +1090,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
     }
     this.phase = 'shop';
     if (!this.resuming) {
+      logEvent('shop_open', { wave: this.battle.rs.wave, gold: this.battle.rs.gold });
       this.battle.rs.refreshShop(true);
       telemetryShopEnter(this.battle.rs.wave, this.battle.rs.gold);   // 经济遥测：进店
     }
@@ -1115,12 +1154,22 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
           ? { id: slot.id, kind: slot.kind, price: slot.price, basePrice: slot.basePrice ?? slot.price }
           : null;
         const bought = rs.buySlot(i);
-        if (bought.ok && info) telemetryShopBuy(info.id, info.kind, info.price, info.basePrice);
+        if (bought.ok && info) {
+      telemetryShopBuy(info.id, info.kind, info.price, info.basePrice);
+      logEvent('shop_buy', { id: info.id, kind: info.kind, price: info.price });
+    }
         this.renderShop();
         if (bought.ok) this.saveActiveRunNow();
       },
       (i) => { rs.toggleLock(i); this.renderShop(); this.saveActiveRunNow(); },
-      () => { if (rs.rerollShop()) { telemetryShopReroll(); this.saveActiveRunNow(); } this.renderShop(); },
+      () => {
+        if (rs.rerollShop()) {
+          telemetryShopReroll();
+          logEvent('shop_reroll', { cost: rs.rerollCost });
+          this.saveActiveRunNow();
+        }
+        this.renderShop();
+      },
       rs.rerollCost(),
       () => this.nextWave(),
       nextTip, nextLabel,
@@ -1173,6 +1222,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
   private nextWave() {
     const rs = this.battle.rs;
     telemetryShopLeave(rs.gold);            // 经济遥测：离店（不管后面进不进安装界面）
+    logEvent('shop_leave', { wave: rs.wave, gold: rs.gold });
     // 离开商店 = 回战斗态；先存一份，再决定要不要进安装屏
     this.phase = 'battle';
     this.saveActiveRunNow();
@@ -1211,6 +1261,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
   }
 
   private showResult(win: boolean) {
+    logEvent('result_shown', { win, wave: this.battle.rs ? this.battle.rs.wave : 0 });
     if (win) this.unlockNextDifficulty();
     // 结算前清掉所有残留屏（暂停抽屉/升级卡/商店），否则它们会浮在结算页上方（用户截图确认）
     if (this.cur && this.cur.isValid) { this.cur.destroy(); this.cur = null; }
@@ -1326,6 +1377,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
   // ---------- 9. 暂停 / Build 抽屉 ----------
   private showPause() {
     const rs = this.battle.rs;
+    logEvent('pause_open', { wave: rs.wave, hp: Math.round(rs.stats.hp) });
     const pages = [
       { tab: '技能', lines: rs.skills.flatMap((s, i) => {
           const def = SKILLS[s.id];
@@ -1489,13 +1541,15 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
    */
   private confirmQuit() {
     this.curModal = buildQuitConfirm(this.uiRoot,
-      () => { this.closeModal(); this.battle.paused = false; },
+      () => { logEvent('quit_cancel'); this.closeModal(); this.battle.paused = false; },
       () => {
+        logEvent('quit_save');
         this.saveActiveRunNow();
         this.closeModal();
         this.showMenu();
       },
       () => {
+        logEvent('quit_abandon');
         this.closeModal();
         this.battle.paused = false;
         this.finishRun('abandoned');

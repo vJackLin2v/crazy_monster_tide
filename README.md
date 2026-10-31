@@ -8,7 +8,7 @@
 
 ![主菜单](screenshots/ui-redesign/390x844-01-menu.png)
 
-> **当前状态（2026-10-31）**：主菜单 V3 完成——极简三区布局、继续冒险优先、四个独立像素图标；测试 **435 PASS / 0 FAIL**。
+> **当前状态（2026-10-31）**：主菜单 V3 完成——极简三区布局、继续/开始同款按钮、四个独立像素图标；真机行为日志监听就绪；测试 **435 PASS / 0 FAIL**，微信包 3.11MB / 10.95MB。
 > 接手先读 `docs/HANDOFF.md`；本轮交付包在 `deliverables/menu_v3_2026-10-31/`。
 
 ---
@@ -91,6 +91,7 @@ CocosCreator.exe --project <仓库>/cocos --build "platform=web-mobile;debug=fal
 ```bash
 cd cocos
 node <tsx-cli> tests/run.ts     # 当前：PASS 435 / FAIL 0
+node tools/analyze_device_log.cjs <导出的日志.json>   # 真机行为分析
 ```
 
 ---

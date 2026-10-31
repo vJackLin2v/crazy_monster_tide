@@ -20,7 +20,7 @@ tsx tests/run.ts                -> PASS 435 / FAIL 0
 cd ..
 cmd /c "build-wechat.bat -nopause"
   -> build success；主包 3.11MB / 总计 10.94MB
-  -> assets/main/index.js 298,967 B，17:41:22
+  -> assets/main/index.js 302,870 B，18:27:05
 
 node tools/ui/shot_menu_v3.cjs
   -> errors=none（6 张截图）
@@ -75,6 +75,21 @@ node tools/ui/shot_menu_v3.cjs
 | 玩法说明 | 移到设置页右上入口 |
 | 历史/图鉴/成就/设置 | 回调不变，页面保持 V2 |
 
+## 5.1 真机行为日志（2026-10-31 追加）
+
+- 新增 `game/DeviceLog.ts`：菜单/确认/开局/死亡/商店/升级/暂停/退出/页面/JS 异常等事件，
+  写入 `cmt_device_log_v1`（600 条）并转发微信实时日志 `[CPK]`。
+- 浏览器验证（`tools/ui/verify_devicelog.cjs`）：
+
+```
+DEVICELOG={"count":3,"events":["session_start","menu_shown","menu_start"],
+  "sample":[... session_start web ... menu_shown save=none ... menu_start ...]}
+```
+
+- 分析工具 `tools/analyze_device_log.cjs` 已用样例日志验证：可输出启动/菜单漏斗/死亡波次/
+  商店购买/升级跳过/JS 异常/Telemetry 对局摘要。
+- 取日志与真机步骤：`docs/testing/device_log_monitoring.md`。
+
 ## 6. 未验证 / 风险
 
 - 微信真机：四个图标的实际观感（尤其 32px 下的齿轮/书）、底部手势区与安全区；
@@ -88,4 +103,4 @@ node tools/ui/shot_menu_v3.cjs
 | 命令 | `cmd /c "build-wechat.bat -nopause"` |
 | 结果 | success |
 | 主包 / 总计 | 3.11MB / 10.94MB |
-| index.js | 298,967 B，2026-10-31 17:41:22 |
+| index.js | 302,870 B，2026-10-31 18:27:05 |
