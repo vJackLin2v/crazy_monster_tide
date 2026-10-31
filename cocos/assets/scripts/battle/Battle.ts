@@ -802,7 +802,7 @@ export class Battle extends Component {
       }
     }
     const foc = focusedMods(this.rs.skills.length);
-    if (foc.dmg !== 1) rt = { ...rt, dmg: rt.dmg * foc.dmg };
+    if (foc.dmg !== 1 || foc.cd !== 1) rt = { ...rt, dmg: rt.dmg * foc.dmg, cd: rt.cd * foc.cd };
     // 背水：低血攻速提升（用伤害乘区近似，冷却不变）
     if (this.rs.hasItem('lastbreath')) {
       const hpPct = this.rs.stats.maxhp > 0 ? this.rs.stats.hp / this.rs.stats.maxhp : 1;
