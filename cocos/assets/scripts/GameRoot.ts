@@ -38,7 +38,7 @@ import { telemetryStart, telemetryRunEnd, telemetryShopEnter, telemetryShopBuy, 
 import { initDeviceLog, logEvent, dumpDeviceLog, clearDeviceLog, deviceLogCount, deviceInfo } from './game/DeviceLog';
 import { balance, balanceOverride, balanceReset, exportBalance, importBalance } from './core/Balance';
 import { applyUnlocks } from './game/Achievements';
-import { buildLevelUp, buildShop, buildBuildDrawer, buildConfirm, type CardData, type ShopSlotView } from './ui/Modals';
+import { buildLevelUp, buildShop, buildShopDetail, buildBuildDrawer, buildConfirm, type CardData, type ShopSlotView } from './ui/Modals';
 import { buildInstall, buildReplace } from './ui/ManageScreens';
 import { CHARS } from './data/Chars';
 import { SKILLS, SKILL_ART } from './data/Skills';
@@ -1153,18 +1153,31 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       // 用户指令（2026-10-17 重构）：商店买模块**不再立刻弹安装**。
       //   买一个就装一个节奏太碎。改成：买完只进背包，点「下一波」时**统一装一次**。
       (i) => {
-        // 经济遥测：先记下原价/售价，再真正购买（失败不记）
-        const slot = rs.shopStock?.[i];
-        const info = slot
-          ? { id: slot.id, kind: slot.kind, price: slot.price, basePrice: slot.basePrice ?? slot.price }
-          : null;
-        const bought = rs.buySlot(i);
-        if (bought.ok && info) {
-      telemetryShopBuy(info.id, info.kind, info.price, info.basePrice);
-      logEvent('shop_buy', { id: info.id, kind: info.kind, price: info.price });
-    }
-        this.renderShop();
-        if (bought.ok) this.saveActiveRunNow();
+        // 点货架：先看详情，再决定买不买（详情页布局固定，避免文本/按钮错位）
+        const s = rs.shopStock?.[i];
+        if (!s || s.sold) return;
+        const sv = slots[i];
+        const desc = s.kind === 'item' ? (ITEMS[s.id]?.desc ?? '')
+          : s.kind === 'module' ? (MODULES[s.id] ? MODULES[s.id].name + '：' + (MODULE_NUMS[s.id] ?? MODULES[s.id].desc ?? '') : '')
+          : s.kind === 'heal' ? '立即回复 40 点生命' : '随机一项属性 +1';
+        this.curModal = buildShopDetail(this.uiRoot, {
+          title: sv.title, sub: sv.sub, desc, price: s.price,
+          afford: rs.gold >= s.price, icon: sv.icon,
+        }, () => this.renderShop(),
+        () => {
+          this.closeModal();
+          const slot = rs.shopStock?.[i];
+          const info = slot
+            ? { id: slot.id, kind: slot.kind, price: slot.price, basePrice: slot.basePrice ?? slot.price }
+            : null;
+          const bought = rs.buySlot(i);
+          if (bought.ok && info) {
+            telemetryShopBuy(info.id, info.kind, info.price, info.basePrice);
+            logEvent('shop_buy', { id: info.id, kind: info.kind, price: info.price });
+          }
+          this.renderShop();
+          if (bought.ok) this.saveActiveRunNow();
+        });
       },
       (i) => { rs.toggleLock(i); this.renderShop(); this.saveActiveRunNow(); },
       () => {

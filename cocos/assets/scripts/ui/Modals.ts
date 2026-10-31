@@ -187,6 +187,43 @@ export function buildConfirm(parent: Node, t: string, body: string, okText: stri
   return root;
 }
 
+
+/** 商店商品详情（点货架先看详情，再决定买不买） */
+export function buildShopDetail(
+  parent: Node,
+  v: { title: string; sub: string; desc: string; price: number; afford: boolean; icon?: string },
+  onCancel: () => void, onBuy: () => void,
+): Node {
+  const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
+  const A = (x: number, y: number) => at(VW, VH, x, y);
+  const root = mkNode(parent, 'scr-shop-detail', VW, VH);
+  mask(root, VW, VH);
+  const W = 320, H = 300;
+  const c = A(180, VH / 2);
+  const box = panel(root, c.x, c.y, W, H, { art: 'panel' });
+  text(box, 0, H / 2 - 28, '道具详情', { size: 12, color: COL.dim, width: W - 40 });
+  if (v.icon) {
+    const ic = mkNode(box, 'ic', 44, 44, 0, H / 2 - 74);
+    const sp = ic.addComponent(Sprite);
+    sp.sizeMode = Sprite.SizeMode.CUSTOM; sp.trim = false;
+    const f = iconFrame(v.icon);
+    if (f) sp.spriteFrame = f;
+    else void loadIcon(v.icon).then(() => { const g = v.icon ? iconFrame(v.icon) : null; if (g && sp.isValid) sp.spriteFrame = g; });
+  }
+  text(box, 0, H / 2 - 112, v.title, { size: 19, color: COL.cream, width: W - 30, bold: true, outline: true });
+  text(box, 0, H / 2 - 138, v.sub, { size: 11, color: COL.accent, width: W - 30, bold: true, outline: true });
+  text(box, 0, -22, v.desc || ' ', { size: 11, color: COL.dim, width: W - 44, h: 76 });
+  text(box, -60, -H / 2 + 70, '价格', { size: 10, color: COL.dim, width: 60, align: 'left' });
+  text(box, 0, -H / 2 + 70, String(v.price) + ' 金币', { size: 14, color: v.afford ? COL.accent : COL.red, width: 200, align: 'left', bold: true, outline: true });
+  const cancel = button(box, -78, -H / 2 + 28, 136, 44, '取消', { size: 15 });
+  onTap(cancel.node, onCancel);
+  const buy = button(box, 78, -H / 2 + 28, 136, 44, v.afford ? '购买' : '金币不足', {
+    primary: v.afford, disabled: !v.afford, size: 15,
+  });
+  if (v.afford) onTap(buy.node, onBuy);
+  return root;
+}
+
 /** 按字数粗截断（中文 1 字 ≈ 1 字号宽）。用于**单行**标签，避免换行后被裁 */
 function fit(s: string, maxChars: number): string {
   if (!s) return s;

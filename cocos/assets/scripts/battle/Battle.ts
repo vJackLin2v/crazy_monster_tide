@@ -80,6 +80,8 @@ interface Enemy {
   bodySp?: Sprite | null;
   /** 远程/弹幕冷却（秒） */
   shotT?: number;
+  /** 弹幕预警剩余时间（>0 = 正在蓄势，不移动/不追击） */
+  barrageT?: number;
   /** 是否为 BOSS 召唤出来的小怪（噩梦难度） */
   summoned?: boolean;
   /** BOSS 是否已进入狂怒（地狱） */
@@ -2041,7 +2043,7 @@ export class Battle extends Component {
     this.enemyBullets.push({ node: n, x, y, vx, vy, dmg, life: 4.5 });
   }
 
-  /** 远程怪 / 精英 / BOSS 的远程技能 */
+  /** 远程怪 / 精英 / BOSS 的远程技能（先预警，再开火） */
   private updateEnemyShooting(dt: number): void {
     const RANGED = ['eyebat', 'succubus', 'observer', 'basilisk'];
     for (const e of this.enemies) {
@@ -2051,28 +2053,40 @@ export class Battle extends Component {
       const ranged = RANGED.indexOf(e.kind) >= 0;
       if (!isBoss && !e.elite && !ranged) continue;
       if (e.shotT === undefined) e.shotT = 2 + this.rs.rng.next() * 2;
+
+      // 预警阶段：脚下红圈 + 后仰（BOSS/精英 0.45s，普通远程 0.2s）
+      if (e.barrageT !== undefined) {
+        e.barrageT -= dt;
+        if (e.barrageT > 0) continue;
+        e.barrageT = undefined;
+        const ang = Math.atan2(this.py - e.y, this.px - e.x);
+        if (isBoss) {
+          for (let k = -2; k <= 2; k++) {
+            const a = ang + k * 0.22;
+            this.spawnEnemyBullet(e.x, e.y, Math.cos(a) * 155, Math.sin(a) * 155, Math.round(e.dmg * 0.55));
+          }
+          e.shotT = 3.2;
+        } else if (e.elite) {
+          for (let k = -1; k <= 1; k++) {
+            const a = ang + k * 0.28;
+            this.spawnEnemyBullet(e.x, e.y, Math.cos(a) * 140, Math.sin(a) * 140, Math.round(e.dmg * 0.7));
+          }
+          e.shotT = 4.0;
+        } else {
+          this.spawnEnemyBullet(e.x, e.y, Math.cos(ang) * 145, Math.sin(ang) * 145, Math.round(e.dmg * 0.8));
+          e.shotT = 4.5 + this.rs.rng.next() * 1.5;
+        }
+        Sfx.sfx('hitMetal', 0.35, 240);
+        continue;
+      }
+
       e.shotT -= dt;
       if (e.shotT > 0) continue;
       if (dist > (isBoss ? 420 : 300)) { e.shotT = 0.5; continue; }
-      const ang = Math.atan2(this.py - e.y, this.px - e.x);
-      if (isBoss) {
-        // BOSS 技能①：5 向红色弹幕（技能②冲锋 / ③砸地由 AI 状态机负责）
-        for (let k = -2; k <= 2; k++) {
-          const a = ang + k * 0.22;
-          this.spawnEnemyBullet(e.x, e.y, Math.cos(a) * 155, Math.sin(a) * 155, Math.round(e.dmg * 0.55));
-        }
-        e.shotT = 3.2;
-      } else if (e.elite) {
-        // 精英独有技能：3 向扇形弹（与普通远程的单发区分）
-        for (let k = -1; k <= 1; k++) {
-          const a = ang + k * 0.28;
-          this.spawnEnemyBullet(e.x, e.y, Math.cos(a) * 140, Math.sin(a) * 140, Math.round(e.dmg * 0.7));
-        }
-        e.shotT = 4.0;
-      } else {
-        this.spawnEnemyBullet(e.x, e.y, Math.cos(ang) * 145, Math.sin(ang) * 145, Math.round(e.dmg * 0.8));
-        e.shotT = 4.5 + this.rs.rng.next() * 1.5;
-      }
+      // 进入预警：红圈提示，给玩家 0.2~0.45s 走位
+      const tele = isBoss ? 0.45 : (e.elite ? 0.35 : 0.2);
+      e.barrageT = tele;
+      this.addVfx('ground/ring/cast-circle', e.x, e.y, tele, isBoss ? 2.4 : 1.5);
     }
   }
 

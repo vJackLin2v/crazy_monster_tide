@@ -274,6 +274,11 @@ export function buildHistoryDetail(
   y -= GRID;
 
   // ── C. 技能构筑（图标 + 展开）──
+  {
+    const div = mkNode(ml.content, 'div', 330, 1, 0, y - 2);
+    const dg = div.addComponent(Graphics);
+    dg.fillColor = COL.bg4; dg.rect(-165, -0.5, 330, 1); dg.fill();
+  }
   text(ml.content, -165, y - 14, '技能构筑', { size: 12, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
   (skills.length ? skills : [{ id: '', lvl: 0, mods: [] }]).forEach((s, i) => {
     const cy = y - 56 - i * 54;
@@ -290,6 +295,11 @@ export function buildHistoryDetail(
   y -= SKILL_H;
 
   // ── D. 道具 ──
+  {
+    const div = mkNode(ml.content, 'div', 330, 1, 0, y - 2);
+    const dg = div.addComponent(Graphics);
+    dg.fillColor = COL.bg4; dg.rect(-165, -0.5, 330, 1); dg.fill();
+  }
   text(ml.content, -165, y - 14, '道具收藏 (' + items.length + ')', { size: 12, color: COL.accent, align: 'left', width: 220, bold: true, outline: true });
   if (!items.length) {
     text(ml.content, -165, y - 34, '（本局没有获得道具）', { size: 10, color: COL.dim, align: 'left', width: 300 });
@@ -305,6 +315,11 @@ export function buildHistoryDetail(
   y -= ITEM_H;
 
   // ── E. 关键事件 ──
+  {
+    const div = mkNode(ml.content, 'div', 330, 1, 0, y - 2);
+    const dg = div.addComponent(Graphics);
+    dg.fillColor = COL.bg4; dg.rect(-165, -0.5, 330, 1); dg.fill();
+  }
   text(ml.content, -165, y - 14, '关键事件', { size: 12, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
   if (!milestones.length) {
     text(ml.content, -165, y - 34, '（这一局没有记录到关键事件）', { size: 10, color: COL.dim, align: 'left', width: 300 });
