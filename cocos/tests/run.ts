@@ -45,7 +45,7 @@ import { normalizeRestoredStats } from '../assets/scripts/game/RunRestore';
 import { healStep, effectiveHealBudget } from '../assets/scripts/game/HealRules';
 import { VAMP_HEAL_PER_STACK, thornmailBack } from '../assets/scripts/game/ModuleValues';
 import { Rng } from '../assets/scripts/core/Rng';
-import { validateActiveRun, continueInfoOf, assertRestorable, newRunId, RUN_SAVE_VERSION, type ActiveRunSave } from '../assets/scripts/game/RunSave';
+import { validateActiveRun, continueInfoOf, assertRestorable, newRunId, RUN_SAVE_VERSION, isLegalModuleId, isLegalItemId, type ActiveRunSave } from '../assets/scripts/game/RunSave';
 import { emptyHistory, addRun, buildSummary, validateHistory, filterRuns, historyStats, hasRun, HISTORY_MAX, type RunSummary, type RunDetail } from '../assets/scripts/game/RunHistory';
 
 let pass = 0, fail = 0;
@@ -710,7 +710,8 @@ console.log('\n== 5p. 难度系统（数值 + 迁移 + 召唤状态机） ==');
   ok(DIFFICULTIES.length === 5, '五档难度齐备');
   const n = difficultyOf('normal');
   ok(n.enemyHpMul === 1 && n.enemyDmgMul === 1 && n.spawnMul === 1 && n.shopPriceMul === 1, '普通难度所有倍率为 1');
-  ok(n.rules.length === 0 && n.healBudgetPerSecond === null, '普通难度无规则且不启用回血预算');
+  ok(n.rules.length === 0 && n.healBudgetPerSecond === null,
+    '普通难度无规则；配置值为 null（运行期按默认 8HP/s 生效，非"无预算"）');
 
   ok(Math.abs(eliteChance(0.1, 'casual') - 0.08) < 1e-9, '休闲精英概率 0.08');
   ok(Math.abs(eliteChance(0.1, 'hell') - Math.min(1, 0.18)) < 1e-9, '地狱精英概率按 1.8 倍且封顶 1');
@@ -723,7 +724,8 @@ console.log('\n== 5p. 难度系统（数值 + 迁移 + 召唤状态机） ==');
 
   ok(Math.abs(healAmount(10, 'normal', 0.2) - 10) < 1e-9, '普通回血不加成');
   ok(Math.abs(healAmount(10, 'casual', 0.2) - 14.4) < 1e-9, '休闲低血回血 = 10 x1.2 x1.2');
-  ok(healBudget('normal') === null && healBudget('nightmare') === 6, '普通无预算，噩梦 6HP/s');
+  ok(healBudget('normal') === null && healBudget('nightmare') === 6,
+    '配置值：普通 null（运行期默认 8HP/s），噩梦 6HP/s');
   ok(nextDifficulty('normal') === 'hard', '普通通关解锁困难');
   ok(nextDifficulty('nightmare') === 'hell', '噩梦通关解锁地狱');
   ok(nextDifficulty('hell') === null, '最高难度不再解锁');
@@ -1021,16 +1023,17 @@ console.log('\n== 12. 地狱商店经济遥测 ==');
   clearLogs();
 }
 
-console.log('\n== 13. 普通难度 = 不介入原版本（公式层） ==');
+console.log('\n== 13. 普通难度公式层：倍率 1、无特殊规则（回血为默认 8） ==');
 {
   const n = difficultyOf('normal');
-  ok(n.rules.length === 0 && n.healBudgetPerSecond === null, '普通：无难度规则、不启用回血预算');
+  ok(n.rules.length === 0 && n.healBudgetPerSecond === null,
+    '普通：无难度规则；healBudget 配置为 null（运行期默认 8，不是无预算）');
   ok(spawnInterval(0.62, 'normal') === 0.62, '普通：刷怪间隔原样返回（不乘 1.0）');
   ok(shopPrice(37, 'normal', 18) === 37, '普通：商店价格原样返回（不乘倍率、无递增）');
   ok(shopPrice(37, 'normal', 1) === 37, '普通第 1 波价格也不被改写');
   ok(eliteChance(0.37, 'normal') === 0.37, '普通：精英概率原样返回');
   ok(healAmount(10, 'normal', 0.1) === 10, '普通：回血不乘倍率、不触发低血加成');
-  ok(healBudget('normal') === null, '普通：不启用新增回血预算');
+  ok(healBudget('normal') === null, '普通：配置为 null（运行期默认 8，非"不启用"）');
 }
 
 console.log('\n== 14. BOSS 召唤：请求不丢 / 间隔 / 空位 ==');
@@ -1427,6 +1430,83 @@ console.log('\n== 25. 统一回血入口（M1） ==');
   const rs6 = mk();
   rs6.runTime = 11.4; rs6.healWindow = 10; rs6.healSpent = 5;
   ok(rs6.heal(10) > 0, '恢复后跨秒开启新预算窗口');
+}
+
+
+console.log('\n== 26. 回血预算按实际恢复量记账（M1 补充） ==');
+{
+  const mk = (diff: 'normal' | 'hard' = 'normal') => {
+    const rs = new RunState('knight', 777, diff);
+    rs.stats.maxhp = 100; rs.stats.hp = 99; rs.runTime = 10.2;
+    rs.healWindow = -1; rs.healSpent = 0;
+    return rs;
+  };
+  const rs = mk();
+  const a = rs.heal(5);
+  ok(Math.abs(a - 1) < 1e-9, '99/100 请求 5 只实际恢复 1');
+  ok(Math.abs(rs.healSpent - 1) < 1e-9, '预算只按实际恢复量记账（记 1，不是 5）');
+  // 人为掉血，验证"剩余预算"确实还在（满血时 room=0 本来就不能回血）
+  rs.stats.hp = 95;
+  const b = rs.heal(4);
+  ok(Math.abs(b - 4) < 1e-9 && Math.abs(rs.healSpent - 5) < 1e-9,
+    '同秒剩余 4 点预算仍可用（实际记 4）');
+  rs.stats.hp = 90;
+  ok(rs.heal(5) === 0, '同秒预算用尽后不再回血');
+  ok(Math.abs(rs.healSpent - 5) < 1e-9, '满预算后 spent 不再增长');
+
+  const rs2 = mk(); rs2.stats.hp = 100;
+  const spent0 = rs2.healSpent;
+  ok(rs2.heal(5) === 0 && rs2.healSpent === spent0, '满血回血不消耗预算');
+
+  const rs3 = new RunState('knight', 778, 'hard');
+  rs3.stats.maxhp = 100; rs3.stats.hp = 0; rs3.runTime = 3.2;
+  rs3.healWindow = -1; rs3.healSpent = 0;
+  const h3 = rs3.heal(5);
+  ok(Math.abs(h3 - 4.5) < 1e-9, '困难 healMul 0.9：5 → 4.5');
+
+  const rs4 = mk(); rs4.stats.hp = 98;
+  ok(Math.abs(rs4.heal(10, true) - 2) < 1e-9, '瞬时治疗按剩余生命截断');
+
+  const rs5 = mk(); rs5.stats.hp = 0;
+  const total = rs5.heal(2) + rs5.heal(2) + rs5.heal(2);
+  ok(Math.abs(total - 5) < 1e-9 && Math.abs(rs5.healSpent - 5) < 1e-9,
+    '连续多次回血合计不超过硬上限，且按实际量记账');
+}
+
+console.log('\n== 27. 存档模块 / 道具白名单（M1 补充） ==');
+{
+  const raw = {
+    v: RUN_SAVE_VERSION, charId: 'knight', difficulty: 'normal', phase: 'battle',
+    stats: { hp: 50, maxhp: 100 }, baseStats: { hp: 50, maxhp: 100 },
+    skills: [{ id: 'ring_blade', lvl: 1, mods: ['burn', 'ghost_mod', 'killblast'] }],
+    modsBag: ['frost', 'ghost_mod', 'shieldonhit'],
+    items: [{ id: 't_fire' }, { id: 'ghost_item' }],
+    shopStock: [
+      { kind: 'module', id: 'ghost_mod', price: 1, sold: false, locked: false },
+      { kind: 'module', id: 'burn', price: 1, sold: false, locked: false },
+    ],
+    pendingRewards: [{ kind: 'module', id: 'ghost_mod' }, { kind: 'module', id: 'burn' }],
+    battle: { enemies: [], skillT: [] },
+  };
+  const got = validateActiveRun(JSON.parse(JSON.stringify(raw)));
+  ok(got.status === 'ok', '含未知模块的存档仍可加载（不崩溃）');
+  if (got.status === 'ok') {
+    const s = got.save;
+    ok(s.skills[0].mods.indexOf('burn') >= 0 && s.skills[0].mods.indexOf('killblast') >= 0,
+      '合法模块 + 已批准隐藏模块保留');
+    ok(s.skills[0].mods.indexOf('ghost_mod') < 0, '未知模块被过滤，不进入构筑');
+    ok(s.modsBag.indexOf('frost') >= 0 && s.modsBag.indexOf('shieldonhit') >= 0
+      && s.modsBag.indexOf('ghost_mod') < 0, '背包：合法/隐藏保留，未知过滤');
+    ok(s.items.length === 1 && s.items[0].id === 't_fire', '道具白名单过滤未知 item');
+    ok(!!s.shopStock && s.shopStock.length === 1 && s.shopStock[0].id === 'burn',
+      '商店货位过滤未知模块');
+    ok(!!s.pendingRewards && s.pendingRewards.length === 1 && s.pendingRewards[0].id === 'burn',
+      '待选奖励过滤未知模块');
+  }
+  ok(isLegalModuleId('burn') && isLegalModuleId('burn_2') && isLegalModuleId('killblast'),
+    '正式模块/合成等级/已批准隐藏模块均为合法');
+  ok(!isLegalModuleId('ghost_mod') && !isLegalModuleId(''), '未知模块/空 id 非法');
+  ok(isLegalItemId('t_fire') && !isLegalItemId('ghost_item'), '道具白名单');
 }
 
 console.log('\n================ 结果 ================');

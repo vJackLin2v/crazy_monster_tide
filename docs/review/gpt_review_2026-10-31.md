@@ -1,7 +1,7 @@
 # 《疯狂鸽王 / crazy_monster_tide》GPT 审查包
 
 > 版本：commit `605006d` ｜ 构建：2026-10-31 20:25 ｜ 引擎：Cocos Creator 3.8.6 ｜ 平台：微信小游戏（竖屏 360×640）
-> 测试：**447 PASS / 0 FAIL**（M1 回血修复后）；tsc check/ui-check = 0；微信包 3.11MB / 10.95MB。
+> 测试：**466 PASS / 0 FAIL**（M1 补充后）；tsc check/ui-check = 0；微信包 3.11MB / 10.95MB。
 > 附件：`gpt_review_tables_2026-10-31.md`（全量技能/黑科技/道具/难度表）、`screenshots/`（真实运行截图）、`source/`（当前脚本快照）。
 
 ---

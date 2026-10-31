@@ -11,6 +11,7 @@
 |---|---|
 | 入口 | `RunState.heal(amount, instant?)`（`game/RunState.ts`） |
 | 预算窗口 | `healWindow = floor(runTime)`；跨秒自动清零 `healSpent` |
+| 记账口径 | **按实际恢复量**：先夹剩余生命，再累计 spent；99/100 请求 5 只记 1 |
 | 状态字段 | `RunState.healWindow` / `RunState.healSpent`（随存档保存） |
 | 战斗入口 | `Battle.healPlayer(amount)` → `rs.heal(amount)` → 回血 ≥0.5 时播反馈 |
 | 瞬时入口 | `rs.heal(amount, true)`：商店治疗、波末节奏恢复；不占战斗每秒预算，但仍受最大生命与有限数校验 |
@@ -20,7 +21,7 @@
 | 难度 | healBudgetPerSecond | healMul | 有效预算（null→8） | 单秒硬上限 |
 |---|---|---|---|---|
 | 休闲 | 8 | 1.20 | 8 | min(8,5)=**5** |
-| 普通 | null | 1.00 | **8** | **5** |
+| 普通 | null | 1.00 | **8**（默认值，不是"无预算"） | **5** |
 | 困难 | 8 | 0.90 | 8 | **5** |
 | 噩梦 | 6 | 0.80 | 6 | **5** |
 | 地狱 | 5 | 0.70 | 5 | **5** |

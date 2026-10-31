@@ -131,15 +131,18 @@ export class RunState {
     if (!Number.isFinite(st.hp)) st.hp = 1;
     const win = Math.floor(this.runTime);
     if (win !== this.healWindow) { this.healWindow = win; this.healSpent = 0; }
-    let want = amount;
+    const room = Math.max(0, st.maxhp - st.hp);
+    if (room <= 0) return 0;
+    let healed: number;
     if (!instant) {
       const hpPct = st.hp / st.maxhp;
-      const step = healStep(amount, this.difficulty, hpPct, this.healSpent);
-      want = step.heal;
+      // room 传入 healStep：预算只按实际恢复量累计（99/100 请求 5 → 只记 1）
+      const step = healStep(amount, this.difficulty, hpPct, this.healSpent, room);
+      healed = step.heal;
       this.healSpent = Math.min(HEAL_HARD_CAP, Math.max(0, step.spent));
+    } else {
+      healed = Math.min(amount, room);
     }
-    const room = Math.max(0, st.maxhp - st.hp);
-    const healed = Math.min(want, room);
     if (healed > 0) st.hp += healed;
     return healed;
   }

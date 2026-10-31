@@ -9,6 +9,8 @@
  * 所有字段都是 JSON-safe；版本号用于迁移，任何校验失败都返回明确原因，不静默当没有存档。
  */
 import type { DifficultyId } from '../data/Difficulties';
+import { MODULES, baseOf } from '../data/Modules';
+import { ITEMS } from '../data/Items';
 import type { CharStats } from '../data/Types';
 import type { RunMilestone } from './RunHistory';
 
@@ -107,6 +109,33 @@ export type LoadCheck =
 
 const DIFFICULTIES: DifficultyId[] = ['casual', 'normal', 'hard', 'nightmare', 'hell'];
 
+/**
+ * 六个"扩展设计已批准、但未进正式掉落池"的黑科技。
+ * 存档恢复时允许保留（否则会删掉设计验证/测试用的合法构筑），但不因此进入奖励池。
+ */
+const HIDDEN_MODULE_BASES = ['killblast', 'shieldonhit', 'execute', 'returnstrike', 'lingering', 'overcharge'];
+
+/** 模块 id 是否可进入运行时构筑（正式 MODULES + 已批准的隐藏模块 + 合成等级） */
+export function isLegalModuleId(id: string): boolean {
+  if (!id || typeof id !== 'string') return false;
+  const base = baseOf(id);
+  return !!MODULES[base] || HIDDEN_MODULE_BASES.indexOf(base) >= 0;
+}
+
+/** 道具 id 是否合法（未知道具不进存档） */
+export function isLegalItemId(id: string): boolean {
+  return !!id && typeof id === 'string' && !!ITEMS[id];
+}
+
+/** 商店货位：模块/道具必须合法；heal/attr 固定 id 允许 */
+function sanitizeShopSlot(s: ShopSlotSave): boolean {
+  if (!s || typeof s !== 'object') return false;
+  if (s.kind === 'module') return isLegalModuleId(s.id);
+  if (s.kind === 'item') return isLegalItemId(s.id);
+  if (s.kind === 'heal' || s.kind === 'attr') return true;
+  return false;
+}
+
 export function newRunId(now = Date.now(), rnd = Math.random()): string {
   return 'r' + now.toString(36) + '-' + Math.floor(rnd * 0xffffff).toString(36);
 }
@@ -181,17 +210,34 @@ export function validateActiveRun(raw: unknown): LoadCheck {
     stats, baseStats,
     skills: skillsRaw.map((s) => {
       const r = s as Record<string, unknown>;
-      return { id: str(r.id), lvl: Math.max(1, Math.floor(num(r.lvl, 1))), mods: Array.isArray(r.mods) ? r.mods.filter((m): m is string => typeof m === 'string') : [] };
+      return {
+        id: str(r.id),
+        lvl: Math.max(1, Math.floor(num(r.lvl, 1))),
+        mods: Array.isArray(r.mods)
+          ? r.mods.filter((m): m is string => typeof m === 'string' && isLegalModuleId(m))
+          : [],
+      };
     }).filter(s => !!s.id),
-    modsBag: Array.isArray(o.modsBag) ? o.modsBag.filter((m): m is string => typeof m === 'string') : [],
-    items: Array.isArray(o.items) ? (o.items as { id: string }[]).filter(i => i && typeof i.id === 'string') : [],
+    modsBag: Array.isArray(o.modsBag)
+      ? o.modsBag.filter((m): m is string => typeof m === 'string' && isLegalModuleId(m))
+      : [],
+    items: Array.isArray(o.items)
+      ? (o.items as { id: string }[]).filter(i => i && typeof i.id === 'string' && isLegalItemId(i.id))
+      : [],
     attrTaken: (o.attrTaken && typeof o.attrTaken === 'object') ? o.attrTaken as Record<string, number> : {},
     shopReroll: Math.max(0, Math.floor(num(o.shopReroll, 0))),
-    shopStock: Array.isArray(o.shopStock) ? o.shopStock as ShopSlotSave[] : null,
-    carryOver: Array.isArray(o.carryOver) ? o.carryOver as ShopSlotSave[] : [],
+    shopStock: Array.isArray(o.shopStock)
+      ? (o.shopStock as ShopSlotSave[]).filter(s => sanitizeShopSlot(s))
+      : null,
+    carryOver: Array.isArray(o.carryOver)
+      ? (o.carryOver as ShopSlotSave[]).filter(s => sanitizeShopSlot(s))
+      : [],
     legendaryTaken: bool(o.legendaryTaken),
     pendingRewards: Array.isArray(o.pendingRewards)
-      ? (o.pendingRewards as { kind: string; id: string; needReplace?: boolean }[]) : undefined,
+      ? (o.pendingRewards as { kind: string; id: string; needReplace?: boolean }[])
+        .filter(r => r && (r.kind !== 'module' || isLegalModuleId(r.id))
+          && (r.kind !== 'item' || isLegalItemId(r.id)))
+      : undefined,
     battle: {
       waveLeft: Math.max(0, num(b.waveLeft, 0)),
       spawnAcc: Math.max(0, num(b.spawnAcc, 0)),

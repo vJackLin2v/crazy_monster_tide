@@ -1,6 +1,7 @@
 # M1 变更报告（回血统一 + 规则核对 + 隐藏黑科技/范围审计）
 
-> 起始 commit：`de41ae0` ｜ 完成 commit：见 `m1_test_report.md` / 最终交付说明
+> 起始 commit：`de41ae0` ｜ M1 完成：`a752d4a` ｜ 补充轮：见 `m1_supplement_report.md`
+> 补充轮修正：普通预算语义澄清、预算按实际恢复量记账、存档模块/道具白名单。
 > 引擎：Cocos Creator 3.8.6 ｜ 测试：447 PASS / 0 FAIL（原 435 + 新增 12）｜ tsc check/ui-check = 0
 
 ## 一、确认的代码错误（已修）
