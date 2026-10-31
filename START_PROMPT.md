@@ -6,7 +6,7 @@
 
 Cocos 3.8.6 工程，**功能已完整的可玩 Demo**：11 屏 UI、20 波+精英+BOSS+无尽、16 技能、
 18 行为模块、24 属性、70 道具、6 BOSS、音频+音效。**需求 §10 的内容量指标全部达标。**
-进度到 **M27**。当前主要缺口是**真人手感验证**，不是功能。
+进度到 **阶段3（内容扩展 + 难度系统）**；设计→实现对照见 docs/implementation_status.md。当前主要缺口是**真人手感验证**，不是功能。
 
 > ⚠️ 阶段门禁里「HTML MVP / UI 冻结」**早已完成**（M1 / M15），**不要再重跑那两个阶段**。
 
@@ -27,7 +27,7 @@ node H:/AI-game/xingnang/cocos_port/node_modules/typescript/bin/tsc -p tsconfig.
 node H:/AI-game/xingnang/cocos_port/node_modules/tsx/dist/cli.mjs tests/run.ts
 ```
 
-期望：两个 **0 错误**、**63 PASS / 0 FAIL**。不绿就先修，别加新功能。
+期望：两个 **0 错误**、**264 PASS / 0 FAIL**。不绿就先修，别加新功能。
 
 ## 3. 现在该做什么
 
