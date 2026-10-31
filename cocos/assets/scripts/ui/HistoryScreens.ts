@@ -1,38 +1,43 @@
 /**
- * 历史对局页面（列表 + 详情）
+ * 战绩档案 V2（历史列表 + 单局报告）
  *
- * 数据来自 game/RunHistory（摘要 + 详情分层）：列表只吃摘要，详情点击后才用。
- * 布局：360×640 设计坐标，列表与详情都用 ModalList 滚动（与安装屏/商店同一套）。
+ * 设计：
+ *  · 列表 = 紧凑统计面板 + Tab 筛选 + 战绩卡片（角色/波次/结果一眼可读），空态有行动入口；
+ *  · 详情 = 结果头图 + 2×3 核心数据 + 图标化技能/道具 + 关键事件 + 结束原因；
+ *  · 只用真实记录字段，缺失显示「未记录」，不推算、不伪造。
  */
-import { Node, Color, view } from 'cc';
-import { panel, text, button, onTap, mkNode, screen, screenHeader } from './UIKit';
+import { Node, Color, view, Sprite, UITransform, Graphics } from 'cc';
+import { panel, text, button, onTap, mkNode, screen } from './UIKit';
 import { COL } from './Tokens';
 import { safeTop, safeBottom } from './Safe';
 import { makeModalList } from './ModalList';
 import { at } from './MenuScreens';
 import { CHARS } from '../data/Chars';
-import { SKILLS } from '../data/Skills';
+import { SKILLS, SKILL_ART } from '../data/Skills';
 import { ITEMS } from '../data/Items';
+import { ITEM_ICON, MODULE_ICON } from '../data/IconMap';
+import { baseOf, MODULES } from '../data/Modules';
 import { difficultyOf } from '../data/Difficulties';
-import { MODULES } from '../data/Modules';
 import type { DifficultyId } from '../data/Difficulties';
-import { endReasonText, filterRuns, historyStats, resultLabel, type HistoryFilter, type RunDetail, type RunSummary } from '../game/RunHistory';
+import { Assets, iconFrame, loadIcon } from '../engine/Assets';
+import {
+  endReasonText, filterRuns, historyStats, resultLabel,
+  type HistoryFilter, type RunDetail, type RunSummary,
+} from '../game/RunHistory';
 
-const ROW_H = 96;
+const ROW_H = 92;
 const ROW_GAP = 8;
-const ICON_ART = 'icon';
 
 function mmss(sec: number): string {
   const s = Math.max(0, Math.round(sec));
-  const m = Math.floor(s / 60);
-  const r = s % 60;
+  const m = Math.floor(s / 60), r = s % 60;
   return (m < 10 ? '0' : '') + m + ':' + (r < 10 ? '0' : '') + r;
 }
 
-function dateText(ms: number): string {
+function dateShort(ms: number): string {
   const d = new Date(ms);
   const p = (n: number) => (n < 10 ? '0' + n : '' + n);
-  return d.getFullYear() + '/' + p(d.getMonth() + 1) + '/' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  return (d.getMonth() + 1) + '/' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
 }
 
 function charName(id: string): string {
@@ -40,12 +45,20 @@ function charName(id: string): string {
   return c ? c.name : id;
 }
 
-function diffName(id: DifficultyId): string {
-  return difficultyOf(id).name;
+function diffName(id: DifficultyId): string { return difficultyOf(id).name; }
+
+function resultText(r: RunSummary['result']): string {
+  if (r === 'victory') return '胜利';
+  if (r === 'defeat') return '失败';
+  if (r === 'endless_end') return '无尽止步';
+  return '主动放弃';
 }
 
-function skillNames(ids: string[]): string {
-  return ids.slice(0, 3).map(id => (SKILLS[id] ? SKILLS[id].name : id)).join(' / ') || '—';
+function headTitle(r: RunSummary['result']): string {
+  if (r === 'victory') return '成功通关';
+  if (r === 'defeat') return '挑战失败';
+  if (r === 'endless_end') return '无尽落幕';
+  return '主动结束冒险';
 }
 
 function resultColor(r: RunSummary['result']): Color {
@@ -55,191 +68,245 @@ function resultColor(r: RunSummary['result']): Color {
   return COL.dim;
 }
 
-function avatar(parent: Node, charId: string, x: number, y: number, d = 44): Node {
-  const box = panel(parent, x, y, d, d, { art: 'slot' });
-  const c = CHARS.find(k => k.id === charId);
-  // 用角色名首字做像素头像（避免为历史页额外加载立绘，保持列表轻量）
-  text(box, 0, 1, c ? c.name.slice(0, 1) : '?', { size: 20, color: COL.accent, width: d, bold: true, outline: true });
+/** 角色头像（立绘 + 槽位框）；加载失败时用名字首字兜底 */
+function portrait(parent: Node, charId: string, x: number, y: number, size: number): Node {
+  const box = mkNode(parent, 'avatar', size, size, x, y);
+  const slotN = panel(box, 0, 0, size, size, { art: 'slot' });
+  const unit = CHARS.find(c => c.id === charId)?.unit;
+  if (unit) {
+    const n = mkNode(box, 'portrait', size - 8, size - 8);
+    const sp = n.addComponent(Sprite);
+    sp.sizeMode = Sprite.SizeMode.CUSTOM; sp.trim = false;
+    void Assets.loadPortrait(unit).then((sf) => { if (sf && sp.isValid) sp.spriteFrame = sf; });
+  }
+  text(slotN, 0, 1, charName(charId).slice(0, 1), { size: Math.round(size / 2.4), color: COL.accent, width: size, bold: true, outline: true });
   return box;
 }
 
-/** 列表页：总览 + 筛选 + 可滚动记录 */
+/** 图标：技能/道具/黑科技统一走 IconMap + 异步回填 */
+function iconNode(parent: Node, name: string | undefined, x: number, y: number, size: number): Node {
+  const n = mkNode(parent, 'icon', size, size, x, y);
+  if (!name) return n;
+  const sp = n.addComponent(Sprite);
+  sp.sizeMode = Sprite.SizeMode.CUSTOM; sp.trim = false;
+  const f = iconFrame(name);
+  if (f) sp.spriteFrame = f;
+  else void loadIcon(name).then((sf) => { if (sf && sp.isValid) sp.spriteFrame = sf; });
+  return n;
+}
+
+/** 页面头：返回 + 标题 + 副标题（不用 screenHeader，避免返回按钮压边框） */
+function pageHeader(root: Node, VW: number, VH: number, S: number, titleText: string, subtitle: string, onBack: () => void): void {
+  const back = button(root, at(VW, VH, 54, S + 27).x, at(VW, VH, 54, S + 27).y, 64, 36, '返回', { size: 12 });
+  onTap(back.node, onBack);
+  text(root, 0, at(VW, VH, 180, S + 20).y, titleText,
+    { size: 20, color: COL.cream, width: 300, bold: true, outline: true, shadow: true });
+  text(root, 0, at(VW, VH, 180, S + 44).y, subtitle,
+    { size: 9, color: COL.dim, width: 300 });
+}
+
+// ============================================================
+// 列表
+// ============================================================
+
 export function buildHistoryList(
   parent: Node, list: RunSummary[], filter: HistoryFilter, initialOff: number,
   onFilter: (f: HistoryFilter) => void, onBack: () => void,
-  onOpen: (runId: string, scroll: number) => void,
+  onOpen: (runId: string, scroll: number) => void, onNewRun: () => void,
 ): Node {
   const vs = view.getVisibleSize();
   const VW = vs.width, VH = vs.height;
-  const A = (x: number, y: number) => at(VW, VH, x, y);
   const S = safeTop(), B = safeBottom();
   const root = screen(parent, 'scr-history', COL.bg1);
-  screenHeader(root, VW, S, '历史对局');
+  pageHeader(root, VW, VH, S, '战绩档案', '记录每一次冒险', onBack);
 
-  // 标题条高 54（screenHeader 默认），返回按钮与条心对齐（S+27），避免"错位"观感
-  const back = button(root, A(54, S + 27).x, A(54, S + 27).y, 64, 36, '返回', { size: 12 });
-  onTap(back.node, onBack);
-
+  // ── A. 统计面板（一个面板，四个小数据块）──
+  const panelY = S + 104;
+  const statBox = panel(root, at(VW, VH, 180, panelY).x, at(VW, VH, 180, panelY).y, 330, 76, { art: 'panel' });
   const st = historyStats(list);
-  text(root, A(16, S + 66).x, A(16, S + 66).y,
-    '总对局 ' + st.total + '    胜利 ' + st.wins + '    最远 ' + st.bestWave + ' 波    最长 ' + mmss(st.longestSeconds),
-    { size: 11, color: COL.cream, align: 'left', width: 330, outline: true });
+  const cols: [string, string][] = [
+    ['总场次', String(st.total)],
+    ['胜利', String(st.wins)],
+    ['最高波次', String(st.bestWave)],
+    ['最长生存', mmss(st.longestSeconds)],
+  ];
+  cols.forEach(([k, v], i) => {
+    const cx = -124 + i * 82.5;
+    text(statBox, cx, 10, v, { size: 18, color: i === 1 ? COL.mint : COL.cream, width: 80, bold: true, outline: true });
+    text(statBox, cx, -16, k, { size: 8, color: COL.dim, width: 80 });
+  });
 
+  // ── B. 筛选 Tab ──
   const TABS: [HistoryFilter, string][] = [['all', '全部'], ['win', '胜利'], ['lose', '失败'], ['endless', '无尽']];
+  const tabY = S + 164;
   TABS.forEach(([f, label], i) => {
-    const x = 14 + i * 84 + 40;
-    const b = button(root, A(x, S + 104).x, A(x, S + 104).y, 76, 32, label,
+    const cx = 51 + i * 86;
+    const b = button(root, at(VW, VH, cx, tabY).x, at(VW, VH, cx, tabY).y, 78, 36, label,
       { primary: f === filter, size: 12 });
     onTap(b.node, () => onFilter(f));
   });
 
+  // ── C. 列表 / 空态 ──
+  const listTop = S + 190;
+  const listH = VH - listTop - B - 10;
   const shown = filterRuns(list, filter);
-  const listTop = S + 132;
-  const listH = VH - listTop - B - 12;
-  const contentH = Math.max(listH, shown.length * (ROW_H + ROW_GAP) + 8);
 
   if (!shown.length) {
-    const empty = panel(root, A(180, listTop + 100).x, A(180, listTop + 100).y, 320, 120, { art: 'panel_soft' });
-    text(empty, 0, 22, list.length ? '这个筛选下没有对局' : '还没有历史对局',
-      { size: 15, color: COL.cream, width: 300, bold: true, outline: true });
-    text(empty, 0, -8, list.length
-      ? '换一个筛选看看'
-      : '完成一场冒险后，这里会记录你的战斗经历。',
-      { size: 11, color: COL.dim, width: 290 });
+    const cy = listTop + listH / 2 - 30;
+    const card = panel(root, at(VW, VH, 180, cy).x, at(VW, VH, 180, cy).y, 320, 260, { art: 'panel_soft' });
+    const pn = mkNode(card, 'emptyHero', 96, 104, 0, 62);
+    const sp = pn.addComponent(Sprite);
+    sp.sizeMode = Sprite.SizeMode.CUSTOM; sp.trim = false;
+    void Assets.loadPortrait(CHARS[0].unit).then((sf) => { if (sf && sp.isValid) sp.spriteFrame = sf; });
+    text(card, 0, -12, list.length ? '这个筛选下没有战绩' : '还没有战绩',
+      { size: 16, color: COL.cream, width: 280, bold: true, outline: true });
+    text(card, 0, -38, list.length
+      ? '换一个筛选，或者去开启新的冒险。'
+      : '完成一场冒险后，这里会留下你的战斗记录。',
+      { size: 10, color: COL.dim, width: 280 });
+    const go = button(card, 0, -88, 210, 44, list.length ? '返回全部战绩' : '开始第一场冒险', { primary: !list.length, size: 13 });
+    onTap(go.node, () => {
+      if (list.length) onFilter('all');
+      else onNewRun();
+    });
   } else {
-    const ml = makeModalList(root, A(180, listTop + listH / 2).x, A(180, listTop + listH / 2).y, 336, listH, contentH, initialOff);
+    const contentH = Math.max(listH, shown.length * (ROW_H + ROW_GAP) + 8);
+    const ml = makeModalList(root, at(VW, VH, 180, listTop + listH / 2).x, at(VW, VH, 180, listTop + listH / 2).y, 336, listH, contentH, initialOff);
     shown.forEach((s, i) => {
       const cy = ml.topY - 8 - i * (ROW_H + ROW_GAP) - ROW_H / 2;
       const row = panel(ml.content, 0, cy, 330, ROW_H, { art: 'panel_soft' });
-      avatar(row, s.characterId, -140, 4, 44);
-      text(row, -108, 26, charName(s.characterId),
-        { size: 14, color: COL.cream, align: 'left', width: 150, bold: true, outline: true });
-      text(row, 18, 26, diffName(s.difficulty) + ' · ' + resultLabel(s.result),
-        { size: 12, color: resultColor(s.result), width: 120, bold: true, outline: true });
-      text(row, -108, 6,
-        (s.endlessMode ? '第 ' + s.reachedWave + ' 波（无尽）' : '第 ' + s.reachedWave + '/' + s.totalWaves + ' 波')
-          + ' · ' + mmss(s.durationSeconds) + ' · 击杀 ' + s.killCount,
-        { size: 10, color: COL.cream, align: 'left', width: 230, outline: true });
-      text(row, -108, -14, skillNames(s.finalSkillIds),
-        { size: 10, color: COL.accent, align: 'left', width: 230, outline: true });
-      text(row, 118, -32, '查看详情 >', { size: 10, color: COL.dim, width: 90, align: 'right' });
-      text(row, 118, 6, dateText(s.endedAt), { size: 9, color: COL.dim, width: 110, align: 'right' });
+      portrait(row, s.characterId, -136, 2, 52);
+
+      text(row, -108, 24, charName(s.characterId),
+        { size: 14, color: COL.cream, align: 'left', width: 92, bold: true, outline: true });
+      text(row, -108, 4, diffName(s.difficulty) + ' · ' + (s.endlessMode ? '无尽' : '标准'),
+        { size: 9, color: COL.dim, align: 'left', width: 92 });
+
+      // 波次：本局最醒目的成绩
+      const waveStr = s.endlessMode ? String(s.reachedWave) : s.reachedWave + '/' + s.totalWaves;
+      text(row, -14, 22, waveStr, { size: 20, color: COL.accent, width: 66, bold: true, outline: true });
+      text(row, -14, 2, s.endlessMode ? '波次（无尽）' : '波次', { size: 8, color: COL.dim, width: 66 });
+
+      text(row, 56, 22, mmss(s.durationSeconds), { size: 10, color: COL.cream, width: 54, align: 'left', outline: true });
+      text(row, 56, 4, '击杀 ' + s.killCount, { size: 9, color: COL.dim, width: 54, align: 'left' });
+
+      const rc = resultColor(s.result);
+      text(row, 140, 24, resultText(s.result), { size: 10, color: rc, width: 50, align: 'right', bold: true, outline: true });
+      text(row, 140, 4, dateShort(s.endedAt), { size: 8, color: COL.dim, width: 50, align: 'right' });
+      text(row, 140, -18, '详情 ›', { size: 9, color: COL.cream, width: 50, align: 'right' });
+
       onTap(row, () => { if (!ml.isDragging()) onOpen(s.runId, ml.offset()); });
     });
   }
   return root;
 }
 
-/** 详情页：纵向滚动（基本信息 / 统计 / 构筑 / 道具 / 进程 / 结束原因） */
+// ============================================================
+// 详情
+// ============================================================
+
 export function buildHistoryDetail(
   parent: Node, summary: RunSummary, detail: RunDetail | null, onBack: () => void,
 ): Node {
   const vs = view.getVisibleSize();
   const VW = vs.width, VH = vs.height;
-  const A = (x: number, y: number) => at(VW, VH, x, y);
   const S = safeTop(), B = safeBottom();
   const root = screen(parent, 'scr-history-detail', COL.bg1);
-  screenHeader(root, VW, S, '对局详情');
-  const back = button(root, A(54, S + 27).x, A(54, S + 27).y, 64, 36, '返回', { size: 12 });
-  onTap(back.node, onBack);
+  pageHeader(root, VW, VH, S, '对局详情', dateShort(summary.endedAt), onBack);
 
   const skills = detail ? detail.skills : summary.finalSkillIds.map(id => ({ id, lvl: 1, mods: [] as string[] }));
   const items = detail ? detail.items : summary.finalItemIds.map(id => ({ id, count: 1 }));
-  const milestones = detail ? detail.milestones : [];
   const stats = detail ? detail.stats : {};
+  const milestones = detail ? detail.milestones : [];
 
-  // 先算内容高度（保证滚动范围正确）
-  const HEAD = 96;
-  const CARDS = 132;                       // 两行 × (58 卡 + 8 间距)
-  const SKILL_BLOCK = 32 + Math.max(1, skills.length) * 52;
+  // 预计算内容高度
+  const HERO = 150;
+  const GRID = 190;
+  const SKILL_H = 40 + Math.max(1, skills.length) * 54;
   const ITEM_ROWS = Math.max(1, Math.ceil(items.length / 7));
-  const ITEMS_BLOCK = items.length ? 26 + ITEM_ROWS * 44 : 46;
-  const MS_BLOCK = milestones.length ? 26 + Math.min(12, milestones.length) * 20 : 46;
-  const END_BLOCK = 74;
-  const statRows: [string, string][] = [
-    ['精英击杀', String(summary.eliteKillCount)],
-    ['BOSS 击杀', String(summary.bossKillCount)],
-    ['获得金币', String(summary.goldEarned)],
-    ['商店花费', String(summary.goldSpent)],
-    ['结束生命', typeof stats.hp === 'number' ? String(Math.round(stats.hp)) : '未记录'],
-  ];
-  const STAT_BLOCK = 22 + statRows.length * 22 + 10;
-  const contentH = HEAD + CARDS + STAT_BLOCK + SKILL_BLOCK + ITEMS_BLOCK + MS_BLOCK + END_BLOCK + 40;
-  const listTop = S + 64;
-  const listH = VH - listTop - B - 10;
-  const ml = makeModalList(root, A(180, listTop + listH / 2).x, A(180, listTop + listH / 2).y, 340, listH, contentH);
+  const ITEM_H = items.length ? 30 + ITEM_ROWS * 46 : 52;
+  const MS_H = milestones.length ? 30 + Math.min(12, milestones.length) * 20 : 52;
+  const END_H = 84;
+  const contentH = HERO + GRID + SKILL_H + ITEM_H + MS_H + END_H + 30;
 
-  let y = ml.topY - 8;
-  // 1) 基本信息
-  avatar(ml.content, summary.characterId, -138, y - 30, 52);
-  text(ml.content, -104, y - 16, charName(summary.characterId),
-    { size: 18, color: COL.cream, align: 'left', width: 210, bold: true, outline: true });
-  text(ml.content, -104, y - 38,
-    diffName(summary.difficulty) + ' · ' + resultLabel(summary.result)
-      + (summary.endlessMode && summary.result !== 'endless_end' ? ' · 无尽' : ''),
-    { size: 12, color: resultColor(summary.result), align: 'left', width: 220, bold: true, outline: true });
-  text(ml.content, -104, y - 56, dateText(summary.startedAt) + ' → ' + dateText(summary.endedAt),
-    { size: 9, color: COL.dim, align: 'left', width: 240 });
-  y -= HEAD;
+  const listTop = S + 62;
+  const listH = VH - listTop - B - 8;
+  const ml = makeModalList(root, at(VW, VH, 180, listTop + listH / 2).x, at(VW, VH, 180, listTop + listH / 2).y, 340, listH, contentH);
+  let y = ml.topY - 10;
 
-  // 2) 四个统计卡
-  const cards: [string, string][] = [
-    ['到达波次', summary.endlessMode ? String(summary.reachedWave) : summary.reachedWave + '/' + summary.totalWaves],
-    ['存活时间', mmss(summary.durationSeconds)],
+  // ── A. 战绩头图 ──
+  const rc = resultColor(summary.result);
+  text(ml.content, 0, y - 36, headTitle(summary.result),
+    { size: 24, color: rc, width: 330, bold: true, outline: true, shadow: true });
+  text(ml.content, 0, y - 60, diffName(summary.difficulty) + ' · ' + resultText(summary.result)
+    + (summary.endlessMode ? ' · 无尽' : ''),
+    { size: 10, color: COL.dim, width: 320 });
+
+  portrait(ml.content, summary.characterId, -118, y - 110, 64);
+  text(ml.content, -76, y - 96, charName(summary.characterId),
+    { size: 18, color: COL.cream, align: 'left', width: 180, bold: true, outline: true });
+  text(ml.content, -76, y - 120, (summary.endlessMode ? '第 ' + summary.reachedWave + ' 波' : '第 ' + summary.reachedWave + '/' + summary.totalWaves + ' 波')
+    + ' · ' + mmss(summary.durationSeconds),
+    { size: 11, color: COL.accent, align: 'left', width: 220, bold: true, outline: true });
+  text(ml.content, -76, y - 138, dateShort(summary.startedAt) + ' → ' + dateShort(summary.endedAt),
+    { size: 8, color: COL.dim, align: 'left', width: 240 });
+  y -= HERO;
+
+  // ── B. 核心战斗数据（2×3）──
+  const dmgDealt = typeof stats.dmgDealt === 'number' ? String(Math.round(stats.dmgDealt)) : '未记录';
+  const dmgTaken = typeof stats.dmgTaken === 'number' ? String(Math.round(stats.dmgTaken)) : '未记录';
+  const cells: [string, string][] = [
     ['击杀数量', String(summary.killCount)],
-    ['徽章', summary.badges.length ? String(summary.badges.length) : '—'],
+    ['生存时间', mmss(summary.durationSeconds)],
+    ['最高波次', summary.endlessMode ? String(summary.reachedWave) : summary.reachedWave + '/' + summary.totalWaves],
+    ['造成伤害', dmgDealt],
+    ['承受伤害', dmgTaken],
+    ['获得金币', String(summary.goldEarned)],
   ];
-  cards.forEach(([k, v], i) => {
-    // 两列在 340 宽的内容区里居中：中心 ±84，卡宽 160 → 两端各留 6
+  cells.forEach(([k, v], i) => {
     const cx = -84 + (i % 2) * 168;
-    const cy = y - 30 - Math.floor(i / 2) * 66;
-    const card = panel(ml.content, cx, cy, 160, 58, { art: 'panel_soft' });
-    text(card, 0, 14, k, { size: 10, color: COL.dim, width: 144 });
-    text(card, 0, -10, v, { size: 20, color: COL.cream, width: 144, bold: true, outline: true });
+    const cy = y - 30 - Math.floor(i / 2) * 64;
+    const card = panel(ml.content, cx, cy, 158, 56, { art: 'panel_soft' });
+    text(card, 0, 12, k, { size: 9, color: COL.dim, width: 146 });
+    text(card, 0, -10, v, { size: v.length > 6 ? 15 : 19, color: COL.cream, width: 146, bold: true, outline: true });
   });
-  y -= CARDS;
+  y -= GRID;
 
-  // 3) 战斗统计：左 Key / 右 Value（行宽 316，两端对齐）
-  text(ml.content, -152, y - 14, '战斗统计', { size: 12, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
-  statRows.forEach(([k, v], i) => {
-    const ry = y - 36 - i * 22;
-    text(ml.content, -158, ry, k, { size: 10, color: COL.dim, align: 'left', width: 160 });
-    text(ml.content, 158, ry, v, { size: 12, color: COL.cream, align: 'right', width: 140, bold: true, outline: true });
-  });
-  y -= STAT_BLOCK;
-
-  // 4) 技能构筑
+  // ── C. 技能构筑（图标 + 展开）──
   text(ml.content, -152, y - 14, '技能构筑', { size: 12, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
   (skills.length ? skills : [{ id: '', lvl: 0, mods: [] }]).forEach((s, i) => {
-    const cy = y - 48 - i * 52;
-    const card = panel(ml.content, 0, cy, 330, 46, { art: 'panel_soft' });
+    const cy = y - 56 - i * 54;
+    const row = panel(ml.content, 0, cy, 330, 48, { art: 'panel_soft' });
+    iconNode(row, SKILL_ART[s.id]?.icon, -142, 2, 32);
     const def = SKILLS[s.id];
-    text(card, -146, 10, (def ? def.name : s.id || '—') + '  Lv.' + s.lvl,
-      { size: 12, color: COL.cream, align: 'left', width: 190, bold: true, outline: true });
-    const mods = s.mods.map(m => moduleName(m)).join(' · ') || '无黑科技';
-    text(card, -146, -10, mods, { size: 9, color: COL.dim, align: 'left', width: 300 });
+    text(row, -116, 10, (def ? def.name : s.id || '—') + '  Lv.' + s.lvl,
+      { size: 12, color: COL.cream, align: 'left', width: 160, bold: true, outline: true });
+    text(row, -116, -10, s.mods.length ? ('黑科技 ' + s.mods.length + ' 个') : '无黑科技',
+      { size: 9, color: COL.dim, align: 'left', width: 170 });
+    text(row, 150, 0, '详情 ›', { size: 9, color: COL.accent, width: 60, align: 'right' });
+    onTap(row, () => openSkillModal(root, s, VW, VH));
   });
-  y -= SKILL_BLOCK;
+  y -= SKILL_H;
 
-  // 5) 道具
+  // ── D. 道具 ──
   text(ml.content, -152, y - 14, '道具收藏 (' + items.length + ')', { size: 12, color: COL.accent, align: 'left', width: 220, bold: true, outline: true });
   if (!items.length) {
     text(ml.content, -146, y - 34, '（本局没有获得道具）', { size: 10, color: COL.dim, align: 'left', width: 280 });
+  } else {
+    items.slice(0, 21).forEach((it, i) => {
+      const cx = -144 + (i % 7) * 48;
+      const cy = y - 46 - Math.floor(i / 7) * 46;
+      const box = panel(ml.content, cx, cy, 42, 42, { art: 'slot' });
+      iconNode(box, ITEM_ICON[it.id], 0, 0, 34);
+      if (it.count > 1) text(box, 15, -15, '×' + it.count, { size: 8, color: COL.accent, width: 26, align: 'right' });
+    });
   }
-  items.slice(0, 21).forEach((it, i) => {
-    const cx = -144 + (i % 7) * 48;
-    const cy = y - 44 - Math.floor(i / 7) * 44;
-    const box = panel(ml.content, cx, cy, 40, 40, { art: 'slot' });
-    const def = ITEMS[it.id];
-    text(box, 0, 1, def ? def.name.slice(0, 2) : '?', { size: 9, color: COL.cream, width: 38, outline: false });
-    if (it.count > 1) text(box, 14, -14, '×' + it.count, { size: 9, color: COL.accent, width: 26, align: 'right' });
-  });
-  y -= ITEMS_BLOCK;
+  y -= ITEM_H;
 
-  // 6) 对局进程
-  text(ml.content, -152, y - 14, '对局进程', { size: 12, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
+  // ── E. 关键事件 ──
+  text(ml.content, -152, y - 14, '关键事件', { size: 12, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
   if (!milestones.length) {
-    text(ml.content, -146, y - 34, '（没有记录到关键事件）', { size: 10, color: COL.dim, align: 'left', width: 280 });
+    text(ml.content, -146, y - 34, '（这一局没有记录到关键事件）', { size: 10, color: COL.dim, align: 'left', width: 290 });
   } else {
     milestones.slice(-12).forEach((m, i) => {
       text(ml.content, -146, y - 34 - i * 20,
@@ -247,16 +314,44 @@ export function buildHistoryDetail(
         { size: 10, color: m.kind === 'boss' ? COL.red : COL.cream, align: 'left', width: 300, outline: true });
     });
   }
-  y -= MS_BLOCK;
+  y -= MS_H;
 
-  // 7) 结束原因
-  const endCard = panel(ml.content, 0, y - 32, 330, 58, { art: 'panel' });
-  text(endCard, 0, 12, '结束原因', { size: 10, color: COL.dim, width: 300 });
-  text(endCard, 0, -10, endReasonText(summary.result), { size: 12, color: resultColor(summary.result), width: 310, bold: true, outline: true });
+  // ── F. 结束原因 ──
+  const endCard = panel(ml.content, 0, y - 34, 330, 62, { art: 'panel' });
+  text(endCard, 0, 14, '结束原因', { size: 9, color: COL.dim, width: 300 });
+  text(endCard, 0, -10, detail?.endReason || endReasonText(summary.result),
+    { size: 12, color: rc, width: 310, bold: true, outline: true });
+
   return root;
 }
 
-function moduleName(id: string): string {
-  const base = id.replace(/_\d+$/, '');
-  return MODULES[base] ? MODULES[base].name : id;
+/** 技能详情浮层（点技能卡打开；不改变列表布局） */
+function openSkillModal(root: Node, s: { id: string; lvl: number; mods: string[] }, VW: number, VH: number): void {
+  const def = SKILLS[s.id];
+  const wrap = mkNode(root, 'skillModal', VW, VH);
+  const dim = wrap.addComponent(UITransform);
+  dim.setContentSize(VW, VH);
+  const dg = wrap.addComponent(Graphics);
+  dg.fillColor = new Color(4, 6, 12, 200);
+  dg.rect(-VW / 2, -VH / 2, VW, VH); dg.fill();
+  const bg = panel(wrap, 0, 0, 320, 250, { art: 'panel' });
+  text(bg, 0, 98, (def ? def.name : s.id) + '  Lv.' + s.lvl,
+    { size: 16, color: COL.cream, width: 300, bold: true, outline: true });
+  text(bg, 0, 72, def ? def.desc : '—', { size: 10, color: COL.dim, width: 290 });
+  const mods = s.mods.length ? s.mods : [];
+  if (!mods.length) {
+    text(bg, 0, 20, '（没有安装黑科技）', { size: 11, color: COL.dim, width: 280 });
+  } else {
+    mods.slice(0, 3).forEach((mid, i) => {
+      const base = baseOf(mid);
+      const d = MODULES[base];
+      const ry = 28 - i * 34;
+      iconNode(bg, MODULE_ICON[base], -132, ry, 26);
+      text(bg, -108, ry + 6, d ? d.name : mid, { size: 11, color: COL.cream, align: 'left', width: 250, bold: true, outline: true });
+      text(bg, -108, ry - 10, d ? d.desc : '', { size: 8, color: COL.dim, align: 'left', width: 260 });
+    });
+  }
+  const close = button(bg, 0, -94, 140, 34, '关闭', { size: 11 });
+  onTap(close.node, () => { if (wrap.isValid) wrap.destroy(); });
+  onTap(bg, () => { if (wrap.isValid) wrap.destroy(); });
 }

@@ -1,13 +1,18 @@
 # 设计 → 实现 对照表（implementation_status）
 
 > 用途：设计文档（`docs/design/*`）是意图；这里是**代码实际做到哪、由哪条测试证明**。
-> 更新：2026-10-31（主菜单升级：继续游戏 + 历史对局）｜ 基线：`404 PASS / 0 FAIL`、tsc 双配置 0、微信包构建成功。
+> 更新：2026-10-31（主菜单/战绩 V2）｜ 基线：`425 PASS / 0 FAIL`、tsc 双配置 0、微信包构建成功。
 
 ## 一、主菜单 / 续玩 / 历史（本轮新增）
 
 | 能力 | 代码 | 测试 / 证据 |
 |---|---|---|
-| 主菜单继续卡片（有/无/损坏三态） | `ui/MenuScreens.buildMenu` + `MenuView` | 浏览器截图（无存档/有存档） |
+| 主菜单 V2（品牌/角色展示/核心操作/次级图标） | `ui/MenuScreens.buildMenu` | 截图 menu_no_save / menu_has_save |
+| 开始新冒险确认（不静默覆盖存档） | `buildStartNewConfirm` + `GameRoot.requestStart` | 截图 start_confirm |
+| 战绩档案 V2（统计面板/Tab/卡片/空态） | `ui/HistoryScreens.buildHistoryList` | 截图 history_list / history_empty |
+| 对局详情 V2（结果标题/2×3/图标/展开） | `ui/HistoryScreens.buildHistoryDetail` | 截图 detail_victory / defeat / abandon |
+| 续玩生命严格恢复 | `game/RunRestore` + Battle.resumeRun | tests §22 + 浏览器 45/72 |
+| 商店/升级恢复 | ActiveRunSave shopStock/pendingRewards | tests §23 + 浏览器断言一致 |
 | 活动存档模型（ActiveRunSave） | `game/RunSave.ts` | tests §17（序列化/校验/非法字段/新版本） |
 | 续玩持久化 | `engine/RunStore.ts` | 同上 + 浏览器 resume-match |
 | 战斗恢复（敌人/波次/RNG/BOSS 状态机） | `battle/Battle.resumeRun/snapshotBattle` | 浏览器 resume-match（波次/构筑一致，金币击杀只增不减） |
@@ -68,7 +73,7 @@
 
     tsc -p tsconfig.check.json         -> 0
     tsc -p tsconfig.ui-check.json      -> 0
-    tsx tests/run.ts                   -> 404 PASS / 0 FAIL
+    tsx tests/run.ts                   -> 425 PASS / 0 FAIL
     cmd /c "build-wechat.bat -nopause" -> success
 
 > `tsconfig.full-check.json` 仍有 13 条历史遗留错误（GameRoot 重复字段、Battle 旧签名等），

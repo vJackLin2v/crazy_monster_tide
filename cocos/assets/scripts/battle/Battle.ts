@@ -41,6 +41,7 @@ import { DamageContext, DamageSource, SummonKind, makeDamageContext, canVamp, ne
 import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, CHARGE_ECHO_MUL, sentryShotPlan, SENTRY_FAN_DMG_MUL, SENTRY_FAN_SPREAD, MINE_SPLIT_MUL } from '../game/SkillRules';
 import { rollEliteAffixes, affixHpMul, affixSpeedMul, affixSplits, AFFIX_SPLIT_COUNT, AFFIX_SPLIT_HP_MUL, AFFIX_SPLIT_SPEED_MUL, type EliteAffix } from '../game/EliteAffix';
 import { killOutcome, vampAllowed } from '../game/CombatRules';
+import { normalizeRestoredStats } from '../game/RunRestore';
 import { killblastDamage, killblastRadius, shieldAmount, SHIELD_CAP, SHIELD_COOLDOWN, SHIELD_DURATION, executePct, returnstrikePct, overchargePeriod, overchargeMul, lingeringChance, LINGER_TICKS, LINGER_TICK_DMG, LINGER_MAX_ZONES } from '../game/ModuleValues';
 import { CHARS } from '../data/Chars';
 const { ccclass } = _decorator;
@@ -223,9 +224,13 @@ export class Battle extends Component {
   /** 调试用时间倍速（1 = 正常）；真机/正式包保持 1 */
   timeScale = 1;
   private totalDmg = 0;
+  /** 本局玩家造成的总伤害（结算/历史详情用；只累加，不做逐帧统计） */
+  private totalDmgDealt = 0;
 
   /** 本局玩家累计受到的伤害（结算/日志用） */
   totalDmgTaken(): number { return this.totalDmg; }
+  /** 本局玩家造成的总伤害 */
+  totalDamageDealt(): number { return Math.round(this.totalDmgDealt); }
   /** 本波最高同屏（日志用） */
   private waveAliveMax = 0;
   private bossRef: Enemy | null = null;
@@ -313,7 +318,16 @@ export class Battle extends Component {
     rs.endless = save.endless;
     rs.gold = save.gold; rs.lv = save.lv; rs.exp = save.exp; rs.expNeed = save.expNeed;
     rs.kills = save.kills; rs.waveKills = save.waveKills; rs.runTime = save.runTime;
-    rs.stats = save.stats; rs.baseStats = save.baseStats;
+    rs.eliteKills = save.eliteKills;
+    rs.bossKills = save.bossKills;
+    rs.goldEarned = save.goldEarned;
+    rs.goldSpent = save.goldSpent;
+    rs.milestones = save.milestones.slice();
+    // ⚠️ 恢复的是存档里的当前生命，不是满血；非法值在这里安全修复并记录
+    const rep = normalizeRestoredStats(save.stats);
+    if (rep.issues.length) console.warn('[Resume] 生命数据修复：' + rep.issues.join('；'));
+    rs.stats = rep.stats;
+    rs.baseStats = save.baseStats;
     rs.skills = save.skills.map(s => ({ id: s.id, lvl: s.lvl, mods: s.mods.slice() }));
     rs.modsBag = save.modsBag.slice();
     rs.items = save.items.map(i => ({ id: i.id }));
@@ -434,6 +448,7 @@ export class Battle extends Component {
     this.waveEndUps = 0; this.pendingUps = 0;
     this.bossRef = null; this.bossAlive = null; this.bossDefeated = false;
     this.hitstop = 0; this.hurtFlash = 0; this.inv = 0; this.dmgFlash = 0; this.hurtBoostT = 0;
+    this.totalDmgDealt = 0;
     this.skillT = [0, 0, 0, 0];
     this.running = false; this.paused = false;
   }
@@ -1308,6 +1323,7 @@ export class Battle extends Component {
     if (e.dead) return;
     e.hp -= dmg;
     this.waveDmgDealt += dmg;
+    this.totalDmgDealt += dmg;
     if (e.hp <= 0) this.killEnemy(e, undefined, 'module');
   }
 
@@ -1345,6 +1361,7 @@ export class Battle extends Component {
     if ((e.elite || e.boss) && this.rs.stats.eliteDmg) dmg = Math.round(dmg * (1 + Math.min(1.5, this.rs.stats.eliteDmg)));
     e.hp -= dmg;
       this.waveDmgDealt += Math.min(dmg);
+    this.totalDmgDealt += dmg;
     // ★ 吸血：按伤害比例回血 + 绿色数字 + 角色身上回血动画（M39）
     if (this.rs.stats.lifesteal > 0) {
       const before = this.rs.stats.hp;

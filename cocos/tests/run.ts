@@ -41,6 +41,7 @@ import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, sen
 import { rollEliteAffixes, affixHpMul, affixSpeedMul, affixSplits, eliteAffixRule, AFFIX_SPLIT_COUNT } from '../assets/scripts/game/EliteAffix';
 import { parseSave, badgesForRun, badgeId, ENDLESS_MILESTONES } from '../assets/scripts/game/Progress';
 import { killOutcome, vampAllowed } from '../assets/scripts/game/CombatRules';
+import { normalizeRestoredStats } from '../assets/scripts/game/RunRestore';
 import { Rng } from '../assets/scripts/core/Rng';
 import { validateActiveRun, continueInfoOf, assertRestorable, newRunId, RUN_SAVE_VERSION, type ActiveRunSave } from '../assets/scripts/game/RunSave';
 import { emptyHistory, addRun, buildSummary, validateHistory, filterRuns, historyStats, hasRun, HISTORY_MAX, type RunSummary, type RunDetail } from '../assets/scripts/game/RunHistory';
@@ -1101,6 +1102,8 @@ console.log('\n== 17. 本局续玩存档（ActiveRunSave） ==');
       endless: false,
       gold: 120, lv: 8, exp: 4, expNeed: 30,
       kills: 88, waveKills: 7, runTime: 516,
+      eliteKills: 2, bossKills: 1, goldEarned: 340, goldSpent: 220,
+      milestones: [{ wave: 10, at: 210, kind: 'boss', text: 'BOSS 出现（第 10 波）' }],
       stats, baseStats: { ...stats },
       skills: [{ id: 'ring_blade', lvl: 3, mods: ['orbit', 'giant'] }],
       modsBag: ['burn'],
@@ -1272,6 +1275,85 @@ console.log('\n== 21. 战斗链路规则（Battle 实际调用的同一份函数
   // 地雷 / echo 的递归次数由 SkillRules 限定（同一份函数 Battle 在用）
   ok(mineSplitCount(3) === 4 && mineSplitCount(0) === 0, '地雷 split 有上限，不会无限分裂');
   ok(mineEchoRepeats(3) === 1 && chargeEchoRepeats(3) === 1, 'echo 最多复制/重放 1 次，不会递归');
+}
+
+console.log('\n== 22. 续玩生命值恢复（45/72、1/72、72/72、非法值） ==');
+{
+  const base = freshStats(CHARS[0]);
+  const mk = (hp: number, maxhp = 72) => normalizeRestoredStats({ ...base, hp, maxhp });
+
+  const a = mk(45, 72);
+  ok(a.stats.hp === 45 && a.stats.maxhp === 72 && a.issues.length === 0, '存档 45/72 → 恢复 45/72（不被满血覆盖）');
+  const b = mk(1, 72);
+  ok(b.stats.hp === 1 && b.issues.length === 0, '存档 1/72 → 恢复 1/72');
+  const c = mk(72, 72);
+  ok(c.stats.hp === 72 && c.issues.length === 0, '存档 72/72 → 恢复 72/72');
+
+  const zero = mk(0, 72);
+  ok(zero.stats.hp === 1 && zero.issues.length === 1, '生命 0 → 安全修为 1 并记录 issue');
+  const neg = mk(-20, 72);
+  ok(neg.stats.hp === 1, '生命为负 → 修为 1');
+  const nan = normalizeRestoredStats({ ...base, hp: NaN, maxhp: 72 });
+  ok(nan.stats.hp === 72, '生命 NaN → 回满');
+  const over = mk(120, 72);
+  ok(over.stats.hp === 72, '生命超上限 → 夹到上限');
+  const badMax = normalizeRestoredStats({ ...base, hp: 10, maxhp: 0 });
+  ok(badMax.stats.maxhp === 1 && badMax.stats.hp === 1, '最大生命 0 → 修为 1，生命跟随');
+  ok(Math.abs(a.stats.hp / a.stats.maxhp - 45 / 72) < 1e-9, '比例保持 62.5%');
+}
+
+console.log('\n== 23. 商店 / 升级三选一 快照可恢复 ==');
+{
+  const stats = freshStats(CHARS[0]);
+  const slots = [
+    { kind: 'item', id: 'power_s', price: 35, basePrice: 30, sold: false, locked: true },
+    { kind: 'module', id: 'multi', price: 48, basePrice: 40, sold: true, locked: false },
+    { kind: 'item', id: 'haste_s', price: 42, basePrice: 36, sold: false, locked: false },
+    { kind: 'heal', id: 'heal', price: 30, sold: false, locked: true },
+  ];
+  const save: ActiveRunSave = {
+    v: RUN_SAVE_VERSION, runId: 'r-shop', startedAt: 1, savedAt: 2,
+    charId: 'knight', difficulty: 'normal', seed: 7, rngState: 8,
+    phase: 'shop', wave: 6, endless: false,
+    gold: 120, lv: 5, exp: 3, expNeed: 22, kills: 40, waveKills: 0, runTime: 180,
+    eliteKills: 1, bossKills: 0, goldEarned: 300, goldSpent: 180, milestones: [],
+    stats, baseStats: { ...stats },
+    skills: [{ id: 'blade', lvl: 2, mods: ['multi'] }],
+    modsBag: ['burn'], items: [{ id: 'power_s' }], attrTaken: {},
+    shopReroll: 2, shopStock: slots, carryOver: [],
+    legendaryTaken: false,
+    battle: { waveLeft: 0, spawnAcc: 0, elitesSpawned: 0, px: 180, py: 320, skillT: [0, 0, 0, 0], enemies: [] },
+  };
+  const back = validateActiveRun(JSON.parse(JSON.stringify(save)));
+  ok(back.status === 'ok', '商店存档校验通过');
+  if (back.status === 'ok') {
+    const ss = back.save.shopStock ?? [];
+    ok(ss.length === 4, '四个货位数量一致');
+    ok(ss[0].id === 'power_s' && ss[0].price === 35 && ss[0].locked === true, '货位 1：ID/价格/锁定一致');
+    ok(ss[1].id === 'multi' && ss[1].sold === true, '货位 2：已购买状态一致');
+    ok(ss[2].id === 'haste_s' && ss[2].price === 42 && ss[2].locked === false, '货位 3：ID/价格/未锁一致');
+    ok(ss[3].kind === 'heal' && ss[3].locked === true, '货位 4：类型/锁定一致');
+    ok(back.save.shopReroll === 2, '刷新次数一致');
+    ok(back.save.phase === 'shop', '阶段=商店，恢复时不会重刷货架');
+  }
+
+  const levelup: ActiveRunSave = {
+    ...save, runId: 'r-level', phase: 'levelup',
+    shopStock: null,
+    pendingRewards: [
+      { kind: 'skill', id: 'sentry', needReplace: false },
+      { kind: 'module', id: 'giant', needReplace: false },
+      { kind: 'item', id: 'crit_s', needReplace: false },
+    ],
+  };
+  const lv = validateActiveRun(JSON.parse(JSON.stringify(levelup)));
+  ok(lv.status === 'ok', '升级存档校验通过');
+  if (lv.status === 'ok') {
+    const pr = lv.save.pendingRewards ?? [];
+    ok(pr.length === 3, '三张卡数量一致');
+    ok(pr[0].id === 'sentry' && pr[1].id === 'giant' && pr[2].id === 'crit_s', '卡片 ID 与顺序一致（不会重新随机）');
+    ok(lv.save.phase === 'levelup', '阶段=升级，恢复时直接还原待选卡');
+  }
 }
 console.log('\n================ 结果 ================');
 console.log(`PASS ${pass} / FAIL ${fail}`);

@@ -1,13 +1,14 @@
-# HANDOFF · 《疯狂鸽王》（2026-10-31 主菜单升级后）
+# HANDOFF · 《疯狂鸽王》（2026-10-31 主菜单/战绩 V2）
 
 > 新会话唯一必读（配合 START_PROMPT.md 与 AGENTS.md 路由表）。
-> 本轮：主菜单升级（继续游戏 + 历史对局）+ 阶段3 三项偏差收尾。
+> 本轮：主菜单 V2 + 战绩档案 V2 + 续玩可靠性（生命/商店/升级）+ 上一轮遗留收尾。
 
-## 0. 现状一句话
+## 0. 现状
 
-Cocos 3.8.6 微信小游戏；16 老技能 + 4 新技能、24 黑科技、80 道具、5 档难度、11 屏 UI。
-**测试 404 PASS / 0 FAIL**，tsc 双配置 0，微信包构建成功（3.06MB / 10.9MB 级别）。
-新能力：**继续游戏（ActiveRunSave 波内恢复）+ 历史对局（摘要/详情、50 局、幂等）+ 自动存档（含切后台）**。
+Cocos 3.8.6 微信小游戏；测试 **425 PASS / 0 FAIL**，tsc 双配置 0，微信包约 3.1MB / 10.94MB。
+主菜单：品牌 + 角色立绘 + 继续冒险（有存档时第一优先）/ 开始冒险 + 四个次级图标入口。
+战绩：统计面板 + Tab + 战绩卡片 + 单局报告（结果大字 / 伤害数据 / 图标化技能可展开）。
+续玩：45/72 恢复为 45/72（纯函数 + 浏览器断言双重证据）；商店货架、升级三选一可恢复。
 
 ## 1. 开工三步
 
@@ -16,67 +17,54 @@ Cocos 3.8.6 微信小游戏；16 老技能 + 4 新技能、24 黑科技、80 道
     node H:/AI-game/xingnang/cocos_port/node_modules/typescript/bin/tsc -p tsconfig.ui-check.json
     node H:/AI-game/xingnang/cocos_port/node_modules/tsx/dist/cli.mjs tests/run.ts
 
-期望 **404 PASS**。然后读 `docs/review/menu_upgrade_initial_audit.md` 与 `docs/review/menu_upgrade_test_report.md`。
+期望 425 PASS。再读 `docs/ui/menu_history_v2_audit.md`、`docs/review/menu_history_v2_test_report.md`。
 
-## 2. 构建 / 出包（唯一正确方式）
+## 2. 构建 / 截图
 
-    cd H:/AI-game/crazy_monster_tide
-    cmd /c "build-wechat.bat -nopause"
+    cmd /c "build-wechat.bat -nopause"          # 微信包唯一入口
 
-产物：`cocos/build/wechatgame`。出包后必须校验 `assets/main/index.js` 的 LastWriteTime 是刚刚。
-web-mobile 可直接 CLI 构建（截图用）：`CocosCreator.exe --project cocos --build 'platform=web-mobile;debug=false'`。
+    # 截图/运行时断言（web-mobile 已构建，serve.cjs 在 8123）
+    node tools/ui/shot_menu_history_v2.cjs
 
-## 3. 本轮新增/变更的代码
+脚本会打印：`saved` / `resume`(matchHp,hpText) / `shop-before/after` / `lv-before/after` / `errors`。
+
+## 3. 本轮新增/修改
 
 | 文件 | 作用 |
 |---|---|
-| `game/RunSave.ts` | ActiveRunSave 模型、校验、版本、继续卡片摘要 |
-| `game/RunHistory.ts` | 历史摘要/详情、50 局容量、runId 幂等、筛选/统计、坏数据重建 |
-| `engine/RunStore.ts` | 活动存档 / 历史记录 localStorage 读写 |
-| `game/CombatRules.ts` | 击杀/吸血判定分支（Battle 与单测共用，补 §7.1） |
-| `ui/HistoryScreens.ts` | 历史列表 + 详情（滚动、筛选、空态、滚动位置保持） |
-| `ui/MenuScreens.ts` | 新主菜单（继续卡片三态 + 历史入口 + 三选退出确认） |
-| `ui/ModalList.ts` | 增加 `offset()` 与 `initialOff`（返回列表保持位置） |
-| `battle/Battle.ts` | `snapshotBattle` / `resumeRun` / `restoreEnemy` / `resetCastCount`；背水改为冷却；击杀/精英/BOSS 计数与里程碑 |
-| `GameRoot.ts` | 自动存档、继续游戏、退出三选、历史页面、切后台钩子、结算写历史 |
-| `game/RunState.ts` | eliteKills/bossKills/goldEarned/goldSpent/milestones |
-| `core/Rng.ts` / `game/BossSummon.ts` | RNG 状态、BOSS 状态机快照/恢复 |
-| `tests/run.ts` | 新增 §16–§21（RNG/存档/历史/BOSS 快照/偏差/战斗判定） |
+| `ui/MenuScreens.ts` | 主菜单 V2（角色展示/继续卡/开始确认/次级图标入口） |
+| `ui/HistoryScreens.ts` | 战绩档案 V2（统计面板/Tab/卡片/空态；详情结果头图/2×3/图标/展开浮层） |
+| `game/RunRestore.ts` | 生命恢复规范化（严格恢复 + 非法值修复），Battle 与测试共用 |
+| `game/RunSave.ts` | ActiveRunSave 增加 elite/boss 击杀、金币收支、里程碑；continue 摘要增加技能/道具数 |
+| `battle/Battle.ts` | resume 使用规范化的 stats；新增 totalDmgDealt |
+| `GameRoot.ts` | 开始新冒险确认、主菜单放弃写历史、历史空态入口、结算伤害字段 |
+| `tests/run.ts` | §22 生命恢复、§23 商店/升级快照（425 条） |
+| `tools/ui/shot_menu_history_v2.cjs` | 12 张截图 + 续玩/商店/升级运行时断言 |
 
-## 4. 三条结束路径（最容易写错的地方）
+## 4. 硬事实 / 踩坑
 
-| 行为 | ActiveRunSave | RunHistory |
-|---|---|---|
-| 保存并退出 / 切后台 | 保留 | 不写 |
-| 放弃本局（确认） | 删除 | 写 `abandoned` |
-| 死亡 / 通关 / 无尽倒下 | 删除 | 写 `defeat` / `victory` / `endless_end` |
+- **"45/72 → 72/72" 是截图脚本补血造成的假象**；代码一直恢复存档 hp。
+  V2 已删除补血，改为暂停冻结，并加纯函数测试 + 浏览器 `matchHp` 断言。
+- 主菜单确认弹窗必须用 **透明层**（`mkNode` + Graphics dim），用 `screen()` 会把背景刷黑。
+- 历史卡片三列要留足宽度：中列 time/kills、右列 result/date，宽度不够会重叠。
+- 续玩时 `assertRestorable` 会拒绝 hp≤0 的存档（例：测试脚本先被打到 -9 再存档会被拒绝）。
+- 商店恢复走 `resuming` 标记，不能重刷货架；升级恢复直接用 `pendingRewards`。
+- `tsconfig.check.json` 不含 ui/GameRoot；`full-check` 仍有 13 条历史遗留错误（非本轮）。
 
-- 结算顺序：写历史成功 → 才清活动存档；写失败保留存档重试。
-- 恢复时 `shop` 不重刷货架（`resuming` 标记）、`levelup` 恢复原待选卡。
+## 5. 待办
 
-## 5. 硬事实 / 踩坑
-
-- `tsconfig.check.json` 不含 ui/ 与 GameRoot.ts；动 UI 必跑 `ui-check`。
-  `tsconfig.full-check.json` 是诊断用全量检查，有 13 条**历史遗留**错误，不是本轮引入。
-- 续玩不恢复子弹/区域/地雷/哨兵/蓄能（瞬时实体），文档已写明，不要对外宣称"100% 还原"。
-- 历史页按钮与标题条会轻微重叠（视觉上可接受），真机复测时若拥挤再调。
-- 主菜单继续卡在 360×640 上第 4 行（构筑）贴近卡片底边，改字号/坐标时注意别裁掉。
-- 截图脚本 `tools/ui/shot_menu_history.cjs` 用 headless Chrome；微信真机仍需人工。
-
-## 6. 待办（优先级）
-
-1. **微信真机**：杀进程后继续、切后台继续、商店/升级中断恢复、历史详情滚动；
+1. 微信真机：杀进程/切后台续玩、商店/升级中断、战绩滚动、技能浮层；
 2. 地狱 1.8225 倍经济数据（真机 `[TELEMETRY]`）；
-3. 普通难度逐项等于旧版（缺旧基线，只能公式层证明）；
-4. 余烬刻印是否升级为真叠层（当前简化版已入文档）；
-5. 图鉴技能分类筛选、文档由代码生成（未做，验收表已标注）。
+3. 战斗实体层（碰撞/生成/动画）仍无引擎级自动化测试；
+4. 普通难度逐项等于旧版（缺阶段2 基线）；
+5. 图鉴技能分类、文档由代码生成（未做，验收表已标注）。
 
-## 7. 命令速查
+## 6. 命令速查
 
 | 用途 | 命令 |
 |---|---|
 | 类型检查 | `tsc -p tsconfig.check.json` / `-p tsconfig.ui-check.json` |
-| 诊断全量 | `tsc -p tsconfig.full-check.json`（看新增错误） |
 | 单测 | `tsx tests/run.ts` |
 | 微信构建 | `cmd /c "build-wechat.bat -nopause"` |
-| 网页截图 | 先 `node tools/ui/serve.cjs`，再 `node tools/ui/shot_menu_history.cjs` |
+| 网页构建 | `CocosCreator.exe --project cocos --build 'platform=web-mobile;debug=false'` |
+| 截图+断言 | `node tools/ui/shot_menu_history_v2.cjs` |

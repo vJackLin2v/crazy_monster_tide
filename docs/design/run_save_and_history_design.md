@@ -46,6 +46,14 @@ interface ActiveRunSave {
 | RNG（mulberry32 内部状态） | — |
 | 商店货架 / 锁定 / 刷新计数、升级待选卡 | — |
 
+## 2.2 生命值恢复规则（V2 明确）
+
+- 严格恢复存档的 `stats.hp` 与 `stats.maxhp`（45/72 → 45/72），**不做满血初始化**；
+- `normalizeRestoredStats()`（`game/RunRestore.ts`）负责安全修复：
+  maxhp<1 → 1；hp≤0 → 1；hp>maxhp → 夹到上限；NaN → 回满；并返回 issues 供日志；
+- 浏览器断言：`resume={"matchHp":true,"hpText":"45/72"}`（见 V2 测试报告）。
+- 上一轮"45/72 → 72/72"截图是**截图脚本为防死手动补血**造成的假象，已删除该操作改用暂停冻结。
+
 ## 3. 保存时机（事件触发，不逐帧）
 
 | 时机 | 调用 |
@@ -58,6 +66,7 @@ interface ActiveRunSave {
 | 打开暂停面板 | `showPause` |
 | 切后台 | `Game.EVENT_HIDE` |
 | 保存并退出 | 确认弹窗 → save → showMenu |
+| 主菜单放弃本局 | `abandonActiveRun()`：直接用 ActiveRunSave 写 abandoned 历史 → 清档 |
 
 写入是同步 `sys.localStorage.setItem`（字符串 < 100KB），失败只警告、不阻断游戏。
 
@@ -93,7 +102,7 @@ interface ActiveRunSave {
 ## 6. RunHistory 模型与容量
 
 - `RunSummary`：列表用（角色/难度/结果/波次/时长/击杀/精英/BOSS/金币/无尽/最终技能与道具/徽章）。
-- `RunDetail`：点开才读（技能+黑科技明细、道具计数、关键属性、里程碑、结束原因）。
+- `RunDetail`：点开才读（技能+黑科技明细、道具计数、关键属性、里程碑、结束原因；V2 增加 `dmgDealt/dmgTaken`，缺失显示未记录）。
 - 容量：**50 局**；超出按 `endedAt` 删最旧，摘要与详情一起删。
 - 幂等：`addRun` 发现同 `runId` 直接返回 `{added:false}`。
 - 解析：`validateHistory` 过滤坏记录、版本不符重建空历史，不抛异常。

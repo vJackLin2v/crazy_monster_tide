@@ -10,6 +10,7 @@
  */
 import type { DifficultyId } from '../data/Difficulties';
 import type { CharStats } from '../data/Types';
+import type { RunMilestone } from './RunHistory';
 
 export const RUN_SAVE_VERSION = 1;
 
@@ -76,6 +77,10 @@ export interface ActiveRunSave {
   endless: boolean;
   gold: number; lv: number; exp: number; expNeed: number;
   kills: number; waveKills: number; runTime: number;
+  /** 结算/历史用的累计量（恢复后不能丢，否则主动放弃会少统计） */
+  eliteKills: number; bossKills: number;
+  goldEarned: number; goldSpent: number;
+  milestones: RunMilestone[];
   stats: CharStats;
   baseStats: CharStats;
   skills: SkillSave[];
@@ -163,6 +168,13 @@ export function validateActiveRun(raw: unknown): LoadCheck {
     kills: Math.max(0, Math.floor(num(o.kills, 0))),
     waveKills: Math.max(0, Math.floor(num(o.waveKills, 0))),
     runTime: Math.max(0, num(o.runTime, 0)),
+    eliteKills: Math.max(0, Math.floor(num(o.eliteKills, 0))),
+    bossKills: Math.max(0, Math.floor(num(o.bossKills, 0))),
+    goldEarned: Math.max(0, Math.floor(num(o.goldEarned, 0))),
+    goldSpent: Math.max(0, Math.floor(num(o.goldSpent, 0))),
+    milestones: Array.isArray(o.milestones)
+      ? (o.milestones as RunMilestone[]).filter(m => m && typeof m.text === 'string').slice(0, 80)
+      : [],
     stats, baseStats,
     skills: skillsRaw.map((s) => {
       const r = s as Record<string, unknown>;
@@ -201,6 +213,8 @@ export interface ContinueInfo {
   endless: boolean;
   savedAt: number;
   skillNames: string[];
+  skillCount: number;
+  itemCount: number;
   hp: number;
   maxhp: number;
   phase: RunPhase;
@@ -215,6 +229,8 @@ export function continueInfoOf(save: ActiveRunSave, skillName: (id: string) => s
     endless: save.endless,
     savedAt: save.savedAt,
     skillNames: save.skills.map(s => skillName(s.id)),
+    skillCount: save.skills.length,
+    itemCount: save.items.length,
     hp: Math.round(save.stats.hp),
     maxhp: Math.round(save.stats.maxhp),
     phase: save.phase,

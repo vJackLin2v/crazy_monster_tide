@@ -19,7 +19,7 @@ import { safeTop } from './ui/Safe';
 import { preloadUiArt } from './ui/Art';
 import { Hud, type HudData } from './ui/Hud';
 import { COL } from './ui/Tokens';
-import { buildMenu, buildHowto, buildCharSelect, buildResult, buildQuitConfirm, type ResultBuildRow, type MenuView } from './ui/MenuScreens';
+import { buildMenu, buildHowto, buildCharSelect, buildResult, buildQuitConfirm, buildStartNewConfirm, type ResultBuildRow, type MenuView } from './ui/MenuScreens';
 import { buildHistoryList, buildHistoryDetail } from './ui/HistoryScreens';
 import { buildSettings } from './ui/MetaScreens';
 import { buildDifficultySelect } from './ui/DifficultyScreens';
@@ -31,7 +31,7 @@ import { migrateDifficulty, badgesForRun } from './game/Progress';
 import { setupUpdate, updateState, applyUpdate } from './game/Update';
 import { loadSave, writeSave } from './engine/Save';
 import { loadActiveRun, saveActiveRun, clearActiveRun, loadRunHistory, saveRunHistory } from './engine/RunStore';
-import { RUN_SAVE_VERSION, continueInfoOf, newRunId, type ActiveRunSave, type LoadCheck } from './game/RunSave';
+import { RUN_SAVE_VERSION, assertRestorable, continueInfoOf, newRunId, type ActiveRunSave, type LoadCheck } from './game/RunSave';
 import { addRun, buildSummary, emptyHistory, endReasonText, type HistoryFilter, type RunDetail, type RunHistoryData, type RunResult, type RunSummary } from './game/RunHistory';
 import { telemetryStart, telemetryRunEnd, telemetryShopEnter, telemetryShopBuy, telemetryShopReroll, telemetryShopLeave, listRuns, exportLogs, clearLogs, summarize } from './game/Telemetry';
 import { balance, balanceOverride, balanceReset, exportBalance, importBalance } from './core/Balance';
@@ -92,6 +92,8 @@ export class GameRoot extends Component {
   private historyScroll = 0;
   /** 续玩恢复时：不要重新刷商店货架 */
   private resuming = false;
+  /** 主菜单点角色：进入选角页只更换展示角色，不直接开局 */
+  private charPreview = false;
 
   onLoad() {
     // 设计分辨率写死在代码里，不依赖编辑器设置（编辑器里是 1280x720，见 KI-005）
@@ -275,7 +277,16 @@ export class GameRoot extends Component {
 
     // 每次回菜单都重新探测活动存档（可能在暂停面板里刚存过）
     this.activeCheck = loadActiveRun();
-    const vm: MenuView = { saveState: 'none' };
+    const cdef = CHARS.find(c => c.id === this.charId) ?? CHARS[0];
+    const vm: MenuView = {
+      saveState: 'none',
+      charId: cdef.id,
+      charName: cdef.name,
+      charDesc: cdef.pos,
+      unlockedChars: CHARS.length,
+      totalChars: CHARS.length,
+      version: 'v1.0 · 2026-10-31 · 菜单 V2',
+    };
     if (this.activeCheck.status === 'ok') {
       const save = this.activeCheck.save;
       const info = continueInfoOf(save, id => this.skillName(id));
@@ -288,6 +299,8 @@ export class GameRoot extends Component {
         hp: info.hp, maxhp: info.maxhp,
         dateText: this.fmtDate(save.savedAt),
         skillNames: info.skillNames,
+        skillCount: info.skillCount,
+        itemCount: info.itemCount,
       };
     } else if (this.activeCheck.status === 'corrupt' || this.activeCheck.status === 'version') {
       vm.saveState = 'corrupt';
@@ -296,8 +309,9 @@ export class GameRoot extends Component {
 
     this.cur = buildMenu(this.uiRoot, this.seed, vm, {
       onContinue: () => void this.continueGame(),
-      onStart: () => this.showDifficulty(),
+      onStart: () => this.requestStart(),
       onHistory: () => this.showHistory(),
+      onCharSelect: () => { this.charPreview = true; this.showCharSelect(); },
       onHowto: () => this.showHowto(),
       onCodex: () => this.showCodex(),
       onAchievements: () => this.showAchievements(),
@@ -333,6 +347,9 @@ export class GameRoot extends Component {
       endless: rs.endless,
       gold: rs.gold, lv: rs.lv, exp: rs.exp, expNeed: rs.expNeed,
       kills: rs.kills, waveKills: rs.waveKills, runTime: rs.runTime,
+      eliteKills: rs.eliteKills, bossKills: rs.bossKills,
+      goldEarned: rs.goldEarned, goldSpent: rs.goldSpent,
+      milestones: rs.milestones.slice(),
       stats: rs.stats,
       baseStats: rs.baseStats,
       skills: rs.skills.map(s => ({ id: s.id, lvl: s.lvl, mods: s.mods.slice() })),
@@ -360,6 +377,12 @@ export class GameRoot extends Component {
       return;
     }
     const save = chk.save;
+    const bad = assertRestorable(save);
+    if (bad.length) {
+      this.activeCheck = { status: 'corrupt', message: bad.join('；') };
+      this.showMenu();
+      return;
+    }
     this.charId = save.charId;
     this.seed = save.seed;
     this.seedFresh = false;
@@ -424,7 +447,12 @@ export class GameRoot extends Component {
       runId,
       skills: rs.skills.map(s => ({ id: s.id, lvl: s.lvl, mods: s.mods.slice() })),
       items: Array.from(counts.entries()).map(([id, count]) => ({ id, count })),
-      stats: { hp: Math.round(rs.stats.hp), maxhp: Math.round(rs.stats.maxhp), power: rs.stats.power, gold: rs.gold },
+      stats: {
+        hp: Math.round(rs.stats.hp), maxhp: Math.round(rs.stats.maxhp),
+        power: rs.stats.power, gold: rs.gold,
+        dmgDealt: this.battle.totalDamageDealt(),
+        dmgTaken: this.battle.totalDmgTaken(),
+      },
       milestones: rs.milestones.slice(),
       endReason: endReasonText(result),
     };
@@ -442,6 +470,68 @@ export class GameRoot extends Component {
     console.log('[History] 记录一局：' + result + ' 第 ' + rs.wave + ' 波（' + (added ? '新增' : '已存在') + '）');
   }
 
+  /** 主菜单点「开始冒险/开始新冒险」：有活动存档先确认，不能静默覆盖 */
+  private requestStart(): void {
+    this.activeCheck = loadActiveRun();
+    if (this.activeCheck.status === 'ok') {
+      this.curModal = buildStartNewConfirm(this.uiRoot,
+        () => this.closeModal(),
+        () => { this.closeModal(); void this.continueGame(); },
+        () => {
+          this.closeModal();
+          this.abandonActiveRun();
+          this.showDifficulty();
+        });
+      return;
+    }
+    this.showDifficulty();
+  }
+
+  /** 从主菜单放弃活动存档：不必进战斗，直接用 ActiveRunSave 生成一条 abandoned 历史 */
+  private abandonActiveRun(): void {
+    const chk = loadActiveRun();
+    if (chk.status !== 'ok') { clearActiveRun(); return; }
+    const save = chk.save;
+    const summary = buildSummary({
+      runId: save.runId,
+      startedAt: save.startedAt,
+      endedAt: Date.now(),
+      characterId: save.charId,
+      difficulty: save.difficulty,
+      result: 'abandoned',
+      reachedWave: save.wave,
+      totalWaves: RUN.waves,
+      durationSeconds: save.runTime,
+      killCount: save.kills,
+      eliteKillCount: save.eliteKills,
+      bossKillCount: save.bossKills,
+      goldEarned: save.goldEarned,
+      goldSpent: save.goldSpent,
+      endlessMode: save.endless,
+      finalSkillIds: save.skills.map(s => s.id),
+      finalItemIds: save.items.map(i => i.id),
+      badges: this.save.endlessBadges.filter(b => b.startsWith(save.difficulty + ':')),
+    });
+    const counts = new Map<string, number>();
+    for (const it of save.items) counts.set(it.id, (counts.get(it.id) ?? 0) + 1);
+    const detail: RunDetail = {
+      runId: save.runId,
+      skills: save.skills.map(s => ({ id: s.id, lvl: s.lvl, mods: s.mods.slice() })),
+      items: Array.from(counts.entries()).map(([id, count]) => ({ id, count })),
+      stats: { hp: Math.round(save.stats.hp), maxhp: Math.round(save.stats.maxhp), gold: save.gold },
+      milestones: save.milestones.slice(),
+      endReason: endReasonText('abandoned'),
+    };
+    const { data, added } = addRun(this.history, summary, detail);
+    if (added) {
+      if (saveRunHistory(data)) this.history = data;
+      else console.warn('[History] 放弃记录写入失败，仍清除活动存档');
+    }
+    clearActiveRun();
+    this.runId = '';
+    console.log('[History] 主菜单放弃：第 ' + save.wave + ' 波（已记录）');
+  }
+
   // ---------- 历史对局页面 ----------
   private showHistory() {
     this.phase = 'history'; this.closeModal(); this.clearScreen();
@@ -450,6 +540,7 @@ export class GameRoot extends Component {
       (f) => { this.historyFilter = f; this.historyScroll = 0; this.showHistory(); },
       () => this.showMenu(),
       (runId, off) => { this.historyScroll = off; this.showHistoryDetail(runId); },
+      () => { this.closeModal(); this.showDifficulty(); },
     );
   }
 
@@ -513,7 +604,16 @@ export class GameRoot extends Component {
 
   private showCharSelect() {
     this.phase = 'charselect'; this.clearScreen();
-    this.cur = buildCharSelect(this.uiRoot, () => this.showMenu(), (id) => { this.charId = id; void this.startBattle(); });
+    this.cur = buildCharSelect(this.uiRoot, () => { this.charPreview = false; this.showMenu(); }, (id) => {
+      this.charId = id;
+      if (this.charPreview) {
+        // 从主菜单点角色进来：只更换展示角色，回到菜单；真正开局仍走"开始冒险"
+        this.charPreview = false;
+        this.showMenu();
+        return;
+      }
+      void this.startBattle();
+    });
   }
 
   private newSeed(): number { return (Math.random() * 0xffffffff) >>> 0; }
