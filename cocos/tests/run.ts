@@ -13,7 +13,7 @@
  */
 import { lastbreathMul, shatterMul, focusedMods, resonatorMul, VOLTLOOP_CHANCE, VOLTLOOP_DMG, VOLTLOOP_CD, greedPowerBonus, FRUGAL_REROLL_MUL, FRUGAL_WAVE_GOLD, THORNCOAT_DMG, THORNCOAT_CD } from '../assets/scripts/game/SpecialItems';
 import { RunState } from '../assets/scripts/game/RunState';
-import { calcSkill, makeSkill, canInstall, modCount } from '../assets/scripts/game/SkillCalc';
+import { calcSkill, makeSkill, canInstall, modCount, NEW_SKILL_ALLOW } from '../assets/scripts/game/SkillCalc';
 import { MODULES, MODULE_IDS, MODULE_HOOKS, MODULE_NUMS, modEffect, modPower, TIER2_EFFECT } from '../assets/scripts/data/Modules';
 import { assertStatsSane, freshStats, emptyStats } from '../assets/scripts/game/Stats';
 import { CHARS } from '../assets/scripts/data/Chars';
@@ -34,8 +34,12 @@ import { nextDifficulty, DIFFICULTIES, difficultyOf, eliteChance, spawnInterval,
 import { BossSummonState } from '../assets/scripts/game/BossSummon';
 import { migrateDifficulty } from '../assets/scripts/game/Progress';
 import { splitBullets, echoRepeats, echoDelay, burnDuration, burnTickMul, frostSlowPct, frostDuration, slowFor } from '../assets/scripts/game/ModuleScale';
-import { telemetryStart, telemetryWaveEnd, telemetryRunEnd, listRuns, summarize } from '../assets/scripts/game/Telemetry';
+import { telemetryStart, telemetryWaveEnd, telemetryRunEnd, telemetryShopEnter, telemetryShopBuy, telemetryShopReroll, telemetryShopLeave, listRuns, summarize, economySummary, clearLogs } from '../assets/scripts/game/Telemetry';
 import type { SaveData } from '../assets/scripts/game/Progress';
+import { canSourceTriggerModules as canTrigV7, canSourceHarvest, canSourceVamp, makeDamageContext as makeCtxV7, resetCastSeq, nextCastId as nextCastIdV7 } from '../assets/scripts/game/DamageContext';
+import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, sentryShotPlan, SENTRY_BULLET_SPEED, RING_BLADE_MAX } from '../assets/scripts/game/SkillRules';
+import { rollEliteAffixes, affixHpMul, affixSpeedMul, affixSplits, eliteAffixRule, AFFIX_SPLIT_COUNT } from '../assets/scripts/game/EliteAffix';
+import { parseSave, badgesForRun, badgeId, ENDLESS_MILESTONES } from '../assets/scripts/game/Progress';
 
 let pass = 0, fail = 0;
 const ok = (c: boolean, m: string) => { c ? (pass++, console.log('  PASS ' + m)) : (fail++, console.log('  FAIL ' + m)); };
@@ -638,7 +642,9 @@ console.log('\n== 5n. 伤害上下文与模块闸门（设计 v6） ==');
   ok(canHarvest(makeDamageContext('summon', 'c2')) === false, '召唤物击杀不触发 harvest');
 
   // 4) 吸血：summon 是例外，module 不行
-  ok(canVamp(makeDamageContext('summon', 'c3')) === true, '召唤物攻击可触发 vamp');
+  // v7：summon 默认不吸血，只有哨兵（summonKind='sentry'）是显式例外
+  ok(canVamp(makeDamageContext('summon', 'c3')) === false, '普通召唤物攻击默认不触发 vamp');
+  ok(canVamp(makeDamageContext('summon', 'c3', { summonKind: 'sentry' })) === true, '哨兵攻击可触发 vamp');
   ok(canVamp(makeDamageContext('module', 'c3')) === false, 'module 伤害不能再触发 vamp');
 
   // 5) 模块闸门：来源过滤 + 冷却 + 单次施法上限
@@ -757,8 +763,9 @@ console.log('\n== 5q. 新技能 × 黑科技 兼容白名单 ==');
   ok(canInstall({ id: 'poison', lvl: 1, mods: [] } as never, 'vamp').ok === true, '毒雾可以装吸血');
   ok(canInstall({ id: 'fireball', lvl: 1, mods: [] } as never, 'harvest').ok === true, '火球可以装割韭菜');
   ok(canInstall({ id: 'poison', lvl: 1, mods: [] } as never, 'multi').ok === false, '毒雾不能装加量（无弹体）');
-  ok(canInstall({ id: 'ring_blade', lvl: 1, mods: [] } as never, 'echo').ok === true, '环刃可以装复读机');
-  ok(canInstall({ id: 'sentry', lvl: 1, mods: [] } as never, 'echo').ok === true, '哨兵可以装复读机');
+  // 矩阵对齐（2026-10-31）：环刃/哨兵 echo = N，白名单同步移除
+  ok(canInstall({ id: 'ring_blade', lvl: 1, mods: [] } as never, 'echo').ok === false, '环刃不能装复读机（矩阵 N）');
+  ok(canInstall({ id: 'sentry', lvl: 1, mods: [] } as never, 'echo').ok === false, '哨兵不能装复读机（矩阵 N）');
   ok(canInstall({ id: 'blade', lvl: 1, mods: [] } as never, 'echo').ok === true, '回旋刃可以装复读机');
 
 
@@ -807,6 +814,257 @@ ok(enemyPool(3).includes('wolf'), '第 3 波解锁狼');
   ok(rs.nextWave() === 21, '选择继续则进入第 21 波（无尽）');
 }
 
+
+console.log('\n== 7. 伤害事件 v7：权限派生 / 哨兵例外 / castId ==');
+{
+  ok(canTrigV7('normal') && canTrigV7('split') && canTrigV7('echo') && canTrigV7('chain'),
+    'normal/split/echo/chain 可触发模块');
+  ok(!canTrigV7('module') && !canTrigV7('summon'), 'module/summon 默认不可触发模块');
+
+  ok(canSourceHarvest('normal') && canSourceHarvest('module'), '普通与模块伤害击杀可触发 harvest（规则只排除 summon）');
+  ok(!canSourceHarvest('summon'), '召唤物击杀不触发 harvest');
+
+  ok(canSourceVamp('normal') && canSourceVamp('split'), '普通/分裂伤害可吸血');
+  ok(!canSourceVamp('module'), '模块伤害不能吸血（避免递归）');
+  ok(!canSourceVamp('summon'), '普通召唤物默认不吸血（只有哨兵是例外）');
+  ok(canSourceVamp('summon', 'sentry'), '哨兵伤害可以吸血（S 规则）');
+
+  const sentryCtx = makeCtxV7('summon', 'c9', { summonKind: 'sentry', isBoss: true });
+  ok(sentryCtx.canTriggerModules === false && sentryCtx.canHarvest === false && sentryCtx.canVamp === true,
+    '哨兵上下文：不触发 onhit 模块 / 击杀不回血 / 可吸血');
+  ok(Object.isFrozen(sentryCtx), '上下文被冻结（派生权限不可事后改写）');
+
+  const forged = makeCtxV7('summon', 'c1',
+    { canTriggerModules: true, canHarvest: true, canVamp: true } as unknown as never);
+  ok(forged.canTriggerModules === false && forged.canHarvest === false && forged.canVamp === false,
+    '调用方伪造 can* 字段无效（仍按来源推导）');
+
+  ok(canHarvest(makeCtxV7('summon', 'c')) === false && canVamp(makeCtxV7('summon', 'c')) === false,
+    '旧函数入口与上下文字段结论一致');
+
+  resetCastSeq();
+  const id1 = nextCastIdV7(), id2 = nextCastIdV7();
+  ok(id1 !== id2 && id1.startsWith('c') && id2.startsWith('c'), 'castId 在不同主动施法之间唯一');
+  ok(makeCtxV7('echo', 'c42').castId === makeCtxV7('split', 'c42').castId, '同一次施法的弹体共享 castId');
+}
+
+console.log('\n== 8. 新技能 S 规则（纯函数） ==');
+{
+  ok(ringBladeCount(1, 0) === 2, '环刃 1 级 = 2 片');
+  ok(ringBladeCount(3, 0) === 4, '环刃随等级加片');
+  ok(ringBladeCount(4, 0) === RING_BLADE_MAX, '环刃受 4 片硬上限');
+  ok(ringBladeCount(1, 1) === 3, 'orbit × 环刃（S）= 额外 +1 片');
+  ok(ringBladeCount(4, 3) === RING_BLADE_MAX, 'orbit 加片仍受 4 片上限');
+
+  ok(mineSplitCount(0) === 0, '地雷未装分裂 → 0 枚分裂弹');
+  ok(mineSplitCount(1) === 2 && mineSplitCount(2) === 3 && mineSplitCount(3) === 4,
+    'split × 地雷（S）：2/3/4 枚分裂弹');
+
+  ok(mineEchoRepeats(0) === 0, '地雷未装 echo → 不复制');
+  ok(mineEchoRepeats(1) === 1 && mineEchoRepeats(3) === 1, 'echo × 地雷（S）：最多复制 1 次');
+  ok(chargeEchoRepeats(0) === 0 && chargeEchoRepeats(2) === 1, 'echo × 蓄能（S）：最多重放 1 次');
+
+  const p1 = sentryShotPlan(1, 0);
+  ok(p1.shots === 1 && p1.fanShots === 0 && p1.speed === SENTRY_BULLET_SPEED, '哨兵基础：1 发 / 弹速 260');
+  const p3 = sentryShotPlan(3, 2);
+  ok(p3.shots === 3 && p3.fanShots === 4, '哨兵 multi(3 发) + fan(4 扇) 生效');
+}
+
+console.log('\n== 9. 精英词缀（实际数值效果） ==');
+{
+  const hardRules = difficultyOf('hard').rules;
+  ok(eliteAffixRule(hardRules, 11) === null, '困难第 11 波：还没有词缀规则');
+  ok(eliteAffixRule(hardRules, 12) !== null, '困难第 12 波起：护盾词缀规则生效');
+
+  const rollSeq = [0.10, 0.0];
+  let ri = 0;
+  const roll = () => rollSeq[ri++] ?? 0.5;
+  const hardHit = rollEliteAffixes(hardRules, 12, roll);
+  ok(hardHit.length === 1 && hardHit[0] === 'shield', '困难 12 波 25% 命中 → 护盾');
+  let calls = 0;
+  const hardMiss = rollEliteAffixes(hardRules, 12, () => { calls++; return 0.9; });
+  ok(hardMiss.length === 0 && calls === 1, '困难 12 波 25% 未命中 → 无词缀');
+
+  let touched = false;
+  const none = rollEliteAffixes([], 99, () => { touched = true; return 0; });
+  ok(none.length === 0 && !touched, '普通难度无规则：不掷骰子、不消耗随机数');
+
+  const nmRules = difficultyOf('nightmare').rules;
+  ok(rollEliteAffixes(nmRules, 7, () => 0).length === 0, '噩梦第 7 波：还不带词缀');
+  ok(rollEliteAffixes(nmRules, 8, () => 0).length === 1, '噩梦第 8 波起必带 1 个词缀');
+
+  let hk = 0;
+  const hellAffixes = rollEliteAffixes(difficultyOf('hell').rules, 5, () => (hk++ === 0 ? 0 : 0.5));
+  ok(hellAffixes.length === 2 && hellAffixes[0] !== hellAffixes[1], '地狱必带 2 个不重复词缀');
+
+  ok(Math.abs(affixHpMul(['shield']) - 1.2) < 1e-9, '护盾词缀：最大生命 +20%');
+  ok(Math.abs(affixSpeedMul(['swift']) - 1.25) < 1e-9, '加速词缀：移速 +25%');
+  ok(affixSplits(['split']) && !affixSplits(['shield']), '分裂词缀只在 split 时生效');
+  ok(AFFIX_SPLIT_COUNT === 2, '分裂词缀死亡出 2 只小怪');
+}
+
+console.log('\n== 10. 存档读取 / 迁移 / 无尽徽章 ==');
+{
+  const d0 = parseSave(null);
+  ok(d0.selectedDifficulty === 'normal' && d0.difficulties.length === 2, '空存档 → 普通 + 默认两档解锁');
+  ok(parseSave('{坏的JSON').runs === 0, '坏 JSON → 回落到默认值');
+
+  const full = { ...defaultSave(), selectedDifficulty: 'hell',
+    difficulties: ['casual', 'normal', 'hard', 'nightmare', 'hell'],
+    seen: ['enemy:goblin'], charsWin: ['knight'], endlessBadges: ['hell:30'],
+    fxAlpha: 0.4, shakeOn: false, runs: 7 } as SaveData;
+  const d1 = parseSave(JSON.stringify(full));
+  ok(d1.selectedDifficulty === 'hell' && d1.difficulties.length === 5, '存档读回：难度选择与解锁列表不丢');
+  ok(d1.seen[0] === 'enemy:goblin' && d1.charsWin[0] === 'knight' && d1.endlessBadges[0] === 'hell:30',
+    '存档读回：图鉴 / 角色通关 / 徽章不丢');
+  ok(Math.abs(d1.fxAlpha - 0.4) < 1e-9 && d1.shakeOn === false && d1.runs === 7,
+    '存档读回：画面偏好与累计值不丢');
+
+  const legacy = { wins: 2, kills: 30 } as unknown as Partial<SaveData>;
+  const d2 = parseSave(JSON.stringify(legacy));
+  ok(d2.selectedDifficulty === 'normal' && d2.difficulties.indexOf('hard') >= 0, '旧档迁移：wins>=1 补困难');
+  ok(d2.kills === 30, '旧档迁移：已有字段保留');
+
+  const d3 = parseSave(JSON.stringify({ selectedDifficulty: 'xxx', difficulties: ['normal', 'bad'] }));
+  ok(d3.selectedDifficulty === 'normal' && d3.difficulties.length === 1 && d3.difficulties[0] === 'normal',
+    '非法难度值被过滤，不污染解锁列表');
+
+  ok(badgesForRun([], 'hell', 29).length === 0, '29 波不发徽章');
+  const b30 = badgesForRun([], 'hell', 30);
+  ok(b30.length === 1 && b30[0] === badgeId('hell', 30), '30 波发第一枚徽章');
+  const b42 = badgesForRun([], 'hell', 42);
+  ok(b42.length === 2, '42 波补发 30/40 两枚');
+  ok(badgesForRun(b42, 'hell', 50).length === 3, '50 波补发到 3 枚');
+  ok(badgesForRun(b42, 'hell', 42).length === 2, '重复结算不重复发放');
+  ok(badgesForRun(b30, 'nightmare', 30).length === 2, '徽章按难度隔离');
+  ok(ENDLESS_MILESTONES.length === 3, '里程碑固定 30/40/50');
+}
+
+console.log('\n== 11. 传说道具共享上限 ==');
+{
+  const legIds = Object.keys(ITEMS).filter(k => (ITEMS[k].tier ?? 1) >= 3);
+  ok(legIds.length >= 3, '传说道具存在（tier 3）');
+
+  const rs = new RunState('knight', 20261031);
+  ok(!rs.legendaryTaken && rs.legendaryAvailable, '开局：本局未拿传说');
+  rs.applyReward({ kind: 'item', id: legIds[0] });
+  ok(rs.legendaryTaken && !rs.legendaryAvailable, '升级奖励拿到传说 → 本局锁定');
+
+  let upgradeLeak = false;
+  for (let k = 0; k < 120; k++) {
+    for (const r of rs.rollRewards()) {
+      if (r.kind === 'item' && (ITEMS[r.id].tier ?? 1) >= 3) upgradeLeak = true;
+    }
+  }
+  ok(!upgradeLeak, '升级池排除传说（拿到后 120 次抽样无传说）');
+
+  let shopLeak = false;
+  for (let w = 1; w <= 20; w++) {
+    rs.wave = w; rs.refreshShop(true);
+    for (const s2 of rs.shopStock ?? []) {
+      if (s2.kind === 'item' && (ITEMS[s2.id].tier ?? 1) >= 3) shopLeak = true;
+    }
+  }
+  ok(!shopLeak, '商店池排除传说（拿到后 1~20 波刷新无传说）');
+
+  const rs2 = new RunState('mage', 7);
+  rs2.gold = 999;
+  rs2.shopStock = [{ kind: 'item', id: legIds[1], price: 10, sold: false, locked: false }];
+  const bought = rs2.buySlot(0);
+  ok(bought.ok && rs2.legendaryTaken, '商店买到传说 → 共享计数立即生效');
+
+  let shopLeak2 = false;
+  for (let w = 1; w <= 10; w++) {
+    rs2.wave = w; rs2.refreshShop(true);
+    for (const s2 of rs2.shopStock ?? []) {
+      if (s2.kind === 'item' && (ITEMS[s2.id].tier ?? 1) >= 3) shopLeak2 = true;
+    }
+  }
+  ok(!shopLeak2, '刷新商店绕不过传说上限');
+}
+
+console.log('\n== 12. 地狱商店经济遥测 ==');
+{
+  const store = new Map<string, string>();
+  (globalThis as unknown as { localStorage: Storage }).localStorage = {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => { store.set(k, v); },
+    removeItem: (k: string) => { store.delete(k); },
+    clear: () => { store.clear(); },
+    key: (i: number) => Array.from(store.keys())[i] ?? null,
+    get length(): number { return store.size; },
+  } as Storage;
+
+  clearLogs();
+  telemetryStart('knight', 42, 'hell');
+  telemetryShopEnter(5, 100);
+  telemetryShopBuy('bloodpact', 'item', 120, 90);
+  telemetryShopReroll();
+  telemetryShopLeave(30);
+  telemetryRunEnd({ end: 'dead', deathWave: 5, kills: 12, maxAlive: 9, dmgTaken: 40, durSec: 120 });
+
+  const runs = listRuns();
+  ok(runs.length === 1 && runs[0].difficulty === 'hell', '遥测：本局记录含难度');
+  const sh = runs[0].shop[0];
+  ok(!!sh && sh.wave === 5 && sh.goldIn === 100 && sh.goldOut === 30 && sh.rerolls === 1 && sh.bought.length === 1,
+    '遥测：进店/离店金币、刷新次数、购买数都记下');
+  ok(!!sh && sh.bought[0].price === 120 && sh.bought[0].basePrice === 90, '遥测：商品原价与成交价分开记');
+  const sum = economySummary('hell');
+  ok(sum.runs === 1 && sum.shops === 1 && sum.buys === 1 && sum.avgRerolls === 1, '遥测：地狱经济汇总可读');
+  clearLogs();
+}
+
+console.log('\n== 13. 普通难度 = 不介入原版本（公式层） ==');
+{
+  const n = difficultyOf('normal');
+  ok(n.rules.length === 0 && n.healBudgetPerSecond === null, '普通：无难度规则、不启用回血预算');
+  ok(spawnInterval(0.62, 'normal') === 0.62, '普通：刷怪间隔原样返回（不乘 1.0）');
+  ok(shopPrice(37, 'normal', 18) === 37, '普通：商店价格原样返回（不乘倍率、无递增）');
+  ok(shopPrice(37, 'normal', 1) === 37, '普通第 1 波价格也不被改写');
+  ok(eliteChance(0.37, 'normal') === 0.37, '普通：精英概率原样返回');
+  ok(healAmount(10, 'normal', 0.1) === 10, '普通：回血不乘倍率、不触发低血加成');
+  ok(healBudget('normal') === null, '普通：不启用新增回血预算');
+}
+
+console.log('\n== 14. BOSS 召唤：请求不丢 / 间隔 / 空位 ==');
+{
+  const cfg = { thresholds: [70, 35], count: 3, maxAlive: 6, minIntervalSec: 12, warnSec: 1.2 };
+  const bs = new BossSummonState(cfg);
+  ok(bs.update(71, 0, 0) === 0, 'BOSS 血量 71%：不召唤');
+  ok(bs.update(70, 1, 0) === 0 && bs.pending === 1, '70%：提交 1 个请求并起预警');
+  ok(bs.update(35, 1.5, 0) === 0 && bs.pending === 2, '预警期间跨过 35%：请求入队，不启动第二个预警');
+  const first = bs.update(35, 2.3, 0);
+  ok(first === 3 && bs.pending === 1 && !bs.isWarning, '预警结束：执行 1 个波次（3 只），剩余请求保留');
+  ok(bs.update(35, 5, 0) === 0 && bs.pending === 1, '12 秒冷却内：剩余请求等待，不丢弃');
+  ok(bs.update(35, 14.4, 0) === 0 && bs.isWarning, '冷却结束：剩余请求起预警');
+  ok(bs.update(35, 15.7, 6) === 0 && bs.pending === 0, '空位为 0：请求完成但不召唤，不永久挂起');
+  const bs2 = new BossSummonState(cfg);
+  bs2.update(70, 1, 0);
+  bs2.onBossDead();
+  ok(bs2.pending === 0 && !bs2.isWarning && bs2.update(35, 30, 0) === 0, 'BOSS 死亡：取消所有未执行请求');
+}
+
+
+console.log('\n== 15. 兼容矩阵 × 白名单逐格一致（18 模块 × 4 技能） ==');
+{
+  // 这张表与 skill_expansion_design.md §7 的矩阵逐格对应；改了矩阵必须同时改这里。
+  const MATRIX: Record<string, string[]> = {
+    ring_blade: ['orbit', 'giant', 'rapid', 'burn', 'frost', 'vamp', 'harvest', 'thornmail'],
+    mine_field: ['giant', 'rapid', 'burn', 'frost', 'vamp', 'harvest', 'thornmail', 'split', 'echo', 'overload'],
+    sentry: ['multi', 'fan', 'split', 'bounce', 'pierce', 'rapid', 'burn', 'frost', 'chain', 'snipe', 'harvest', 'thunder', 'vamp'],
+    charge_pulse: ['giant', 'burn', 'frost', 'vamp', 'harvest', 'overload', 'echo'],
+  };
+  for (const skill of Object.keys(MATRIX)) {
+    const got = NEW_SKILL_ALLOW[skill] ?? [];
+    const want = MATRIX[skill];
+    const missing = want.filter(m => got.indexOf(m) < 0);
+    const extra = got.filter(m => want.indexOf(m) < 0);
+    ok(missing.length === 0 && extra.length === 0,
+      skill + ' 白名单与矩阵一致（缺 ' + (missing.join(',') || '无') + ' / 多 ' + (extra.join(',') || '无') + '）');
+  }
+  const totalCells = Object.keys(MATRIX).length * MODULE_IDS.length;
+  ok(totalCells === 72, '矩阵覆盖 18 模块 × 4 技能 = 72 格');
+}
 console.log('\n================ 结果 ================');
 console.log(`PASS ${pass} / FAIL ${fail}`);
 if (fail) throw new Error(`有 ${fail} 项失败`);

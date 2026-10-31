@@ -36,7 +36,9 @@ import { MODULE_HOOKS } from '../data/Modules';
 import { difficultyOf, healAmount, healBudget, spawnInterval } from '../data/Difficulties';
 import { BossSummonState } from '../game/BossSummon';
 import type { DifficultyId } from '../data/Difficulties';
-import { DamageContext, DamageSource, makeDamageContext, canVamp, nextCastId, ModuleUsage } from '../game/DamageContext';
+import { DamageContext, DamageSource, SummonKind, makeDamageContext, canVamp, nextCastId, ModuleUsage } from '../game/DamageContext';
+import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, CHARGE_ECHO_MUL, sentryShotPlan, SENTRY_FAN_DMG_MUL, SENTRY_FAN_SPREAD, MINE_SPLIT_MUL } from '../game/SkillRules';
+import { rollEliteAffixes, affixHpMul, affixSpeedMul, affixSplits, AFFIX_SPLIT_COUNT, AFFIX_SPLIT_HP_MUL, AFFIX_SPLIT_SPEED_MUL, type EliteAffix } from '../game/EliteAffix';
 import { killblastDamage, killblastRadius, shieldAmount, SHIELD_CAP, SHIELD_COOLDOWN, SHIELD_DURATION, executePct, returnstrikePct, overchargePeriod, overchargeMul, lingeringChance, LINGER_TICKS, LINGER_TICK_DMG, LINGER_MAX_ZONES } from '../game/ModuleValues';
 import { CHARS } from '../data/Chars';
 const { ccclass } = _decorator;
@@ -55,6 +57,8 @@ interface Enemy {
   /** BOSS 是否已进入狂怒（地狱） */
   enraged?: boolean;
   node: Node; anim: FrameAnim; unit: string;
+  /** 敌人数据表 id（分裂词缀生成同类小怪时要用） */
+  kind: string;
   x: number; y: number; hp: number; maxhp: number;
   spd: number; dmg: number; r: number; exp: number; gold: number;
   dead: boolean; deathT: number; animT: number; walkT: number; atkT: number;
@@ -62,6 +66,10 @@ interface Enemy {
   /** 减速比例（冷静模块的份数决定：35~55%） */
   slowPct: number;
   boss: boolean; elite: boolean;
+  /** 精英词缀（shield / swift / split）；普通怪为空 */
+  affixes?: EliteAffix[];
+  /** 是否由"分裂"词缀产生的小怪（小怪不再带词缀，避免递归） */
+  fromSplit?: boolean;
   /** 状态层（M48）：中毒淡绿 / 灼烧淡红，持续期间每 0.5s 掉血 */
   poisonT: number; burnT: number; dotTick: number;
   poisonDmg: number; burnDmg: number;
@@ -87,6 +95,9 @@ interface Bullet {
   returned?: boolean;
   /** 本次返程是否已经结算过 M4 返程斩（每次返程只触发一次） */
   returnHit?: boolean;
+  /** 伤害来源（哨兵弹体 = summon + sentry，普通技能弹体 = normal） */
+  src?: DamageSource;
+  summonKind?: SummonKind;
   outT?: number;
   /** 回程自转角度（让刃"转着回来"） */
   spinAngle?: number;
@@ -226,6 +237,8 @@ export class Battle extends Component {
   private sentries: { x: number; y: number; t: number; cd: number; dmg: number; rt: SkillRuntime }[] = [];
   /** 蓄能脉冲状态（按技能槽） */
   private charges: Record<number, { t: number; dmg: number; r: number; rt: SkillRuntime }> = {};
+  /** 当前 fireSkill 是否由复读机（echo）发起：echo 不计蓄势、不再触发 echo */
+  private echoReplay = false;
   private bossDefeated = false;
   private hitstop = 0;
   private running = false;
@@ -722,7 +735,7 @@ export class Battle extends Component {
     }
   }
 
-  private spawnEnemy(kind: string, wx: number, wy: number, scale = 1, unitOverride?: string) {
+  private spawnEnemy(kind: string, wx: number, wy: number, scale = 1, unitOverride?: string, asPlain = false) {
     const def = ENEMIES[kind];
     if (!def) { console.warn('[Battle] 未知敌人：' + kind); return; }
     this.seenEnemies.add(kind);
@@ -737,12 +750,12 @@ export class Battle extends Component {
     const { node, anim } = this.mkSpriteNode('enemy:' + unit, this.layerUnit, 32, 32, new Color(224, 64, 96), true);
     this.place(node, wx, wy);
     const e: Enemy = {
-      node, anim, unit, x: wx, y: wy,
+      node, anim, unit, kind, x: wx, y: wy,
       hp, maxhp: hp, spd: def.spd, dmg: Math.round(def.dmg * ws.dmg),
       r: def.r, exp: def.exp, gold: def.gold,
       dead: false, deathT: 0, animT: 0, walkT: 0, atkT: 0,
       facing: 1, flash: 0, kx: 0, ky: 0, slow: 0, spawnT: 0.9, slowPct: 0.35,
-      boss: !!def.boss, elite: !!def.elite,
+      boss: !!def.boss, elite: !asPlain && !!def.elite,
       poisonT: 0, burnT: 0, dotTick: 0, poisonDmg: 0, burnDmg: 0,
       visScale: 1,
       aiState: 'idle', aiT: 0,
@@ -790,8 +803,9 @@ export class Battle extends Component {
   private fireSkill(slot: number, rt: SkillRuntime) {
     this.currentCastId = nextCastId();
     // M6 蓄势：按技能独立计数，达到周期的那一次享受加成，随后归零
+    // ⚠️ echo 重放**不计入**施法次数（设计 v6），否则装复读机会让蓄势提前
     const oc = this.modStacks('overcharge');
-    if (oc > 0) {
+    if (oc > 0 && !this.echoReplay) {
       const period = overchargePeriod(oc);
       const n = (this.castCount[slot] ?? 0) + 1;
       if (n >= period) {
@@ -889,12 +903,15 @@ export class Battle extends Component {
       this.spawnArea(this.px, this.py, rt.size + 26, rt.dmg, 0.45, 'pulse', art.aoe, rt);
       this.addVfx('core/ring/shockwave', this.px, this.py, 0.38, Math.max(1.6, (rt.size + 26) / 12));
     } else if (def.type === 'orbit') {
-      // 环刃：常驻，随等级加片（上限 4）
-      const n = Math.min(4, 1 + sk.lvl);
+      // 环刃：常驻，随等级加片（上限 4）；orbit × 环刃（S）= 额外 +1 片，仍受 4 片上限
+      const n = ringBladeCount(sk.lvl, rt.orbit);
       this.orbits[slot] = { n, radius: Math.max(30, rt.size), dmg: rt.dmg, rot: 0, tick: 0, rt };
     } else if (def.type === 'trap') {
       // 地雷：同屏上限 4，超出时最早的一枚立即引爆
-      this.traps.push({ x: this.px, y: this.py, t: 0, armed: false, dmg: rt.dmg, rt });
+      // echo × 地雷阵（S）：最多复制 1 次；复制品自身 echo = 0，不会再次复制
+      const echoOnce = this.echoReplay ? 0 : mineEchoRepeats(rt.echo);
+      this.traps.push({ x: this.px, y: this.py, t: 0, armed: false, dmg: rt.dmg, rt: { ...rt, echo: 0 } });
+      if (echoOnce > 0) this.queueEcho(slot, echoOnce);
       if (this.traps.length > 4) {
         const old = this.traps.shift();
         if (old) this.explodeTrap(old);
@@ -905,6 +922,8 @@ export class Battle extends Component {
     } else if (def.type === 'charge') {
       // 蓄能脉冲：进入蓄力（无目标也允许，结算时空放返还冷却）
       this.charges[slot] = { t: 0, dmg: rt.dmg, r: Math.max(60, rt.size), rt };
+      // echo × 蓄能脉冲（S）：重放不重新蓄力，最多 1 次（见 updateEcho）
+      if (!this.echoReplay) this.queueEcho(slot, chargeEchoRepeats(rt.echo));
     } else if (def.type === 'area') {
       const ax = tgt ? tgt.x : this.px, ay = tgt ? tgt.y : this.py;
       // ★ 施法动作（用户反馈「刃爆看不出施法，像直接作用到敌人身上」）：
@@ -965,7 +984,8 @@ export class Battle extends Component {
 
   private spawnBullet(x: number, y: number, vx: number, vy: number, rt: SkillRuntime,
                       vfxKey: string | undefined, hitVfx: string | undefined,
-                      homing: boolean, orbit = false, life = 1.6) {
+                      homing: boolean, orbit = false, life = 1.6,
+                      src: DamageSource = 'normal', summonKind?: SummonKind) {
     const key = vfxKey ?? FX.killSmall;
     const frames = Assets.vfxFrames(key);
     const sc = Math.max(1, Math.round(rt.size / 5));
@@ -977,7 +997,7 @@ export class Battle extends Component {
       node, anim, x, y, vx, vy, r: Math.max(4, rt.size),
       dmg: rt.dmg, pierce: rt.pierce, bounce: rt.bounce, chain: rt.chain, split: rt.split,
       life: orbit ? 3.2 : life, t: 0, hitVfx: hitVfx ?? 'core/spark/hit-spark',
-      hit: new Set(), homing,
+      hit: new Set(), homing, src, summonKind,
       burn: rt.burn, slow: rt.slow, vamp: rt.vamp, thunder: rt.thunder,
     };
     this.bullets.push(b);
@@ -1058,11 +1078,19 @@ export class Battle extends Component {
     for (const q of due) {
       const sk = this.rs.skills[q.slot];
       if (!sk) continue;
-      const rt = { ...this.rs.skillRuntime(q.slot), dmg: this.rs.skillRuntime(q.slot).dmg * 0.6, echo: 0 };
+      const baseRt = this.rs.skillRuntime(q.slot);
+      const rt = { ...baseRt, dmg: baseRt.dmg * 0.6, echo: 0 };
+      // echo × 蓄能脉冲（S）：重放**不重新蓄力**，直接按已蓄满数值结算一次；
+      // 也不占用/重置技能冷却（和火球重放一致）。
+      if (SKILLS[sk.id]?.type === 'charge') {
+        this.resolveCharge(q.slot, { dmg: rt.dmg, r: Math.max(60, rt.size), rt });
+        continue;
+      }
       // ⚠️ 真机崩溃修复：skillT 是 Battle 的字段，不是 RunState 的。
       //    之前写 this.rs.skillT[...] → undefined[3] = 0 → TypeError: Cannot set properties of undefined
       this.skillT[q.slot] = 0;                        // 复读不消耗真实冷却
-      this.fireSkill(q.slot, rt);
+      this.echoReplay = true;
+      try { this.fireSkill(q.slot, rt); } finally { this.echoReplay = false; }
       this.skillT[q.slot] = rt.cd;
     }
   }
@@ -1193,10 +1221,11 @@ export class Battle extends Component {
   }
 
   /** 一次伤害结算（走 Combat.rollDamage，暴击也吃同一个 Rng） */
-  private hitEnemy(e: Enemy, base: number, rt: SkillRuntime, hitVfx?: string, noThunder = false, src: DamageSource = 'normal') {
+  private hitEnemy(e: Enemy, base: number, rt: SkillRuntime, hitVfx?: string, noThunder = false,
+                   src: DamageSource = 'normal', summonKind?: SummonKind) {
     if (e.dead) return;
-    // 统一伤害上下文：来源由调用方声明，能否触发模块由入口推导（设计 v6）
-    const ctx: DamageContext = makeDamageContext(src, this.currentCastId, { isBoss: !!e.boss });
+    // 统一伤害上下文：调用方只能声明"来源"，三个 can* 权限一律由 makeDamageContext 推导（设计 v7）
+    const ctx: DamageContext = makeDamageContext(src, this.currentCastId, { isBoss: !!e.boss, summonKind });
     let { dmg, crit } = rollDamage(base, this.rs.stats, this.rs.rng);
     if (this.rs.hasItem('shatter')) dmg *= shatterMul((e.slowPct ?? 0) > 0);
     // 余烬刻印：对已处于灼烧的目标再受火伤 +25%
@@ -1300,7 +1329,9 @@ export class Battle extends Component {
       const kb = this.rs.stats.knockback ?? 26;                  // ★ 击退强度 = 属性
       e.kx += Math.cos(a) * kb; e.ky += Math.sin(a) * kb;
     }
-    if (e.hp <= 0) this.killEnemy(e, rt);
+    // ⚠️ 必须把来源一并传下去：否则 summon 击杀会被当成 normal，
+    //    harvest / killblast / 击杀回血属性都会错误生效（阶段3 审查 P0-2）。
+    if (e.hp <= 0) this.killEnemy(e, rt, ctx.source, ctx.summonKind);
   }
 
   /**
@@ -1308,23 +1339,26 @@ export class Battle extends Component {
    * ⚠️ KI-001 教训：死亡后**先累加 deathT**，再跳过其它逻辑，否则实体永远回收不掉。
    *    见 docs/known-issues.md
    */
-  private killEnemy(e: Enemy, rt?: SkillRuntime, src: DamageSource = 'normal') {
+  private killEnemy(e: Enemy, rt?: SkillRuntime, src: DamageSource = 'normal', summonKind?: SummonKind) {
     if (e.dead) return;
     e.dead = true; e.deathT = 0;
     // ★ 死亡动画：单位素材每套都有 death 帧（UNIT_FRAMES），以前从来没人播（M30 #2）
     e.anim.playOnce('death');
-    this.rs.addKill(e.exp, e.gold);
-    // ★ 击杀回血属性
+    this.rs.addKill(e.exp, e.gold);            // 击杀数 / 金币：召唤物击杀也计入（设计 §9）
+    // 击杀来源上下文：harvest / killblast / 击杀回血属性都以它为准
+    const killCtx = makeDamageContext(src, this.currentCastId, { isBoss: !!e.boss, summonKind });
+    // ★ 击杀回血属性：和 harvest 同一条规则 —— 召唤物击杀不算玩家击杀，不回血
     const kh = this.rs.stats.killHeal ?? 0;
-    if (kh > 0) {
+    if (kh > 0 && killCtx.canHarvest) {
       const before = this.rs.stats.hp;
       this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + kh);
       const healed = this.rs.stats.hp - before;
       if (healed >= 0.5) this.healFeedback(healed);
     }
-    // M1 溢出爆裂：只由 normal/split 击杀触发，爆炸自身来源为 module（不连锁）
+    // M1 溢出爆裂：只由玩家可直接造成的伤害（可触发模块的来源）击杀触发；
+    //   module（爆炸自身）与 summon（召唤物）都不触发，避免连锁与"借召唤物白嫖"。
     const kb = this.modStacks('killblast');
-    if (kb > 0 && src !== 'module') {
+    if (kb > 0 && killCtx.canTriggerModules) {
       const radius = killblastRadius(kb);
       const dmg = killblastDamage(kb);
       const cand: { e: Enemy; d: number }[] = [];
@@ -1348,8 +1382,23 @@ export class Battle extends Component {
     this.addVfx(FX.killSpark, e.x, e.y, 0.42, big ? 1.8 : 1.1);
     this.addVfx(FX.killDust, e.x, e.y + 4, 0.55, big ? 2.2 : 1.2);
     if (big) this.addVfx(FX.killRing, e.x, e.y, 0.55, e.boss ? 3.2 : 2.2);
-    // 割韭菜：基础 1 点/份（Ⅱ = 1.6 点）
-    if (rt && rt.harvest) this.healPlayer(rt.harvest);   // 每击杀 1 点，和吸血共享 8HP/s 预算
+    // 割韭菜：基础 1 点/份（Ⅱ = 1.6 点）；召唤物击杀**不触发**（设计 §9）
+    if (rt && rt.harvest && killCtx.canHarvest) this.healPlayer(rt.harvest);   // 和吸血共享每秒回血预算
+    // 裂变词缀：精英死亡分裂出 2 只小怪（小怪不再带词缀，不递归）
+    if (!e.boss && !e.fromSplit && affixSplits(e.affixes ?? [])) {
+      for (let i = 0; i < AFFIX_SPLIT_COUNT; i++) {
+        const ang = (Math.PI * 2 * i) / AFFIX_SPLIT_COUNT + this.rs.rng.range(-0.4, 0.4);
+        this.spawnEnemy(e.kind, e.x + Math.cos(ang) * 16, e.y + Math.sin(ang) * 16, 1, undefined, true);
+        const child = this.enemies[this.enemies.length - 1];
+        if (child) {
+          child.fromSplit = true;
+          child.affixes = [];
+          child.maxhp = Math.max(1, Math.round(child.maxhp * AFFIX_SPLIT_HP_MUL));
+          child.hp = child.maxhp;
+          child.spd = Math.round(child.spd * AFFIX_SPLIT_SPEED_MUL);
+        }
+      }
+    }
     // ★ M41：经验球换成**素材动画**（Sunny Land 宝石，CC0，5 帧循环），按经验值分档大小：
     //   普通 1×、精英 1.12×、BOSS/大额 1.35×。不再用程序化绘制的菱形。
     const gemFrames = Assets.vfxFrames('pickup/gem');
@@ -1555,7 +1604,22 @@ export class Battle extends Component {
       const tgt = this.nearestEnemy(sn.x, sn.y, 160);
       if (!tgt) continue;
       sn.cd = 0.9;
-      this.hitEnemy(tgt, sn.dmg, sn.rt, undefined, true, 'summon');
+      const ang = Math.atan2(tgt.y - sn.y, tgt.x - sn.x);
+      // 哨兵弹体（设计 §3）：multi/fan 决定发数，split/bounce/pierce/chain 由弹体结算；
+      // 来源固定 summon + sentry —— 只有哨兵享受 vamp 例外，且不触发玩家 onhit 模块。
+      const plan = sentryShotPlan(sn.rt.count, sn.rt.fan);
+      const spread = plan.shots > 1 ? 0.30 : 0;
+      for (let k = 0; k < plan.shots; k++) {
+        const a = ang + (k - (plan.shots - 1) / 2) * spread;
+        this.spawnBullet(sn.x, sn.y, Math.cos(a) * plan.speed, Math.sin(a) * plan.speed,
+          sn.rt, 'projectile/arcane/magic-missile', 'core/spark/hit-spark', false, false, 1.1, 'summon', 'sentry');
+      }
+      for (let k = 0; k < plan.fanShots; k++) {
+        const a = ang + (k - (plan.fanShots - 1) / 2) * SENTRY_FAN_SPREAD;
+        this.spawnBullet(sn.x, sn.y, Math.cos(a) * plan.speed * 0.85, Math.sin(a) * plan.speed * 0.85,
+          { ...sn.rt, dmg: sn.rt.dmg * SENTRY_FAN_DMG_MUL, pierce: 0, bounce: 0, chain: 0, split: 0 },
+          'projectile/arcane/magic-missile', 'core/spark/hit-spark', false, false, 0.9, 'summon', 'sentry');
+      }
     }
     // 蓄能：3s 后结算（目标死亡则溅射；空放返还剩余冷却 50%）
     for (const key of Object.keys(this.charges)) {
@@ -1564,13 +1628,21 @@ export class Battle extends Component {
       c.t += dt;
       if (c.t < 3) continue;
       delete this.charges[slot];
-      const tgt = this.nearestEnemy(this.px, this.py, 200);
-      if (!tgt) { this.skillT[slot] = Math.max(0, (this.skillT[slot] ?? 0) * 0.5); continue; }
-      this.hitEnemy(tgt, c.dmg, c.rt, undefined, true);
-      for (const e of this.enemies) {
-        if (e.dead || e === tgt) continue;
-        if (Math.hypot(e.x - tgt.x, e.y - tgt.y) <= c.r) this.applyRawDamage(e, c.dmg * 0.4);
-      }
+      this.resolveCharge(slot, c);
+    }
+  }
+
+  /**
+   * 蓄能脉冲结算（主动施放与 echo 重放共用）。
+   * 空放（没有目标）返还剩余冷却 50%。
+   */
+  private resolveCharge(slot: number, c: { dmg: number; r: number; rt: SkillRuntime }): void {
+    const tgt = this.nearestEnemy(this.px, this.py, 200);
+    if (!tgt) { this.skillT[slot] = Math.max(0, (this.skillT[slot] ?? 0) * 0.5); return; }
+    this.hitEnemy(tgt, c.dmg, c.rt, undefined, true);
+    for (const e of this.enemies) {
+      if (e.dead || e === tgt) continue;
+      if (Math.hypot(e.x - tgt.x, e.y - tgt.y) <= c.r) this.applyRawDamage(e, c.dmg * 0.4);
     }
   }
 
@@ -1580,6 +1652,14 @@ export class Battle extends Component {
     for (const e of this.enemies) {
       if (e.dead) continue;
       if (Math.hypot(e.x - tr.x, e.y - tr.y) <= 48) this.hitEnemy(e, tr.dmg, tr.rt, undefined, true);
+    }
+    // split × 地雷阵（S）：引爆后向四周炸出分裂弹（伤害 40%，split:0 不再递归）
+    const n = mineSplitCount(tr.rt.split);
+    for (let k = 0; k < n; k++) {
+      const ang = (Math.PI * 2 * k) / Math.max(1, n) + 0.2;
+      this.spawnBullet(tr.x, tr.y, Math.cos(ang) * 150, Math.sin(ang) * 150,
+        { ...tr.rt, dmg: tr.dmg * MINE_SPLIT_MUL, pierce: 0, bounce: 0, chain: 0, split: 0, burn: 0, echo: 0 },
+        undefined, 'core/spark/hit-spark', false, false, 0.55);
     }
   }
 
@@ -1648,8 +1728,28 @@ export class Battle extends Component {
       const want = Math.max(this.rs.elitesThisWave, guaranteed ? 1 : 0);
       if ((prog > 0.3 || guaranteed) && this.elitesSpawned < want) {
         this.elitesSpawned++;
+        // 难度精英概率（difficulties_data_spec）：min(1, 基础 x eliteChanceMul)。
+        // 普通难度 eliteChanceMul = 1 → 不掷骰子、不消耗随机数（保持旧行为）。
+        const chanceMul = dcfg.eliteChanceMul;
+        const passed = guaranteed || chanceMul >= 1
+          || this.rs.rng.chance(Math.min(1, Math.max(0, chanceMul)));
+        if (!passed) return;
         const p = this.spawnPt();
+        // 精英词缀（困难 25% 护盾 / 噩梦必带 1 / 地狱必带 2 个不重复）
+        const affixes = rollEliteAffixes(dcfg.rules, this.rs.wave, () => this.rs.rng.next());
         this.spawnEnemy('gnollberserker', p.x, p.y, 1 + 0.2 * this.rs.wave);
+        const el = this.enemies[this.enemies.length - 1];
+        if (el && affixes.length) {
+          el.affixes = affixes;
+          el.maxhp = Math.max(1, Math.round(el.maxhp * affixHpMul(affixes)));
+          el.hp = el.maxhp;
+          el.spd = Math.round(el.spd * affixSpeedMul(affixes));
+          // 护盾词缀：蓝色描边，和普通精英的绿色轮廓区分开
+          if (affixes.includes('shield')) {
+            const ol = (el.node as unknown as { _outline?: Sprite })._outline;
+            if (ol) ol.color = new Color(96, 176, 255, 255);
+          }
+        }
         this.shake(SHAKE.elite);
       }
     }

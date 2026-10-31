@@ -26,10 +26,10 @@ import { nextDifficulty, difficultyOf } from './data/Difficulties';
 import type { DifficultyId } from './data/Difficulties';
 import { buildCodex, buildAchievements } from './ui/CodexScreens';
 import { applyFxPrefs } from './game/Prefs';
-import { migrateDifficulty } from './game/Progress';
+import { migrateDifficulty, badgesForRun } from './game/Progress';
 import { setupUpdate, updateState, applyUpdate } from './game/Update';
 import { loadSave, writeSave } from './engine/Save';
-import { telemetryStart, telemetryRunEnd, listRuns, exportLogs, clearLogs, summarize } from './game/Telemetry';
+import { telemetryStart, telemetryRunEnd, telemetryShopEnter, telemetryShopBuy, telemetryShopReroll, telemetryShopLeave, listRuns, exportLogs, clearLogs, summarize } from './game/Telemetry';
 import { balance, balanceOverride, balanceReset, exportBalance, importBalance } from './core/Balance';
 import { applyUnlocks } from './game/Achievements';
 import { buildLevelUp, buildShop, buildBuildDrawer, buildConfirm, type CardData, type ShopSlotView } from './ui/Modals';
@@ -300,7 +300,7 @@ export class GameRoot extends Component {
     this.markSeen('char:' + this.charId);
     const cdef0 = CHARS.find(c => c.id === this.charId);
     if (cdef0) this.markSeen('skill:' + cdef0.start);
-    telemetryStart(this.charId, this.seed);       // 战斗日志：本局开始
+    telemetryStart(this.charId, this.seed, this.battle.difficultyId);   // 战斗日志：本局开始
     await this.battle.startRun(this.charId, this.seed);
     console.log('[GameRoot] startRun 耗时 ' + Math.round(performance.now() - t0) + 'ms');
     this.battle.paused = false;
@@ -712,6 +712,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
     }
     this.phase = 'shop';
     this.battle.rs.refreshShop(true);
+    telemetryShopEnter(this.battle.rs.wave, this.battle.rs.gold);   // 经济遥测：进店
     this.renderShop();
   }
 
@@ -764,9 +765,17 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
     this.curModal = buildShop(this.uiRoot, rs.wave, rs.gold, slots,
       // 用户指令（2026-10-17 重构）：商店买模块**不再立刻弹安装**。
       //   买一个就装一个节奏太碎。改成：买完只进背包，点「下一波」时**统一装一次**。
-      (i) => { rs.buySlot(i); this.renderShop(); },
+      (i) => {
+        // 经济遥测：先记下原价/售价，再真正购买（失败不记）
+        const slot = rs.shopStock?.[i];
+        const info = slot
+          ? { id: slot.id, kind: slot.kind, price: slot.price, basePrice: slot.basePrice ?? slot.price }
+          : null;
+        if (rs.buySlot(i).ok && info) telemetryShopBuy(info.id, info.kind, info.price, info.basePrice);
+        this.renderShop();
+      },
       (i) => { rs.toggleLock(i); this.renderShop(); },
-      () => { rs.rerollShop(); this.renderShop(); },
+      () => { if (rs.rerollShop()) telemetryShopReroll(); this.renderShop(); },
       rs.rerollCost(),
       () => this.nextWave(),
       nextTip, nextLabel,
@@ -818,6 +827,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
 
   private nextWave() {
     const rs = this.battle.rs;
+    telemetryShopLeave(rs.gold);            // 经济遥测：离店（不管后面进不进安装界面）
     // 用户指令：进下一关前**统一打开一次安装界面**，让玩家把背包里的模块装一装
     if (rs.modsBag.length > 0) {
       this.installReturn = 'nextwave';
@@ -879,6 +889,12 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         this.save.wins++;
         if (!this.save.charsWin.includes(rsP.charId)) this.save.charsWin.push(rsP.charId);
       }
+      // 无尽徽章（30/40/50 波，每档每里程碑只记一次）：按本局达到的最高波次补发
+      const badgeBefore = this.save.endlessBadges.length;
+      this.save.endlessBadges = badgesForRun(this.save.endlessBadges, rsP.difficulty, rsP.wave);
+      if (this.save.endlessBadges.length > badgeBefore) {
+        console.log('[Badge] 新徽章：' + this.save.endlessBadges.slice(badgeBefore).join(','));
+      }
       const unlocked = applyUnlocks(this.save);
       writeSave(this.save);
       if (unlocked) console.log('[Ach] 解锁新成就：' + this.save.ach.join(','));
@@ -919,6 +935,11 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
           gold: rs.gold, seed: this.seed, waveTotal: RUN.waves, endless: rs.endless,
           maxAlive: this.battle.maxAlive,
           difficultyName: difficultyOf(this.battle.rs.difficulty).name,
+          badges: (() => {
+            const mine = this.save.endlessBadges.filter(b => b.startsWith(rs.difficulty + ':'));
+            if (!mine.length) return undefined;
+            return '无尽徽章 ' + mine.map(b => b.split(':')[1]).join('/') + ' 波';
+          })(),
           skills: rs.skills.map(s => {
             const def = SKILLS[s.id];
             return { name: def ? def.name : s.id, icon: def ? def.icon : undefined, mods: s.mods.length };
@@ -939,7 +960,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       // 真机调试：一键复制本局日志（放在标题牌左侧，构建失败不阻断结算）
       const vs2 = view.getVisibleSize();
       // 构建标记：用来确认玩家跑的是哪个包
-      text(this.cur, vs2.width / 2 - 76, vs2.height / 2 - 16, 'v2 12:14 真机',
+      text(this.cur, vs2.width / 2 - 76, vs2.height / 2 - 16, '阶段3 收尾版',
         { size: 8, color: new Color(150, 160, 180, 255), width: 140, align: 'right', outline: false });
       const chip = panel(this.cur, 58 - vs2.width / 2, vs2.height / 2 - (safeTop() + 56), 88, 26, { art: 'btn' });
       text(chip, 0, 0, '导出日志', { size: 10, color: new Color(240, 236, 226, 255), width: 84, bold: true, outline: true });

@@ -1,0 +1,15 @@
+{
+  "//": "全量类型检查（含 cc 依赖的 Battle / GameRoot / ui）：临时用于改战斗代码后自检。",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "types": [],
+    "lib": ["ES2020", "DOM"]
+  },
+  "include": ["temp/declarations/cc.d.ts", "temp/declarations/cc.env.d.ts", "assets/scripts/**/*.ts"]
+}

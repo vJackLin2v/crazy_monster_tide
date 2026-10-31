@@ -1,15 +1,16 @@
-# 难度系统设计 v3（difficulty_system_design）
+# 难度系统设计 v4（difficulty_system_design）
 
-> 依据 v2 审核意见修订：普通 = 唯一基准、回血统一公式、商店价格公式、刷怪口径、召唤状态机、精英生成、存档迁移、无尽徽章防重复。
+> v4（2026-10-31）：**只剩一套 BOSS 召唤状态机**（旧 Boolean 版已删除）；
+> 精英词缀落到真实数值；存档字段与迁移与 `game/Progress.ts` 一致；无尽徽章规则补齐。
 
-## 1. 五档参数（初版测试值，可调）
+## 1. 五档参数
 
 | 参数 | 休闲 | 普通 | 困难 | 噩梦 | 地狱 |
 |---|---:|---:|---:|---:|---:|
 | 怪物 HP | 0.80 | 1.00 | 1.25 | 1.45 | 1.90 |
 | 怪物伤害 | 0.80 | 1.00 | 1.15 | 1.35 | 1.55 |
 | 刷怪间隔倍率 spawnMul | 1.15 | 1.00 | 0.92 | 0.85 | 0.78 |
-| 精英概率 | 0.8 | 1.0 | 1.2 | 1.5 | 1.8 |
+| 精英概率倍率 | 0.8 | 1.0 | 1.2 | 1.5 | 1.8 |
 | BOSS HP / 伤害 | 0.9 / 0.9 | 1 / 1 | 1.2 / 1.1 | 1.45 / 1.25 | 1.7 / 1.4 |
 | 初始生命 | 1.10 | 1.00 | 1.00 | 0.95 | 0.90 |
 | 金币 | 1.20 | 1.00 | 0.92 | 0.85 | 0.78 |
@@ -19,91 +20,108 @@
 | 回血倍率 healMul | 1.20 | 1.00 | 0.90 | 0.80 | 0.70 |
 | 回血预算 HP/s | 8 | **null（不启用）** | 8 | 6 | 5 |
 
-普通难度 = 当前版本的完整复刻：实现上把普通设为基准配置（不覆盖任何字段），其他难度只写与普通不同的字段。
+普通难度 = 当前版本的完整复刻：普通是唯一基准配置（不覆盖任何字段），其他难度只写差异。
 
-## 2. 统一公式（开发必须按此实现）
+## 2. 统一公式
 
-### 刷怪（方案 A：倍率乘间隔）
+### 刷怪
 
-    实际刷怪间隔 = 基础间隔 x spawnMul
+    实际刷怪间隔 = 基础间隔 × spawnMul          // >1 更慢
+    普通：spawnInterval(base, 'normal') === base  // 原样返回，不乘 1.0
 
-即：休闲 0.62 x 1.15 更慢；地狱 0.62 x 0.78 更快。倍率 > 1 = 更慢。
+### 回血（统一入口 `Battle.healPlayer`）
 
-### 回血（先算基础，再查预算，不重复削弱）
+    基础回血 = 原始回血量 × healMul × 条件倍率（休闲低血 ×1.2）
+    实际回血 = min(基础回血, 剩余每秒预算)
+    预算每秒清零一次；普通难度 healBudgetPerSecond = null → **不进入预算系统**
 
-    基础回血 = 原始回血量 x healMul x 条件倍率（休闲低血额外 x1.2）
-    实际回血 = min(基础回血, 剩余回血预算)
-    预算每秒清零一次；**普通难度 healBudgetPerSecond = null，表示不启用该限制，保持原版本行为**
+所有回血来源（vamp / harvest / 击杀回血属性 / 商品）都必须经过 `healPlayer`：
+- 哨兵 vamp 不建立独立通道；
+- 多只哨兵共享同一个每秒预算；
+- 同一次攻击只结算一次回血（hitEnemy 内单点结算）。
 
 ### 商店价格
 
-    价格 = 基础价格 x shopPrice x (1 + 递增系数 x (wave - 1))
-    递增系数：仅地狱 0.02（每波 +2%），其余 0；**封顶作用于"每波递增部分"，最多 +35%**
-最终最高价 = 1.35（地狱基础价）x 1.35（增量封顶）= **1.8225 倍基础价（暂定值，非最终验收）**
+    价格 = 基础价格 × shopPriceMul × (1 + 每波递增 × (wave - 1))
+    每波递增：仅地狱 0.02；封顶作用于递增部分（最多 +35%）
 
-已购买、已锁定的商品不受后续涨价影响（价格在生成时锁定）。
+最终最高价 = 1.35 × 1.35 = **1.8225 倍基础价（暂定值，非最终验收）**。
+已购买/已锁定的商品价格在生成时锁定，不受后续涨价影响。
 
 ### 噩梦锁定费用
 
-每次点击锁定扣 2 金币（不是每波一次）。金币不足时不能锁定。
+每次点击锁定扣 2 金币（不是每波一次）；金币不足时不能锁定。
 
 ## 3. 各档特色规则
 
 ### 休闲
 - 第 1~3 波不生成精英；
-- 玩家生命 < 30% 时回血再 x1.2（与 healMul 连乘，见公式）；
-- 商店生成时必带 1 件 category = offense 的道具（按分类判断，不按名字）。
+- 玩家生命 < 30% 时回血再 ×1.2（与 healMul 连乘）；
+- 商店生成时必带 1 件 category = offense 的道具。
 
 ### 普通
-- 不增加任何额外规则（精英词缀、刷新上限、锁定费用、回血预算全部沿用现有版本）。
+- 不增加任何额外规则：精英概率不掷骰、词缀为空、刷新无限、无锁定费用、回血无预算。
 
 ### 困难
-- 第 12 波起，精英有 25% 概率带 1 个词缀（护盾：额外 20% 生命）；
+- 第 12 波起，精英有 25% 概率带 1 个词缀（护盾：最大生命 +20%）；
 - 商店不生成治疗类道具；
-- 每波刷新次数上限 3（普通无限）。
+- 每波刷新次数上限 3。
 
 ### 噩梦
-- 第 8 波起精英必带 1 个词缀（护盾/加速/分裂 中随机，不重复）；
-- BOSS 召唤状态机（见 §4）；
-- 回血预算 6HP/s（金币已在参数表 x0.85，不再额外写 -15%）；
+- 第 8 波起精英必带 1 个词缀（护盾/加速/分裂，不重复）；
+- BOSS 召唤状态机（§4）；
+- 回血预算 6HP/s；
 - 锁定每次 2 金币。
 
 ### 地狱
-- 第 5/8/11/14/17/20 波保证至少 1 只精英：若该波原有逻辑已生成精英，则不额外补；
-- 精英必带 2 个不同词缀（不能重复同一词缀）；
-- BOSS 生命 < 30% 进入狂怒：伤害 +25%、移速 +15%（一次性，不叠加）；
+- 第 5/8/11/14/17/20 波保证至少 1 只精英（该波本来有则不额外补）；
+- 精英必带 2 个不同词缀；
+- BOSS 生命 < 30% 进入狂怒：伤害 +25%、移速 +15%（一次性）；
 - 商店价格每波 +2%（封顶 +35%）；
-- 初始生命 x0.90、回血预算 5HP/s。
+- 初始生命 ×0.90、回血预算 5HP/s。
 
-## 4. 噩梦 BOSS 召唤状态机
+## 4. 噩梦 BOSS 召唤状态机（唯一版本）
 
-    状态字段：summon70Done, summon35Done, warningActive, warningEndAt, lastSummonAt, pendingSummonWaves
+实现：`cocos/assets/scripts/game/BossSummon.ts`（纯逻辑，不依赖 Cocos）；`Battle.updateBossMechanics` 每帧喂数据。
 
-同一时刻只允许一个预警：
-  若 warningActive 为 true，任何新召唤请求只增加 pendingSummonWaves，不启动第二个预警
+    状态（语义固定）：
+      fired[]                     // 每个血量阈值是否已提交过请求
+      pendingWaves                // 待执行的召唤波次数量（不是怪物数量）
+      warningActive / warningEndAt// 同一时刻最多 1 个预警
+      lastSummonCompletedAt       // 上一次**实际召唤完成**的时刻
+      dead                        // BOSS 死亡后清空一切
 
-    每次 BOSS 血量更新：
-      若 hp% < 70 且 !summon70Done → 标记 summon70Done，请求召唤
-      若 hp% < 35 且 !summon35Done → 标记 summon35Done，请求召唤
+规则：
+1. 每个阈值（<70%、<35%）**最多提交 1 个请求**，每个请求 = 1 个波次；
+2. 同一时刻只允许 1 个预警；新请求只让 `pendingWaves + 1`，不启动第二个预警，**不丢弃**；
+3. 两次**实际召唤完成**至少间隔 12 秒（`lastSummonCompletedAt` 在执行完时更新）；
+4. 执行召唤：`空位 = 6 - 当前存活召唤物`，`数量 = min(3, 空位)`；
+   空位 ≤ 0 → 请求直接完成（`pendingWaves - 1`），**不永久挂起**；
+5. BOSS 死亡：`warningActive = false`、`pendingWaves = 0`，取消所有未执行请求。
 
-    请求召唤：
-      若 now - lastSummonAt < 12s → pendingSummon = true（等待，不丢弃）
-      否则 → 起 1.2s 预警 → 结算召唤
+对应测试：`tests/run.ts` §5p（基础）与 §14（请求不丢 / 12s 间隔 / 空位 0 / 死亡取消）。
 
-    每帧检查 pending：
-      若 pendingSummonWaves > 0 且 !warningActive 且 now - lastSummonAt >= 12 → 起预警
+## 5. 精英生成与词缀（v4 补齐）
 
-    结算召唤：
-      存活召唤物 = 当前场上召唤物数量
-      可召唤数 = min(3, 6 - 存活召唤物)
-      召唤 可召唤数 只（生命 = 普通怪 x0.7，伤害 = 普通怪 x0.8）
-      lastSummonAt = now（**以实际召唤完成为准**，不是预警开始时刻），pendingSummonWaves -= 1
+    概率 = min(1, eliteChanceMul)      // 只有非普通难度才掷骰
 
-    BOSS 死亡 → warningActive = false、pendingSummonWaves = 0（取消所有未执行召唤）
+优先级（自上而下，先命中先返回）：
+1. 该波被规则禁止生成精英（休闲第 1~3 波）→ 不生成；
+2. 概率判定（普通难度 eliteChanceMul = 1 → **跳过判定，不消耗随机数**）；
+3. 地狱指定波次 → 至少 1 只；若步骤 2 已生成则不补；
+4. 词缀：困难 25% 概率 1 个；噩梦必带 1 个；地狱必带 2 个且不重复。
 
-每个阈值只触发一次；两次召唤间隔 >= 12s；同时 <= 6 只。
+词缀真实效果（`game/EliteAffix.ts`）：
 
-## 5. 解锁与存档迁移
+| 词缀 | 效果 | 参数 |
+|---|---|---|
+| shield 护盾 | 最大生命 +20%（当前生命同步满血） | `AFFIX_SHIELD_HP_MUL = 1.2` |
+| swift 加速 | 移动速度 +25% | `AFFIX_SWIFT_SPEED_MUL = 1.25` |
+| split 分裂 | 死亡时分裂出 2 只同类小怪（生命 35%、速度 90%，**不再带词缀**） | `AFFIX_SPLIT_*` |
+
+测试：`tests/run.ts` §9。
+
+## 6. 解锁与存档迁移
 
 | 难度 | 解锁 |
 |---|---|
@@ -114,28 +132,31 @@
 
 迁移（只在字段缺失时执行，不覆盖已有值）：
 
-    if (progress.difficulties == null) {
-      const d = ["casual", "normal"];
-      if (progress.wins >= 1) d.push("hard");
-      progress.difficulties = d;
+    if (save.difficulties == null) {
+      const d = ['casual', 'normal'];
+      if (save.wins >= 1) d.push('hard');
+      save.difficulties = d;
     }
-    if (progress.selectedDifficulty == null) progress.selectedDifficulty = "normal";
+    if (save.selectedDifficulty == null) save.selectedDifficulty = 'normal';
 
-区分两个字段：Progress.difficulties = 永久解锁列表；RunState.difficulty = 本局难度（不写回永久进度）。
+测试：`tests/run.ts` §5p（迁移纯函数）与 §10（完整存档读取路径）。
 
-## 6. 无尽模式
+## 7. 无尽模式与徽章
 
 - 进入无尽保留本局难度，不可切换；
-- 里程碑 30 / 40 / 50 波：每个难度每个里程碑只记录一次，只记录达到过的最高波次；
-- 不计入 20 波通关次数；
-- 不给任何局内数值奖励。
+- 里程碑 **30 / 40 / 50** 波：每档每里程碑只记录一次，存 `endlessBadges: '<难度>:<波次>'[]`；
+- 只按**本局达到过的最高波次**发放：退出/异常中断只会发已到达的档位；
+- 不计入 20 波通关次数，不给局内数值奖励；
+- 结算页在"通关难度"后显示「无尽徽章 30/40/50 波」。
 
+测试：`tests/run.ts` §10（29/30/42/50、幂等、按难度隔离）。
 
-## 7. 存档字段最终约定（v5，唯一写法）
+## 8. 存档字段最终约定
 
     interface Progress {
       selectedDifficulty: DifficultyId;
       difficulties: DifficultyId[];
+      // 其他进度字段：seen / charsWin / ach / endlessBadges / 画面偏好 / 累计统计
     }
 
     interface RunState {
@@ -143,59 +164,14 @@
     }
 
 规则：
+1. 难度选择页只写 `Progress.selectedDifficulty`；解锁状态只写 `Progress.difficulties`；
+2. 开始新局时 `RunState.difficulty = Progress.selectedDifficulty`；
+3. 战斗 / 商店 / 结算 / 无尽只读 `RunState.difficulty`；
+4. 读取路径统一走 `parseSave`（逐字段校验 + 迁移），不允许"写进去读不回来"。
 
-1. 难度选择页只写 Progress.selectedDifficulty；解锁状态只写 Progress.difficulties；
-2. 开始新局时 runState.difficulty = progress.selectedDifficulty；
-3. 战斗 / 商店 / 结算 / 无尽只读 RunState.difficulty，且不可修改；
-4. 除上述三个字段外，任何其他存档字段写法都已删除，不得再使用。
+## 9. 地狱商店价格：暂定，待真机经济数据
 
-
-## 8. BOSS 召唤状态机（v5 定稿）
-
-字段：
-
-    summon70Done: boolean
-    summon35Done: boolean
-    warningActive: boolean
-    warningEndAt: number
-    lastSummonCompletedAt: number
-    pendingSummonWaves: number   // 待执行的**召唤波次**数量，不是怪物数量
-
-规则：
-
-1. 每个血量阈值（<70%、<35%）**最多提交 1 个召唤请求**，每个请求 = 1 个波次；
-2. 同一时刻只允许 1 个预警（warningActive）；有新请求时只让 pendingSummonWaves +1，不启动第二个预警；
-3. 两次**实际召唤完成时刻**至少间隔 12 秒（lastSummonCompletedAt 在召唤执行完时更新，不是预警开始时）；
-4. 执行召唤时：
-      空位 = 6 - 当前存活召唤物数量
-      本次召唤数量 = min(3, 空位)
-     若空位 <= 0 → 该请求直接完成（pendingSummonWaves -1），**不永久挂起**；
-5. BOSS 死亡：warningActive = false、pendingSummonWaves = 0（取消所有未执行请求）。
-
-
-## 9. 普通难度 = 不介入原版本（v5 定稿）
-
-普通难度**不是**"把所有倍率重新乘一遍 1.0"，而是**完全不介入**现有逻辑：
-
-| 系统 | 普通难度行为 |
-|---|---|
-| 刷怪间隔 | 不重新计算，直接用原版本公式 |
-| 怪物成长 | 不重复乘 1.0 |
-| 商店价格 / 刷新 | 不应用任何倍率 |
-| 回血 | 不进入新增预算系统（healBudgetPerSecond = null） |
-| 精英生成 | 不增加额外随机判定 |
-| 奖励池 / 掉落 | 不改变权重 |
-
-实现建议（概念示意，实际用配置合并而不是到处散落 if）：
-
-    const diff = runState.difficulty;
-    if (diff !== "normal") applyDifficultyOverrides(diff);
-
-即：普通走原分支，非普通才叠加覆盖项。
-
-
-## 10. 地狱商店价格：暂定，待真机经济数据（v6）
-
-1. 1.35 与 +35% 只作为**配置项**（shopPriceMul / shopPricePerWave），**不允许写死在商店逻辑里**；
-2. 真机测试必须记录：每波进店金币、商品购买率、离店剩余金币、后期恶化情况、不同角色的购买力；
-3. 在拿到数据前，该数值状态为"暂定"，**不得标记为最终验收通过**。
+1. 1.35 与 +35% 只是**配置项**（`shopPriceMul` / `shopPricePerWave`），不在商店逻辑里写死；
+2. 遥测已记录：波次 / 进店金币 / 商品原价 / 成交价 / 购买数 / 刷新次数 / 离店金币 / 难度；
+   导出方式：结算时 `console.log('[TELEMETRY]' + exportLogs())`，或设置页「导出战斗日志」；
+3. 拿到真机数据前，该数值状态为"暂定"，**不得标记为最终验收通过**。

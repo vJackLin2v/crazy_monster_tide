@@ -21,6 +21,8 @@ export interface ShopSlot {
   kind: 'item' | 'module' | 'heal' | 'attr';
   id: string;
   price: number;
+  /** 难度倍率叠加之前的原价（经济遥测用；heal/attr 没有） */
+  basePrice?: number;
   sold: boolean;
   locked: boolean;
 }
@@ -50,8 +52,31 @@ export class RunState {
   shopReroll = 0;
   shopStock: ShopSlot[] | null = null;
   carryOver: ShopSlot[] = [];
+  /**
+   * 本局是否已经拿到过传说道具（设计 D：每局最多 1 件）。
+   * ⚠️ 商店与升级奖励**共享这一份计数**，不允许各维护一套。
+   */
+  legendaryTaken = false;
 
   hasItem(id: string): boolean { return this.items.some(i => i.id === id); }
+
+  /** 传说道具（tier 3） */
+  isLegendary(id: string): boolean { return (ITEMS[id]?.tier ?? 1) >= 3; }
+
+  /** 本局还能不能再拿传说道具 */
+  get legendaryAvailable(): boolean { return !this.legendaryTaken; }
+
+  /** 获得道具后更新共享计数 */
+  private noteItemTaken(id: string): void {
+    if (this.isLegendary(id)) this.legendaryTaken = true;
+  }
+
+  /** 候选池是否允许这件道具（已拥有 / 传说已拿过 都要排除） */
+  private itemAllowedInPool(id: string): boolean {
+    if (this.items.some(i => i.id === id)) return false;
+    if (this.legendaryTaken && this.isLegendary(id)) return false;
+    return true;
+  }
 
   /** 本局难度（开局从存档复制，局内不可改） */
   difficulty: DifficultyId = 'normal';
@@ -171,7 +196,8 @@ export class RunState {
         if (!pool.length) continue;
         r = { kind: 'module', id: this.rng.pick(pool) };
       } else if (kind === 'item') {
-        const pool = Object.keys(ITEMS).filter(k => !this.items.some(i => i.id === k));
+        // 传说道具：商店与升级池共享"本局已拿过"计数（设计 D）
+        const pool = Object.keys(ITEMS).filter(k => this.itemAllowedInPool(k));
         if (!pool.length) continue;
         r = { kind: 'item', id: this.rng.pick(pool) };
       } else {
@@ -260,6 +286,7 @@ export class RunState {
     } else if (r.kind === 'item') {
       ITEMS[r.id].apply(this.stats);
       this.items.push({ id: r.id });
+      this.noteItemTaken(r.id);
       if (this.stats.hp > this.stats.maxhp) this.stats.hp = this.stats.maxhp;
     } else if (r.kind === 'attr') {
       const a = ATTRS[r.id];
@@ -408,22 +435,30 @@ export class RunState {
 
   private makeShopItem(used: string[], idx: number): ShopSlot {
     const rng = new Rng((this.seed ^ (this.wave * 7919) ^ (this.shopReroll * 104729) ^ (used.length * 2654435761)) >>> 0);
-    const itemPool = Object.keys(ITEMS).filter(k => !this.items.some(i => i.id === k) && !used.includes(k));
+    const itemPool = Object.keys(ITEMS).filter(k => this.itemAllowedInPool(k) && !used.includes(k));
     const modPool = Object.keys(MODULES).filter(m => this.totalMods(m) < MODULES[m].max && !used.includes(m));
     const P = balance().shop;
-      const itemPrice = () => Math.round(shopPrice(P.itemBase + rng.int(0, P.itemRand) + this.wave * P.itemPerWave, this.difficulty, this.wave));
-      const modPrice = () => Math.round(shopPrice(P.modBase + rng.int(0, P.modRand) + this.wave * P.modPerWave, this.difficulty, this.wave));
+    // basePrice = 难度倍率之前的原价（只用于遥测，不参与结算）
+    let rawItem = 0, rawMod = 0;
+    const itemPrice = () => {
+      rawItem = P.itemBase + rng.int(0, P.itemRand) + this.wave * P.itemPerWave;
+      return Math.round(shopPrice(rawItem, this.difficulty, this.wave));
+    };
+    const modPrice = () => {
+      rawMod = P.modBase + rng.int(0, P.modRand) + this.wave * P.modPerWave;
+      return Math.round(shopPrice(rawMod, this.difficulty, this.wave));
+    };
     if (rng.next() < 0.5 && itemPool.length) {
       const id = rng.pick(itemPool);
-      return { kind: 'item', id, price: itemPrice(), sold: false, locked: false };
+      return { kind: 'item', id, price: itemPrice(), basePrice: Math.round(rawItem), sold: false, locked: false };
     }
     if (modPool.length) {
       const id = rng.pick(modPool);
-      return { kind: 'module', id, price: modPrice(), sold: false, locked: false };
+      return { kind: 'module', id, price: modPrice(), basePrice: Math.round(rawMod), sold: false, locked: false };
     }
     if (itemPool.length) {
       const id = rng.pick(itemPool);
-      return { kind: 'item', id, price: itemPrice(), sold: false, locked: false };
+      return { kind: 'item', id, price: itemPrice(), basePrice: Math.round(rawItem), sold: false, locked: false };
     }
     return idx % 2 === 0
       ? { kind: 'heal', id: 'heal', price: P.healBase + this.wave * P.healPerWave, sold: false, locked: false }
@@ -460,7 +495,11 @@ export class RunState {
     this.gold -= s.price;
     s.sold = true;
     s.locked = false;
-    if (s.kind === 'item') { ITEMS[s.id].apply(this.stats); this.items.push({ id: s.id }); }
+    if (s.kind === 'item') {
+      ITEMS[s.id].apply(this.stats);
+      this.items.push({ id: s.id });
+      this.noteItemTaken(s.id);          // 商店与升级池共享传说计数
+    }
     else if (s.kind === 'module') this.modsBag.push(s.id);
     else if (s.kind === 'heal') this.stats.hp = Math.min(this.stats.maxhp, this.stats.hp + 40);
     else {

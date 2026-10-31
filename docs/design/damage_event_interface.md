@@ -1,115 +1,115 @@
-# 伤害事件系统接口设计（damage_event_interface）
+# 伤害事件系统接口设计（damage_event_interface · v7 定稿）
 
-> 开发前必须先落这个接口，否则六个模块的触发规则会散落在 Battle.ts 各处，无法保证一致。
+> 唯一实现：`cocos/assets/scripts/game/DamageContext.ts`
+> 唯一入口：`Battle.hitEnemy`（伤害）/ `Battle.killEnemy`（击杀结算）
+> 状态：**已实现**，并由 `tests/run.ts` §5n / §7 覆盖。
 
-## 1. 数据结构
+## 1. 数据结构（v7）
 
 ```ts
-export type DamageSource =
-  | 'normal'   // 技能本体
-  | 'split'    // 分裂衍生弹
-  | 'echo'     // 复读重放
-  | 'chain'    // 连锁跳
-  | 'module'   // 黑科技产生的额外伤害
-  | 'summon';  // 召唤物
+export type DamageSource = 'normal' | 'split' | 'echo' | 'chain' | 'module' | 'summon';
+/** 召唤物种类：只有哨兵享受 vamp 例外 */
+export type SummonKind = 'sentry';
 
 export interface DamageContext {
-  source: DamageSource;
-  /** 是否允许触发黑科技（由来源 + 模块规则共同决定） */
-  canTriggerModules: boolean;
-  /** 原始施法 id：同一次施法产生的所有弹体共享 */
-  castId: string;
-  /** 弹体 id：用于"同一弹体同一次返程只触发一次" */
-  projectileId?: string;
-  /** 目标是否 BOSS：处决等模块据此分支 */
-  isBoss: boolean;
-  /** 返程序号：同一弹体第几次返程，用于 returnstrike 只触发一次 */
-  returnIndex?: number;
+  readonly source: DamageSource;
+  readonly canTriggerModules: boolean;   // 由来源推导
+  readonly canHarvest: boolean;          // 由来源推导（独立）
+  readonly canVamp: boolean;             // 由来源 + summonKind 推导（独立）
+  readonly castId: string;
+  readonly projectileId?: string;
+  readonly returnIndex?: number;
+  readonly isBoss: boolean;
+  readonly summonKind?: SummonKind;
 }
 ```
 
-## 2. 来源 → 是否可触发模块（默认矩阵）
+## 2. 派生权限（唯一计算处：`makeDamageContext`）
 
-| source | 可触发 onhit 模块 | 说明 |
+| 函数 | 规则 | 说明 |
 |---|---|---|
-| normal | 是 | 技能本体 |
-| split | 按模块（默认**是**，但有次数上限） | 分裂弹是"真实命中" |
-| echo | 按模块（默认**是**，但不计入蓄势/连击计数） | 重放能造成伤害，但不能攒计数 |
-| chain | 是（受模块 CD 约束） | 连锁命中算真实命中 |
-| module | **否** | 可扣血/击杀/施加状态，但不触发模块 |
-| summon | **否**（默认） | 召唤物不触发玩家模块 |
+| `canSourceTriggerModules(src)` | `src !== 'module' && src !== 'summon'` | module 不递归；召唤物不触发玩家 onhit |
+| `canSourceHarvest(src)` | `src !== 'summon'` | 召唤物击杀**不触发** harvest（但计入总击杀数） |
+| `canSourceVamp(src, summonKind)` | module → false；summon → `summonKind === 'sentry'`；其余 → true | 哨兵例外是**显式**的，普通召唤物不会误继承 |
 
-## 3. 调用约定
+- 调用方参数类型是 `DamageContextInput`，**不包含**三个 `can*` 字段；
+- 工厂返回 `Object.freeze(...)`，运行期也改不了；
+- 伪造（如 `{ canTriggerModules: true } as never`）会被覆盖，测试 §7 有断言。
 
-- `dealDamage(enemy, amount, ctx)`：所有伤害必须走这个入口，`ctx` 必填；
-- 模块内部产生伤害时，必须构造 `{ source: "module", canTriggerModules: false, ... }`；
-- **不得继承触发者的 ctx**（这是 M1 反复出错的地方：爆炸不能因为由普通击杀触发就继承 normal）；
+## 3. 来源 → 默认矩阵
+
+| source | 触发 onhit 模块 | 击杀回血 harvest | 吸血 vamp |
+|---|---|---|---|
+| normal | 是 | 是 | 是 |
+| split | 是（受模块上限） | 是 | 是 |
+| echo | 是（不计施法次数） | 是 | 是 |
+| chain | 是（受模块 CD） | 是 | 是 |
+| module | **否** | 是（击杀仍算玩家） | **否** |
+| summon | **否** | **否** | **仅哨兵** |
+
+## 4. 击杀链路（v7 修复）
+
+`hitEnemy` 构造 `ctx` 后，击杀必须把来源传下去：
+
+```ts
+if (e.hp <= 0) this.killEnemy(e, rt, ctx.source, ctx.summonKind);
+```
+
+`killEnemy` 内部重新构造 `killCtx`，并用它判定：
+
+| 机制 | 依据 |
+|---|---|
+| 击杀数 / 金币 | 无条件（召唤物击杀也计入） |
+| 击杀回血属性（killHeal） | `killCtx.canHarvest` |
+| 割韭菜 harvest | `killCtx.canHarvest` |
+| M1 溢出爆裂 | `killCtx.canTriggerModules`（module / summon 都不引爆） |
+
+> 2026-10-31 审查发现的 bug：旧实现 `killEnemy(e, rt)` 丢了来源，哨兵击杀被当成普通击杀，
+> harvest 照常回血。已修复，并由 §13 的接口断言 + 代码审查双重确认。
+
+## 5. 调用约定
+
+- `dealDamage` 等价物 = `hitEnemy(e, amount, rt, hitVfx?, noThunder?, src?, summonKind?)`；
+- 模块内部产生伤害时必须新构造 `module` 上下文，**不得继承触发者 ctx**（M1 爆炸用 `applyRawDamage`）；
 - `castId` 在 `fireSkill` 入口生成一次，向下所有弹体/连锁/分裂继承；
-- `projectileId` 在 spawnBullet 时生成，返程序号 `returnIndex` 另存；
-- 蓄势计数只认 `castId` 的新值，同 castId 重复调用不递增。
+- `projectileId` / `returnIndex` 用于返程斩"每次返程一次"；
+- **echo 重放**是独立施法（新 castId），但**不计入** M6 蓄势的施法次数（`Battle.echoReplay` 标记）。
 
-## 4. 单元测试要求（开发时）
+## 6. 统一触发闸门
 
-1. module 伤害击杀敌人 → 不触发 killblast；
-2. 一次施法 5 枚分裂弹 → overcharge 只 +1；
-3. echo 重放 → overcharge 不增加；
-4. 同一弹体返程命中 2 只敌人 → returnstrike 只结算 1 次；
-5. 连锁 3 跳 → shieldonhit 受 1.5s CD 限制，最多 1 次；
-6. 区域伤害（lingering）击杀敌人 → 不触发 killblast。
+    ModuleUsage.canTrigger(ctx, gate, now):
+      if (!ctx.canTriggerModules) return false
+      if (!gate.allowedSources.includes(ctx.source)) return false
+      if (gate.cooldownSec && now - last < cooldownSec) return false
+      if (gate.maxPerCast && counts[ctx.castId] >= maxPerCast) return false
+      return true
 
-## 5. 统一触发闸门（开发时必须只有一个入口）
+所有模块只声明数据（`allowedSources` / `cooldownSec` / `maxPerCast`），不在 Battle 里各写 if。
 
-    export function canTriggerModule(ctx: DamageContext, mod: ModuleRuntime): boolean {
-      if (!ctx.canTriggerModules) return false;          // module / summon 来源
-      if (!mod.allowedSources.includes(ctx.source)) return false;
-      if (mod.cooldownLeft > 0) return false;            // 模块级 CD（如 shieldonhit 1.5s 全局）
-      if (mod.usedInCast(ctx.castId) >= mod.maxPerCast) return false;  // 单次施法上限
-      return true;
-    }
+## 7. 蓄势（M6）与 echo
 
-每条模块只声明数据（allowedSources / cooldown / maxPerCast），不在 Battle 里各写一套 if。
+- 只统计**主动施法**：`fireSkill` 里 `if (oc > 0 && !this.echoReplay)`；
+- echo 重放不计数、也不重置计数；
+- 修复前 echo 会推进蓄势计数（实测可提前触发），v7 起不会。
 
-## 6. 专注核心（focused）与 echo 的关系（v4 定稿）
+## 8. summon 的结算细则
 
-- 专注核心是**技能伤害乘区**，对原始施法与 echo 重放**同样生效**（都算该技能的伤害）；
-- 但 echo 重放**不计入** overcharge 施法次数、不计入任何"第 N 次施法"类计数；
-- v2 里"重放不吃加成"的旧说法已作废：专注核心按技能伤害乘区，对重放同样生效；但重放不计入施法次数。
+| 机制 | summon |
+|---|---|
+| 伤害 / 击杀 | 正常，计入玩家击杀总数 |
+| Harvest | 否（`canHarvest = false`） |
+| onhit 模块 | 默认否（`canTriggerModules = false`） |
+| Vamp | 只有 `summonKind === 'sentry'` |
+| 击杀统计 / 成就 | 是 |
 
+## 9. 测试映射
 
-## 7. canTriggerModules 的赋值规则（v5 定稿）
+| 规则 | 测试位置 |
+|---|---|
+| 来源 → 权限 | `tests/run.ts` §5n、§7 |
+| 伪造 can* 无效 | §7「调用方伪造 can* 字段无效」 |
+| castId 唯一 / 共享 | §7 最后两条 |
+| 哨兵 vamp / 不回血 | §7「哨兵上下文…」 |
 
-**不允许调用方自由填写**，统一由伤害入口根据来源推导：
-
-    function canSourceTriggerModules(src: DamageSource): boolean {
-      return src !== "module" && src !== "summon";
-    }
-
-    function makeContext(src: DamageSource, castId: string, extra?: Partial<DamageContext>): DamageContext {
-      return { source: src, canTriggerModules: canSourceTriggerModules(src), castId, isBoss: false, ...extra };
-    }
-
-- 调用方只能传 source/castId/projectileId/returnIndex/isBoss，**不能传 canTriggerModules**；
-- 模块再用自己的 allowedSources 过滤（例如 M5 只接受 normal/split）；
-- 特殊豁免（如未来允许某来源触发）必须走**白名单配置**，不得临时传 true。
-
-## 8. M1 目标筛选流程（性能）
-
-    1. 用范围查询取爆炸半径内候选敌人（不做全场排序）
-    2. 候选 <= 60 → 全部处理
-    3. 候选 > 60 → 只在候选中按距离取最近 60 只
-    4. 仅对选中的 60 只执行伤害
-
-禁止"每次爆炸遍历全场敌人再排序"。
-
-
-## 9. summon 来源的结算细则（v6 定稿）
-
-| 机制 | summon 是否触发 | 说明 |
-|---|---|---|
-| 伤害与击杀 | 是 | 正常扣血、正常击杀，计入玩家击杀总数 |
-| Harvest（击杀回血） | **否** | 击杀事件中显式跳过，不允许"换个来源就算玩家击杀" |
-| onhit 类模块 | 否（默认） | canTriggerModules = false |
-| Vamp（吸血） | **是（例外）** | 通过 vamp x 哨兵的兼容规则生效，系数/频率由测试固定 |
-| 击杀统计 / 成就 | 是 | 只统计，不产生回血 |
-
-实现约定：击杀结算函数第一行判断来源；若来源为 summon 且事件为 harvest，直接 return，不做任何回血。
+（Battle 内的击杀链路属于运行时行为，逻辑层单测无法直接覆盖；
+ 交付报告里明确标注"代码审查 + 类型检查 + 构建"三重证据，未以真机验证冒充。）

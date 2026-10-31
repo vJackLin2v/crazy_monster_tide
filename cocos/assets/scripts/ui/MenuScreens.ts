@@ -362,7 +362,9 @@ export function buildResult(parent: Node,
                                      waveTotal?: number; endless?: boolean; maxAlive?: number;
                                      items?: { name: string; icon?: string; count: number }[];
   skills?: { name: string; icon?: string; mods: number }[];
-  difficultyName?: string },
+  difficultyName?: string;
+  /** 无尽徽章文案（如「无尽徽章 30/40 波」） */
+  badges?: string },
                             onMenu: () => void, onRetry: () => void,
                             onContinue?: () => void): Node {
   const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
@@ -383,14 +385,18 @@ export function buildResult(parent: Node,
     { size: 11, color: COL.dim, width: 340 });
   // 本局难度（设计 v6：结算页必须显示）
   if (stats.difficultyName) {
-    text(root, sub.x, sub.y - 20, '通关难度：' + stats.difficultyName,
+    text(root, sub.x, sub.y - 20,
+      '通关难度：' + stats.difficultyName + (stats.badges ? ' · ' + stats.badges : ''),
       { size: 11, color: COL.accent, width: 340, bold: true, outline: true });
   }
 
   // 4 个统计卡（2x2）—— 规格 §9：只展示真实存在的数据
-  const waveLine = stats.win
-    ? (stats.waveTotal ?? 20) + '/' + (stats.waveTotal ?? 20) + ' 波'
-    : '第 ' + Math.min(stats.wave, stats.waveTotal ?? 20) + '/' + (stats.waveTotal ?? 20) + ' 波' + (stats.endless ? '（无尽）' : '');
+  const total = stats.waveTotal ?? 20;
+  // 无尽模式显示真实波次（之前被 min() 夹到 20，42 波也显示 20/20）
+  const waveLine = stats.endless
+    ? '第 ' + stats.wave + ' 波（无尽）'
+    : stats.win ? total + '/' + total + ' 波'
+    : '第 ' + Math.min(stats.wave, total) + '/' + total + ' 波';
   const cards: [string, string][] = [
     ['存活时间', stats.time.toFixed(1) + ' s'],
     ['击杀数', String(stats.kills)],
@@ -403,7 +409,8 @@ export function buildResult(parent: Node,
     const c = at2(12 + CW / 2 + col * (CW + GAP), S + 152 + CH / 2 + row * (CH + GAP));
     const card = panel(root, c.x, c.y, CW, CH, { art: 'panel_soft' });
     text(card, 0, 14, k, { size: 10, color: COL.dim, width: CW - 16 });
-    text(card, 0, -10, v, { size: 22, color: COL.cream, width: CW - 16, bold: true, outline: true });
+    // 长文本（如无尽模式的「第 42 波（无尽）」）降字号，避免撑出卡片
+    text(card, 0, -10, v, { size: v.length > 7 ? 15 : 22, color: COL.cream, width: CW - 16, bold: true, outline: true });
   });
 
   // 本局技能：4 个技能图标 + 每个技能已装黑科技数（x/3）

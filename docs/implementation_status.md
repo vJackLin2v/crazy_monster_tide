@@ -1,52 +1,57 @@
 # 设计 → 实现 对照表（implementation_status）
 
-> 用途：设计文档（docs/design/*）是意图；这里是**代码实际做到哪**。
-> 新会话接手时，判断"某个设计是否已落地"看这张表，不要凭文档假设。
+> 用途：设计文档（`docs/design/*`）是意图；这里是**代码实际做到哪、由哪条测试证明**。
+> 更新：2026-10-31（阶段3 收尾）｜ 基线：`349 PASS / 0 FAIL`，`tsc check + ui-check = 0`，微信包构建成功。
 
-## 一、已实现且与设计一致
+## 一、已实现且与设计一致（有测试）
 
-| 设计决策 | 代码位置 | 说明 |
+| 设计决策 | 代码位置 | 测试 |
 |---|---|---|
-| DamageContext（来源推导 canTriggerModules） | game/DamageContext.ts | module/summon 默认不可触发；canHarvest / canVamp 按 v6 定稿 |
-| 模块统一闸门 | ModuleUsage（同文件）+ hitEnemy | 冷却与"单次施法上限"都在闸门里判 |
-| M1 溢出爆裂 | ModuleValues.killblast* + killEnemy | 取最近 60 只、爆炸来源 module、不连锁 |
-| M2 残影护盾 | ModuleValues.shield* + hitEnemy | 全局 1.5s CD、池上限 9、4s 刷新、受击先扣盾 |
-| M3 处决 | ModuleValues.executePct | 结算前血量判定，BOSS 减半 |
-| M4 返程斩 | returnstrikePct + Bullet.returnHit | 每次返程只结算一次；原返程伤害保留 |
-| M5 焚烧地带 | lingeringChance + spawnArea | 35/45/55%（split 减半）、3 跳、同屏 4 区、快照 |
-| M6 蓄势 | overchargePeriod/Mul + fireSkill | 按技能计数，echo 不计数 |
-| 五档难度 | data/Difficulties.ts | 普通=基准（倍率 1、rules 空、回血预算 null） |
-| BOSS 召唤状态机 | game/BossSummon.ts | 阈值各一次、12s 实际完成间隔、空位 0 请求完成 |
-| 难度页 | ui/DifficultyScreens.ts | 视觉 40 / 热区 44 / rules 自动生成文案 |
-| 通关解锁 | nextDifficulty + unlockNextDifficulty | 写存档 |
-| 四个新技能 | data/Skills.ts + Battle.fireSkill/updateNewSkillTypes | 实体上限：环刃 4 片、地雷 4 枚、哨兵 1 个、蓄能 3s |
-| 新技能兼容白名单 | SkillCalc.NEW_SKILL_ALLOW | 无效模块拒绝安装并给原因 |
-| 十件新道具 | data/Items.ts + game/SpecialItems.ts | 全部接线（含专注核心冷却 -10%） |
-| 滚动列表 | ui/ModalList.ts | 安装屏背包 + 商店已有道具；Node.EventType + 正确位移公式 |
+| DamageContext：三个 can* 由工厂推导并 freeze | `game/DamageContext.ts` | §5n、§7 |
+| 击杀链路传递来源（summon 不回血、不引爆） | `battle/Battle.ts` `hitEnemy` → `killEnemy` | §7（权限断言）+ 代码审查 |
+| 模块统一闸门（来源 / CD / 单次施法上限） | `ModuleUsage` | §5n |
+| M1–M6 数值与来源过滤 | `game/ModuleValues.ts` + Battle | §5o |
+| 蓄势不统计 echo | `Battle.echoReplay` | §7（castId）+ 代码审查 |
+| 四个新技能实体上限 | `data/Skills.ts` + Battle | §5q、§8 |
+| 6 条 S 规则 | `game/SkillRules.ts` + Battle | §8（纯函数） |
+| 矩阵 = 白名单 = 测试 | `SkillCalc.NEW_SKILL_ALLOW` | §15（72 格） |
+| 五档难度与公式 | `data/Difficulties.ts` | §5p、§13 |
+| 普通难度不介入（公式层） | `Difficulties` | §13 |
+| BOSS 召唤状态机（唯一版本） | `game/BossSummon.ts` | §5p、§14 |
+| 精英概率倍率 + 三词缀真实效果 | `game/EliteAffix.ts` + `Battle.updateSpawn` | §9 |
+| 存档读全 + 迁移 | `game/Progress.ts` `parseSave` | §10 |
+| 传说道具共享上限 | `RunState.legendaryTaken` | §11 |
+| 无尽徽章 30/40/50 | `Progress.badgesForRun` + GameRoot | §10 |
+| 商店经济遥测 | `game/Telemetry.ts` + GameRoot | §12 |
+| 10 件新道具 / 特殊道具 | `data/Items.ts`、`game/SpecialItems.ts` | §5r |
 
-## 二、实现与设计有偏差（以代码为准，文档待回写）
+## 二、实现与设计的偏差（已记录，未隐藏）
 
-| 项 | 设计值 | 实现现状 | 备注 |
+| 项 | 设计 | 实现 | 说明 |
 |---|---|---|---|
-| 蓄势触发 | 每 3/2/2 次施法 | 同设计，计数在 fireSkill；技能被替换后计数未清零 | 小概率残留，可接受 |
-| 精英词缀 | 困难 25% / 噩梦必带 / 地狱 2 个不重复 | **未实现词缀效果**，只有精英数量与血量 | 待做 |
-| 地狱 BOSS 狂怒 | 伤害 +25% / 移速 +15% | 已实现（bossEnraged） | — |
-| 合成区滚动 | 可滚动 | 未做（候选通常 <=3 行，当前静态显示） | 待做 |
-| 余烬刻印 | 叠层 +25% | 实现为"目标处于灼烧时 +25%"（简化） | 与意图接近 |
-| 背水 | 攻速 +35% / -8% | 用伤害乘区近似攻速收益 | 口径差异 |
-| 陨石方向 | 垂直下落 | 已转 90 度 + 自转（观感待确认） | — |
-| 乱杀特效 | 与陨石区分 | 已换斩击特效 | 观感待确认 |
+| 矩阵里的 thunder/chain | 原矩阵多处 Y | 改为 N（无弹体技能） | 环刃/地雷/蓄能没有弹体，连锁/落雷无从生效；哨兵有真实弹体，保留 Y |
+| overload × 地雷 | S | Y（普通伤害乘区） | 见 skill_expansion §8.1；不为了 S 而造机制 |
+| 蓄势计数残留 | 替换技能后清零 | 未清零 | 影响极小（同槽位技能换掉后计数沿用），已在此标注 |
+| 余烬刻印 | 叠层 +25% | "目标处于灼烧时 +25%" | 与意图接近的简化 |
+| 背水 | 攻速 +35% | 伤害乘区近似 | 口径差异 |
+| 消息条 / 战斗日志里的 dmgDealt | 记录本波伤害 | Battle 传了但 `telemetryWaveEnd` 签名未收 | **已知小缺口**：不影响其它字段；本轮未改签名以免扩大改动面 |
 
-## 三、设计里写了但代码尚未覆盖
+## 三、尚未实现 / 待人工验证
 
-1. 精英词缀（护盾/加速/分裂）实际效果；
-2. 传说道具"每局 1 件 + 商店与升级池共享计数"（数据有 tier，池权重未接）；
-3. 无尽徽章（30/40/50 波每档每里程碑一次）；
-4. 图鉴的技能分类（环绕/陷阱/召唤/蓄力）。
+| 项 | 状态 | 原因 |
+|---|---|---|
+| 地狱 1.8225 倍经济合理性 | **暂定值** | 需要真机对局数据；已加遥测（波次/进店金币/原价/成交价/购买数/刷新/离店/难度） |
+| 精英词缀的视觉区分度 | 部分（护盾蓝色描边） | 需要真机看是否够显眼 |
+| 普通难度"完全复刻旧版" | **只能证明公式层** | 仓库没有阶段2 的旧行为快照；已如实标注 |
+| 微信真机运行 / 滚动手感 / 特效观感 | 待人工 | 本环境无微信开发者工具与真机 |
+| 结算页无尽徽章文案 | 已接 | 未真机确认排版（宽度 340、11px） |
 
 ## 四、验证基线（写任何结论前先跑）
 
     tsc -p tsconfig.check.json         -> 0
     tsc -p tsconfig.ui-check.json      -> 0
-    tsx tests/run.ts                   -> 264 PASS / 0 FAIL
-    cmd /c "build-wechat.bat -nopause" -> success（3.06MB / 10.89MB）
+    tsx tests/run.ts                   -> 349 PASS / 0 FAIL
+    cmd /c "build-wechat.bat -nopause" -> success（3.07MB / 10.90MB 级别）
+
+> `tsconfig.full-check.json` 是诊断用全量检查（含 Battle/GameRoot/UI），当前有 **14 条历史遗留类型错误**
+> （GameRoot 重复字段、Battle 旧签名等），**不是本轮引入**，未纳入门禁；本轮只把它当"新增错误过滤器"用。

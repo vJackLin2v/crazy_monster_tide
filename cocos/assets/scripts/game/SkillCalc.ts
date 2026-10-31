@@ -1,10 +1,14 @@
 
 /** 四个新技能的黑科技白名单（设计 v6 兼容矩阵落地的第一版） */
 export const NEW_SKILL_ALLOW: Record<string, string[]> = {
-  ring_blade: ['orbit', 'giant', 'rapid', 'burn', 'frost', 'vamp', 'chain', 'thunder', 'harvest', 'thornmail', 'echo'],
-  mine_field: ['giant', 'rapid', 'burn', 'frost', 'vamp', 'chain', 'thunder', 'harvest', 'thornmail', 'split', 'echo', 'overload'],
-  sentry: ['multi', 'fan', 'split', 'bounce', 'pierce', 'giant', 'rapid', 'burn', 'frost', 'chain', 'snipe', 'harvest', 'thunder', 'vamp', 'echo'],
-  charge_pulse: ['giant', 'rapid', 'burn', 'frost', 'vamp', 'chain', 'thunder', 'harvest', 'overload', 'echo'],
+  // 与 skill_expansion_design.md §五 矩阵逐格一致（2026-10-31 对齐）：
+  // 矩阵里是 N 的组合**这里也必须没有**，否则会出现"装得上但没效果"。
+  // 说明：thunder/chain 这类"弹体触发"的模块，对环刃/地雷阵/蓄能脉冲（无弹体）没有效果，
+  // 因此矩阵与白名单都标 N —— 宁可不给装，也不给"装上去看不出来"的假选项。
+  ring_blade: ['orbit', 'giant', 'rapid', 'burn', 'frost', 'vamp', 'harvest', 'thornmail'],
+  mine_field: ['giant', 'rapid', 'burn', 'frost', 'vamp', 'harvest', 'thornmail', 'split', 'echo', 'overload'],
+  sentry: ['multi', 'fan', 'split', 'bounce', 'pierce', 'rapid', 'burn', 'frost', 'chain', 'snipe', 'harvest', 'thunder', 'vamp'],
+  charge_pulse: ['giant', 'burn', 'frost', 'vamp', 'harvest', 'overload', 'echo'],
 };
 
 import { moduleDef, baseOf, modPower, modEffect } from '../data/Modules';

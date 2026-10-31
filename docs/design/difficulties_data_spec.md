@@ -25,7 +25,7 @@
       healBudgetPerSecond: number | null;  // null = 不启用（普通难度）
       rules: DifficultyRule[];
       unlock: { type: "default" } | { type: "win"; difficulty: DifficultyId };
-      rewards: { id: string; name: string; kind: "badge" | "achievement" | "codexFrame" }[];
+      reward: string;            // 展示用奖励文案（徽章/图鉴框），不进存档结构
     }
 
     export type DifficultyRule =
@@ -51,7 +51,7 @@
 
 ## 精英生成：公式与优先级（v4 新增）
 
-    概率 = min(1, 基础精英概率 x eliteChanceMul)
+    概率 = min(1, eliteChanceMul)     // 普通难度 = 1 → 不掷骰子（不消耗随机数）
 
 优先级（自上而下，先命中先返回）：
 
