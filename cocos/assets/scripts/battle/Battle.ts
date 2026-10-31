@@ -41,8 +41,9 @@ import { DamageContext, DamageSource, SummonKind, makeDamageContext, canVamp, ne
 import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, CHARGE_ECHO_MUL, sentryShotPlan, SENTRY_FAN_DMG_MUL, SENTRY_FAN_SPREAD, MINE_SPLIT_MUL } from '../game/SkillRules';
 import { rollEliteAffixes, affixHpMul, affixSpeedMul, affixSplits, AFFIX_SPLIT_COUNT, AFFIX_SPLIT_HP_MUL, AFFIX_SPLIT_SPEED_MUL, type EliteAffix } from '../game/EliteAffix';
 import { killOutcome, vampAllowed } from '../game/CombatRules';
+import { healStep } from '../game/HealRules';
 import { normalizeRestoredStats } from '../game/RunRestore';
-import { killblastDamage, killblastRadius, shieldAmount, SHIELD_CAP, SHIELD_COOLDOWN, SHIELD_DURATION, executePct, returnstrikePct, overchargePeriod, overchargeMul, lingeringChance, LINGER_TICKS, LINGER_TICK_DMG, LINGER_MAX_ZONES } from '../game/ModuleValues';
+import { killblastDamage, killblastRadius, shieldAmount, SHIELD_CAP, SHIELD_COOLDOWN, SHIELD_DURATION, executePct, returnstrikePct, overchargePeriod, overchargeMul, lingeringChance, LINGER_TICKS, LINGER_TICK_DMG, LINGER_MAX_ZONES, VAMP_HEAL_PER_STACK, thornmailBack } from '../game/ModuleValues';
 import { CHARS } from '../data/Chars';
 const { ccclass } = _decorator;
 
@@ -53,8 +54,30 @@ const { ccclass } = _decorator;
  */
 const DEBUG_HUD = false;
 
+// C2：敌人染色常量（避免每帧每敌 new Color）
+const TINT_HIT = new Color(255, 150, 150, 255);
+const TINT_POISON = new Color(165, 230, 165, 255);
+const TINT_BURN = new Color(255, 165, 130, 255);
+const TINT_WHITE = new Color(255, 255, 255, 255);
+
+// C3：对象池上限（超过上限才真正销毁，避免池无限增长）
+const DMG_POOL_MAX = 48;
+const SPARK_POOL_MAX = 64;
+
+/** C4：就地压实，避免每帧 filter 分配新数组 */
+function compact<T>(arr: T[], keep: (x: T) => boolean): void {
+  let w = 0;
+  for (let i = 0; i < arr.length; i++) {
+    const x = arr[i];
+    if (keep(x)) arr[w++] = x;
+  }
+  arr.length = w;
+}
+
 // ---------- 实体 ----------
 interface Enemy {
+  /** 身体 Sprite（C2：spawn 时缓存，避免每帧 getChildByName） */
+  bodySp?: Sprite | null;
   /** 是否为 BOSS 召唤出来的小怪（噩梦难度） */
   summoned?: boolean;
   /** BOSS 是否已进入狂怒（地狱） */
@@ -90,6 +113,8 @@ interface Bullet {
   x: number; y: number; vx: number; vy: number; r: number; dmg: number;
   pierce: number; bounce: number; chain: number; split: number; life: number; t: number;
   hitVfx: string; hit: Set<Enemy>; homing: boolean;
+  /** C5：追踪弹重新索敌节流（秒） */
+  homingT?: number;
   /** 触发效果（M48/M49）：子弹要带上技能的各类附加效果，否则命中时丢失 */
   burn?: number; slow?: number; vamp?: number; thunder?: number;
   splitDone?: boolean;
@@ -115,7 +140,11 @@ interface Area {
   burn?: number;
 }
 interface Gem { node: Node; x: number; y: number; v: number; pop: number; vx: number; vy: number; base: number; }
-interface Fx { node: Node; anim: FrameAnim; t: number; life: number; }
+interface Fx {
+  node: Node; anim: FrameAnim; t: number; life: number;
+  /** C3：池化标记（伤害数字 / hitSpark），回收时回池而不是 destroy */
+  pool?: 'dmg' | 'spark';
+}
 /** 陨石（M45）：从天而降的投射体，落地才结算范围伤害 */
 interface Meteor {
   node: Node; fromX: number; fromY: number; toX: number; toY: number;
@@ -145,12 +174,17 @@ export class Battle extends Component {
   private face = 1;
   private atkT = 0; private animT = 0; private walkT = 0; private inv = 0; private dmgFlash = 0;
   private skillT: number[] = [0, 0, 0, 0];
+  /** 每槽本次冷却总时长（开火时记录，HUD 不再每帧 calcSkill） */
+  private cdTotal: number[] = [0, 0, 0, 0];
 
   private enemies: Enemy[] = [];
   private bullets: Bullet[] = [];
   private areas: Area[] = [];
   private gems: Gem[] = [];
   private fx: Fx[] = [];
+  /** C3：伤害数字 / hitSpark 的对象池 */
+  private dmgPool: Node[] = [];
+  private sparkPool: Node[] = [];
   private meteors: Meteor[] = [];
   /** 复读机（echo）：延迟重放一次施放 */
   private echoQueue: { slot: number; in: number }[] = [];
@@ -210,15 +244,12 @@ export class Battle extends Component {
   private healPlayer(amount: number): void {
     if (!(amount > 0)) return;
     const id = this.rs.difficulty;
-    const budget = healBudget(id);                       // null = 普通难度，不启用预算
     const hpPct = this.rs.stats.maxhp > 0 ? this.rs.stats.hp / this.rs.stats.maxhp : 1;
-    const scaled = healAmount(amount, id, hpPct);        // 基础 x healMul x 条件倍率
-    const cap = budget === null ? 5 : Math.min(budget, 5);   // 2026-10-31：全局回血上限再压到 5HP/s
-    const allow = Math.max(0, cap - this.healBudgetSpent);
-    const heal = Math.min(scaled, allow);
-    if (heal <= 0) return;
-    if (budget !== null) this.healBudgetSpent += heal;
-    this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + heal);
+    // 预算统一在 healStep 里：普通难度 null → 默认 8HP/s，且单秒硬夹 5（A4 修复）
+    const step = healStep(amount, id, hpPct, this.healBudgetSpent);
+    if (step.heal <= 0) return;
+    this.healBudgetSpent = step.spent;
+    this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + step.heal);
   }
   private waveDmgDealt = 0;     // 本波**玩家造成**的伤害（新增，供阶段2 A/B 与遥测用）
   /** 调试用时间倍速（1 = 正常）；真机/正式包保持 1 */
@@ -413,10 +444,17 @@ export class Battle extends Component {
     if (e.boss) { this.bossRef = e; this.bossAlive = e; }
   }
 
-  /** 技能被替换/丢弃后清零该槽位的蓄势计数（M6） */
-  resetCastCount(slot: number): void {
+  /** 技能被替换/丢弃/开新局：清掉该槽位的所有运行时（蓄势 + 环刃 + 蓄能） */
+  clearSkillRuntime(slot: number): void {
     delete this.castCount[slot];
+    delete this.orbits[slot];
+    delete this.charges[slot];
+    this.skillT[slot] = 0;
+    this.cdTotal[slot] = 0;
   }
+
+  /** 兼容旧调用名 */
+  resetCastCount(slot: number): void { this.clearSkillRuntime(slot); }
 
   /**
    * 开新局前把**所有跨局残留**清掉（M33 #1）。
@@ -450,6 +488,18 @@ export class Battle extends Component {
     this.hitstop = 0; this.hurtFlash = 0; this.inv = 0; this.dmgFlash = 0; this.hurtBoostT = 0;
     this.totalDmgDealt = 0;
     this.skillT = [0, 0, 0, 0];
+    this.cdTotal = [0, 0, 0, 0];
+    // ⚠️ A2：这四个是纯数据状态，不带 node，旧实现漏清 → 新一局出现幽灵地雷/哨兵/蓄能/环刃
+    this.traps = [];
+    this.sentries = [];
+    this.charges = {};
+    this.orbits = {};
+    this.castCount = {};
+    this.echoQueue = [];
+    this.runTime = 0;
+    this.healBudgetSpent = 0; this.healBudgetSec = 0;
+    this.healAccum = 0; this.healFxCd = 0;
+    this.thorncoatAt = -9; this.voltloopAt = -9;
     this.running = false; this.paused = false;
   }
 
@@ -752,17 +802,32 @@ export class Battle extends Component {
     // 用户 #6：特效透明度设置（0~1）。只作用于 VFX 图层，不影响敌人与判定的可读性。
     const alpha = FxPrefs.alpha;
     if (alpha <= 0.01) return null;
-    const { node, anim } = this.mkSpriteNode('fx:' + key, this.layerFx,
-      32 * scale, 32 * scale);
+
+    // C3：命中火星走池（高频、生命周期短）
+    const poolable = key === FX.hitSpark;
+    let node: Node; let anim: FrameAnim;
+    const pooled = poolable ? this.sparkPool.pop() : undefined;
+    if (pooled && pooled.isValid) {
+      node = pooled; node.active = true;
+      const pa = node.getComponent(FrameAnim);
+      if (!pa) { node.destroy(); return null; }
+      anim = pa;
+      const ut = node.getComponent(UITransform);
+      if (ut) ut.setContentSize(32 * scale, 32 * scale);
+    } else {
+      const made = this.mkSpriteNode('fx:' + key, this.layerFx, 32 * scale, 32 * scale);
+      node = made.node; anim = made.anim;
+    }
     if (alpha < 0.99) {
-      const op = node.addComponent(UIOpacity);
+      let op = node.getComponent(UIOpacity);
+      if (!op) op = node.addComponent(UIOpacity);
       op.opacity = Math.round(255 * alpha);
     }
     anim.setClips({ play: frames });
     anim.play('play', false);
     node.setPosition(x, ARENA_H - y, 0);
     node.angle = angleDeg;
-    const f: Fx = { node, anim, t: 0, life };
+    const f: Fx = { node, anim, t: 0, life, pool: poolable ? 'spark' : undefined };
     this.fx.push(f);
     return f;
   }
@@ -890,6 +955,7 @@ export class Battle extends Component {
     // ★ M49：单位帧是异步加载的，加载完成前先**藏起来**（之前会露出红色兜底方块）
     const bodyNode = node.getChildByName('body') ?? node;
     const bodySp = bodyNode.getComponent(Sprite);
+    e.bodySp = bodySp;
     const outlineSp = (node as unknown as { _outline?: Sprite })._outline ?? null;
     if (bodySp) bodySp.enabled = false;
     if (outlineSp) outlineSp.enabled = false;
@@ -1095,7 +1161,7 @@ export class Battle extends Component {
 
   private updateBolts(dt: number) {
     for (const b of this.bolts) b.t += dt;
-    this.bolts = this.bolts.filter(b => {
+    compact(this.bolts, b => {
       if (b.t < b.life) return true;
       if (b.node && b.node.isValid) b.node.destroy();
       return false;
@@ -1193,8 +1259,15 @@ export class Battle extends Component {
 
   private updateEcho(dt: number) {
     for (const q of this.echoQueue) q.in -= dt;
-    const due = this.echoQueue.filter(q => q.in <= 0);
-    this.echoQueue = this.echoQueue.filter(q => q.in > 0);
+    // C4：就地分出到期项，避免每帧两次数组分配
+    const due: typeof this.echoQueue = [];
+    let w = 0;
+    for (let i = 0; i < this.echoQueue.length; i++) {
+      const q = this.echoQueue[i];
+      if (q.in <= 0) due.push(q);
+      else this.echoQueue[w++] = q;
+    }
+    this.echoQueue.length = w;
     for (const q of due) {
       const sk = this.rs.skills[q.slot];
       if (!sk) continue;
@@ -1212,6 +1285,7 @@ export class Battle extends Component {
       this.echoReplay = true;
       try { this.fireSkill(q.slot, rt); } finally { this.echoReplay = false; }
       this.skillT[q.slot] = rt.cd;
+      this.cdTotal[q.slot] = rt.cd;
     }
   }
 
@@ -1241,7 +1315,7 @@ export class Battle extends Component {
         this.spawnArea(m.toX, m.toY, m.size, m.dmg, m.zoneLife ?? 3.4, 'zone', m.zoneKey, m.rt, m.tickRate ?? 0.45);
       }
     }
-    this.meteors = this.meteors.filter(m => {
+    compact(this.meteors, m => {
       if (!m.done) return true;
       if (m.node && m.node.isValid) m.node.destroy();
       return false;
@@ -1397,7 +1471,7 @@ export class Battle extends Component {
       e.slowPct = slowFor(!!e.boss, rt.slow);   // 普通 35/45/55%，BOSS 封顶 30%
     }
     // 吸血：基础 4%/份（唯一模块可合成，Ⅱ = 1.6 份 → 6.4%，低于两份普通）
-    if (rt.vamp && vampAllowed(ctx.source, ctx.summonKind)) this.healPlayer(dmg * 0.02 * rt.vamp);
+    if (rt.vamp && vampAllowed(ctx.source, ctx.summonKind)) this.healPlayer(dmg * VAMP_HEAL_PER_STACK * rt.vamp);
     if (this.rs.hasItem('voltloop') && this.runTime - this.voltloopAt >= VOLTLOOP_CD && this.rs.rng.chance(VOLTLOOP_CHANCE)) {
       this.voltloopAt = this.runTime;
       this.applyRawDamage(e, dmg * VOLTLOOP_DMG);
@@ -1495,7 +1569,7 @@ export class Battle extends Component {
       for (const c of cand.slice(0, 60)) this.applyRawDamage(c.e, dmg);
     }
     this.hitstop = Math.max(this.hitstop, e.boss ? HITSTOP.boss : (e.elite ? HITSTOP.elite : HITSTOP.normal));
-    this.cam.addShake(e.boss ? SHAKE.boss : (e.elite ? SHAKE.elite : SHAKE.kill));
+    this.shake(e.boss ? SHAKE.boss : (e.elite ? SHAKE.elite : SHAKE.kill));   // A5：走设置开关
     // 击杀分层：爆发 + 碎片 + 尘土（+ 精英/BOSS 额外冲击波）
     const big = e.boss || e.elite;
     if (e.boss) Sfx.sfx('special', 0.65, 200);
@@ -1569,19 +1643,31 @@ export class Battle extends Component {
   }
 
   private addDamageText(x: number, y: number, dmg: number, crit: boolean, kind?: 'poison' | 'burn') {
-    const n = new Node('dmg'); n.parent = this.layerText;
-    const l = n.addComponent(Label);
-    l.string = String(dmg);
-    // 用户要求：数字小一号；暴击用**红色**
-    // 用户要求：数字再小一号；持续伤害用更小的字号 + 状态色（毒=绿 / 烧=橙红）
-    l.fontSize = kind ? 9 : (crit ? 12 : 10);
-    l.lineHeight = kind ? 11 : (crit ? 14 : 12);
-    l.color = kind === 'poison' ? new Color(150, 230, 160, 255)
+    // C3：伤害数字复用节点（字符串/颜色/字号仍按次设置）
+    let n: Node | undefined = this.dmgPool.pop();
+    let l: Label | null = null;
+    if (n && n.isValid) {
+      n.active = true;
+      n.parent = this.layerText;
+      l = n.getComponent(Label);
+    }
+    if (!n || !n.isValid || !l) {
+      if (n && n.isValid) n.destroy();
+      n = new Node('dmg');
+      n.parent = this.layerText;
+      l = n.addComponent(Label);
+      const ut = n.addComponent(UITransform);
+      ut.setContentSize(60, 24);
+    }
+    const label = l!;
+    label.string = String(dmg);
+    label.fontSize = kind ? 9 : (crit ? 12 : 10);
+    label.lineHeight = kind ? 11 : (crit ? 14 : 12);
+    label.color = kind === 'poison' ? new Color(150, 230, 160, 255)
       : kind === 'burn' ? new Color(255, 160, 110, 255)
         : crit ? new Color(240, 70, 62, 255) : new Color(255, 255, 255, 255);
-    const ut = n.addComponent(UITransform); ut.setContentSize(60, 24);
     n.setPosition(x, ARENA_H - y, 0);
-    this.fx.push({ node: n, anim: null as unknown as FrameAnim, t: 0, life: 0.75 });
+    this.fx.push({ node: n, anim: null as unknown as FrameAnim, t: 0, life: 0.75, pool: 'dmg' });
   }
 
   // ============================================================
@@ -1678,6 +1764,7 @@ export class Battle extends Component {
         rt = { ...rt, cd: rt.cd * lastbreathCdMul(hpPct) };
       }
       this.skillT[i] = rt.cd;
+      this.cdTotal[i] = rt.cd;
       this.atkT = 0.3;
       this.fireSkill(i, rt);
     }
@@ -1695,7 +1782,7 @@ export class Battle extends Component {
   /** 四个新技能类型的运行时（环刃 / 地雷 / 哨兵 / 蓄能） */
   private updateNewSkillTypes(dt: number): void {
     // 环刃：旋转 + 每 0.25s 结算一次环带内的敌人
-    for (const key of Object.keys(this.orbits)) {
+    for (const key in this.orbits) {
       const slot = Number(key);
       const o = this.orbits[slot];
       o.rot += dt * 1.4 * Math.PI * 2;
@@ -1751,7 +1838,7 @@ export class Battle extends Component {
       }
     }
     // 蓄能：3s 后结算（目标死亡则溅射；空放返还剩余冷却 50%）
-    for (const key of Object.keys(this.charges)) {
+    for (const key in this.charges) {
       const slot = Number(key);
       const c = this.charges[slot];
       c.t += dt;
@@ -2007,13 +2094,13 @@ export class Battle extends Component {
         if (g1 && g1.isValid) g1.setScale(pulse, pulse, 1);
         if (g2 && g2.isValid) g2.setScale(pulse, pulse, 1);
       }
-      const bodyNode = e.node.getChildByName('body') ?? e.node;
-      const sp = bodyNode.getComponent(Sprite);
+      // C2：body Sprite 在 spawn 时缓存；颜色常量复用，不再每帧 new
+      const sp = e.bodySp;
       if (sp) {
-        if (e.flash > 0) sp.color = new Color(255, 150, 150, 255);          // 受击闪白红
-        else if (e.poisonT > 0) sp.color = new Color(165, 230, 165, 255);   // 中毒：淡绿
-        else if (e.burnT > 0) sp.color = new Color(255, 165, 130, 255);     // 灼烧：淡红
-        else if (sp.color.r !== 255 || sp.color.g !== 255) sp.color = new Color(255, 255, 255, 255);
+        if (e.flash > 0) sp.color = TINT_HIT;
+        else if (e.poisonT > 0) sp.color = TINT_POISON;
+        else if (e.burnT > 0) sp.color = TINT_BURN;
+        else if (sp.color.r !== 255 || sp.color.g !== 255) sp.color = TINT_WHITE;
       }
 
       const d = Math.hypot(this.px - e.x, this.py - e.y);
@@ -2038,7 +2125,7 @@ export class Battle extends Component {
         // ★ 刺猬：基础 6 点/份（Ⅱ = 1.6 份 → 9.6 点），按效果份数结算
         const thorn = this.thornEffect();
         if (thorn > 0) {
-          const back = Math.round(6 * thorn);
+          const back = thornmailBack(thorn);
           e.hp -= back;
       this.waveDmgDealt += Math.min(back);
           this.addDamageText(e.x, e.y - 10, back, false);
@@ -2059,6 +2146,10 @@ export class Battle extends Component {
         b.y = this.py + Math.sin(ang) * 44;
       } else {
         if (b.homing) {
+          // C5：每 0.1s 才重新索敌一次（追踪弹多时避免每帧 O(敌人数)）
+          b.homingT = (b.homingT ?? 0) - dt;
+          if (b.homingT > 0) { b.x += b.vx * dt; b.y += b.vy * dt; b.node.setPosition(b.x, ARENA_H - b.y, 0); continue; }
+          b.homingT = 0.1;
           const t0 = this.nearestEnemy(b.x, b.y, 200);
           if (t0) {
             const sp = Math.hypot(b.vx, b.vy) || 200;
@@ -2161,7 +2252,7 @@ export class Battle extends Component {
       }
       if (b.x < -40 || b.x > ARENA_W + 40 || b.y < -40 || b.y > ARENA_H + 40) b.life = 0;
     }
-    this.bullets = this.bullets.filter(b => {
+    compact(this.bullets, b => {
       if (b.life > 0) return true;
       if (b.node && b.node.isValid) b.node.destroy();
       return false;
@@ -2217,7 +2308,7 @@ export class Battle extends Component {
       }
       a.node.setPosition(a.x, ARENA_H - a.y, 0);
     }
-    this.areas = this.areas.filter(a => {
+    compact(this.areas, a => {
       if (a.t < a.life) return true;
       if (a.node && a.node.isValid) a.node.destroy();
       return false;
@@ -2269,7 +2360,7 @@ export class Battle extends Component {
         g.node.setPosition(g.x, ARENA_H - g.y, 0);
       }
     }
-    this.gems = this.gems.filter(g => g.node && g.node.isValid);
+    compact(this.gems, g => !!(g.node && g.node.isValid));
   }
 
   private updateFx(dt: number) {
@@ -2277,14 +2368,26 @@ export class Battle extends Component {
       f.t += dt;
       if (f.node && f.node.isValid) f.node.setPosition(f.node.position.x, f.node.position.y + dt * 24, 0);
     }
-    this.fx = this.fx.filter(f => {
+    compact(this.fx, f => {
       if (f.t < f.life) return true;
-      if (f.node && f.node.isValid) f.node.destroy();
+      if (f.node && f.node.isValid) {
+        if (f.pool === 'dmg' && this.dmgPool.length < DMG_POOL_MAX) {
+          f.node.active = false;
+          this.dmgPool.push(f.node);
+          return false;
+        }
+        if (f.pool === 'spark' && this.sparkPool.length < SPARK_POOL_MAX) {
+          f.node.active = false;
+          this.sparkPool.push(f.node);
+          return false;
+        }
+        f.node.destroy();
+      }
       return false;
     });
 
     // 死亡动画播完即回收（KI-001 的正面要求：先累加计时，再回收）
-    this.enemies = this.enemies.filter(e => {
+    compact(this.enemies, e => {
       if (!e.dead || e.deathT < DEATH_ANIM_TIME) return true;
       if (e.node && e.node.isValid) e.node.destroy();
       if (e === this.bossRef) { this.bossRef = null; this.bossAlive = null; this.bossDefeated = true; }
@@ -2417,11 +2520,15 @@ export class Battle extends Component {
   get waveLeftSec(): number { return Math.max(0, this.waveLeft); }
   /** 每个技能槽的冷却进度 0~1（1 = 刚放完，0 = 就绪） */
   get skillCdPct(): number[] {
-    return [0, 1, 2, 3].map(i => {
+    const out = [0, 0, 0, 0];
+    for (let i = 0; i < 4; i++) {
       const sk = this.rs.skills[i];
-      if (!sk) return 0;
-      const cd = calcSkill(sk, this.rs.stats).cd;
-      return cd > 0 ? Math.max(0, Math.min(1, this.skillT[i] / cd)) : 0;
-    });
+      if (!sk) continue;
+      // 懒填充：恢复存档/新开局没有记录总冷却时补一次并缓存
+      if (!(this.cdTotal[i] > 0)) this.cdTotal[i] = calcSkill(sk, this.rs.stats).cd;
+      const cd = this.cdTotal[i];
+      out[i] = cd > 0 ? Math.max(0, Math.min(1, this.skillT[i] / cd)) : 0;
+    }
+    return out;
   }
 }

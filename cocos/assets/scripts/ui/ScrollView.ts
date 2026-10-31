@@ -18,6 +18,21 @@ interface Area {
 
 const areas: Area[] = [];
 let bound = false;
+
+/** 清掉已销毁的滚动区（视图 destroy 后 Area 仍持有节点引用 → 不清理会无限堆积） */
+function sweep(): void {
+  for (let i = areas.length - 1; i >= 0; i--) {
+    const a = areas[i];
+    if (!a.view || !a.view.isValid || !a.content || !a.content.isValid) {
+      a.dragging = false;
+      a.flingV = 0;
+      areas.splice(i, 1);
+    }
+  }
+}
+
+/** 调试/验收用：当前有效滚动区数量 */
+export function scrollAreaCount(): number { sweep(); return areas.length; }
 /** 惯性参数：低于 FLING_MIN 不滑行；每帧乘 FLING_DAMP；低于 FLING_STOP 直接停 */
 const FLING_MIN = 300;
 const FLING_DAMP = 0.90;
@@ -44,7 +59,10 @@ function clampOff(a: Area, v: number): number {
 function bind(): void {
   if (bound) return;
   bound = true;
+  // 验收/调试用：控制台或截图脚本可直接读有效滚动区数量
+  (globalThis as unknown as Record<string, unknown>).__scrollAreas = () => scrollAreaCount();
   input.on(Input.EventType.TOUCH_START, (e: EventTouch) => {
+    sweep();
     const p = e.getUILocation();
     for (const a of areas) {
       if (!a.view.isValid) continue;
@@ -78,6 +96,7 @@ function bind(): void {
 
   // 惯性滑行
   director.on(Director.EVENT_AFTER_UPDATE, () => {
+    sweep();
     const dt = Math.min(0.05, director.getDeltaTime());
     for (const a of areas) {
       if (!a.flingV || !a.content.isValid) continue;
@@ -93,10 +112,17 @@ function bind(): void {
   });
 }
 
-export interface ScrollHandle { view: Node; content: Node; contentH: number }
+export interface ScrollHandle {
+  view: Node;
+  content: Node;
+  contentH: number;
+  /** 主动释放：从全局列表移除并销毁视图（切换页签/关闭抽屉时调用） */
+  dispose(): void;
+}
 
 export function makeScroll(parent: Node, cx: number, cy: number, w: number, h: number, contentH: number, onScroll?: (off: number) => void): ScrollHandle {
   bind();
+  sweep();
   const view = mkNode(parent, 'scrollView', w, h, cx, cy);
   const mask = view.addComponent(Mask);
   mask.type = Mask.Type.GRAPHICS_RECT;
@@ -131,7 +157,14 @@ export function makeScroll(parent: Node, cx: number, cy: number, w: number, h: n
   view.on(Node.EventType.TOUCH_MOVE, move, view);
   view.on(Node.EventType.TOUCH_END, end, view);
   view.on(Node.EventType.TOUCH_CANCEL, end, view);
-  return { view, content, contentH: a.contentH };
+  const dispose = () => {
+    const i = areas.indexOf(a);
+    if (i >= 0) areas.splice(i, 1);
+    a.dragging = false;
+    a.flingV = 0;
+    if (view.isValid) view.destroy();
+  };
+  return { view, content, contentH: a.contentH, dispose };
 }
 
 /** 回到顶部（切换页签时用） */

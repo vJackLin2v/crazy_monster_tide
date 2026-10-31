@@ -42,6 +42,8 @@ import { rollEliteAffixes, affixHpMul, affixSpeedMul, affixSplits, eliteAffixRul
 import { parseSave, badgesForRun, badgeId, ENDLESS_MILESTONES } from '../assets/scripts/game/Progress';
 import { killOutcome, vampAllowed } from '../assets/scripts/game/CombatRules';
 import { normalizeRestoredStats } from '../assets/scripts/game/RunRestore';
+import { healStep, effectiveHealBudget } from '../assets/scripts/game/HealRules';
+import { VAMP_HEAL_PER_STACK, thornmailBack } from '../assets/scripts/game/ModuleValues';
 import { Rng } from '../assets/scripts/core/Rng';
 import { validateActiveRun, continueInfoOf, assertRestorable, newRunId, RUN_SAVE_VERSION, type ActiveRunSave } from '../assets/scripts/game/RunSave';
 import { emptyHistory, addRun, buildSummary, validateHistory, filterRuns, historyStats, hasRun, HISTORY_MAX, type RunSummary, type RunDetail } from '../assets/scripts/game/RunHistory';
@@ -1354,6 +1356,33 @@ console.log('\n== 23. 商店 / 升级三选一 快照可恢复 ==');
     ok(pr[0].id === 'sentry' && pr[1].id === 'giant' && pr[2].id === 'crit_s', '卡片 ID 与顺序一致（不会重新随机）');
     ok(lv.save.phase === 'levelup', '阶段=升级，恢复时直接还原待选卡');
   }
+}
+
+console.log('\n== 24. 回血预算（A4）与 vamp/反伤数值（A6） ==');
+{
+  // 普通难度：配置 null → 默认 8HP/s，且单秒硬夹 5
+  ok(effectiveHealBudget('normal') === 8, '普通难度默认预算 8HP/s');
+  ok(effectiveHealBudget('hell') === 5 && effectiveHealBudget('nightmare') === 6, '地狱/噩梦预算不变');
+
+  let spent = 0;
+  let total = 0;
+  for (let i = 0; i < 6; i++) {
+    const r = healStep(5, 'normal', 0.5, spent);
+    spent = r.spent; total += r.heal;
+  }
+  ok(total <= 5 + 1e-9, '普通难度同一秒多次回血总和不超过硬上限 5');
+  ok(total <= effectiveHealBudget('normal'), '普通难度同一秒回血总和不超过预算 8');
+
+  const one = healStep(4, 'hell', 0.5, 0);
+  ok(one.heal <= 5 && one.spent === one.heal, '地狱单次回血受预算约束并记账');
+  const over = healStep(10, 'casual', 0.2, 0);   // 休闲低血 x1.2
+  ok(over.heal <= 5 + 1e-9, '条件倍率不会突破单秒硬夹');
+
+  // vamp 每份 4%；反伤每份 6 点
+  ok(Math.abs(VAMP_HEAL_PER_STACK - 0.04) < 1e-9, 'vamp 每份 4%');
+  ok(thornmailBack(1) === 6 && thornmailBack(1.6) === 10, '反伤每份 6 点（Ⅱ 约 10）');
+  ok(MODULE_NUMS.vamp.indexOf('4%') >= 0, '黑科技数值行写 4%');
+  ok(MODULE_NUMS.thornmail.indexOf('6') >= 0, '黑科技数值行写 6');
 }
 console.log('\n================ 结果 ================');
 console.log(`PASS ${pass} / FAIL ${fail}`);

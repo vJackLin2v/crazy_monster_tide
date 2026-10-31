@@ -16,6 +16,12 @@ export const SHIELD_CAP = 9;
 export const SHIELD_COOLDOWN = 1.5;
 export const SHIELD_DURATION = 4;
 
+/** 吸血：每份按伤害的 4% 回血（desc / MODULE_NUMS / 实现三处统一） */
+export const VAMP_HEAL_PER_STACK = 0.04;
+/** 反伤：每份 6 点（Ⅱ = 1.6 份 → 9.6，取整 10） */
+export const THORNMAIL_BASE = 6;
+export function thornmailBack(stacks: number): number { return Math.round(THORNMAIL_BASE * stacks); }
+
 /** M3 处决：普通 40/58/76，BOSS 减半 20/29/38 */
 export function executePct(stacks: number, isBoss: boolean): number {
   const s = Math.max(1, Math.min(MAX_STACKS, stacks));
