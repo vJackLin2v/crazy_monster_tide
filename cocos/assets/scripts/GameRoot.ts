@@ -14,7 +14,7 @@ import { _decorator, Component, Node, view, ResolutionPolicy, Color } from 'cc';
 import { SCREEN_W, SCREEN_H, RUN, waveTime, isBossWave, isEliteWave } from './core/Const';
 import { Joystick } from './engine/Joystick';
 import { Battle } from './battle/Battle';
-import { mkNode, screen } from './ui/UIKit';
+import { mkNode, screen, button, text, onTap } from './ui/UIKit';
 import { preloadUiArt } from './ui/Art';
 import { Hud, type HudData } from './ui/Hud';
 import { buildMenu, buildHowto, buildCharSelect, buildResult, type ResultBuildRow } from './ui/MenuScreens';
@@ -804,6 +804,24 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
   }
 
   // ---------- 11. 结算 ----------
+  /** 真机/网页一键复制本局日志（含每波统计），方便回传分析 */
+  private copyRunLogs(): void {
+    const data = exportLogs();
+    const wxAny = (globalThis as unknown as { wx?: { setClipboardData?: (o: { data: string }) => void } }).wx;
+    if (wxAny && wxAny.setClipboardData) {
+      wxAny.setClipboardData({ data });
+      console.log('[日志] 已写入剪贴板，共 ' + data.length + ' 字符');
+      return;
+    }
+    const nav = (globalThis as unknown as { navigator?: { clipboard?: { writeText: (t: string) => Promise<void> } } }).navigator;
+    if (nav && nav.clipboard) {
+      void nav.clipboard.writeText(data);
+      console.log('[日志] 已写入剪贴板，共 ' + data.length + ' 字符');
+      return;
+    }
+    console.log(data);
+  }
+
   private showResult(win: boolean) {
     if (win) this.unlockNextDifficulty();
     // 结算前清掉所有残留屏（暂停抽屉/升级卡/商店），否则它们会浮在结算页上方（用户截图确认）
@@ -876,6 +894,13 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
           }),
           items: (() => {
             const m = new Map<string, number>();
+    // 真机调试：一键复制本局日志（微信走剪贴板，网页走 navigator.clipboard）
+    try {
+      const vs2 = view.getVisibleSize();
+      const chip = button(this.cur, vs2.width / 2 - 52, vs2.height / 2 - safeTop() - 26, 92, 24, '复制日志', { size: 10 });
+      onTap(chip.node, () => this.copyRunLogs());
+    } catch (e) { console.warn('[GameRoot] 复制日志按钮创建失败', e); }
+
             for (const it of rs.items) m.set(it.id, (m.get(it.id) ?? 0) + 1);
             return Array.from(m.entries()).map(([id, count]) => ({
               name: ITEMS[id] ? ITEMS[id].name : id, icon: ITEM_ICON[id], count,
