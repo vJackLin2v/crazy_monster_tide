@@ -416,7 +416,8 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
     const hasInstalled = rs.skills.some(s => s.mods.length > 0);
     if (rs.modsBag.length === 0 && !hasInstalled) { this.afterInstall(); return; }
     this.battle.paused = true;
-    if (rs.modsBag.length && this.installSelIdx === null) this.selectBag(0);
+    // 用户要求：进入面板默认**不选中**任何黑科技（以前自动选背包第一个）
+    if (false && rs.modsBag.length && this.installSelIdx === null) this.selectBag(0);
     this.renderInstall();
   }
 
@@ -652,7 +653,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       return {
         kind: 'item', title: it ? it.name : r.id, sub: '道具',
         desc: '',
-        nums: it ? itemNumbers(it, r.id) : '',
+        nums: it ? (itemNumbers(it, r.id) || it.desc) : '',
         meta: (ownedN > 0 ? '已持有 ×' + ownedN : '尚未持有') + ' · ' + ((it && it.tier === 2) ? '高级道具' : '普通道具'),
         glyph: it ? it.icon : '◆', art: ITEM_ICON[r.id],
       };
@@ -687,6 +688,14 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
 
   // ---------- 10. 波间商店 ----------
   private showShop() {
+    // 用户要求：打通 20 波后**先出结算页**，只有点「继续·无尽」才进商店/装模块
+    {
+      const rs0 = this.battle.rs;
+      if (rs0.wave >= RUN.waves && !rs0.endless) {
+        if (!this.endShown) { this.endShown = true; this.showResult(true); }
+        return;
+      }
+    }
     this.phase = 'shop';
     this.battle.rs.refreshShop(true);
     this.renderShop();
@@ -1007,7 +1016,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
           name: it ? it.name : id,
           icon: ITEM_ICON[id],
           desc: it ? it.desc : '',
-          nums: it ? itemNumbers(it, id) : '',
+          nums: it ? (itemNumbers(it, id) || it.desc) : '',
           note: it ? (it.tier === 2 ? '高级道具 · 精英 / BOSS 掉落' : '普通道具 · 商店或掉落获取') : '',
         };
       });

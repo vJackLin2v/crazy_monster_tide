@@ -123,7 +123,7 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
       const b = panel(row, slotCx(k), 0, SW, SH, { art: isSel ? 'card_gold' : (mod ? 'slot' : 'well') });
       if (mod) {
         drawIcon(b, -SW / 2 + 16, 0, 18, mod.icon);
-        text(b, 10, 0, (mod.name + (mod.merged ? 'Ⅱ' : '')).slice(0, 5),
+        text(b, 10, 0, (mod.name.replace(/\s*[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+$/, '') + (mod.merged ? ' Ⅱ' : '')).slice(0, 7),
           { size: 10, color: mod.merged ? COL.accent : COL.cream, width: 48, outline: true });
       } else {
         text(b, 0, 1, '＋', { size: 16, color: COL.dash, width: SW, outline: false });
@@ -156,7 +156,7 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
       const on = d.selBag === i;
       const n = panel(box, cx, cyy, BW, BHH, { art: on ? 'card_gold' : 'btn' });
       drawIcon(n, -BW / 2 + 17, 0, 18, m.icon);
-      text(n, 9, 0, (m.name + (m.merged ? 'Ⅱ' : '')).slice(0, 5),
+      text(n, 9, 0, (m.name.replace(/\s*[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+$/, '') + (m.merged ? ' Ⅱ' : '')).slice(0, 7),
         { size: 11, color: m.merged ? COL.accent : COL.cream, width: 62, outline: true });
       const bagHit = mkNode(box, 'bagHit', BW, 44, cx, cyy);
       onTap(bagHit, () => cb.onSelectBag(on ? null : i));
@@ -167,7 +167,7 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
 
   // ── 合成区 ──
   const mergeTitleY = bagBottom - 12;
-  text(box, -158, mergeTitleY, '合成：3 个同名 → 1 个 II（效果 ×2，只占 1 槽）',
+  text(box, -158, mergeTitleY, '合成区（3 个同名 → 1 个更强版）',
     { size: 11, color: COL.accent, align: 'left', width: 316, bold: true, outline: true });
   const descY = -PH / 2 + (d.pickedDesc ? 104 : 66);
   const mergeTop = mergeTitleY - 12;

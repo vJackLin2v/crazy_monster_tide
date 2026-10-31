@@ -84,16 +84,16 @@ export const ITEMS: Record<string, ItemDef> = {
   vampire: { name: '吸血鬼牙', icon: '🩸', tier: 2, desc: '能吸血，暴击更疼', apply: (s: CharStats) => { s.lifesteal += 0.08; s.critdmg += 0.20; } },
 
   // ── 第一批新道具（设计 v6：tier 1 普通 / 2 稀有 / 3 传说）──
-  emberstack: { name: '余烬刻印', icon: 'sh-fire', tier: 2, desc: '火系命中的目标再受火伤 +25%', special: 'emberstack', apply: () => { /* 运行时处理 */ } },
-  shatter:    { name: '碎冰',     icon: 'sh-shield', tier: 2, desc: '对被减速目标 +20% 伤害，对未被减速目标 -5%', special: 'shatter', apply: () => { /* 运行时处理 */ } },
-  voltloop:   { name: '回响电弧', icon: 'sk-bolt', tier: 2, desc: '雷击命中 15% 概率追加 40% 小雷击', special: 'voltloop', apply: () => { /* 运行时处理 */ } },
-  bloodpact:  { name: '血契',     icon: 'sh-blood', tier: 3, desc: '攻击力 +30%，最大生命 -25%', special: 'bloodpact', apply: (s) => { s.power *= 1.30; s.maxhp = Math.round(s.maxhp * 0.75); } },
-  lastbreath: { name: '背水',     icon: 'sh-execute', tier: 2, desc: '生命低于 35% 时攻速 +35%，高于则 -8%', special: 'lastbreath', apply: () => { /* 运行时处理 */ } },
-  thorncoat:  { name: '荆棘外衣', icon: 'sh-heart', tier: 1, desc: '受击反弹 12 点伤害（0.5s CD），移速 -6%', special: 'thorncoat', apply: () => { /* 移速 -6% 由运行时处理 */ } },
-  greed:      { name: '贪欲之心', icon: 'relic-007', tier: 2, desc: '金币 +25%，每 100 金币攻击 +3%（上限 +15%）', special: 'greed', apply: () => { /* 金币 +25% 由运行时处理 */ } },
-  frugal:     { name: '精打细算', icon: 'relic-019', tier: 1, desc: '刷新费用 -50%，每波结束金币 -2', special: 'frugal', apply: () => { /* 运行时处理 */ } },
-  focused:    { name: '专注核心', icon: 'sh-sizeup', tier: 3, desc: '装备技能 ≤2 个时：技能伤害 +25%、冷却 -10%', special: 'focused', apply: () => { /* 运行时处理 */ } },
-  resonator:  { name: '共鸣器',   icon: 'relic-030', tier: 3, desc: '同一技能装 2 个同 Hook 黑科技时，该技能伤害 +20%', special: 'resonator', apply: () => { /* 运行时处理 */ } },
+  emberstack: { name: '灼烧增伤', icon: 'sh-fire', tier: 2, desc: '火系命中的目标再受火伤 +25%', special: 'emberstack', apply: () => { /* 运行时处理 */ } },
+  shatter:    { name: '破冰增伤',     icon: 'sh-shield', tier: 2, desc: '对被减速目标 +20% 伤害，对未被减速目标 -5%', special: 'shatter', apply: () => { /* 运行时处理 */ } },
+  voltloop:   { name: '落雷追加', icon: 'sk-bolt', tier: 2, desc: '雷击命中 15% 概率追加 40% 小雷击', special: 'voltloop', apply: () => { /* 运行时处理 */ } },
+  bloodpact:  { name: '攻击强化（代价生命）',     icon: 'sh-blood', tier: 3, desc: '攻击力 +30%，最大生命 -25%', special: 'bloodpact', apply: (s) => { s.power *= 1.30; s.maxhp = Math.round(s.maxhp * 0.75); } },
+  lastbreath: { name: '低血强化',     icon: 'sh-execute', tier: 2, desc: '生命低于 35% 时攻速 +35%，高于则 -8%', special: 'lastbreath', apply: () => { /* 运行时处理 */ } },
+  thorncoat:  { name: '受击反伤', icon: 'sh-heart', tier: 1, desc: '受击反弹 12 点伤害（0.5s CD），移速 -6%', special: 'thorncoat', apply: () => { /* 移速 -6% 由运行时处理 */ } },
+  greed:      { name: '金币转攻击', icon: 'relic-007', tier: 2, desc: '金币 +25%，每 100 金币攻击 +3%（上限 +15%）', special: 'greed', apply: () => { /* 金币 +25% 由运行时处理 */ } },
+  frugal:     { name: '刷新省钱', icon: 'relic-019', tier: 1, desc: '刷新费用 -50%，每波结束金币 -2', special: 'frugal', apply: () => { /* 运行时处理 */ } },
+  focused:    { name: '少技能强化', icon: 'sh-sizeup', tier: 3, desc: '装备技能 ≤2 个时：技能伤害 +25%、冷却 -10%', special: 'focused', apply: () => { /* 运行时处理 */ } },
+  resonator:  { name: '模块共鸣',   icon: 'relic-030', tier: 3, desc: '同一技能装 2 个同 Hook 黑科技时，该技能伤害 +20%', special: 'resonator', apply: () => { /* 运行时处理 */ } },
 };
 
 /** 精英 / BOSS 掉落池（高级道具） */

@@ -153,12 +153,9 @@ export function buildHowto(parent: Node, onBack: () => void): Node {
     text(box, -120, cy + 9, head, { size: 15, color: COL.cream, align: 'left', width: 294, bold: true, outline: true });
     text(box, -120, cy - 10, desc, { size: 11, color: COL.dim, align: 'left', width: 294, outline: false });
   });
-  // P2-B：合成规则从"弱提示"升级成一条规则条（336×34，11px），但仍不与返回键碰撞
   const hintY = S + 82 + bodyH + 26;
   const hintC = at2(180, hintY);
   const bar = panel(root, hintC.x, hintC.y, 336, 34, { art: 'panel_soft' });
-  text(bar, 0, 1, '合成规则：3 个同名黑科技 → Ⅱ 级（效果 ×2，只占 1 槽）',
-    { size: 11, color: COL.mint, width: 324, outline: false });
 
   const btn = button(root, 0, -VH / 2 + B + 25, 336, 50, '返回', { size: FS.m });
   onTap(btn.node, onBack);
