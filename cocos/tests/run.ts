@@ -27,6 +27,7 @@ import { VFX_FRAMES } from '../assets/scripts/data/VfxFrames';
 import { ACHIEVEMENTS, achViews, newlyUnlocked, applyUnlocks } from '../assets/scripts/game/Achievements';
 import { defaultSave } from '../assets/scripts/game/Progress';
 import { balance, balanceOverride, balanceReset, DEFAULT_BALANCE } from '../assets/scripts/core/Balance';
+import { canSourceTriggerModules, makeDamageContext, canHarvest, canVamp, ModuleUsage, type DamageSource } from '../assets/scripts/game/DamageContext';
 import { splitBullets, echoRepeats, echoDelay, burnDuration, burnTickMul, frostSlowPct, frostDuration, slowFor } from '../assets/scripts/game/ModuleScale';
 import { telemetryStart, telemetryWaveEnd, telemetryRunEnd, listRuns, summarize } from '../assets/scripts/game/Telemetry';
 import type { SaveData } from '../assets/scripts/game/Progress';
@@ -612,6 +613,48 @@ console.log('\n== 5m. 高风险构筑组合（阶段3 数学边界） ==');
 
   const dropped = rs3.dropSkill(0);
   ok(!dropped.ok || dropped.back!.length === 1, '丢弃技能时模块原样退回');
+}
+
+console.log('\n== 5n. 伤害上下文与模块闸门（设计 v6） ==');
+{
+  // 1) 来源 → 能否触发模块
+  ok(!canSourceTriggerModules('module') && !canSourceTriggerModules('summon'), 'module/summon 来源不能触发模块');
+  ok(canSourceTriggerModules('normal') && canSourceTriggerModules('split') && canSourceTriggerModules('echo') && canSourceTriggerModules('chain'),
+    'normal/split/echo/chain 允许触发模块');
+
+  // 2) 上下文由来源推导，不接受调用方覆盖
+  const c1 = makeDamageContext('split', 'c1');
+  ok(c1.canTriggerModules === true && c1.source === 'split', 'split 上下文默认允许触发');
+  const c2 = makeDamageContext('module', 'c1');
+  ok(c2.canTriggerModules === false, 'module 上下文默认禁止触发');
+
+  // 3) 击杀回血：召唤物击杀不算
+  ok(canHarvest(c1) === true, '普通来源击杀可触发 harvest');
+  ok(canHarvest(makeDamageContext('summon', 'c2')) === false, '召唤物击杀不触发 harvest');
+
+  // 4) 吸血：summon 是例外，module 不行
+  ok(canVamp(makeDamageContext('summon', 'c3')) === true, '召唤物攻击可触发 vamp');
+  ok(canVamp(makeDamageContext('module', 'c3')) === false, 'module 伤害不能再触发 vamp');
+
+  // 5) 模块闸门：来源过滤 + 冷却 + 单次施法上限
+  const usage = new ModuleUsage();
+  const gate = { id: 'lingering', allowedSources: ['normal', 'split'] as DamageSource[], cooldownSec: 0, maxPerCast: 2 };
+  const normalCtx = makeDamageContext('normal', 'c10');
+  ok(usage.canTrigger(normalCtx, gate, 0), '普通来源通过来源过滤');
+  ok(!usage.canTrigger(makeDamageContext('echo', 'c10'), gate, 0), 'echo 被 M5 的 allowedSources 拒绝');
+
+  usage.mark(normalCtx, gate, 0);
+  usage.mark(normalCtx, gate, 0);
+  ok(!usage.canTrigger(normalCtx, gate, 0), '同一次施法达到 maxPerCast 后被拒绝');
+  const nextCast = makeDamageContext('normal', 'c11');
+  ok(usage.canTrigger(nextCast, gate, 0), '换一次施法后计数独立');
+
+  const cdGate = { id: 'shieldonhit', allowedSources: ['normal'] as DamageSource[], cooldownSec: 1.5, maxPerCast: 99 };
+  const u2 = new ModuleUsage();
+  ok(u2.canTrigger(normalCtx, cdGate, 0), '冷却闸门首次可触发');
+  u2.mark(normalCtx, cdGate, 0);
+  ok(!u2.canTrigger(normalCtx, cdGate, 1.0), '1.0s 时仍在 1.5s 冷却内');
+  ok(u2.canTrigger(normalCtx, cdGate, 1.6), '1.6s 后冷却结束可再次触发');
 }
 
 console.log('\n== 6. 确定性与波次规则 ==');

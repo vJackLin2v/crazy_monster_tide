@@ -31,6 +31,7 @@ import type { SkillArt } from '../data/Types';
 import { ENEMIES, bossUnitFor } from '../data/Enemies';
 import { baseOf, modEffect } from '../data/Modules';
 import { FxPrefs } from '../game/Prefs';
+import { DamageContext, DamageSource, makeDamageContext, canVamp, nextCastId } from '../game/DamageContext';
 import { CHARS } from '../data/Chars';
 const { ccclass } = _decorator;
 
@@ -741,6 +742,7 @@ export class Battle extends Component {
   }
 
   private fireSkill(slot: number, rt: SkillRuntime) {
+    this.currentCastId = nextCastId();
     const sk = this.rs.skills[slot];
     const def = SKILLS[sk.id];
     const art: SkillArt = (SKILL_ART as Record<string, SkillArt>)[sk.id] || ({} as SkillArt);
@@ -1078,8 +1080,10 @@ export class Battle extends Component {
   }
 
   /** 一次伤害结算（走 Combat.rollDamage，暴击也吃同一个 Rng） */
-  private hitEnemy(e: Enemy, base: number, rt: SkillRuntime, hitVfx?: string, noThunder = false) {
+  private hitEnemy(e: Enemy, base: number, rt: SkillRuntime, hitVfx?: string, noThunder = false, src: DamageSource = 'normal') {
     if (e.dead) return;
+    // 统一伤害上下文：来源由调用方声明，能否触发模块由入口推导（设计 v6）
+    const ctx: DamageContext = makeDamageContext(src, this.currentCastId, { isBoss: !!e.boss });
     let { dmg, crit } = rollDamage(base, this.rs.stats, this.rs.rng);
     // ★ 精英伤害：对精英/BOSS 额外加成
     // 阶段 E：精英/首领伤害加成上限 +150%
@@ -1121,7 +1125,7 @@ export class Battle extends Component {
       e.slowPct = slowFor(!!e.boss, rt.slow);   // 普通 35/45/55%，BOSS 封顶 30%
     }
     // 吸血：基础 4%/份（唯一模块可合成，Ⅱ = 1.6 份 → 6.4%，低于两份普通）
-    if (rt.vamp) this.healPlayer(dmg * 0.03 * rt.vamp);   // 每份 3%（原 4%），且受每秒 8HP 预算限制
+    if (rt.vamp && canVamp(ctx)) this.healPlayer(dmg * 0.03 * rt.vamp);   // 每份 3%（原 4%），且受每秒 8HP 预算限制
     // ★ B7：原来只有特效、**没有伤害**（描述写"造成范围伤害"）。
     //   现在按 15%×份数 触发，对落点 60 半径内的敌人结算 50% 伤害。
     //   ⚠️ 这两个数值（半径/倍率）在 docs/systems 里没有规定，是候选值，已列入审计报告待确认；
