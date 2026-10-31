@@ -70,3 +70,30 @@
 
 只允许三个字段：Progress.selectedDifficulty、Progress.difficulties、RunState.difficulty。
 除上表三个字段外，任何其他存档字段写法均已删除，出现即为文档错误。
+
+
+## H. 召唤物与回血（v6 定稿）
+
+| 规则 | 结论 |
+|---|---|
+| 召唤物伤害 | 正常扣血、正常击杀，计入玩家击杀总数 |
+| Harvest（击杀回血） | **召唤物击杀不触发**，且不允许把召唤击杀重新归类为玩家击杀 |
+| Vamp（吸血） | **召唤物攻击可以触发**，受 vamp x 哨兵兼容规则约束（系数/频率由测试固定） |
+| 其他 onhit 模块 | 默认不触发（canTriggerModules = false） |
+
+唯一来源：damage_event_interface.md §9、skill_expansion_design.md 哨兵专项。
+
+## I. 暂定项（不得标记最终验收）
+
+| 项 | 现状 |
+|---|---|
+| 地狱商店最终价 1.8225 倍 | 暂定配置（shopPriceMul / shopPricePerWave），待真机经济数据 |
+
+## J. 四条 S 规则（行为已定，参数待测）
+
+| 组合 | 语义 |
+|---|---|
+| orbit x 环刃 | 片数 +1（不是重复施放技能） |
+| split x 地雷 | 分裂伤害 40%，不再递归分裂 |
+| echo x 地雷 | 回声最多 1 次，回声产生的地雷不再触发 echo |
+| vamp x 哨兵 | 可吸血；系数/频率/上限由测试确定 |
