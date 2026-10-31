@@ -19,6 +19,8 @@ import { preloadUiArt } from './ui/Art';
 import { Hud, type HudData } from './ui/Hud';
 import { buildMenu, buildHowto, buildCharSelect, buildResult, type ResultBuildRow } from './ui/MenuScreens';
 import { buildSettings } from './ui/MetaScreens';
+import { buildDifficultySelect } from './ui/DifficultyScreens';
+import type { DifficultyId } from './data/Difficulties';
 import { buildCodex, buildAchievements } from './ui/CodexScreens';
 import { applyFxPrefs } from './game/Prefs';
 import { migrateDifficulty } from './game/Progress';
@@ -240,6 +242,23 @@ export class GameRoot extends Component {
     this.phase = 'howto'; this.clearScreen();
     this.cur = buildHowto(this.uiRoot, () => this.showMenu());
   }
+  /** 难度选择页：菜单 → 难度 → 选角 */
+  private showDifficulty() {
+    this.closeModal();
+    if (this.cur && this.cur.isValid) this.cur.destroy();
+    this.cur = buildDifficultySelect(
+      this.uiRoot,
+      this.save.difficulties,
+      this.save.selectedDifficulty ?? 'normal',
+      () => this.showMenu(),
+      (id: DifficultyId) => {
+        this.save.selectedDifficulty = id;
+        writeSave(this.save);
+        this.showCharSelect();
+      },
+    );
+  }
+
   private showCharSelect() {
     this.phase = 'charselect'; this.clearScreen();
     this.cur = buildCharSelect(this.uiRoot, () => this.showMenu(), (id) => { this.charId = id; void this.startBattle(); });

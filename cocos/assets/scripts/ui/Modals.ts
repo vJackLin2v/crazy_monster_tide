@@ -407,6 +407,8 @@ export interface SkillDetailView {
 
 /** 道具页的详情（M42：暂停面板里的道具要有详细介绍，可展开） */
 export interface ItemDetailView {
+  /** 同名合并后的持有数量（道具页显示 xN） */
+  count?: number;
   name: string;
   icon?: string;
   /** 这道具干什么（一句话） */
