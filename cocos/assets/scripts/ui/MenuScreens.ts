@@ -145,37 +145,37 @@ export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandl
   // ── B. 中央操作区 ──
   const coreY = Math.max(S + 200, Math.round(VH * 0.47));
   const hasSave = vm.saveState === 'ok' && !!vm.info;
-  // 2026-10-31：用户要求「继续游戏」和「开始游戏」必须是同一种按钮 ——
-  // 现在两者都用同一个 button() 组件、同为 310×72、同为 primary 样式；存档摘要单独一行放上方。
-  const BTN_W = 310, BTN_H = 72, BTN_GAP = 12;
+  // 2026-10-31：两个按钮统一为同一组件/尺寸，但颜色分主次：
+  //   有「继续游戏」时，开始游戏用深蓝次级样式；没有继续按钮时，开始游戏才用橙色主样式。
+  const BTN_W = 260, BTN_H = 56, BTN_GAP = 12;
   if (hasSave && vm.info) {
     const info = vm.info;
-    text(root, at2(180, coreY - 54).x, at2(180, coreY - 54).y,
+    text(root, at2(180, coreY - 46).x, at2(180, coreY - 46).y,
       info.charName + ' · 第 ' + info.wave + '/' + info.totalWaves + ' 波 · ' + info.difficultyName
         + ' · 生命 ' + info.hp + '/' + info.maxhp + ' · ' + info.durationText,
       { size: 10, color: COL.dim, width: 340, align: 'center' });
 
     const contBtn = button(root, at2(180, coreY).x, at2(180, coreY).y, BTN_W, BTN_H, '继续游戏',
-      { primary: true, size: 20 });
+      { primary: true, size: 17 });
     pressable(contBtn.node, h.onContinue);
 
     const startY2 = coreY + BTN_H + BTN_GAP;
     const newBtn = button(root, at2(180, startY2).x, at2(180, startY2).y, BTN_W, BTN_H, '开始游戏',
-      { primary: true, size: 20 });
+      { size: 17 });
     pressable(newBtn.node, h.onStart);
   } else if (vm.saveState === 'corrupt') {
-    const card = panel(root, at2(180, coreY - 8).x, at2(180, coreY - 8).y, 310, 104, { art: 'panel_soft' });
+    const card = panel(root, at2(180, coreY - 8).x, at2(180, coreY - 8).y, 300, 100, { art: 'panel_soft' });
     text(card, -132, 30, '存档不可用', { size: 15, color: COL.dim, align: 'left', width: 220, bold: true, outline: true });
     text(card, -132, 4, vm.corruptNote || '存档损坏或版本不兼容', { size: 10, color: COL.red, align: 'left', width: 280, outline: true });
     text(card, -132, -24, '点此清除坏档后重新开始', { size: 9, color: COL.dim, align: 'left', width: 280 });
     onTap(card, () => { if (h.onDiscardSave) h.onDiscardSave(); });
 
     const startBtn = button(root, at2(180, coreY + 76).x, at2(180, coreY + 76).y, BTN_W, BTN_H, '开始游戏',
-      { primary: true, size: 20 });
+      { primary: true, size: 17 });
     pressable(startBtn.node, h.onStart);
   } else {
     const startBtn = button(root, at2(180, coreY + 6).x, at2(180, coreY + 6).y, BTN_W, BTN_H, '开始游戏',
-      { primary: true, size: 20 });
+      { primary: true, size: 17 });
     pressable(startBtn.node, h.onStart);
   }
 
