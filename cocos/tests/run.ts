@@ -29,6 +29,9 @@ import { defaultSave } from '../assets/scripts/game/Progress';
 import { balance, balanceOverride, balanceReset, DEFAULT_BALANCE } from '../assets/scripts/core/Balance';
 import { canSourceTriggerModules, makeDamageContext, canHarvest, canVamp, ModuleUsage, type DamageSource } from '../assets/scripts/game/DamageContext';
 import { killblastDamage, killblastRadius, shieldAmount, SHIELD_CAP, SHIELD_COOLDOWN, SHIELD_DURATION, executePct, returnstrikePct, lingeringChance, LINGER_TICKS, LINGER_TICK_DMG, LINGER_MAX_ZONES, overchargePeriod, overchargeMul } from '../assets/scripts/game/ModuleValues';
+import { DIFFICULTIES, difficultyOf, eliteChance, spawnInterval, shopPrice, healAmount, healBudget } from '../assets/scripts/data/Difficulties';
+import { BossSummonState } from '../assets/scripts/game/BossSummon';
+import { migrateDifficulty } from '../assets/scripts/game/Progress';
 import { splitBullets, echoRepeats, echoDelay, burnDuration, burnTickMul, frostSlowPct, frostDuration, slowFor } from '../assets/scripts/game/ModuleScale';
 import { telemetryStart, telemetryWaveEnd, telemetryRunEnd, listRuns, summarize } from '../assets/scripts/game/Telemetry';
 import type { SaveData } from '../assets/scripts/game/Progress';
@@ -686,6 +689,48 @@ console.log('\n== 5o. 新黑科技数值表（独立预期值） ==');
   // M6：周期 3/2/2，倍率 1.8/2.1/2.4
   ok(overchargePeriod(1) === 3 && overchargePeriod(2) === 2 && overchargePeriod(3) === 2, 'M6 周期 3/2/2');
   ok(Math.abs(overchargeMul(1) - 1.8) < 1e-9 && Math.abs(overchargeMul(3) - 2.4) < 1e-9, 'M6 倍率 1.8/2.4');
+}
+
+console.log('\n== 5p. 难度系统（数值 + 迁移 + 召唤状态机） ==');
+{
+  ok(DIFFICULTIES.length === 5, '五档难度齐备');
+  const n = difficultyOf('normal');
+  ok(n.enemyHpMul === 1 && n.enemyDmgMul === 1 && n.spawnMul === 1 && n.shopPriceMul === 1, '普通难度所有倍率为 1');
+  ok(n.rules.length === 0 && n.healBudgetPerSecond === null, '普通难度无规则且不启用回血预算');
+
+  ok(Math.abs(eliteChance(0.1, 'casual') - 0.08) < 1e-9, '休闲精英概率 0.08');
+  ok(Math.abs(eliteChance(0.1, 'hell') - Math.min(1, 0.18)) < 1e-9, '地狱精英概率按 1.8 倍且封顶 1');
+
+  ok(Math.abs(spawnInterval(0.62, 'casual') - 0.713) < 1e-9, '休闲刷怪间隔变慢（x1.15）');
+  ok(Math.abs(spawnInterval(0.62, 'hell') - 0.4836) < 1e-9, '地狱刷怪间隔变快（x0.78）');
+
+  ok(shopPrice(100, 'normal', 20) === 100, '普通商店不涨价');
+  ok(Math.abs(shopPrice(100, 'hell', 20) - 182.25) < 1e-6, '地狱第 20 波价格 = 1.35 x 1.35 = 182.25');
+
+  ok(Math.abs(healAmount(10, 'normal', 0.2) - 10) < 1e-9, '普通回血不加成');
+  ok(Math.abs(healAmount(10, 'casual', 0.2) - 14.4) < 1e-9, '休闲低血回血 = 10 x1.2 x1.2');
+  ok(healBudget('normal') === null && healBudget('nightmare') === 6, '普通无预算，噩梦 6HP/s');
+
+  // 存档迁移：只补不改
+  const old = { wins: 3 } as unknown as SaveData;
+  migrateDifficulty(old);
+  ok(old.selectedDifficulty === 'normal', '旧档补 selectedDifficulty=normal');
+  ok(old.difficulties.indexOf('hard') >= 0, 'wins>=1 补解锁困难');
+  const keep = { wins: 0, selectedDifficulty: 'hell', difficulties: ['hell'] } as unknown as SaveData;
+  migrateDifficulty(keep);
+  ok(keep.selectedDifficulty === 'hell' && keep.difficulties.length === 1, '已有字段不被覆盖');
+
+  // BOSS 召唤状态机
+  const st = new BossSummonState({ thresholds: [70, 35], count: 3, maxAlive: 6, minIntervalSec: 12, warnSec: 1.2 });
+  ok(st.update(75, 0, 0) === 0, '75% 不召唤');
+  ok(st.update(69, 0, 0) === 0, '刚过 70% 只起预警，不立刻召唤');
+  ok(st.update(69, 1.3, 0) === 3, '预警结束后召唤 3 只');
+  ok(st.update(30, 2, 3) === 0, '35% 阈值被触发但需要等待间隔');
+  ok(st.update(30, 13.5, 3) === 0, '间隔满足后先起预警');
+  ok(st.update(30, 14.8, 5) === 1, '场上已有 5 只时只补 1 只');
+  const st2 = new BossSummonState({ thresholds: [70], count: 3, maxAlive: 6, minIntervalSec: 12, warnSec: 1.2 });
+  st2.update(69, 0, 0); st2.onBossDead();
+  ok(st2.update(69, 5, 0) === 0, 'BOSS 死亡后取消所有召唤');
 }
 
 console.log('\n== 6. 确定性与波次规则 ==');

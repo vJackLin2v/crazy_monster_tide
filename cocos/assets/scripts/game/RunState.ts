@@ -3,6 +3,8 @@ import { balance } from '../core/Balance';
 import { RUN, SHOP_SLOTS, EXP_BASE, EXP_PER_LEVEL, isBossWave, eliteCount } from '../core/Const';
 import { CHARS } from '../data/Chars';
 import { ITEMS } from '../data/Items';
+import { difficultyOf, shopPrice } from '../data/Difficulties';
+import type { DifficultyId } from '../data/Difficulties';
 import { MODULES, MERGE_COST, baseOf, modPower, nextLevelId } from '../data/Modules';
 import { SKILLS, SKILL_IDS } from '../data/Skills';
 import { ATTRS } from '../data/Attrs';
@@ -48,7 +50,11 @@ export class RunState {
   shopStock: ShopSlot[] | null = null;
   carryOver: ShopSlot[] = [];
 
-  constructor(charId: string, seed: number) {
+  /** 本局难度（开局从存档复制，局内不可改） */
+  difficulty: DifficultyId = 'normal';
+
+  constructor(charId: string, seed: number, difficulty: DifficultyId = 'normal') {
+    this.difficulty = difficulty;
     const c = CHARS.find(x => x.id === charId);
     if (!c) throw new Error('未知角色：' + charId);
     this.charId = charId;
@@ -383,8 +389,8 @@ export class RunState {
     const itemPool = Object.keys(ITEMS).filter(k => !this.items.some(i => i.id === k) && !used.includes(k));
     const modPool = Object.keys(MODULES).filter(m => this.totalMods(m) < MODULES[m].max && !used.includes(m));
     const P = balance().shop;
-    const itemPrice = () => P.itemBase + rng.int(0, P.itemRand) + this.wave * P.itemPerWave;
-    const modPrice = () => P.modBase + rng.int(0, P.modRand) + this.wave * P.modPerWave;
+      const itemPrice = () => Math.round(shopPrice(P.itemBase + rng.int(0, P.itemRand) + this.wave * P.itemPerWave, this.difficulty, this.wave));
+      const modPrice = () => Math.round(shopPrice(P.modBase + rng.int(0, P.modRand) + this.wave * P.modPerWave, this.difficulty, this.wave));
     if (rng.next() < 0.5 && itemPool.length) {
       const id = rng.pick(itemPool);
       return { kind: 'item', id, price: itemPrice(), sold: false, locked: false };
@@ -402,7 +408,7 @@ export class RunState {
       : { kind: 'attr', id: 'attr', price: P.attrBase + this.wave * P.attrPerWave, sold: false, locked: false };
   }
 
-  rerollCost(): number { return balance().shop.rerollBase + this.shopReroll; }
+  rerollCost(): number { return Math.round((balance().shop.rerollBase + this.shopReroll) * difficultyOf(this.difficulty).rerollCostMul); }
 
   rerollShop(): boolean {
     const cost = this.rerollCost();

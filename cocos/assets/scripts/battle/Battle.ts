@@ -31,6 +31,8 @@ import type { SkillArt } from '../data/Types';
 import { ENEMIES, bossUnitFor } from '../data/Enemies';
 import { baseOf, modEffect } from '../data/Modules';
 import { FxPrefs } from '../game/Prefs';
+import { difficultyOf, healAmount, healBudget, spawnInterval } from '../data/Difficulties';
+import type { DifficultyId } from '../data/Difficulties';
 import { DamageContext, DamageSource, makeDamageContext, canVamp, nextCastId, ModuleUsage } from '../game/DamageContext';
 import { killblastDamage, killblastRadius, shieldAmount, SHIELD_CAP, SHIELD_COOLDOWN, SHIELD_DURATION, executePct, returnstrikePct, overchargePeriod, overchargeMul, lingeringChance, LINGER_TICKS, LINGER_TICK_DMG, LINGER_MAX_ZONES } from '../game/ModuleValues';
 import { CHARS } from '../data/Chars';
@@ -166,6 +168,8 @@ export class Battle extends Component {
   private healBudgetSpent = 0;
   private healBudgetSec = 0;
 
+  /** 本局难度 id（由 GameRoot 在 begin 前设置） */
+  difficultyId: DifficultyId = 'normal';
   /** 当前施法 id（每次 fireSkill 生成，供 DamageContext 使用） */
   private currentCastId = 'c0';
   /** 每个技能的施法计数（M6 蓄势） */
@@ -181,10 +185,14 @@ export class Battle extends Component {
   /** 所有自我回血都走这里：受每秒预算 + 最大生命双重夹取 */
   private healPlayer(amount: number): void {
     if (!(amount > 0)) return;
-    const allow = Math.max(0, 8 - this.healBudgetSpent);
-    const heal = Math.min(amount, allow);
+    const id = this.rs.difficulty;
+    const budget = healBudget(id);                       // null = 普通难度，不启用预算
+    const hpPct = this.rs.stats.maxhp > 0 ? this.rs.stats.hp / this.rs.stats.maxhp : 1;
+    const scaled = healAmount(amount, id, hpPct);        // 基础 x healMul x 条件倍率
+    const allow = budget === null ? Infinity : Math.max(0, budget - this.healBudgetSpent);
+    const heal = Math.min(scaled, allow);
     if (heal <= 0) return;
-    this.healBudgetSpent += heal;
+    if (budget !== null) this.healBudgetSpent += heal;
     this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + heal);
   }
   private waveDmgDealt = 0;     // 本波**玩家造成**的伤害（新增，供阶段2 A/B 与遥测用）
@@ -237,7 +245,7 @@ export class Battle extends Component {
     //   飞行物 / 旧玩家节点全留着 —— 表现就是"开新局还能看到上一局的经验球和两个玩家"。
     this.resetRunState();
     const charDef = CHARS.find(c => c.id === charId) ?? CHARS[0];
-    this.rs = new RunState(charDef.id, seed);
+    this.rs = new RunState(charDef.id, seed, this.difficultyId);
     // 预载：玩家单位 + 初始技能的投射物/命中特效
     this.playerClips = await Assets.loadUnit(charDef.unit);
     // 经验球素材（5 帧，很小）：开局就同步载入，保证第一只怪掉球时就能看见
@@ -697,7 +705,9 @@ export class Battle extends Component {
     const def = ENEMIES[kind];
     if (!def) { console.warn('[Battle] 未知敌人：' + kind); return; }
     this.seenEnemies.add(kind);
-    const ws = waveScale(this.rs.wave);
+    const ws0 = waveScale(this.rs.wave);
+    const dcfg = difficultyOf(this.rs.difficulty);
+    const ws = { hp: ws0.hp * dcfg.enemyHpMul, dmg: ws0.dmg * dcfg.enemyDmgMul };
     // 玩法审计 §8.5：阻路者（慢速高血量）降速但更难推走；其它单位保持原样
     const BLOCKER = kind === 'orc' || kind === 'cavebrute';
     const hp = Math.round(def.hp * ws.hp * scale);
@@ -1442,7 +1452,7 @@ export class Battle extends Component {
     const alive = this.aliveCount();
     if (alive >= caps.hard) return;
     const plan = spawnPlan(this.rs.wave);
-    const interval = alive >= caps.soft ? plan.interval * caps.slowMul : plan.interval;
+    const interval = spawnInterval(alive >= caps.soft ? plan.interval * caps.slowMul : plan.interval, this.rs.difficulty);
     this.spawnAcc += dt;
     if (this.spawnAcc < interval) return;
     this.spawnAcc = 0;

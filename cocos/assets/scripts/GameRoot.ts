@@ -21,6 +21,7 @@ import { buildMenu, buildHowto, buildCharSelect, buildResult, type ResultBuildRo
 import { buildSettings } from './ui/MetaScreens';
 import { buildCodex, buildAchievements } from './ui/CodexScreens';
 import { applyFxPrefs } from './game/Prefs';
+import { migrateDifficulty } from './game/Progress';
 import { setupUpdate, updateState, applyUpdate } from './game/Update';
 import { loadSave, writeSave } from './engine/Save';
 import { telemetryStart, telemetryRunEnd, listRuns, exportLogs, clearLogs, summarize } from './game/Telemetry';
@@ -130,6 +131,7 @@ export class GameRoot extends Component {
     // 应用存档里的音频开关 + 画面偏好（特效透明度/屏震/受击红屏）
     Sfx.setMusic(this.save.music);
     Sfx.setSfx(this.save.sfx);
+    migrateDifficulty(this.save);
     applyFxPrefs(this.save.fxAlpha ?? 1, this.save.shakeOn !== false, this.save.hurtOn !== false);
 
     Sfx.init(this.node);
@@ -256,6 +258,10 @@ export class GameRoot extends Component {
     const hudNode = mkNode(this.uiRoot, 'HudRoot', SCREEN_W, SCREEN_H);
     this.hud = new Hud(hudNode, () => this.onPausePressed());
     this.cur = hudNode;
+    // 本局难度：从存档复制到战斗（局内不可改）
+    const diffId = this.save.selectedDifficulty ?? 'normal';
+    if (this.save.difficulties.indexOf(diffId) < 0) this.save.selectedDifficulty = 'normal';
+    this.battle.difficultyId = this.save.selectedDifficulty ?? 'normal';
     const t0 = performance.now();
     // 图鉴发现：开局记下角色与初始技能
     this.markSeen('char:' + this.charId);

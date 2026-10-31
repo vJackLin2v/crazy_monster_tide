@@ -1,3 +1,4 @@
+import type { DifficultyId } from '../data/Difficulties';
 /**
  * 存档数据形状（**纯数据，不 import cc**）
  *
@@ -29,6 +30,10 @@ export interface SaveData {
   ach: string[];
   /** 通关过的角色 id（角色专属成就用） */
   charsWin: string[];
+  /** 上次选择的难度（退出后保留） */
+  selectedDifficulty: DifficultyId;
+  /** 永久解锁的难度 */
+  difficulties: DifficultyId[];
   /** 图鉴已发现条目（'enemy:goblin' / 'skill:fireball' / 'item:power_s' / 'char:knight'） */
   seen: string[];
   /** 画面偏好：特效透明度 0~1、屏幕震动、受击红屏（真机反馈 #6） */
@@ -43,7 +48,29 @@ export function defaultSave(): SaveData {
     runs: 0, wins: 0, kills: 0, bestWave: 0, bestLv: 0, bossKills: 0, merges: 0,
     ach: [],
     charsWin: [],
+    selectedDifficulty: 'normal',
+    difficulties: ['casual', 'normal'],
     seen: [],
     fxAlpha: 1, shakeOn: true, hurtOn: true,
   };
+}
+
+
+/**
+ * 难度存档迁移（设计 v6）：只补不改，不覆盖已有值。
+ * 旧档（无字段）→ selectedDifficulty=normal，difficulties=[casual,normal]，wins>=1 补 hard。
+ */
+export function migrateDifficulty(save: SaveData): SaveData {
+  const anySave = save as unknown as {
+    selectedDifficulty?: DifficultyId;
+    difficulties?: DifficultyId[];
+    wins?: number;
+  };
+  if (!anySave.selectedDifficulty) anySave.selectedDifficulty = 'normal';
+  if (!Array.isArray(anySave.difficulties)) {
+    const d: DifficultyId[] = ['casual', 'normal'];
+    if ((anySave.wins ?? 0) >= 1) d.push('hard');
+    anySave.difficulties = d;
+  }
+  return save;
 }
