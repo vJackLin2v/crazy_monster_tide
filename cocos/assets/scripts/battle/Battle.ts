@@ -36,6 +36,7 @@ import { focusedMods, shatterMul, VOLTLOOP_CHANCE, VOLTLOOP_DMG, VOLTLOOP_CD, la
 import { MODULE_HOOKS } from '../data/Modules';
 import { difficultyOf, spawnInterval } from '../data/Difficulties';
 import { BossSummonState } from '../game/BossSummon';
+import type { TelemetryRecorder } from '../game/telemetry/TelemetryRecorder';
 import type { DifficultyId } from '../data/Difficulties';
 import { DamageContext, DamageSource, SummonKind, makeDamageContext, canVamp, nextCastId, ModuleUsage } from '../game/DamageContext';
 import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, CHARGE_ECHO_MUL, sentryShotPlan, SENTRY_FAN_DMG_MUL, SENTRY_FAN_SPREAD, MINE_SPLIT_MUL } from '../game/SkillRules';
@@ -245,8 +246,12 @@ export class Battle extends Component {
    * 所有战斗内回血的统一入口：属性吸血 / 黑科技吸血 / 击杀回血 / 波末恢复都走这里。
    * 预算与夹取在 RunState.heal（唯一实现），这里只负责表现反馈。
    */
-  private healPlayer(amount: number): void {
+  private healPlayer(amount: number, source = 'unknown'): void {
     const healed = this.rs.heal(amount);
+    if (healed > 0) {
+      this.waveHealing += healed;
+      this.telemetry?.playerHeal(healed, source);
+    }
     if (healed >= 0.5) this.healFeedback(healed);
   }
   private waveDmgDealt = 0;     // 本波**玩家造成**的伤害（新增，供阶段2 A/B 与遥测用）
@@ -265,6 +270,15 @@ export class Battle extends Component {
   private bossRef: Enemy | null = null;
   /** 噩梦 BOSS 召唤状态机 */
   private bossSummon: BossSummonState | null = null;
+  /** M2-A 遥测（只观察，不参与战斗；为 null 时零开销） */
+  telemetry: TelemetryRecorder | null = null;
+  /** 当前施法对应的技能 id（遥测归因用） */
+  private telSkillId = 'unknown';
+  /** 本波实际回血量（遥测用） */
+  private waveHealing = 0;
+  /** 性能采样累计 */
+  private telPerfAcc = 0;
+  private telLastEvents = 0;
   /** 敌方弹幕（红球，和玩家弹体区分开） */
   private enemyBullets: { node: Node; x: number; y: number; vx: number; vy: number; dmg: number; life: number }[] = [];
   /** 蓄能脉冲的蓄力指示圈（按技能槽） */
@@ -910,6 +924,8 @@ export class Battle extends Component {
     //    startWave 会铺开场怪 → 看起来还在刷。局已结束（running=false）就直接拒绝开波。
     if (!this.running) { console.log('[Battle] 已结束，忽略 startWave(' + n + ')'); return; }
     this.rs.wave = n;
+    this.waveHealing = 0;
+    this.telemetry?.waveStart(n);
     // 每波开始回满血（第 1 波保留难度初始生命倍率；从第 2 波起满血进场）
     if (n > 1) this.rs.stats.hp = this.rs.stats.maxhp;
     this.clearWaveLeftovers();
@@ -951,6 +967,7 @@ export class Battle extends Component {
         1 + 0.35 * Math.floor(n / RUN.bossEvery - 1), bossUnitFor(n));
       this.bossRef = this.enemies[this.enemies.length - 1] ?? null;
       this.bossAlive = this.bossRef;
+      this.telemetry?.bossSpawn();
       this.rs.addMilestone('boss', 'BOSS 出现（第 ' + n + ' 波）');
       this.shake(SHAKE.boss);
       this.addVfx(FX.killBig, this.px + 150, this.py - 110, 0.9, 2);
@@ -1025,6 +1042,12 @@ export class Battle extends Component {
 
   private fireSkill(slot: number, rt: SkillRuntime) {
     this.currentCastId = nextCastId();
+    // M2-A：记录施法（echo 单独标记；不改变任何战斗逻辑）
+    this.telSkillId = this.rs.skills[slot]?.id ?? 'unknown';
+    if (this.telemetry) {
+      this.telemetry.cast(this.telSkillId, this.echoReplay);
+      if (this.echoReplay) this.telemetry.moduleTrigger('echo', this.telSkillId);
+    }
     // M6 蓄势：按技能独立计数，达到周期的那一次享受加成，随后归零
     // ⚠️ echo 重放**不计入**施法次数（设计 v6），否则装复读机会让蓄势提前
     const oc = this.modStacks('overcharge');
@@ -1474,17 +1497,19 @@ export class Battle extends Component {
     const ex = this.modStacks('execute');
     if (ex > 0 && e.maxhp > 0 && e.hp / e.maxhp < 0.30) {
       dmg *= 1 + executePct(ex, !!e.boss);
+      this.telemetry?.moduleTrigger('execute', this.telSkillId);
     }
     // ★ 精英伤害：对精英/BOSS 额外加成
     // 阶段 E：精英/首领伤害加成上限 +150%
     if ((e.elite || e.boss) && this.rs.stats.eliteDmg) dmg = Math.round(dmg * (1 + Math.min(1.5, this.rs.stats.eliteDmg)));
+    this.telemetry?.hit(this.telSkillId, dmg);
     e.hp -= dmg;
       this.waveDmgDealt += Math.min(dmg);
     this.totalDmgDealt += dmg;
     // ★ 吸血：按伤害比例回血 + 绿色数字 + 角色身上回血动画（M39）
     if (this.rs.stats.lifesteal > 0) {
       // 属性吸血必须与黑科技吸血共享同一预算，禁止直接改 HP
-      this.healPlayer(dmg * this.rs.stats.lifesteal);
+      this.healPlayer(dmg * this.rs.stats.lifesteal, 'lifesteal');
     }
     e.flash = 0.12;
     this.addDamageText(e.x, e.y - 10, dmg, crit);
@@ -1514,9 +1539,11 @@ export class Battle extends Component {
       e.slowPct = slowFor(!!e.boss, rt.slow);   // 普通 35/45/55%，BOSS 封顶 30%
     }
     // 吸血：基础 4%/份（唯一模块可合成，Ⅱ = 1.6 份 → 6.4%，低于两份普通）
-    if (rt.vamp && vampAllowed(ctx.source, ctx.summonKind)) this.healPlayer(dmg * VAMP_HEAL_PER_STACK * rt.vamp);
+    if (rt.vamp && vampAllowed(ctx.source, ctx.summonKind)) this.healPlayer(dmg * VAMP_HEAL_PER_STACK * rt.vamp, 'vamp');
     if (this.rs.hasItem('voltloop') && this.runTime - this.voltloopAt >= VOLTLOOP_CD && this.rs.rng.chance(VOLTLOOP_CHANCE)) {
       this.voltloopAt = this.runTime;
+      this.telemetry?.moduleTrigger('voltloop', this.telSkillId);
+      this.telemetry?.moduleDamage('voltloop', dmg * VOLTLOOP_DMG, this.telSkillId);
       this.applyRawDamage(e, dmg * VOLTLOOP_DMG);
     }
     // M5 焚烧地带：伤害在生成瞬间快照，同屏最多 4 个（超出删最早）
@@ -1526,7 +1553,7 @@ export class Battle extends Component {
         const snap = Math.max(1, Math.round(dmg * LINGER_TICK_DMG));
         this.spawnArea(e.x, e.y, 26, snap, LINGER_TICKS * 0.5, 'zone', undefined, rt, 0.5);
         const created = this.areas[this.areas.length - 1];
-        if (created) created.tag = 'lingering';
+        if (created) { created.tag = 'lingering'; this.telemetry?.moduleTrigger('lingering', this.telSkillId); }
         const mine = this.areas.filter(a => a.kind === 'zone' && a.tag === 'lingering');
         if (mine.length > LINGER_MAX_ZONES) {
           const old = mine[0];
@@ -1543,6 +1570,7 @@ export class Battle extends Component {
         const gate = { id: 'shieldonhit', allowedSources: ['normal', 'chain', 'split'] as DamageSource[], cooldownSec: SHIELD_COOLDOWN };
         if (this.modUsage.canTrigger(ctx, gate, this.runTime)) {
           this.modUsage.mark(ctx, gate, this.runTime);
+          this.telemetry?.moduleTrigger('shieldonhit', this.telSkillId);
           this.shield = Math.min(SHIELD_CAP, this.shield + shieldAmount(sh));
           this.shieldT = SHIELD_DURATION;
         }
@@ -1553,6 +1581,7 @@ export class Battle extends Component {
     //   ⚠️ 这两个数值（半径/倍率）在 docs/systems 里没有规定，是候选值，已列入审计报告待确认；
     //   通过 Balance 可调，不需要改代码。
     if (!noThunder && rt.thunder > 0 && this.rs.rng.chance(0.15 * rt.thunder)) {
+      this.telemetry?.moduleTrigger('thunder', this.telSkillId);
       const T = balance().thunder;
       this.addVfx('feedback/hit/shock-hit', e.x, e.y, 0.4, 1.4);
       for (const t of this.enemies) {
@@ -1580,6 +1609,8 @@ export class Battle extends Component {
    */
   private killEnemy(e: Enemy, rt?: SkillRuntime, src: DamageSource = 'normal', summonKind?: SummonKind) {
     if (e.dead) return;
+    this.telemetry?.kill(this.telSkillId, !!e.boss);
+    if (e.boss) this.telemetry?.bossDeath();
     e.dead = true; e.deathT = 0;
     // ★ 死亡动画：单位素材每套都有 death 帧（UNIT_FRAMES），以前从来没人播（M30 #2）
     e.anim.playOnce('death');
@@ -1592,7 +1623,7 @@ export class Battle extends Component {
     const kh = this.rs.stats.killHeal ?? 0;
     if (kh > 0 && outcome.harvestHeal) {
       // 击杀回血同样受统一预算限制
-      this.healPlayer(kh);
+      this.healPlayer(kh, 'killheal');
     }
     // M1 溢出爆裂：只由玩家可直接造成的伤害（可触发模块的来源）击杀触发；
     //   module（爆炸自身）与 summon（召唤物）都不触发，避免连锁与"借召唤物白嫖"。
@@ -1607,7 +1638,11 @@ export class Battle extends Component {
         if (d <= radius) cand.push({ e: o, d });
       }
       cand.sort((a, b) => a.d - b.d);
-      for (const c of cand.slice(0, 60)) this.applyRawDamage(c.e, dmg);
+      this.telemetry?.moduleTrigger('killblast', this.telSkillId);
+      for (const c of cand.slice(0, 60)) {
+        this.telemetry?.moduleDamage('killblast', dmg, this.telSkillId);
+        this.applyRawDamage(c.e, dmg);
+      }
     }
     this.hitstop = Math.max(this.hitstop, e.boss ? HITSTOP.boss : (e.elite ? HITSTOP.elite : HITSTOP.normal));
     this.shake(e.boss ? SHAKE.boss : (e.elite ? SHAKE.elite : SHAKE.kill));   // A5：走设置开关
@@ -1622,7 +1657,7 @@ export class Battle extends Component {
     this.addVfx(FX.killDust, e.x, e.y + 4, 0.55, big ? 2.2 : 1.2);
     if (big) this.addVfx(FX.killRing, e.x, e.y, 0.55, e.boss ? 3.2 : 2.2);
     // 割韭菜：基础 1 点/份（Ⅱ = 1.6 点）；召唤物击杀**不触发**（设计 §9）
-    if (rt && rt.harvest && outcome.harvestHeal) this.healPlayer(rt.harvest);   // 和吸血共享每秒回血预算
+    if (rt && rt.harvest && outcome.harvestHeal) this.healPlayer(rt.harvest, 'harvest');   // 和吸血共享每秒回血预算
     // 裂变词缀：精英死亡分裂出 2 只小怪（小怪不再带词缀，不递归）
     if (!e.boss && !e.fromSplit && affixSplits(e.affixes ?? [])) {
       for (let i = 0; i < AFFIX_SPLIT_COUNT; i++) {
@@ -1718,6 +1753,7 @@ export class Battle extends Component {
   // ============================================================
   update(dtRaw: number) {
     if (!this.running || !this.rs || this.paused) return;
+    const telT0 = performance.now();
     let dt = dtRaw * this.timeScale;
     if (this.hitstop > 0) { dt = dtRaw * HITSTOP_SCALE; this.hitstop = Math.max(0, this.hitstop - dtRaw); }
     // 回血预算每秒清零
@@ -1743,6 +1779,20 @@ export class Battle extends Component {
     this.updateGems(dt);
     this.updateBolts(dt);
     this.updateFx(dtRaw);
+    // M2-A：低频性能采样（1Hz），不参与战斗
+    this.telPerfAcc += dtRaw;
+    if (this.telemetry && this.telPerfAcc >= 1) {
+      this.telPerfAcc -= 1;
+      const ev = this.telemetry.eventCount;
+      this.telemetry.performanceSample({
+        enemies: this.enemies.length,
+        bullets: this.bullets.length,
+        areas: this.areas.length,
+        eventsPerSec: Math.max(0, ev - this.telLastEvents),
+        updateMs: Math.round((performance.now() - telT0) * 100) / 100,
+      });
+      this.telLastEvents = ev;
+    }
     this.checkWaveEnd(dt);
     if (this.hurtFlash > 0) this.hurtFlash = Math.max(0, this.hurtFlash - dtRaw * 2.2);
     if (this.hurtBoostT > 0) this.hurtBoostT = Math.max(0, this.hurtBoostT - dtRaw);
@@ -1792,7 +1842,7 @@ export class Battle extends Component {
     const s = this.playerNode.scale;
     this.playerNode.setScale(this.face < 0 ? -Math.abs(s.x) : Math.abs(s.x), s.y, 1);
     // 自然恢复同样走统一入口（受每秒预算/上限约束，不允许直接改 HP）
-    if (st.regen > 0) this.healPlayer(st.regen * dt);
+    if (st.regen > 0) this.healPlayer(st.regen * dt, 'regen');
   }
 
   private updateSkills(dt: number) {
@@ -2093,6 +2143,7 @@ export class Battle extends Component {
     if (this.shield > 0) { const a = Math.min(this.shield, d); this.shield -= a; d -= a; }
     if (d <= 0) return;
     this.rs.stats.hp -= d;
+    this.telemetry?.playerDamage(d, 'bullet');
     this.waveDmg += d; this.totalDmg += d;
     this.addDamageText(this.px, this.py - 14, d, false, 'hurt');
     this.inv = Math.max(0.2, this.rs.stats.invuln ?? 0.8);
@@ -2198,7 +2249,10 @@ export class Battle extends Component {
               let dm = playerTakenDamage(Math.round(e.dmg * AI2.bossSlamMul), this.rs.stats);
               if (this.shield > 0) { const a = Math.min(this.shield, dm); this.shield -= a; dm -= a; }
               this.rs.stats.hp -= dm;
-              if (dm > 0) this.addDamageText(this.px, this.py - 14, dm, false, 'hurt');
+              if (dm > 0) {
+                this.telemetry?.playerDamage(dm, 'boss_slam');
+                this.addDamageText(this.px, this.py - 14, dm, false, 'hurt');
+              }
               this.tryThorncoat(e);
         this.waveDmg += dm; this.totalDmg += dm;
               this.inv = Math.max(0.2, this.rs.stats.invuln ?? 0.8);
@@ -2265,7 +2319,10 @@ export class Battle extends Component {
         let dm = playerTakenDamage(e.dmg, this.rs.stats, bossGuard);
         if (this.shield > 0) { const a = Math.min(this.shield, dm); this.shield -= a; dm -= a; }
         this.rs.stats.hp -= dm;
-        if (dm > 0) this.addDamageText(this.px, this.py - 14, dm, false, 'hurt');
+        if (dm > 0) {
+          this.telemetry?.playerDamage(dm, 'enemy');
+          this.addDamageText(this.px, this.py - 14, dm, false, 'hurt');
+        }
         this.tryThorncoat(e);
         this.waveDmg += dm; this.totalDmg += dm;
         // 受击无敌帧 0.55 -> 0.80（2026-10-13 实测标定）
@@ -2349,6 +2406,7 @@ export class Battle extends Component {
           // ★ 传染（M49）：**不是穿过去**，而是从这只怪身上"跳"到附近的另一只——
           //   劈一道链式闪电 + 追加 80% 伤害，本体到此结束（和穿透/反弹完全不同）
           if (b.chain > 0) {
+            this.telemetry?.moduleTrigger('chain', this.telSkillId);
             // ⚠️ B6：原来不管 chain 有几份，都只跳 1 次就终止弹体。
             //    现在按份数连续跳（每跳 70% 伤害、命中表去重，避免来回跳同一只）。
             let from = e;
@@ -2376,6 +2434,7 @@ export class Battle extends Component {
           // ★ 分裂（M49）：命中时炸成 2 枚小子弹（和"扇射"的发射时散射区分开）
           if (b.split > 0 && !b.splitDone) {
             b.splitDone = true;
+            this.telemetry?.moduleTrigger('split', this.telSkillId);
             const base = Math.atan2(b.vy, b.vx);
             // 份数 → 子弹数（1 份 2 枚，2 份 3 枚，3 份 4 枚），角度均匀散开
             const cnt = splitBullets(b.split);
@@ -2628,13 +2687,21 @@ export class Battle extends Component {
     const st = this.rs.stats;
     const heal = Math.min(Math.max(4, Math.round(st.maxhp * 0.06)), st.maxhp - st.hp);
     // 波末节奏恢复：走统一入口，但作为"瞬时治疗"不消耗战斗每秒预算（保留原设计数值）
-    if (this.rs.heal(heal, true) > 0) {
+    const healed = this.rs.heal(heal, true);
+    if (healed > 0) {
+      this.telemetry?.playerHeal(healed, 'waveclear');
       this.addVfx(FX.killBig, this.px, this.py, 0.4, 1.6);
     }
   }
 
   private finishWave() {
     this.waveClearHeal();
+    this.telemetry?.waveEnd(this.rs.wave, {
+      kills: this.rs.waveKills,
+      damageTaken: this.waveDmg,
+      healing: this.waveHealing,
+      bossKilled: this.bossDefeated,
+    });
     if (this.pendingUps > 0) { this.waveEndPending = true; return; }   // 还有升级卡要选
     this.paused = true;
     this.hooks.onWaveCleared?.();

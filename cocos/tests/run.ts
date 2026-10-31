@@ -46,6 +46,9 @@ import { healStep, effectiveHealBudget } from '../assets/scripts/game/HealRules'
 import { VAMP_HEAL_PER_STACK, thornmailBack } from '../assets/scripts/game/ModuleValues';
 import { Rng } from '../assets/scripts/core/Rng';
 import { validateActiveRun, continueInfoOf, assertRestorable, newRunId, RUN_SAVE_VERSION, isLegalModuleId, isLegalItemId, type ActiveRunSave } from '../assets/scripts/game/RunSave';
+import { TelemetryRecorder } from '../assets/scripts/game/telemetry/TelemetryRecorder';
+import { loadRecords, saveRecord, exportAllJson, exportRunJson, aggregate, clearAll, skillTotals, TELEMETRY_MAX_RUNS, type TelemetryStorageLike } from '../assets/scripts/game/telemetry/TelemetryStore';
+import { TELEMETRY_SCHEMA_VERSION } from '../assets/scripts/game/telemetry/TelemetryTypes';
 import { emptyHistory, addRun, buildSummary, validateHistory, filterRuns, historyStats, hasRun, HISTORY_MAX, type RunSummary, type RunDetail } from '../assets/scripts/game/RunHistory';
 
 let pass = 0, fail = 0;
@@ -1507,6 +1510,99 @@ console.log('\n== 27. 存档模块 / 道具白名单（M1 补充） ==');
     '正式模块/合成等级/已批准隐藏模块均为合法');
   ok(!isLegalModuleId('ghost_mod') && !isLegalModuleId(''), '未知模块/空 id 非法');
   ok(isLegalItemId('t_fire') && !isLegalItemId('ghost_item'), '道具白名单');
+}
+
+
+console.log('\n== 28. M2-A 战斗遥测 ==');
+{
+  class Mem implements TelemetryStorageLike {
+    map = new Map<string, string>();
+    getItem(k: string): string | null { return this.map.has(k) ? this.map.get(k)! : null; }
+    setItem(k: string, v: string): void { this.map.set(k, v); }
+    removeItem(k: string): void { this.map.delete(k); }
+  }
+  const mk = (runId = 'run-1') => new TelemetryRecorder({ runId, characterId: 'knight', difficultyId: 'normal', startTime: 1000 });
+  const tel = mk();
+  tel.waveStart(1);
+  tel.cast('fireball');
+  tel.hit('fireball', 100, false, 20);
+  tel.hit('fireball', 50);
+  tel.cast('fireball', true);
+  tel.hit('fireball', 30);
+  tel.moduleTrigger('echo', 'fireball');
+  tel.moduleDamage('thunder', 25, 'fireball');
+  tel.kill('fireball');
+  tel.playerDamage(12);
+  tel.playerHeal(5, 'vamp');
+  tel.shopOpen([{ id: 't_fire', kind: 'item' }, { id: 'burn', kind: 'module' }], 50);
+  tel.shopPurchase('item', 't_fire', 20, 50, 30);
+  tel.shopReroll();
+  tel.waveEnd(1, { kills: 1, damageTaken: 12, healing: 5 });
+  tel.end('death', { durationMs: 10000, finalHp: 0, finalMaxHp: 100, complete: true });
+  tel.end('victory', { durationMs: 99999 });
+  const rec = tel.toRecord();
+  ok(rec.schemaVersion === TELEMETRY_SCHEMA_VERSION, '记录带 schemaVersion');
+  ok(rec.summary.result === 'death' && rec.summary.durationMs === 10000, '对局结束只结算一次');
+  ok(rec.waves.length === 1 && rec.waves[0].wave === 1 && rec.waves[0].completed, '波次开始/结束配对');
+  const fb = rec.skills.find(s => s.skillId === 'fireball')!;
+  ok(fb.castCount === 2, '技能释放次数含 echo');
+  ok(fb.hitCount === 3 && fb.damageTotal === 180, '命中次数/伤害不重复统计');
+  ok(fb.damageAverage === 60 && fb.damageMax === 100, '平均/最大伤害');
+  ok(fb.moduleBonus === 20, '黑科技加成单独记账');
+  ok(fb.killCount === 1, '击杀归属技能');
+  ok(rec.modules.find(m => m.moduleId === 'thunder')!.damageTotal === 25, '黑科技附加伤害归因');
+  ok(rec.modules.find(m => m.moduleId === 'vamp')!.healTotal === 5, '黑科技治疗归因');
+  ok(rec.summary.damageTaken === 12 && rec.summary.healingReceived === 5, '玩家承伤/回血');
+  ok(rec.shop.displays['item:t_fire'] === 1 && rec.shop.purchases['item:t_fire'] === 1, '商店展示/购买计数');
+  ok(rec.shop.rerolls === 1, '刷新计数');
+  ok(rec.completeness.complete && rec.completeness.state === 'complete', '完整对局标记');
+  ok(rec.events.length > 0 && rec.events.length <= 300, '事件环形缓冲有上限');
+  const json = tel.exportJson();
+  ok(JSON.parse(json).runId === 'run-1', '单局 JSON 可解析');
+
+  const mem = new Mem();
+  ok(saveRecord(rec, mem), '单局写入存储成功');
+  ok(saveRecord(rec, mem), '同 runId 覆盖不重复');
+  ok(loadRecords(mem).length === 1, '同 runId 只有一条记录');
+  ok(loadRecords(mem)[0].runId === 'run-1', '读取 runId 正确');
+  ok(JSON.parse(exportAllJson(mem)).records.length === 1, '全部导出 JSON 可解析');
+  ok(exportRunJson('run-1', mem).indexOf('run-1') >= 0, '单局导出');
+  ok(exportRunJson('missing', mem) === '', '缺失单局导出为空');
+
+  const tel2 = mk('run-2');
+  tel2.waveStart(1); tel2.cast('ice_spear'); tel2.hit('ice_spear', 40);
+  tel2.end('victory', { durationMs: 20000, complete: true });
+  saveRecord(tel2.toRecord(), mem);
+  ok(loadRecords(mem).length === 2, '多局记录互不覆盖');
+  const agg = aggregate(mem);
+  ok(agg.runs === 2 && agg.wins === 1 && agg.deaths === 1, '聚合胜/负统计');
+  const sk = skillTotals(mem);
+  ok(sk.fireball.damage === 180 && sk.ice_spear.damage === 40, '技能总伤害聚合');
+
+  const bad = new Mem();
+  bad.setItem('cmt_telemetry_v1', '{oops');
+  ok(loadRecords(bad).length === 0, '损坏数据兜底为空');
+  const old = new Mem();
+  old.setItem('cmt_telemetry_v1', JSON.stringify([{ schemaVersion: 0, runId: 'old', summary: { endTime: 1 }, completeness: { complete: true } }]));
+  ok(loadRecords(old).length === 1, '旧版本记录仍可读取');
+
+  const many = new Mem();
+  for (let i = 0; i < TELEMETRY_MAX_RUNS + 5; i++) {
+    const t = mk('r' + i); t.waveStart(1); t.end('death', { complete: true });
+    saveRecord(t.toRecord(), many);
+  }
+  ok(loadRecords(many).length === TELEMETRY_MAX_RUNS, '超过上限按 50 局裁剪');
+
+  const tel3 = mk('run-3');
+  tel3.waveStart(1);
+  for (let i = 0; i < 400; i++) tel3.cast('fireball');
+  ok(tel3.stats.events <= 300, '高事件量不会无限增长');
+  ok(tel3.hit('fireball', NaN) === undefined, '异常伤害不会抛错');
+  ok(tel3.playerHeal(Infinity) === undefined && tel3.playerDamage(-1) === undefined, '异常治疗/承伤安全');
+  tel3.markIncomplete('crash');
+  ok(tel3.toRecord().completeness.complete === false, '中断对局不算完整');
+  clearAll(mem);
+  ok(loadRecords(mem).length === 0, '清空存储');
 }
 
 console.log('\n================ 结果 ================');

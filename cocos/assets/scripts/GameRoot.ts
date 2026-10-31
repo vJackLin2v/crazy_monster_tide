@@ -11,6 +11,7 @@
  *       battle ─暂停键→ build 抽屉
  */
 import { _decorator, Component, Node, view, ResolutionPolicy, Color, Game, game } from 'cc';
+import { DEBUG } from 'cc/env';
 import { SCREEN_W, SCREEN_H, RUN, waveTime, isBossWave, isEliteWave } from './core/Const';
 import { Joystick } from './engine/Joystick';
 import { Battle } from './battle/Battle';
@@ -36,6 +37,9 @@ import { RUN_SAVE_VERSION, assertRestorable, continueInfoOf, newRunId, type Acti
 import { addRun, buildSummary, emptyHistory, endReasonText, type HistoryFilter, type RunDetail, type RunHistoryData, type RunResult, type RunSummary } from './game/RunHistory';
 import { telemetryStart, telemetryRunEnd, telemetryShopEnter, telemetryShopBuy, telemetryShopReroll, telemetryShopLeave, listRuns, exportLogs, clearLogs, summarize } from './game/Telemetry';
 import { initDeviceLog, logEvent, dumpDeviceLog, clearDeviceLog, deviceLogCount, deviceInfo } from './game/DeviceLog';
+import { TelemetryRecorder } from './game/telemetry/TelemetryRecorder';
+import { saveRecord, loadRecords, exportAllJson, exportRunJson, clearAll, aggregate } from './game/telemetry/TelemetryStore';
+import { buildTelemetryScreen } from './ui/TelemetryScreen';
 import { balance, balanceOverride, balanceReset, exportBalance, importBalance } from './core/Balance';
 import { applyUnlocks } from './game/Achievements';
 import { buildLevelUp, buildShop, buildBuildDrawer, buildConfirm, type CardData, type ShopSlotView } from './ui/Modals';
@@ -44,7 +48,7 @@ import { CHARS } from './data/Chars';
 import { SKILLS, SKILL_ART } from './data/Skills';
 import { Assets, preloadIcons } from './engine/Assets';
 import { Sfx } from './engine/Audio';
-import { MODULES, MODULE_IDS, MODULE_NUMS, moduleDef, baseOf, isMerged, levelOf, nextLevelId } from './data/Modules';
+import { MODULES, MODULE_IDS, MODULE_NUMS, modEffect, moduleDef, baseOf, isMerged, levelOf, nextLevelId } from './data/Modules';
 import { ITEMS, itemNumbers } from './data/Items';
 import { ITEM_ICON, MODULE_ICON, ATTR_ICON } from './data/IconMap';
 import { ATTRS } from './data/Attrs';
@@ -98,6 +102,8 @@ export class GameRoot extends Component {
   private charPreview = false;
   /** C6：复用同一个 HudData，避免每帧 new */
   private hudData: HudData | null = null;
+  /** M2-A：本局遥测记录器（只观察，不参与战斗） */
+  private telemetry: TelemetryRecorder | null = null;
 
 
   onLoad() {
@@ -119,6 +125,11 @@ export class GameRoot extends Component {
     dbg.__deviceLogDump = () => console.log(dumpDeviceLog());
     dbg.__deviceLogClear = () => { clearDeviceLog(); console.log('[DeviceLog] 已清空'); };
     dbg.__deviceLogCount = () => deviceLogCount();
+    // M2-A 遥测调试
+    dbg.__m2a = () => aggregate();
+    dbg.__m2aJson = () => exportAllJson();
+    dbg.__m2aRun = (id: string) => exportRunJson(id);
+    dbg.__m2aClear = () => clearAll();
     dbg.__bal = () => balance();
     dbg.__balSet = (p: unknown) => balanceOverride(p as never);
     dbg.__balReset = () => balanceReset();
@@ -291,6 +302,12 @@ export class GameRoot extends Component {
 
   private skillName(id: string): string { return SKILLS[id] ? SKILLS[id].name : id; }
 
+  private showTelemetry(): void {
+    if (!DEBUG) return;
+    this.phase = 'menu'; this.closeModal(); this.clearScreen();
+    this.cur = buildTelemetryScreen(this.uiRoot, () => this.showMenu());
+  }
+
   private showMenu() {
     this.phase = 'menu'; this.closeModal(); this.clearScreen();
     Sfx.bgm('menu');
@@ -336,6 +353,10 @@ export class GameRoot extends Component {
         this.showMenu();
       },
     });
+    if (DEBUG) {
+      const dbgBtn = button(this.uiRoot, SCREEN_W / 2 - 40, SCREEN_H / 2 - 30, 64, 28, '数据', { size: 10 });
+      onTap(dbgBtn.node, () => this.showTelemetry());
+    }
   }
 
   // ---------- 继续游戏：存档 / 恢复 ----------
@@ -411,6 +432,14 @@ export class GameRoot extends Component {
     this.hud = new Hud(hudNode, () => this.onPausePressed());
     this.cur = hudNode;
     this.battle.difficultyId = save.difficulty;
+    // M2-A：续玩沿用原 runId 的已有遥测，不新开一局
+    this.telemetry = new TelemetryRecorder({
+      runId: save.runId, characterId: save.charId,
+      difficultyId: save.difficulty, startTime: save.startedAt,
+    });
+    const prior = loadRecords().find(r => r.runId === save.runId);
+    if (prior) this.telemetry.resumeFrom(prior);
+    this.battle.telemetry = this.telemetry;
     this.phase = 'battle';
     await this.battle.resumeRun(save);
     this.pendingRewards = (save.pendingRewards ?? []) as Reward[];
@@ -434,6 +463,22 @@ export class GameRoot extends Component {
   private finishRun(result: RunResult): void {
     const rs = this.battle.rs;
     if (!rs) return;
+    // M2-A：先结算遥测并落盘（失败不影响历史/战斗）
+    try {
+      if (this.telemetry) {
+        const mapped = result === 'victory' ? 'victory'
+          : result === 'abandoned' ? 'quit'
+            : 'death';   // defeat / endless_end 都按死亡结算记录
+        this.telemetry.end(mapped, {
+          durationMs: Math.round(rs.runTime * 1000),
+          finalHp: Math.round(rs.stats.hp), finalMaxHp: Math.round(rs.stats.maxhp),
+          goldEarned: rs.goldEarned, goldSpent: rs.goldSpent, complete: true,
+        });
+        saveRecord(this.telemetry.toRecord());
+        this.telemetry = null;
+        this.battle.telemetry = null;
+      }
+    } catch { /* 遥测失败不影响结算 */ }
     logEvent('run_end', {
       result, wave: rs.wave, duration: Math.round(rs.runTime), kills: rs.kills,
       char: rs.charId, difficulty: rs.difficulty,
@@ -662,6 +707,12 @@ export class GameRoot extends Component {
     const diffId = this.save.selectedDifficulty ?? 'normal';
     if (this.save.difficulties.indexOf(diffId) < 0) this.save.selectedDifficulty = 'normal';
     this.battle.difficultyId = this.save.selectedDifficulty ?? 'normal';
+    // M2-A：新局创建遥测（runId 与历史/存档一致）
+    this.telemetry = new TelemetryRecorder({
+      runId: this.runId, characterId: this.charId,
+      difficultyId: this.battle.difficultyId, startTime: this.runStartedAt,
+    });
+    this.battle.telemetry = this.telemetry;
     const t0 = performance.now();
     // 图鉴发现：开局记下角色与初始技能
     this.markSeen('char:' + this.charId);
@@ -683,6 +734,7 @@ export class GameRoot extends Component {
       else if (r.kind === 'item') this.markSeen('item:' + r.id);
     }
     this.pendingRewards = rewards;
+    this.telemetry?.levelUp(this.battle.rs.lv);
     try {
       logEvent('levelup_open', { lv: this.battle.rs.lv, cards: rewards.map(r => r.kind + ':' + r.id) });
     } catch { /* ignore */ }
@@ -750,6 +802,7 @@ export class GameRoot extends Component {
     this.lastPickAt = now;
     const r = i >= 0 ? this.pendingRewards[i] : null;
     try { logEvent('levelup_pick', { pick: i, kind: r ? r.kind : 'skip', id: r ? r.id : '' }); } catch { /* ignore */ }
+    this.telemetry?.upgradeSelect(r ? r.kind : 'skip', r ? r.id : '', i < 0);
     // 4 技能已满时抽到新技能 -> 走替换屏
     if (r && r.kind === 'skill' && r.needReplace) {
       this.showReplace(r.id);
@@ -759,6 +812,7 @@ export class GameRoot extends Component {
       // ⚠️ 模块必须**进安装屏真的装上**，不能只丢进背包。
       //    之前就是只 push 进背包、没有安装入口 —— 用户报"无法安装模块"。
       this.battle.rs.modsBag.push(r.id);
+      this.telemetry?.moduleAcquire(r.id, this.battle.rs.skills.map(s => s.id));
       this.installSelIdx = null; this.installSel = null;
       this.showInstall('levelup');
       const bag = this.battle.rs.modsBag;
@@ -766,7 +820,10 @@ export class GameRoot extends Component {
       if (idx >= 0) { this.selectBag(idx); this.renderInstall(); }
       return;
     }
-    if (r) this.battle.rs.applyReward(r);
+    if (r) {
+      this.battle.rs.applyReward(r);
+      if (r.kind === 'item') this.telemetry?.itemAcquire(r.id);
+    }
     this.closeModal();
     this.phase = 'battle';
     this.battle.resumeFromModal();
@@ -1102,6 +1159,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       logEvent('shop_open', { wave: this.battle.rs.wave, gold: this.battle.rs.gold });
       this.battle.rs.refreshShop(true);
       telemetryShopEnter(this.battle.rs.wave, this.battle.rs.gold);   // 经济遥测：进店
+      this.telemetry?.shopOpen((this.battle.rs.shopStock ?? []).map(s => ({ id: s.id, kind: s.kind })), this.battle.rs.gold);
     }
     this.renderShop();
     this.saveActiveRunNow();       // 商店货架/金币变化后即可续玩
@@ -1162,18 +1220,27 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         const info = slot
           ? { id: slot.id, kind: slot.kind, price: slot.price, basePrice: slot.basePrice ?? slot.price }
           : null;
+        const goldBefore = rs.gold;
+        const hpBefore = rs.stats.hp;
         const bought = rs.buySlot(i);
         if (bought.ok && info) {
           telemetryShopBuy(info.id, info.kind, info.price, info.basePrice);
           logEvent('shop_buy', { id: info.id, kind: info.kind, price: info.price });
+          this.telemetry?.shopPurchase(info.kind, info.id, info.price, goldBefore, rs.gold);
+          if (info.kind === 'module') this.telemetry?.moduleAcquire(info.id, rs.skills.map(s => s.id));
+          if (info.kind === 'heal') {
+            const healed = Math.max(0, rs.stats.hp - hpBefore);
+            if (healed > 0) this.telemetry?.playerHeal(healed, 'shop');
+          }
         }
         this.renderShop();
         if (bought.ok) this.saveActiveRunNow();
       },
-      (i) => { rs.toggleLock(i); this.renderShop(); this.saveActiveRunNow(); },
+      (i) => { rs.toggleLock(i); this.telemetry?.shopLock(); this.renderShop(); this.saveActiveRunNow(); },
       () => {
         if (rs.rerollShop()) {
           telemetryShopReroll();
+          this.telemetry?.shopReroll();
           logEvent('shop_reroll', { cost: rs.rerollCost });
           this.saveActiveRunNow();
         }
@@ -1231,6 +1298,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
   private nextWave() {
     const rs = this.battle.rs;
     telemetryShopLeave(rs.gold);            // 经济遥测：离店（不管后面进不进安装界面）
+    this.telemetry?.shopLeave(rs.gold);
     logEvent('shop_leave', { wave: rs.wave, gold: rs.gold });
     // 离开商店 = 回战斗态；先存一份，再决定要不要进安装屏
     this.phase = 'battle';
