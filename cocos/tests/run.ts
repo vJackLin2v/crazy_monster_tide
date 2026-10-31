@@ -792,7 +792,7 @@ console.log('\n== 6. 确定性与波次规则 ==');
 ok(isBossWave(10) && isBossWave(20) && !isBossWave(9), 'BOSS 波在 10 / 20');
 ok(isEliteWave(3) && !isEliteWave(10), '精英波每 3 波一次，且 BOSS 波不出精英');
 ok(eliteCount(11) === 1 && eliteCount(12) === 2, '第 12 波起精英出 2 只');
-ok(waveTime(1) === 18 && waveTime(20) === 36, `波次时长 18s → 36s（实测 ${waveTime(1)} → ${waveTime(20)}）`);
+ok(waveTime(1) === 22 && waveTime(20) === 46, `波次时长 22s → 46s（实测 ${waveTime(1)} → ${waveTime(20)}）`);
 ok(enemyPool(1).join(',') === 'goblin', '第 1 波只有哥布林（新手保护）');
 ok(enemyPool(3).includes('wolf'), '第 3 波解锁狼');
 {
