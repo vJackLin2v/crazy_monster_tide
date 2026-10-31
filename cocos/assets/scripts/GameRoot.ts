@@ -20,6 +20,7 @@ import { Hud, type HudData } from './ui/Hud';
 import { buildMenu, buildHowto, buildCharSelect, buildResult, type ResultBuildRow } from './ui/MenuScreens';
 import { buildSettings } from './ui/MetaScreens';
 import { buildDifficultySelect } from './ui/DifficultyScreens';
+import { nextDifficulty, difficultyOf } from './data/Difficulties';
 import type { DifficultyId } from './data/Difficulties';
 import { buildCodex, buildAchievements } from './ui/CodexScreens';
 import { applyFxPrefs } from './game/Prefs';
@@ -243,6 +244,17 @@ export class GameRoot extends Component {
     this.cur = buildHowto(this.uiRoot, () => this.showMenu());
   }
   /** 难度选择页：菜单 → 难度 → 选角 */
+  /** 通关当前难度后解锁下一档（写存档） */
+  private unlockNextDifficulty(): void {
+    const cur: DifficultyId = this.save.selectedDifficulty ?? 'normal';
+    const next = nextDifficulty(cur);
+    if (next && this.save.difficulties.indexOf(next) < 0) {
+      this.save.difficulties.push(next);
+      writeSave(this.save);
+      console.log('[Difficulty] 通关 ' + cur + ' → 解锁 ' + next);
+    }
+  }
+
   private showDifficulty() {
     this.closeModal();
     if (this.cur && this.cur.isValid) this.cur.destroy();
@@ -793,6 +805,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
 
   // ---------- 11. 结算 ----------
   private showResult(win: boolean) {
+    if (win) this.unlockNextDifficulty();
     // 结算前清掉所有残留屏（暂停抽屉/升级卡/商店），否则它们会浮在结算页上方（用户截图确认）
     if (this.cur && this.cur.isValid) { this.cur.destroy(); this.cur = null; }
     if (this.curModal && this.curModal.isValid) { this.curModal.destroy(); this.curModal = null; }
@@ -856,6 +869,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         { win, wave: rs.wave, lv: rs.lv, kills: rs.kills, time: rs.runTime, build,
           gold: rs.gold, seed: this.seed, waveTotal: RUN.waves, endless: rs.endless,
           maxAlive: this.battle.maxAlive,
+          difficultyName: (difficultyOf(this.battle.rs.difficulty).name) + ' (' + this.battle.rs.difficulty + ')',
           skills: rs.skills.map(s => {
             const def = SKILLS[s.id];
             return { name: def ? def.name : s.id, icon: def ? def.icon : undefined, mods: s.mods.length };

@@ -364,7 +364,8 @@ export function buildResult(parent: Node,
                                      build: ResultBuildRow[]; gold?: number; seed?: number;
                                      waveTotal?: number; endless?: boolean; maxAlive?: number;
                                      items?: { name: string; icon?: string; count: number }[];
-  skills?: { name: string; icon?: string; mods: number }[] },
+  skills?: { name: string; icon?: string; mods: number }[];
+  difficultyName?: string },
                             onMenu: () => void, onRetry: () => void,
                             onContinue?: () => void): Node {
   const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
@@ -383,6 +384,11 @@ export function buildResult(parent: Node,
   const sub = at2(180, S + 122);
   text(root, sub.x, sub.y, stats.win ? '本局全部波次已清空' : '再撑久一点，下一局会更强',
     { size: 11, color: COL.dim, width: 340 });
+  // 本局难度（设计 v6：结算页必须显示）
+  if (stats.difficultyName) {
+    text(root, sub.x, sub.y - 20, '通关难度：' + stats.difficultyName,
+      { size: 11, color: COL.accent, width: 340, bold: true, outline: true });
+  }
 
   // 4 个统计卡（2x2）—— 规格 §9：只展示真实存在的数据
   const waveLine = stats.win

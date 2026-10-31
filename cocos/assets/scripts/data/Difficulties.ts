@@ -156,3 +156,11 @@ export function healAmount(base: number, id: DifficultyId, hpPct: number): numbe
 export function healBudget(id: DifficultyId): number | null {
   return difficultyOf(id).healBudgetPerSecond;
 }
+
+
+/** 通关当前难度后应解锁的下一档（最高档返回 null） */
+export function nextDifficulty(id: DifficultyId): DifficultyId | null {
+  const i = DIFFICULTY_IDS.indexOf(id);
+  if (i < 0 || i >= DIFFICULTY_IDS.length - 1) return null;
+  return DIFFICULTY_IDS[i + 1];
+}

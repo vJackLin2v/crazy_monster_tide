@@ -32,6 +32,7 @@ import { ENEMIES, bossUnitFor } from '../data/Enemies';
 import { baseOf, modEffect } from '../data/Modules';
 import { FxPrefs } from '../game/Prefs';
 import { difficultyOf, healAmount, healBudget, spawnInterval } from '../data/Difficulties';
+import { BossSummonState } from '../game/BossSummon';
 import type { DifficultyId } from '../data/Difficulties';
 import { DamageContext, DamageSource, makeDamageContext, canVamp, nextCastId, ModuleUsage } from '../game/DamageContext';
 import { killblastDamage, killblastRadius, shieldAmount, SHIELD_CAP, SHIELD_COOLDOWN, SHIELD_DURATION, executePct, returnstrikePct, overchargePeriod, overchargeMul, lingeringChance, LINGER_TICKS, LINGER_TICK_DMG, LINGER_MAX_ZONES } from '../game/ModuleValues';
@@ -47,6 +48,10 @@ const DEBUG_HUD = false;
 
 // ---------- 实体 ----------
 interface Enemy {
+  /** 是否为 BOSS 召唤出来的小怪（噩梦难度） */
+  summoned?: boolean;
+  /** BOSS 是否已进入狂怒（地狱） */
+  enraged?: boolean;
   node: Node; anim: FrameAnim; unit: string;
   x: number; y: number; hp: number; maxhp: number;
   spd: number; dmg: number; r: number; exp: number; gold: number;
@@ -205,6 +210,8 @@ export class Battle extends Component {
   /** 本波最高同屏（日志用） */
   private waveAliveMax = 0;
   private bossRef: Enemy | null = null;
+  /** 噩梦 BOSS 召唤状态机 */
+  private bossSummon: BossSummonState | null = null;
   private bossDefeated = false;
   private hitstop = 0;
   private running = false;
@@ -1364,6 +1371,7 @@ export class Battle extends Component {
     this.updatePlayer(dt);
     this.updateSkills(dt);
     this.updateSpawn(dt);
+    this.updateBossMechanics();
     this.updateEnemies(dt);
     this.updateBullets(dt);
     this.updateAreas(dt);
@@ -1445,6 +1453,35 @@ export class Battle extends Component {
     return n;
   }
 
+  /** BOSS 难度机制：地狱狂怒 / 噩梦召唤（状态机驱动） */
+  private updateBossMechanics(): void {
+    const boss = this.bossRef;
+    if (!boss || boss.dead) { this.bossSummon?.onBossDead(); return; }
+    const cfg = difficultyOf(this.rs.difficulty);
+
+    // 地狱：血量 <30% 进入狂怒（一次性）
+    const enr = cfg.rules.find(r => r.kind === 'bossEnrage');
+    if (enr && enr.kind === 'bossEnrage' && !boss.enraged && boss.maxhp > 0 && boss.hp / boss.maxhp < enr.thresholdPct / 100) {
+      boss.enraged = true;
+      boss.dmg *= enr.dmgMul;
+      boss.spd *= enr.speedMul;
+    }
+
+    // 噩梦：按状态机召唤（每个阈值一次、12s 间隔、同屏 <=6）
+    const sum = cfg.rules.find(r => r.kind === 'bossSummon');
+    if (!sum || sum.kind !== 'bossSummon') return;
+    if (!this.bossSummon) this.bossSummon = new BossSummonState(sum);
+    let alive = 0;
+    for (const e of this.enemies) if (!e.dead && e.summoned) alive++;
+    const n = this.bossSummon.update(boss.maxhp > 0 ? (boss.hp / boss.maxhp) * 100 : 100, this.runTime, alive);
+    for (let i = 0; i < n; i++) {
+      const ang = this.rs.rng.range(0, Math.PI * 2);
+      this.spawnEnemy('goblin', boss.x + Math.cos(ang) * 40, boss.y + Math.sin(ang) * 40, 1);
+      const e = this.enemies[this.enemies.length - 1];
+      if (e) { e.summoned = true; e.maxhp *= sum.hpMul; e.hp = e.maxhp; e.dmg *= sum.dmgMul; }
+    }
+  }
+
   private updateSpawn(dt: number) {
     if (this.bossRef && !this.bossRef.dead) return;
     // ★ 活怪上限（玩法审计 §8.2）：硬上限停刷，软上限把间隔拉长，避免同屏无限堆积
@@ -1462,9 +1499,14 @@ export class Battle extends Component {
       const p = this.spawnPt();
       this.spawnEnemy(this.rs.rng.pick(pool), p.x, p.y);
     }
-    if (this.rs.wave > 1 && this.waveLeft > 0) {
+    // 难度规则：休闲前 N 波禁精英；地狱指定波次保底至少 1 只
+    const dcfg = difficultyOf(this.rs.difficulty);
+    const noElite = dcfg.rules.some(r => r.kind === 'noEliteUntilWave' && this.rs.wave <= r.wave);
+    const guaranteed = dcfg.rules.some(r => r.kind === 'eliteGuaranteedWaves' && r.waves.indexOf(this.rs.wave) >= 0);
+    if (!noElite && this.rs.wave > 1 && this.waveLeft > 0) {
       const prog = 1 - this.waveLeft / waveTime(this.rs.wave);
-      if (prog > 0.3 && this.elitesSpawned < this.rs.elitesThisWave) {
+      const want = Math.max(this.rs.elitesThisWave, guaranteed ? 1 : 0);
+      if ((prog > 0.3 || guaranteed) && this.elitesSpawned < want) {
         this.elitesSpawned++;
         const p = this.spawnPt();
         this.spawnEnemy('gnollberserker', p.x, p.y, 1 + 0.2 * this.rs.wave);

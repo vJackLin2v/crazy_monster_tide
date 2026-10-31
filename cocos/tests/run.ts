@@ -29,7 +29,7 @@ import { defaultSave } from '../assets/scripts/game/Progress';
 import { balance, balanceOverride, balanceReset, DEFAULT_BALANCE } from '../assets/scripts/core/Balance';
 import { canSourceTriggerModules, makeDamageContext, canHarvest, canVamp, ModuleUsage, type DamageSource } from '../assets/scripts/game/DamageContext';
 import { killblastDamage, killblastRadius, shieldAmount, SHIELD_CAP, SHIELD_COOLDOWN, SHIELD_DURATION, executePct, returnstrikePct, lingeringChance, LINGER_TICKS, LINGER_TICK_DMG, LINGER_MAX_ZONES, overchargePeriod, overchargeMul } from '../assets/scripts/game/ModuleValues';
-import { DIFFICULTIES, difficultyOf, eliteChance, spawnInterval, shopPrice, healAmount, healBudget } from '../assets/scripts/data/Difficulties';
+import { nextDifficulty, DIFFICULTIES, difficultyOf, eliteChance, spawnInterval, shopPrice, healAmount, healBudget } from '../assets/scripts/data/Difficulties';
 import { BossSummonState } from '../assets/scripts/game/BossSummon';
 import { migrateDifficulty } from '../assets/scripts/game/Progress';
 import { splitBullets, echoRepeats, echoDelay, burnDuration, burnTickMul, frostSlowPct, frostDuration, slowFor } from '../assets/scripts/game/ModuleScale';
@@ -710,6 +710,10 @@ console.log('\n== 5p. 难度系统（数值 + 迁移 + 召唤状态机） ==');
   ok(Math.abs(healAmount(10, 'normal', 0.2) - 10) < 1e-9, '普通回血不加成');
   ok(Math.abs(healAmount(10, 'casual', 0.2) - 14.4) < 1e-9, '休闲低血回血 = 10 x1.2 x1.2');
   ok(healBudget('normal') === null && healBudget('nightmare') === 6, '普通无预算，噩梦 6HP/s');
+  ok(nextDifficulty('normal') === 'hard', '普通通关解锁困难');
+  ok(nextDifficulty('nightmare') === 'hell', '噩梦通关解锁地狱');
+  ok(nextDifficulty('hell') === null, '最高难度不再解锁');
+
 
   // 存档迁移：只补不改
   const old = { wins: 3 } as unknown as SaveData;
