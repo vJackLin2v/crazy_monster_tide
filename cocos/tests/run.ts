@@ -206,14 +206,14 @@ console.log('== 4d. BOSS 数量 + 帧清单 ==')
   ok(bossUnitFor(10) !== bossUnitFor(20), '第 10 / 20 波是不同 BOSS');
 }
 
-console.log('== 4c. 道具数量（需求 §10：50 普通 + 20 高级） ==')
+console.log('== 4c. 道具数量（需求 §10：52 普通 + 25 高级） ==')
 {
   const ids = Object.keys(ITEMS);
   const t1 = ids.filter(k => ITEMS[k].tier === 1).length;
   const t2 = ids.filter(k => ITEMS[k].tier === 2).length;
-  ok(ids.length === 70, '道具共 70 个（实际 ' + ids.length + '）');
-  ok(t1 === 50, '普通道具 50 个（实际 ' + t1 + '）');
-  ok(t2 === 20, '高级道具 20 个（实际 ' + t2 + '）');
+  ok(ids.length === 80, '道具共 70 个（实际 ' + ids.length + '）');
+  ok(t1 === 52, '普通道具 50 个（实际 ' + t1 + '）');
+  ok(t2 === 25, '高级道具 20 个（实际 ' + t2 + '）');
   ok(ELITE_POOL.every(k => ITEMS[k] && ITEMS[k].tier === 2), '精英掉落池里全是高级道具');
   // M43：道具详情的数值说明（从 apply 反推）
   ok(itemNumbers(ITEMS.power_s, 'power_s') === '攻击力 +8%', '数值说明：铁匠手套 = 攻击力 +8%');

@@ -14,6 +14,18 @@
  * 清单与依据见 docs/assets/icon_semantic_audit.md；对不上的 4 条留了 ⏸（库里没有合适的图）。
  */
 export const ITEM_ICON: Record<string, string> = {
+  emberstack: 'sh-fire.png',
+  shatter: 'sh-shield.png',
+  voltloop: 'sk-bolt.png',
+  bloodpact: 'sh-blood.png',
+  lastbreath: 'sh-execute.png',
+  thorncoat: 'sh-heart.png',
+  greed: 'relic-007.png',
+  frugal: 'relic-019.png',
+  focused: 'sh-sizeup.png',
+  resonator: 'relic-030.png',
+
+
   power_s: 'sh-fist.png',
   power_l: 'relic-007.png',
   haste_s: 'aspd-up.png',

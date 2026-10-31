@@ -65,9 +65,12 @@ export interface CharStats {
 export interface ItemDef {
   name: string;
   icon: string;
-  tier: 1 | 2;
+  /** 1 普通 / 2 稀有 / 3 传说（设计 v6 三档） */
+  tier: 1 | 2 | 3;
   desc: string;
   apply: (s: CharStats) => void;
+  /** 需要运行时判定的特殊效果（见 game/SpecialItems.ts） */
+  special?: 'lastbreath' | 'shatter' | 'focused' | 'resonator' | 'frugal' | 'greed' | 'thorncoat' | 'emberstack' | 'voltloop' | 'bloodpact';
 }
 
 export interface CharDef {
