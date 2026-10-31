@@ -1,6 +1,6 @@
 # M2-A 测试报告
 
-> 结论：**500 PASS / 0 FAIL**；tsc check/ui-check = 0；微信构建成功；浏览器运行时遥测落盘成功。
+> 结论：**503 PASS / 0 FAIL**；tsc check/ui-check = 0；微信构建成功；浏览器运行时遥测落盘成功。
 > 未做微信真机。
 
 ## 命令
@@ -8,7 +8,7 @@
     cd cocos
     tsc -p tsconfig.check.json      -> 0
     tsc -p tsconfig.ui-check.json   -> 0
-    tsx tests/run.ts                -> 500 PASS / 0 FAIL
+    tsx tests/run.ts                -> 503 PASS / 0 FAIL
 
 ## 新增测试（§28）
 
@@ -37,7 +37,10 @@
 21. 高频事件不无限增长；
 22. NaN/Infinity/负数不抛错；
 23. 中断对局不算 complete；
-24. 清空存储。
+24. 清空存储；
+25. 续玩沿用原 runId 与已有统计；
+26. 续玩结束前不是 complete；
+27. 续玩结束仍是同一局。
 
 ## 浏览器运行时（web-mobile）
 

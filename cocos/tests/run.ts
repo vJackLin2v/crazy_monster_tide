@@ -1560,6 +1560,17 @@ console.log('\n== 28. M2-A 战斗遥测 ==');
   const json = tel.exportJson();
   ok(JSON.parse(json).runId === 'run-1', '单局 JSON 可解析');
 
+  // 续玩：同 runId 恢复已有统计，不新开对局
+  const resumed = mk('run-1');
+  resumed.resumeFrom(rec);
+  const rr = resumed.toRecord();
+  ok(rr.runId === 'run-1' && rr.skills.find(s => s.skillId === 'fireball')!.damageTotal === 180,
+    '续玩沿用原 runId 与已有技能统计');
+  ok(rr.completeness.complete === false, '续玩记录在结束前不是 complete');
+  resumed.waveStart(2);
+  resumed.end('death', { complete: true });
+  ok(resumed.toRecord().summary.runId === 'run-1', '续玩结束仍是同一局');
+
   const mem = new Mem();
   ok(saveRecord(rec, mem), '单局写入存储成功');
   ok(saveRecord(rec, mem), '同 runId 覆盖不重复');
