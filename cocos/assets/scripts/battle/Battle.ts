@@ -1474,7 +1474,7 @@ export class Battle extends Component {
     e.hp -= dmg;
     this.waveDmgDealt += dmg;
     this.totalDmgDealt += dmg;
-    if (e.hp <= 0) this.killEnemy(e, undefined, 'module');
+    if (e.hp <= 0) this.killEnemy(e, undefined, 'module', undefined, 'unknown');
   }
 
   private hasModule(id: string): boolean {
@@ -1506,7 +1506,7 @@ export class Battle extends Component {
     const ex = this.modStacks('execute');
     if (ex > 0 && e.maxhp > 0 && e.hp / e.maxhp < 0.30) {
       dmg *= 1 + executePct(ex, !!e.boss);
-      this.telemetry?.moduleTrigger('execute', this.telSkillId);
+      this.telemetry?.moduleTrigger('execute', telSid);
     }
     // ★ 精英伤害：对精英/BOSS 额外加成
     // 阶段 E：精英/首领伤害加成上限 +150%
@@ -1551,8 +1551,8 @@ export class Battle extends Component {
     if (rt.vamp && vampAllowed(ctx.source, ctx.summonKind)) this.healPlayer(dmg * VAMP_HEAL_PER_STACK * rt.vamp, 'vamp');
     if (this.rs.hasItem('voltloop') && this.runTime - this.voltloopAt >= VOLTLOOP_CD && this.rs.rng.chance(VOLTLOOP_CHANCE)) {
       this.voltloopAt = this.runTime;
-      this.telemetry?.moduleTrigger('voltloop', this.telSkillId);
-      this.telemetry?.moduleDamage('voltloop', dmg * VOLTLOOP_DMG, this.telSkillId);
+      this.telemetry?.moduleTrigger('voltloop', telSid);
+      this.telemetry?.moduleDamage('voltloop', dmg * VOLTLOOP_DMG, telSid);
       this.applyRawDamage(e, dmg * VOLTLOOP_DMG);
     }
     // M5 焚烧地带：伤害在生成瞬间快照，同屏最多 4 个（超出删最早）
@@ -1560,9 +1560,9 @@ export class Battle extends Component {
       const lg = this.modStacks('lingering');
       if (lg > 0 && this.rs.rng.chance(lingeringChance(lg, ctx.source === 'split'))) {
         const snap = Math.max(1, Math.round(dmg * LINGER_TICK_DMG));
-        this.spawnArea(e.x, e.y, 26, snap, LINGER_TICKS * 0.5, 'zone', undefined, rt, 0.5);
+        this.spawnArea(e.x, e.y, 26, snap, LINGER_TICKS * 0.5, 'zone', undefined, rt, 0.5, telSid);
         const created = this.areas[this.areas.length - 1];
-        if (created) { created.tag = 'lingering'; this.telemetry?.moduleTrigger('lingering', this.telSkillId); }
+        if (created) { created.tag = 'lingering'; this.telemetry?.moduleTrigger('lingering', telSid); }
         const mine = this.areas.filter(a => a.kind === 'zone' && a.tag === 'lingering');
         if (mine.length > LINGER_MAX_ZONES) {
           const old = mine[0];
@@ -1579,7 +1579,7 @@ export class Battle extends Component {
         const gate = { id: 'shieldonhit', allowedSources: ['normal', 'chain', 'split'] as DamageSource[], cooldownSec: SHIELD_COOLDOWN };
         if (this.modUsage.canTrigger(ctx, gate, this.runTime)) {
           this.modUsage.mark(ctx, gate, this.runTime);
-          this.telemetry?.moduleTrigger('shieldonhit', this.telSkillId);
+          this.telemetry?.moduleTrigger('shieldonhit', telSid);
           this.shield = Math.min(SHIELD_CAP, this.shield + shieldAmount(sh));
           this.shieldT = SHIELD_DURATION;
         }
@@ -1590,13 +1590,13 @@ export class Battle extends Component {
     //   ⚠️ 这两个数值（半径/倍率）在 docs/systems 里没有规定，是候选值，已列入审计报告待确认；
     //   通过 Balance 可调，不需要改代码。
     if (!noThunder && rt.thunder > 0 && this.rs.rng.chance(0.15 * rt.thunder)) {
-      this.telemetry?.moduleTrigger('thunder', this.telSkillId);
+      this.telemetry?.moduleTrigger('thunder', telSid);
       const T = balance().thunder;
       this.addVfx('feedback/hit/shock-hit', e.x, e.y, 0.4, 1.4);
       for (const t of this.enemies) {
         if (t.dead || t === e) continue;
         if (Math.hypot(t.x - e.x, t.y - e.y) <= T.radius) {
-          this.hitEnemy(t, dmg * T.mul, rt, undefined, true);   // 递归触发被最后一个参数挡住
+          this.hitEnemy(t, dmg * T.mul, rt, undefined, true, undefined, undefined, telSid);   // 递归触发被最后一个参数挡住
         }
       }
     }
@@ -1618,7 +1618,8 @@ export class Battle extends Component {
    */
   private killEnemy(e: Enemy, rt?: SkillRuntime, src: DamageSource = 'normal', summonKind?: SummonKind, telSkill?: string) {
     if (e.dead) return;
-    this.telemetry?.kill(telSkill ?? this.telSkillId, !!e.boss);
+    const killTel = telSkill ?? this.telSkillId;
+    this.telemetry?.kill(killTel, !!e.boss);
     if (e.boss) this.telemetry?.bossDeath();
     e.dead = true; e.deathT = 0;
     // ★ 死亡动画：单位素材每套都有 death 帧（UNIT_FRAMES），以前从来没人播（M30 #2）
@@ -1647,9 +1648,9 @@ export class Battle extends Component {
         if (d <= radius) cand.push({ e: o, d });
       }
       cand.sort((a, b) => a.d - b.d);
-      this.telemetry?.moduleTrigger('killblast', this.telSkillId);
+      this.telemetry?.moduleTrigger('killblast', killTel);
       for (const c of cand.slice(0, 60)) {
-        this.telemetry?.moduleDamage('killblast', dmg, this.telSkillId);
+        this.telemetry?.moduleDamage('killblast', dmg, killTel);
         this.applyRawDamage(c.e, dmg);
       }
     }
@@ -2415,7 +2416,7 @@ export class Battle extends Component {
           // ★ 传染（M49）：**不是穿过去**，而是从这只怪身上"跳"到附近的另一只——
           //   劈一道链式闪电 + 追加 80% 伤害，本体到此结束（和穿透/反弹完全不同）
           if (b.chain > 0) {
-            this.telemetry?.moduleTrigger('chain', this.telSkillId);
+            this.telemetry?.moduleTrigger('chain', b.telSkill ?? 'unknown');
             // ⚠️ B6：原来不管 chain 有几份，都只跳 1 次就终止弹体。
             //    现在按份数连续跳（每跳 70% 伤害、命中表去重，避免来回跳同一只）。
             let from = e;
@@ -2443,7 +2444,7 @@ export class Battle extends Component {
           // ★ 分裂（M49）：命中时炸成 2 枚小子弹（和"扇射"的发射时散射区分开）
           if (b.split > 0 && !b.splitDone) {
             b.splitDone = true;
-            this.telemetry?.moduleTrigger('split', this.telSkillId);
+            this.telemetry?.moduleTrigger('split', b.telSkill ?? 'unknown');
             const base = Math.atan2(b.vy, b.vx);
             // 份数 → 子弹数（1 份 2 枚，2 份 3 枚，3 份 4 枚），角度均匀散开
             const cnt = splitBullets(b.split);

@@ -1603,6 +1603,22 @@ console.log('\n== 28. M2-A 战斗遥测 ==');
     const rec2 = f.toRecord();
     const fb2 = rec2.skills.find(x => x.skillId === 'fireball')!;
     ok(fb2.damageTotal === 11 && !('triggerCount' in fb2), '技能来源分开且不存在恒 0 的 triggerCount');
+
+    // M2-A.2：模块触发/伤害携带父技能来源
+    const at = mk('attr-run');
+    at.moduleTrigger('execute', 'fireball');
+    at.moduleDamage('voltloop', 10, 'fireball');
+    at.moduleTrigger('lingering', 'fireball');
+    at.moduleTrigger('shieldonhit', 'unknown');
+    const ar = at.toRecord();
+    const ex = ar.modules.find(m => m.moduleId === 'execute')!;
+    const vo = ar.modules.find(m => m.moduleId === 'voltloop')!;
+    ok(ex.relatedSkillIds.indexOf('fireball') >= 0, 'execute 触发归属父技能');
+    ok(vo.damageTotal === 10 && vo.relatedSkillIds.indexOf('fireball') >= 0, 'voltloop 伤害归属父技能');
+    ok(ar.modules.find(m => m.moduleId === 'lingering')!.relatedSkillIds.indexOf('fireball') >= 0,
+      'lingering 触发归属父技能');
+    ok(ar.modules.find(m => m.moduleId === 'shieldonhit')!.relatedSkillIds.indexOf('unknown') >= 0,
+      '无可靠来源标记 unknown');
   }
 
   // 续玩：同 runId 恢复已有统计，不新开对局
