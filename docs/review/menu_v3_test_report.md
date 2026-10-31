@@ -1,6 +1,6 @@
 # 主菜单 V3 测试报告（menu_v3_test_report）
 
-> 日期：2026-10-31 ｜ 代码 commit：待填（交付时提交）｜ 引擎：Cocos Creator 3.8.6
+> 日期：2026-10-31 ｜ 代码 commit：`ea21d53` ｜ 引擎：Cocos Creator 3.8.6
 > 结论：**435 PASS / 0 FAIL**；tsc 双配置 0；微信构建成功（3.11MB / 10.94MB）；浏览器真实运行 **errors=none**。
 
 ## 1. 本轮范围
