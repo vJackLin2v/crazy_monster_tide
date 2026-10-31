@@ -753,6 +753,11 @@ console.log('\n== 5q. 新技能 × 黑科技 兼容白名单 ==');
   ok(canInstall(sn, 'overload').ok === false, '哨兵不能装 overload');
   const cp = { id: 'charge_pulse', lvl: 1, mods: [] } as never;
   ok(canInstall(cp, 'overload').ok === true && canInstall(cp, 'multi').ok === false, '蓄能可装 overload、不能装 multi');
+  ok(canInstall({ id: 'blade', lvl: 1, mods: [] } as never, 'thunder').ok === true, '回旋刃可以装渡劫（命中触发类不再要求标签）');
+  ok(canInstall({ id: 'poison', lvl: 1, mods: [] } as never, 'vamp').ok === true, '毒雾可以装吸血');
+  ok(canInstall({ id: 'fireball', lvl: 1, mods: [] } as never, 'harvest').ok === true, '火球可以装割韭菜');
+  ok(canInstall({ id: 'poison', lvl: 1, mods: [] } as never, 'multi').ok === false, '毒雾不能装加量（无弹体）');
+
 }
 
 console.log('\n== 5r. 特殊道具（独立预期值） ==');

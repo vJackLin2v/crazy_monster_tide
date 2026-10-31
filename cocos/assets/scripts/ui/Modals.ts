@@ -648,7 +648,7 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
   // ── 黑科技页：结构化列表（图标 + 名称/数量 + 效果），**已装与背包分开** ──
   // 可视窗口本身要**有真实尺寸**，否则触摸事件不会落在它上面（这是滚不动的真因）
   const VIEW_TOP = bodyY + 12;
-  const VIEW_BOTTOM = -VH / 2 + 150;   // 再往上收 30px，避免半截行贴到按钮带   // 让列表停在按钮带更上方，配合底部底板彻底不重叠
+  const VIEW_BOTTOM = -VH / 2 + 196;   // 再往上收 30px，避免半截行贴到按钮带   // 让列表停在按钮带更上方，配合底部底板彻底不重叠
   const VIEW_H = Math.max(40, VIEW_TOP - VIEW_BOTTOM);
   const VIEW_CY = (VIEW_TOP + VIEW_BOTTOM) / 2;
   const modHost = mkNode(drawer, 'modDetail', VW - 8, VIEW_H, 0, VIEW_CY);

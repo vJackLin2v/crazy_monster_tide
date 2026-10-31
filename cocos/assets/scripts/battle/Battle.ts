@@ -855,7 +855,8 @@ export class Battle extends Component {
       //   加量：同方向多打 1 发，全额伤害（火力集中）
       //   扇射：额外散开 2 发"小弹"，每发 60% 伤害、射程更短（覆盖面换伤害）
       const baseShots = rt.count;
-      const baseSpread = baseShots > 1 ? 0.06 : 0;
+      // 用户反馈：两份刀刃几乎重叠，看不出打了两发 → 间距调到 ~17°
+      const baseSpread = baseShots > 1 ? 0.30 : 0;
       // 第三轮批准：额外弹（第 2 发起）按 extraProjDmg 加成（三重镜 = +15%），主弹仍是全额
       const extraMul = 1 + (this.rs.stats.extraProjDmg ?? 0);
       for (let i = 0; i < baseShots; i++) {

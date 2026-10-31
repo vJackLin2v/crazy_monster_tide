@@ -37,6 +37,8 @@ export function modCount(sk: SkillInst, mid: string): number {
 export function isCompatible(skillId: string, mid: string): boolean {
   const b = SKILLS[skillId], m = moduleDef(mid);
   if (!b || !m) return false;
+  // requires 为空 = 命中触发/受击触发类，任何能造成伤害的技能都可以装（设计 v7 修订）
+  if (!m.requires || m.requires.length === 0) return true;
   return m.requires.some(t => (b.tags as Tag[]).includes(t));
 }
 

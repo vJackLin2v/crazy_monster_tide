@@ -439,7 +439,9 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
 
   private modName(id: string): string {
     const d = moduleDef(id);
-    const base = d ? d.name : baseOf(id);
+    // ⚠️ 有的模块名本身已带等级后缀（加量 Ⅱ），再拼一次会变成"加量 Ⅱ Ⅱ"（用户反馈）
+    const raw = d ? d.name : baseOf(id);
+    const base = raw.replace(/\s*[Ⅰ-Ⅻⅰ-ⅻ]+$/, '');
     const lv = levelOf(id);
     // 等级用罗马数字后缀显示：巨大 / 巨大 Ⅱ / 巨大 Ⅲ / 巨大 Ⅳ …
     const R = ['', '', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ', 'Ⅶ', 'Ⅷ', 'Ⅸ', 'Ⅹ'];
