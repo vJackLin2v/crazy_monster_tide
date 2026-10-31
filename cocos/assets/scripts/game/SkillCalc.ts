@@ -1,3 +1,12 @@
+
+/** 四个新技能的黑科技白名单（设计 v6 兼容矩阵落地的第一版） */
+export const NEW_SKILL_ALLOW: Record<string, string[]> = {
+  ring_blade: ['orbit', 'giant', 'rapid', 'burn', 'frost', 'vamp', 'chain', 'thunder', 'harvest', 'thornmail'],
+  mine_field: ['giant', 'rapid', 'burn', 'frost', 'vamp', 'chain', 'thunder', 'harvest', 'thornmail', 'split', 'echo', 'overload'],
+  sentry: ['multi', 'fan', 'split', 'bounce', 'pierce', 'giant', 'rapid', 'burn', 'frost', 'chain', 'snipe', 'harvest', 'thunder', 'vamp'],
+  charge_pulse: ['giant', 'rapid', 'burn', 'frost', 'vamp', 'chain', 'thunder', 'harvest', 'overload', 'echo'],
+};
+
 import { moduleDef, baseOf, modPower, modEffect } from '../data/Modules';
 import { SKILLS } from '../data/Skills';
 import type { CharStats, SkillDef, Tag } from '../data/Types';
@@ -35,7 +44,14 @@ export function isCompatible(skillId: string, mid: string): boolean {
 export function canInstall(sk: SkillInst, mid: string): { ok: boolean; why: string } {
   const m = moduleDef(mid);
   if (!m) return { ok: false, why: '模块不存在' };
-  if (!isCompatible(sk.id, mid)) return { ok: false, why: '不兼容' };
+  // 新技能：先过白名单（无效的黑科技直接拒绝并说明原因，而不是装上没效果）
+  const allow = NEW_SKILL_ALLOW[sk.id];
+  if (allow) {
+    // 新技能走白名单；命中后不再查旧的标签兼容表
+    if (allow.indexOf(mid.replace(/_(\d+)$/, '')) < 0) return { ok: false, why: '该黑科技对这类技能无效' };
+  } else if (!isCompatible(sk.id, mid)) {
+    return { ok: false, why: '不兼容' };
+  }
   if (modCount(sk, mid) >= m.max) return { ok: false, why: '已满级' };
   if (sk.mods.length >= MAX_SLOTS) return { ok: false, why: '需替换槽位' };
   return { ok: true, why: '' };

@@ -737,6 +737,23 @@ console.log('\n== 5p. 难度系统（数值 + 迁移 + 召唤状态机） ==');
   ok(st2.update(69, 5, 0) === 0, 'BOSS 死亡后取消所有召唤');
 }
 
+console.log('\n== 5q. 新技能 × 黑科技 兼容白名单 ==');
+{
+  const rb = { id: 'ring_blade', lvl: 1, mods: [] } as never;
+  ok(canInstall(rb, 'multi').ok === false, '环刃不能装 multi（无弹体）');
+  ok(canInstall(rb, 'giant').ok === true, '环刃可以装 giant');
+  ok(canInstall(rb, 'orbit').ok === true, '环刃可以装 orbit（+1 片）');
+  ok(canInstall(rb, 'fan').ok === false, '环刃不能装 fan');
+  const mf = { id: 'mine_field', lvl: 1, mods: [] } as never;
+  ok(canInstall(mf, 'split').ok === true && canInstall(mf, 'echo').ok === true, '地雷阵可装 split/echo');
+  ok(canInstall(mf, 'pierce').ok === false, '地雷阵不能装 pierce');
+  const sn = { id: 'sentry', lvl: 1, mods: [] } as never;
+  ok(canInstall(sn, 'multi').ok === true && canInstall(sn, 'snipe').ok === true, '哨兵可装 multi/snipe');
+  ok(canInstall(sn, 'overload').ok === false, '哨兵不能装 overload');
+  const cp = { id: 'charge_pulse', lvl: 1, mods: [] } as never;
+  ok(canInstall(cp, 'overload').ok === true && canInstall(cp, 'multi').ok === false, '蓄能可装 overload、不能装 multi');
+}
+
 console.log('\n== 6. 确定性与波次规则 ==');
 {
   const a = new RunState('mage', 4242), b = new RunState('mage', 4242);

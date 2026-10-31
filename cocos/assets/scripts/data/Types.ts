@@ -3,10 +3,9 @@
 export type SkillType = 'projectile' | 'pulse' | 'area' | 'chain' | 'orbit' | 'trap' | 'summon' | 'charge';
 
 /** 技能标签：用于行为模块的兼容性判定与联动（docs/systems/tags.md） */
-export type Tag =
-  | 'fire' | 'ice' | 'lightning' | 'arcane' | 'physical' | 'poison' | 'nature' | 'holy'
+export type Tag = | 'fire' | 'ice' | 'lightning' | 'arcane' | 'physical' | 'poison' | 'nature' | 'holy'
   | 'projectile' | 'area' | 'pulse' | 'chain'
-  | 'dot' | 'slow' | 'homing' | 'pierceable' | 'return';
+  | 'dot' | 'slow' | 'homing' | 'pierceable' | 'return' | 'orbit' | 'melee' | 'trap' | 'summon' | 'charge' | 'burst';
 
 export interface SkillDef {
   name: string;
