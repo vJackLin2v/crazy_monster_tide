@@ -145,42 +145,38 @@ export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandl
   // ── B. 中央操作区 ──
   const coreY = Math.max(S + 200, Math.round(VH * 0.47));
   const hasSave = vm.saveState === 'ok' && !!vm.info;
+  // 2026-10-31：用户要求「继续游戏」和「开始游戏」必须是同一种按钮 ——
+  // 现在两者都用同一个 button() 组件、同为 310×72、同为 primary 样式；存档摘要单独一行放上方。
+  const BTN_W = 310, BTN_H = 72, BTN_GAP = 12;
   if (hasSave && vm.info) {
     const info = vm.info;
-    // 继续卡与"开始新冒险"保持同尺寸（310×84），间距 12
-    const card = panel(root, at2(180, coreY).x, at2(180, coreY).y, 310, 84, { art: 'panel' });
-    const bar = mkNode(card, 'saveBar', 5, 64, -150, 0);
-    const bg2 = bar.addComponent(Graphics);
-    bg2.fillColor = COL.accent; bg2.rect(-2.5, -32, 5, 64); bg2.fill();
+    text(root, at2(180, coreY - 54).x, at2(180, coreY - 54).y,
+      info.charName + ' · 第 ' + info.wave + '/' + info.totalWaves + ' 波 · ' + info.difficultyName
+        + ' · 生命 ' + info.hp + '/' + info.maxhp + ' · ' + info.durationText,
+      { size: 10, color: COL.dim, width: 340, align: 'center' });
 
-    text(card, -138, 26, '继续冒险', { size: 18, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
-    // 继续图标：像素三角形（不是文字 ▶）
-    const tri = mkNode(card, 'go', 18, 18, 128, 26);
-    const tg = tri.addComponent(Graphics);
-    tg.fillColor = COL.accent;
-    tg.rect(-6, -7, 4, 14); tg.rect(-2, -4, 4, 8); tg.rect(2, -2, 4, 4); tg.fill();
+    const contBtn = button(root, at2(180, coreY).x, at2(180, coreY).y, BTN_W, BTN_H, '继续游戏',
+      { primary: true, size: 20 });
+    pressable(contBtn.node, h.onContinue);
 
-    text(card, -138, 2, info.charName + ' · 第 ' + info.wave + '/' + info.totalWaves + ' 波 · ' + info.difficultyName,
-      { size: 11, color: COL.cream, align: 'left', width: 280, bold: true, outline: true });
-    text(card, -138, -22, '生命 ' + info.hp + '/' + info.maxhp + ' · ' + info.durationText,
-      { size: 10, color: COL.dim, align: 'left', width: 260 });
-    pressable(card, h.onContinue);
-
-    const startY2 = coreY + 84 + 12;
-    const newBtn = button(root, at2(180, startY2).x, at2(180, startY2).y, 310, 84, '开始新冒险', { size: 18 });
-    onTap(newBtn.node, h.onStart);
+    const startY2 = coreY + BTN_H + BTN_GAP;
+    const newBtn = button(root, at2(180, startY2).x, at2(180, startY2).y, BTN_W, BTN_H, '开始游戏',
+      { primary: true, size: 20 });
+    pressable(newBtn.node, h.onStart);
   } else if (vm.saveState === 'corrupt') {
-    const card = panel(root, at2(180, coreY).x, at2(180, coreY).y, 310, 110, { art: 'panel_soft' });
+    const card = panel(root, at2(180, coreY - 8).x, at2(180, coreY - 8).y, 310, 104, { art: 'panel_soft' });
     text(card, -132, 30, '存档不可用', { size: 15, color: COL.dim, align: 'left', width: 220, bold: true, outline: true });
     text(card, -132, 4, vm.corruptNote || '存档损坏或版本不兼容', { size: 10, color: COL.red, align: 'left', width: 280, outline: true });
     text(card, -132, -24, '点此清除坏档后重新开始', { size: 9, color: COL.dim, align: 'left', width: 280 });
     onTap(card, () => { if (h.onDiscardSave) h.onDiscardSave(); });
 
-    const startBtn = button(root, at2(180, coreY + 96).x, at2(180, coreY + 96).y, 310, 84, '开始冒险', { primary: true, size: 18 });
-    onTap(startBtn.node, h.onStart);
+    const startBtn = button(root, at2(180, coreY + 76).x, at2(180, coreY + 76).y, BTN_W, BTN_H, '开始游戏',
+      { primary: true, size: 20 });
+    pressable(startBtn.node, h.onStart);
   } else {
-    const startBtn = button(root, at2(180, coreY + 6).x, at2(180, coreY + 6).y, 280, 60, '开始冒险', { primary: true, size: 21 });
-    onTap(startBtn.node, h.onStart);
+    const startBtn = button(root, at2(180, coreY + 6).x, at2(180, coreY + 6).y, BTN_W, BTN_H, '开始游戏',
+      { primary: true, size: 20 });
+    pressable(startBtn.node, h.onStart);
   }
 
   // ── C. 底部功能入口（真实像素图标，无汉字替代）──
