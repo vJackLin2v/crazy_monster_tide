@@ -1027,6 +1027,8 @@ export class Battle extends Component {
     if (frames.length) { anim.setClips({ play: frames }); anim.play('play', true); }
     const sc = Math.max(2.4, rt.size / 10);
     node.setScale(sc, sc, 1);
+    // 用户反馈"陨石落地时是横着飞的"：岩石素材是侧视，垂直下落要转 90°，再加一点自转
+    node.angle = 90;
     node.setPosition(x, ARENA_H - (y - 320), 0);
     this.meteors.push({
       node,

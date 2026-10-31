@@ -4,6 +4,7 @@ import { RUN, SHOP_SLOTS, EXP_BASE, EXP_PER_LEVEL, isBossWave, eliteCount } from
 import { CHARS } from '../data/Chars';
 import { ITEMS } from '../data/Items';
 import { difficultyOf, shopPrice } from '../data/Difficulties';
+import { modEffect } from '../data/Modules';
 import type { DifficultyId } from '../data/Difficulties';
 import { MODULES, MERGE_COST, baseOf, modPower, nextLevelId } from '../data/Modules';
 import { SKILLS, SKILL_IDS } from '../data/Skills';
@@ -197,6 +198,25 @@ export class RunState {
   }
 
   /** 还能合成几次：3 个同名**基础**模块 = 1 次（强化版不再参与合成，封顶 ×2） */
+  /** 一键卸下：把所有技能上的黑科技退回背包 */
+  unequipAll(): number {
+    let n = 0;
+    for (const sk of this.skills) {
+      while (sk.mods.length) { const m = sk.mods.pop(); if (m) { this.modsBag.push(m); n++; } }
+    }
+    return n;
+  }
+
+  /** 出售背包里的黑科技（idx 为 modsBag 下标），返回获得金币 */
+  sellMod(idx: number): number {
+    if (idx < 0 || idx >= this.modsBag.length) return 0;
+    const id = this.modsBag[idx];
+    this.modsBag.splice(idx, 1);
+    const gold = Math.max(6, Math.round(9 * modEffect(id)));
+    this.gold += gold;
+    return gold;
+  }
+
   mergeReady(baseId: string): number {
     // 只数**完全同名同级**的副本：巨大 与 巨大_2 分开计数，所以不能混着合
     let plain = 0;

@@ -528,6 +528,20 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         this.renderInstall();
       },
       onPickSlot: (si, sl) => this.doInstall(si, sl),
+      onUnequipAll: () => {
+        const n = this.battle.rs.unequipAll();
+        this.installSel = null; this.installSelIdx = null; this.installFromSlot = null;
+        console.log('[Install] 一键卸下 ' + n + ' 个黑科技');
+        this.renderInstall();
+      },
+      onSellSelected: () => {
+        const idx = this.installSelIdx;
+        if (idx === null) return;
+        const gold = this.battle.rs.sellMod(idx);
+        this.installSel = null; this.installSelIdx = null;
+        console.log('[Install] 出售黑科技获得 ' + gold + ' 金币');
+        this.renderInstall();
+      },
       onUnequip: () => {
         const f = this.installFromSlot;
         if (!f) return;

@@ -583,7 +583,11 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
       y -= rowH + 4;
       if (open) {
         const rows: { t: string; c: Color }[] = [{ t: s.desc, c: COL.mint }];
-        for (const m of s.mods) rows.push({ t: '· ' + m.name + '：' + m.desc, c: COL.cream });
+        for (const m of s.mods) {
+    const mul = modEffect(m.id ?? '');
+    const tag = mul > 1.01 ? ('（效果 ×' + mul.toFixed(1) + '）') : '';
+    rows.push({ t: '· ' + m.name + '：' + m.desc + tag, c: COL.cream });
+  }
         if (!s.mods.length) rows.push({ t: '· 还没有装黑科技', c: COL.dim });
         rows.slice(0, 5).forEach((ln, k) => {
           text(skillRoot, -W / 2 + 12, y - 6 - k * 13, ln.t, { size: 9, color: ln.c, align: 'left', width: W - 20, outline: false });

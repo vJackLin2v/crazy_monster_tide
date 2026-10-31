@@ -66,6 +66,10 @@ export interface InstallCallbacks {
   onMerge: (baseId: string) => void;
   onUnequip: () => void;
   onBack: () => void;
+  /** 一键卸下全部黑科技到背包 */
+  onUnequipAll?: () => void;
+  /** 出售当前选中的背包黑科技 */
+  onSellSelected?: () => void;
 }
 
 /** 6. 黑科技安装 / 替换 / 合成 —— 全屏面板（不再是"飘在战场上的文字"） */
@@ -221,6 +225,15 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
 
   // ── 底部按钮 ──
   const by = -PH / 2 + 28;
+  // 一键卸下 / 出售所选（放在主按钮上方一排）
+  if (cb.onUnequipAll) {
+    const u = button(box, -78, by + 54, 150, 32, '一键卸下', { size: 12 });
+    onTap(u.node, cb.onUnequipAll);
+  }
+  if (cb.onSellSelected) {
+    const sl = button(box, 78, by + 54, 150, 32, '出售所选', { size: 12 });
+    onTap(sl.node, cb.onSellSelected);
+  }
   const back = button(box, -78, by, 150, 46, '返回', { size: 15 });
   onTap(back.node, cb.onBack);
   const done = button(box, 78, by, 150, 46, '完成', { primary: true, size: 17 });
