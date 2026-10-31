@@ -9,6 +9,7 @@ import { COL, FS, R, BORDER } from './Tokens';
 import { iconFrame, loadIcon } from '../engine/Assets';
 import { Sfx } from '../engine/Audio';
 import { makeScroll } from './ScrollView';
+import { makeModalList } from './ModalList';
 import { safeTop, safeBottom } from './Safe';
 import type { UiArtName } from './Art';
 
@@ -339,17 +340,24 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
     text(root, 0, A(180, rowsTop + groupH + 18).y, tip, { size: 10, color: COL.dim, width: 336 });
   }
 
-  // ── 已有道具网格（位置已在上方算好）──
+  // ── 已有道具：全部展示 + 可滚动（ModalList，同安装屏一套）──
   text(root, A(12, ownedTitleY).x, A(12, ownedTitleY).y, '已有道具 ' + owned.length,
     { size: 13, color: COL.accent, align: 'left', width: 240, bold: true, outline: true });
   if (!owned.length) {
     text(root, A(12, gridTop + 8).x, A(12, gridTop + 8).y, '（还没有道具：精英/BOSS 会掉，商店也能买）',
       { size: 10, color: COL.dim, align: 'left', width: 320 });
   } else {
-    shown.forEach((it, i) => {
-      const col = i % COLS, rowi = Math.floor(i / COLS);
-      const cc = A(12 + CELL / 2 + col * (CELL + CGAP), gridTop + CELL / 2 + rowi * (CELL + CGAP));
-      const box = panel(root, cc.x, cc.y, CELL, CELL, { art: 'slot' });
+    const rowsAll = Math.ceil(owned.length / COLS);
+    const contentH = rowsAll * (CELL + CGAP) + 4;
+    const viewH = MAXR * (CELL + CGAP) - CGAP + 8;      // 3 行 + 上边距，超出滚动
+    const viewCy = gridTop + viewH / 2;                 // 顶边贴 gridTop
+    console.log('[Shop] gridTop=' + gridTop + ' rows=' + rowsAll + ' contentH=' + contentH + ' viewH=' + viewH + ' cy=' + viewCy);
+    const list = makeModalList(root, A(180, viewCy).x, A(180, viewCy).y, 336, viewH, contentH);
+    owned.forEach((it, i2) => {
+      const col = i2 % COLS, rowi = Math.floor(i2 / COLS);
+      const cx = -158 + CELL / 2 + col * (CELL + CGAP);
+      const cyy = list.topY - CELL / 2 - 4 - rowi * (CELL + CGAP);
+      const box = panel(list.content, cx, cyy, CELL, CELL, { art: 'slot' });
       if (it.count && it.count > 1) {
         text(box, CELL / 2 - 3, -CELL / 2 + 7, '×' + it.count,
           { size: 10, color: COL.accent, align: 'right', width: CELL - 6, bold: true, outline: false });
@@ -367,8 +375,8 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
       } else {
         text(box, 0, 1, '◆', { size: 14, color: COL.cream, width: CELL, outline: false });
       }
-      // 点击查看详情（用户要求：道具能点开看说明）
       onTap(box, () => {
+        if (list.isDragging()) return;
         const pop = panel(root, 0, 0, 300, 150, { art: 'panel' });
         text(pop, 0, 52, it.name + (it.count && it.count > 1 ? (' ×' + it.count) : ''), { size: 15, color: COL.accent, width: 280, bold: true, outline: true });
         text(pop, 0, 6, it.desc ?? '（暂无说明）', { size: 11, color: COL.cream, width: 270, align: 'left' });
@@ -377,10 +385,6 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
         onTap(pop, () => pop.destroy());
       });
     });
-    if (owned.length > COLS * MAXR) {
-      text(root, A(12, gridTop - 12).x, A(12, gridTop - 12).y, '… 还有 ' + (owned.length - COLS * MAXR) + ' 件',
-        { size: 10, color: COL.dim, align: 'left', width: 320 });
-    }
   }
 
   // 底部：刷新(112) + 下一波(216)
