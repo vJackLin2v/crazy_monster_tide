@@ -1617,6 +1617,8 @@ export class Battle extends Component {
   }
 
   private updateSpawn(dt: number) {
+    // 波次结算中（吸经验 / 等升级卡）不再刷怪 —— 用户反馈"波次结束了还在出怪"
+    if (this.waveEnding) return;
     if (this.bossRef && !this.bossRef.dead) return;
     // ★ 活怪上限（玩法审计 §8.2）：硬上限停刷，软上限把间隔拉长，避免同屏无限堆积
     const caps = aliveCaps();
@@ -2127,7 +2129,18 @@ export class Battle extends Component {
   }
 
   /** 经验吸完（且升级弹窗处理完）才真正切屏 */
+  /** 每波结束的固定恢复（不吃难度回血预算，属于节奏设计） */
+  private waveClearHeal(): void {
+    const st = this.rs.stats;
+    const heal = Math.min(Math.max(6, Math.round(st.maxhp * 0.12)), st.maxhp - st.hp);
+    if (heal > 0) {
+      st.hp += heal;
+      this.addVfx(FX.killBig, this.px, this.py, 0.4, 1.6);
+    }
+  }
+
   private finishWave() {
+    this.waveClearHeal();
     if (this.pendingUps > 0) { this.waveEndPending = true; return; }   // 还有升级卡要选
     this.paused = true;
     this.hooks.onWaveCleared?.();

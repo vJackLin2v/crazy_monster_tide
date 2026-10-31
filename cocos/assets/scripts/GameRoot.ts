@@ -14,9 +14,11 @@ import { _decorator, Component, Node, view, ResolutionPolicy, Color } from 'cc';
 import { SCREEN_W, SCREEN_H, RUN, waveTime, isBossWave, isEliteWave } from './core/Const';
 import { Joystick } from './engine/Joystick';
 import { Battle } from './battle/Battle';
-import { mkNode, screen, button, text, onTap } from './ui/UIKit';
+import { mkNode, screen, button, text, onTap, panel } from './ui/UIKit';
+import { safeTop } from './ui/Safe';
 import { preloadUiArt } from './ui/Art';
 import { Hud, type HudData } from './ui/Hud';
+import { COL } from './ui/Tokens';
 import { buildMenu, buildHowto, buildCharSelect, buildResult, type ResultBuildRow } from './ui/MenuScreens';
 import { buildSettings } from './ui/MetaScreens';
 import { buildDifficultySelect } from './ui/DifficultyScreens';
@@ -213,7 +215,7 @@ export class GameRoot extends Component {
     this.seed = this.newSeed();
     this.seedFresh = true;
     this.cur = buildMenu(this.uiRoot, this.seed,
-      () => this.showCharSelect(),
+      () => this.showDifficulty(),
       () => this.showHowto(),
       () => this.showCodex(),
       () => this.showAchievements(),
@@ -887,19 +889,14 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         { win, wave: rs.wave, lv: rs.lv, kills: rs.kills, time: rs.runTime, build,
           gold: rs.gold, seed: this.seed, waveTotal: RUN.waves, endless: rs.endless,
           maxAlive: this.battle.maxAlive,
-          difficultyName: (difficultyOf(this.battle.rs.difficulty).name) + ' (' + this.battle.rs.difficulty + ')',
+          difficultyName: difficultyOf(this.battle.rs.difficulty).name,
           skills: rs.skills.map(s => {
             const def = SKILLS[s.id];
             return { name: def ? def.name : s.id, icon: def ? def.icon : undefined, mods: s.mods.length };
           }),
           items: (() => {
             const m = new Map<string, number>();
-    // 真机调试：一键复制本局日志（微信走剪贴板，网页走 navigator.clipboard）
-    try {
-      const vs2 = view.getVisibleSize();
-      const chip = button(this.cur, vs2.width / 2 - 52, vs2.height / 2 - safeTop() - 26, 92, 24, '复制日志', { size: 10 });
-      onTap(chip.node, () => this.copyRunLogs());
-    } catch (e) { console.warn('[GameRoot] 复制日志按钮创建失败', e); }
+
 
             for (const it of rs.items) m.set(it.id, (m.get(it.id) ?? 0) + 1);
             return Array.from(m.entries()).map(([id, count]) => ({
@@ -909,6 +906,12 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         () => this.showMenu(), () => void this.startBattle(),
         // 通关后进入无尽（RUN.canContinue 之前是死字段，从没人读）
         win && RUN.canContinue ? () => this.continueEndless() : undefined);
+
+      // 真机调试：一键复制本局日志（放在标题牌左侧，构建失败不阻断结算）
+      const vs2 = view.getVisibleSize();
+      const chip = panel(this.cur, 58 - vs2.width / 2, vs2.height / 2 - (safeTop() + 56), 88, 26, { art: 'btn' });
+      text(chip, 0, 0, '复制日志', { size: 10, color: new Color(240, 236, 226, 255), width: 84, bold: true, outline: true });
+      onTap(chip, () => this.copyRunLogs());
     } catch (e) {
       console.error('[UI] 结算面板构建失败，回到主菜单', e);
       this.closeModal(); this.clearScreen(); this.showMenu();

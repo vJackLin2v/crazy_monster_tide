@@ -153,8 +153,19 @@ export function itemNumbers(it: ItemDef, id: string): string {
   const parts: string[] = [];
   for (const [k, label] of MULT) {
     const b = (before[k] as number) || 1;
-    const d = ((s[k] as number) / b) - 1;
-    if (Math.abs(d) > 1e-9) parts.push(label + ' ' + pct(d));
+    const cur = s[k] as number;
+    const raw = cur - b;
+    // 有的道具是直接加绝对值（如 拾取 +3），按比例算会得出 -91%，所以这里判断：
+    // 变化幅度超过 50% 且是小数加法时，按 "+N" 显示（用户反馈"移动速度写个 3"看不懂）
+    const flatAdd = Math.abs(raw) >= 1 && Number.isInteger(raw);
+    const absurd = Math.abs(raw / b) > 0.5;
+    if (Math.abs(raw) > 1e-9 && (flatAdd || absurd)) {
+      const v = Math.abs(raw) < 10 ? Number(raw.toFixed(1)) : Math.round(raw);
+      parts.push(label + ' ' + (v >= 0 ? '+' : '') + v);
+    } else {
+      const d = (cur / b) - 1;
+      if (Math.abs(d) > 1e-9) parts.push(label + ' ' + pct(d));
+    }
   }
   for (const [k, label] of PCT) {
     const d = (s[k] as number) - (before[k] as number);

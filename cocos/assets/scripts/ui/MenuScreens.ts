@@ -439,17 +439,18 @@ export function buildResult(parent: Node,
   }
 
   // 本局道具（技能区存在时整体下移）
-  const extra = at2(180, skillTop + (sk.length ? 46 : 0));
+  // ⚠️ 必须用设计坐标算（at2 返回的是节点坐标，拿它再加偏移会全挤到左上角）
+  const extraY = skillTop + (sk.length ? 62 : 0);
   // 用户 2026-10-30：去掉种子/同屏峰值，改成展示本局拿到的道具
   const got = stats.items ?? [];
   if (got.length) {
-    text(root, at2(12, extra.y).x, at2(12, extra.y).y, '本局道具 ' + got.length,
+    text(root, at2(12, extraY).x, at2(12, extraY).y, '本局道具 ' + got.length,
       { size: 11, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
     const CELL = 30, CGAP = 6, COLS = 9;
     got.slice(0, COLS).forEach((it, i) => {
       const col = i % COLS, rowi = Math.floor(i / COLS);
       const cc = at2(180 - (COLS * (CELL + CGAP) - CGAP) / 2 + CELL / 2 + col * (CELL + CGAP),
-        extra.y + 26 + rowi * (CELL + CGAP));
+        extraY + 16 + CELL / 2 + rowi * (CELL + CGAP));
       void rowi;
       const box = panel(root, cc.x, cc.y, CELL, CELL, { art: 'slot' });
       if (it.icon) {
@@ -466,7 +467,7 @@ export function buildResult(parent: Node,
       }
     });
     if (got.length > COLS) {
-      text(root, at2(348, extra.y + 26).x, at2(348, extra.y + 26).y,
+      text(root, at2(348, extraY + 26).x, at2(348, extraY + 26).y,
         '+' + (got.length - COLS), { size: 10, color: COL.dim, align: 'right', width: 60 });
     }
   }
@@ -475,13 +476,13 @@ export function buildResult(parent: Node,
   // 有道具时「本局构筑」要往下让一行（用户 2026-10-30 加的道具展示）
   // ⚠️ 必须用**设计坐标**（从屏幕顶算），不能拿 at2() 返回的节点 y 再算——那样会把"本局构筑"
   //    画到屏幕顶部，压住标题和统计卡（用户截图确认"结算页技能都错位"）
-  const listTop = skillTop + (sk.length ? 46 : 0) + 20 + ((stats.items?.length ?? 0) > 0 ? 34 : 0);
+  const listTop = skillTop + (sk.length ? 62 : 0) + ((stats.items?.length ?? 0) > 0 ? 52 : 0) + 24;
   const bh = at2(12, listTop);
   text(root, bh.x, bh.y, '本局构筑', { size: 13, color: COL.accent, align: 'left', width: 312, bold: true, outline: true });
   const rowsTop = listTop + 22;
-  const availH = (VH - B - 60) - rowsTop;
+  const availH = (VH - B - 150) - rowsTop;
   // 预留 18px 给"还有 N 项"提示，避免提示压到底部按钮上（回归截图确认）
-  const maxRows = Math.max(1, Math.floor((availH - 18) / 42));
+  const maxRows = Math.max(1, Math.floor((availH - 24) / 42));
   const list = stats.build.slice(0, maxRows);
   if (list.length) {
     list.forEach((r, i) => {
