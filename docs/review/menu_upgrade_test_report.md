@@ -91,4 +91,4 @@ node tools/ui/shot_menu_history.cjs
 | 结果 | success |
 | 主包 / 总计 | 3.09MB / 10.93MB |
 | index.js | 286,821 B，2026-10-31 15:25:49 |
-| 对应代码 | 工作区 commit（交付时提交，见 README） |
+| 对应代码 | commit `f87a795` |

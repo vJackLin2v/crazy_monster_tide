@@ -2,30 +2,32 @@
 
 ## 当前阶段
 
-**阶段3（2026-10-31）收尾完成 — 交付后等真机复测**
+**主菜单升级（2026-10-31）— 已交付，等真机复测**
 
-### 本轮（阶段3 收尾 / 任务书执行）已完成
-- P0-1 兼容矩阵：6 条 S 规则全部有定义 + 实现 + 测试；overload×地雷降为 Y；harvest×哨兵改 S；
-  `SkillCalc.NEW_SKILL_ALLOW` 与矩阵逐格一致（tests §15，72 格）。
-- P0-2 伤害事件：`DamageContext` v7（canHarvest/canVamp 变字段、工厂 freeze、哨兵 summonKind 例外）；
-  `killEnemy` 接收来源（哨兵击杀不再触发 harvest/killblast/击杀回血）；echo 不再计入蓄势。
-- P0-3 BOSS 召唤：文档只留一套状态机（旧 Boolean 版删除）；测试补"请求不丢 / 空位 0 / 12s / 死亡取消"。
-- P0-4 存档：`Progress.parseSave` 读全字段 + 校验 + 迁移（此前难度/图鉴/角色通关/偏好/徽章全部读不回来）。
-- P1-2 精英词缀：新 `game/EliteAffix.ts`（护盾 +20% 生命 / 加速 +25% 移速 / 分裂出 2 只小怪）；
-  难度 `eliteChanceMul` 真正接入，普通难度不掷骰。
-- P1-3 传说道具：`RunState.legendaryTaken`，商店/升级池共享计数，刷新绕不过。
-- P1-5 无尽徽章：`Progress.badgesForRun`（30/40/50，幂等、按难度隔离），结算页显示。
-- P4 经济遥测：`Telemetry` 记录进店/原价/成交/购买/刷新/离店/难度 + `economySummary()`。
-- 截图：web-mobile 真实构建 + headless Chrome，5 张（主菜单/战斗/商店/结算/无尽）。
-- 交付包：`crazy_pigeon_king_stage3_final_20261031_1449.zip`（含 docs / test_reports / build_reports / screenshots）。
+### 本轮已完成
+- 主菜单 v3：继续游戏卡片（有/无/损坏三态，第一优先级）+ 历史对局入口 + 三选退出确认。
+- 继续游戏：`game/RunSave.ts` + `Battle.snapshotBattle/resumeRun`：
+  角色/属性/构筑/道具/经济/波次/敌人（含词缀与状态）/BOSS 召唤状态机/RNG 全量恢复；
+  子弹/区域/地雷/哨兵/蓄能等瞬时实体不恢复（寿命 <3s，文档已写明）。
+- 自动存档：开局 / 波次结束 / 商店购买·锁定·刷新 / 升级出现与选卡 / 暂停 / 切后台 / 保存退出。
+- 历史对局：`game/RunHistory.ts`（摘要+详情分层、50 局、runId 幂等、坏数据重建）+
+  `ui/HistoryScreens.ts`（列表/筛选/详情/空态，返回保持滚动位置）。
+- 三条结束路径分离：保存退出（保留存档）/ 放弃（清档+abandoned）/ 死亡·通关（清档+对应结果）；
+  历史写失败时**保留活动存档**（事务顺序）。
+- 阶段3 偏差：蓄势计数清零（`resetCastCount`）、背水改真实攻速→冷却、余烬简化版入文档；
+  战斗判定分支抽到 `game/CombatRules.ts`（Battle 与单测共用）。
+- 截图：8 张（主菜单两态/恢复/战斗/无尽/结算/历史列表/详情/空态），浏览器运行 `errors=none`、`resume-match=true`。
+- 交付包：`deliverables/menu_history_2026-10-31/` + `crazy_pigeon_king_menu_history_20261031_1527.zip`。
 
 ### 验证
 - `tsc -p tsconfig.check.json` = 0；`-p tsconfig.ui-check.json` = 0
-- `tsx tests/run.ts` = **349 PASS / 0 FAIL**
-- 微信包 3.06MB / 10.90MB（14:47 构建，commit `49a929a`）
+- `tsx tests/run.ts` = **404 PASS / 0 FAIL**
+- 微信包 3.09MB / 10.93MB（15:25 构建）
+- commit `f87a795`
 
 ### 未完成 / 待真机
-- 地狱 1.8225 倍：暂定，等真机 `[TELEMETRY]` 经济数据；
-- 普通难度逐项等于旧版：**无法证明**（仓库缺阶段2 基线），只能证明公式层 + 旧断言回归；
-- 微信真机：难度页 / 精英词缀辨识 / 滚动 / 商店详情 / BOSS→结算→无尽 / 徽章文案；
-- 图鉴技能分类筛选、文档由代码生成：未做（见 expansion_acceptance_criteria）。
+- 微信真机：杀进程续玩、切后台续玩、商店/升级中断恢复；
+- 地狱 1.8225 倍经济数据（真机 `[TELEMETRY]`）；
+- 普通难度逐项等于旧版（缺阶段2 基线，只能公式层证明）；
+- 战斗实体层（碰撞/生成/动画）无自动化测试，仅判定分支 + 浏览器运行验证；
+- 图鉴技能分类筛选、文档由代码生成（非本轮范围，验收表已标注）。
