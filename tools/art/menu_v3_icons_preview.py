@@ -18,20 +18,21 @@ def is_icon_px(p):
     r, g, b, a = p
     if a < 128:
         return False
-    # 米白或金色像素
-    return (r > 170 and g > 150 and b > 150) or (r > 200 and g > 140 and b < 140)
+    # 只认图标调色板：米白 (244,231,198) 或金色 (242,179,61)，避免把石板路/文字算进来
+    return (r > 205 and g > 185 and b > 160) or (r > 205 and g > 140 and b < 130)
 
 crops = []
 for cx in centers:
     xs, ys = [], []
-    for y in range(1010, 1150):
-        for x in range(cx - 44, cx + 44):
+    for y in range(1040, 1128):
+        for x in range(cx - 36, cx + 36):
             if 0 <= x < W and is_icon_px(img.getpixel((x, y))):
                 xs.append(x); ys.append(y)
     if not xs:
         raise SystemExit("icon not found near x=%d" % cx)
     x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
-    side = max(x1 - x0, y1 - y0) + 8
+    # 图标固定 32 设计像素 = 64 图像像素（@2x），按 bbox 中心裁 64×64
+    side = 64
     mx, my = (x0 + x1) // 2, (y0 + y1) // 2
     box = (mx - side // 2, my - side // 2, mx + side // 2, my + side // 2)
     cell = img.crop(box)

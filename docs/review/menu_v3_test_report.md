@@ -20,7 +20,7 @@ tsx tests/run.ts                -> PASS 435 / FAIL 0
 cd ..
 cmd /c "build-wechat.bat -nopause"
   -> build success；主包 3.11MB / 总计 10.94MB
-  -> assets/main/index.js 299,332 B，16:55:11
+  -> assets/main/index.js 299,333 B，17:07:31
 
 node tools/ui/shot_menu_v3.cjs
   -> errors=none（6 张截图）
@@ -31,6 +31,13 @@ node tools/ui/shot_menu_v3.cjs
 | 总断言 | 435 |
 | PASS / FAIL / SKIP | 435 / 0 / 0 |
 | 原始日志 | `test_reports/test_execution.log` |
+
+## 2.1 验收后布局微调（2026-10-31）
+
+- 继续冒险卡与「开始新冒险」统一为 **310×84**，间距 12；
+- 底部四个入口中心由 `VH-B-64` 上移到 `VH-B-86`（上移 22px）；
+- 重新截图并重新构建：index.js 299,333 B（17:07:31），主包 3.11MB / 总计 10.94MB；
+- 图标逻辑与历史页面未改。
 
 ## 3. 截图（真实运行，360×640 @2x）
 
@@ -78,4 +85,4 @@ node tools/ui/shot_menu_v3.cjs
 | 命令 | `cmd /c "build-wechat.bat -nopause"` |
 | 结果 | success |
 | 主包 / 总计 | 3.11MB / 10.94MB |
-| index.js | 299,332 B，2026-10-31 16:55:11 |
+| index.js | 299,333 B，2026-10-31 17:07:31 |

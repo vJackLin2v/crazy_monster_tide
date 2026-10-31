@@ -147,25 +147,27 @@ export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandl
   const hasSave = vm.saveState === 'ok' && !!vm.info;
   if (hasSave && vm.info) {
     const info = vm.info;
-    const card = panel(root, at2(180, coreY).x, at2(180, coreY).y, 310, 120, { art: 'panel' });
-    const bar = mkNode(card, 'saveBar', 5, 100, -150, 0);
+    // 继续卡与"开始新冒险"保持同尺寸（310×84），间距 12
+    const card = panel(root, at2(180, coreY).x, at2(180, coreY).y, 310, 84, { art: 'panel' });
+    const bar = mkNode(card, 'saveBar', 5, 64, -150, 0);
     const bg2 = bar.addComponent(Graphics);
-    bg2.fillColor = COL.accent; bg2.rect(-2.5, -50, 5, 100); bg2.fill();
+    bg2.fillColor = COL.accent; bg2.rect(-2.5, -32, 5, 64); bg2.fill();
 
-    text(card, -138, 36, '继续冒险', { size: 18, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
+    text(card, -138, 26, '继续冒险', { size: 18, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
     // 继续图标：像素三角形（不是文字 ▶）
-    const tri = mkNode(card, 'go', 18, 18, 128, 36);
+    const tri = mkNode(card, 'go', 18, 18, 128, 26);
     const tg = tri.addComponent(Graphics);
     tg.fillColor = COL.accent;
     tg.rect(-6, -7, 4, 14); tg.rect(-2, -4, 4, 8); tg.rect(2, -2, 4, 4); tg.fill();
 
-    text(card, -138, 4, info.charName + ' · 第 ' + info.wave + '/' + info.totalWaves + ' 波 · ' + info.difficultyName,
+    text(card, -138, 2, info.charName + ' · 第 ' + info.wave + '/' + info.totalWaves + ' 波 · ' + info.difficultyName,
       { size: 11, color: COL.cream, align: 'left', width: 280, bold: true, outline: true });
-    text(card, -138, -26, '生命 ' + info.hp + '/' + info.maxhp + ' · ' + info.durationText,
+    text(card, -138, -22, '生命 ' + info.hp + '/' + info.maxhp + ' · ' + info.durationText,
       { size: 10, color: COL.dim, align: 'left', width: 260 });
     pressable(card, h.onContinue);
 
-    const newBtn = button(root, at2(180, coreY + 86).x, at2(180, coreY + 86).y, 260, 42, '开始新冒险', { size: 14 });
+    const startY2 = coreY + 84 + 12;
+    const newBtn = button(root, at2(180, startY2).x, at2(180, startY2).y, 310, 84, '开始新冒险', { size: 18 });
     onTap(newBtn.node, h.onStart);
   } else if (vm.saveState === 'corrupt') {
     const card = panel(root, at2(180, coreY).x, at2(180, coreY).y, 310, 110, { art: 'panel_soft' });
@@ -174,7 +176,7 @@ export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandl
     text(card, -132, -24, '点此清除坏档后重新开始', { size: 9, color: COL.dim, align: 'left', width: 280 });
     onTap(card, () => { if (h.onDiscardSave) h.onDiscardSave(); });
 
-    const startBtn = button(root, at2(180, coreY + 86).x, at2(180, coreY + 86).y, 260, 46, '开始冒险', { primary: true, size: 17 });
+    const startBtn = button(root, at2(180, coreY + 96).x, at2(180, coreY + 96).y, 310, 84, '开始冒险', { primary: true, size: 18 });
     onTap(startBtn.node, h.onStart);
   } else {
     const startBtn = button(root, at2(180, coreY + 6).x, at2(180, coreY + 6).y, 280, 60, '开始冒险', { primary: true, size: 21 });
@@ -182,7 +184,7 @@ export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandl
   }
 
   // ── C. 底部功能入口（真实像素图标，无汉字替代）──
-  const rowY = VH - B - 64;
+  const rowY = VH - B - 86;   // 用户要求：底部入口整体上移
   menuEntry(root, at2(45, rowY).x, at2(45, rowY).y, 'history', '战绩', h.onHistory);
   menuEntry(root, at2(135, rowY).x, at2(135, rowY).y, 'codex', '图鉴', h.onCodex);
   menuEntry(root, at2(225, rowY).x, at2(225, rowY).y, 'achievement', '成就', h.onAchievements);
