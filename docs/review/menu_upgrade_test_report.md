@@ -90,5 +90,5 @@ node tools/ui/shot_menu_history.cjs
 | 命令 | `cmd /c "build-wechat.bat -nopause"` |
 | 结果 | success |
 | 主包 / 总计 | 3.09MB / 10.93MB |
-| index.js | 286,821 B，2026-10-31 15:25:49 |
+| index.js | 287,040 B，2026-10-31 15:40:07 |
 | 对应代码 | commit `f87a795` |

@@ -76,7 +76,8 @@ export function buildHistoryList(
   const root = screen(parent, 'scr-history', COL.bg1);
   screenHeader(root, VW, S, '历史对局');
 
-  const back = button(root, A(46, S + 30).x, A(46, S + 30).y, 64, 34, '返回', { size: 12 });
+  // 标题条高 54（screenHeader 默认），返回按钮与条心对齐（S+27），避免"错位"观感
+  const back = button(root, A(54, S + 27).x, A(54, S + 27).y, 64, 36, '返回', { size: 12 });
   onTap(back.node, onBack);
 
   const st = historyStats(list);
@@ -115,7 +116,9 @@ export function buildHistoryList(
         { size: 14, color: COL.cream, align: 'left', width: 150, bold: true, outline: true });
       text(row, 18, 26, diffName(s.difficulty) + ' · ' + resultLabel(s.result),
         { size: 12, color: resultColor(s.result), width: 120, bold: true, outline: true });
-      text(row, -108, 6, '第 ' + s.reachedWave + '/' + s.totalWaves + ' 波 · ' + mmss(s.durationSeconds) + ' · 击杀 ' + s.killCount,
+      text(row, -108, 6,
+        (s.endlessMode ? '第 ' + s.reachedWave + ' 波（无尽）' : '第 ' + s.reachedWave + '/' + s.totalWaves + ' 波')
+          + ' · ' + mmss(s.durationSeconds) + ' · 击杀 ' + s.killCount,
         { size: 10, color: COL.cream, align: 'left', width: 230, outline: true });
       text(row, -108, -14, skillNames(s.finalSkillIds),
         { size: 10, color: COL.accent, align: 'left', width: 230, outline: true });
@@ -137,7 +140,7 @@ export function buildHistoryDetail(
   const S = safeTop(), B = safeBottom();
   const root = screen(parent, 'scr-history-detail', COL.bg1);
   screenHeader(root, VW, S, '对局详情');
-  const back = button(root, A(46, S + 30).x, A(46, S + 30).y, 64, 34, '返回', { size: 12 });
+  const back = button(root, A(54, S + 27).x, A(54, S + 27).y, 64, 36, '返回', { size: 12 });
   onTap(back.node, onBack);
 
   const skills = detail ? detail.skills : summary.finalSkillIds.map(id => ({ id, lvl: 1, mods: [] as string[] }));
@@ -148,19 +151,19 @@ export function buildHistoryDetail(
   // 先算内容高度（保证滚动范围正确）
   const HEAD = 96;
   const CARDS = 132;                       // 两行 × (58 卡 + 8 间距)
-  const SKILL_BLOCK = 26 + Math.max(1, skills.length) * 52;
+  const SKILL_BLOCK = 32 + Math.max(1, skills.length) * 52;
   const ITEM_ROWS = Math.max(1, Math.ceil(items.length / 7));
   const ITEMS_BLOCK = items.length ? 26 + ITEM_ROWS * 44 : 46;
   const MS_BLOCK = milestones.length ? 26 + Math.min(12, milestones.length) * 20 : 46;
   const END_BLOCK = 74;
-  const statsLines = [
-    '精英击杀 ' + summary.eliteKillCount,
-    'BOSS 击杀 ' + summary.bossKillCount,
-    '获得金币 ' + summary.goldEarned,
-    '商店花费 ' + summary.goldSpent,
-    '结束生命 ' + (typeof stats.hp === 'number' ? Math.round(stats.hp) : '未记录'),
+  const statRows: [string, string][] = [
+    ['精英击杀', String(summary.eliteKillCount)],
+    ['BOSS 击杀', String(summary.bossKillCount)],
+    ['获得金币', String(summary.goldEarned)],
+    ['商店花费', String(summary.goldSpent)],
+    ['结束生命', typeof stats.hp === 'number' ? String(Math.round(stats.hp)) : '未记录'],
   ];
-  const STAT_BLOCK = 22 + statsLines.length * 18 + 10;
+  const STAT_BLOCK = 22 + statRows.length * 22 + 10;
   const contentH = HEAD + CARDS + STAT_BLOCK + SKILL_BLOCK + ITEMS_BLOCK + MS_BLOCK + END_BLOCK + 40;
   const listTop = S + 64;
   const listH = VH - listTop - B - 10;
@@ -171,7 +174,9 @@ export function buildHistoryDetail(
   avatar(ml.content, summary.characterId, -138, y - 30, 52);
   text(ml.content, -104, y - 16, charName(summary.characterId),
     { size: 18, color: COL.cream, align: 'left', width: 210, bold: true, outline: true });
-  text(ml.content, -104, y - 38, diffName(summary.difficulty) + ' · ' + resultLabel(summary.result) + (summary.endlessMode ? ' · 无尽' : ''),
+  text(ml.content, -104, y - 38,
+    diffName(summary.difficulty) + ' · ' + resultLabel(summary.result)
+      + (summary.endlessMode && summary.result !== 'endless_end' ? ' · 无尽' : ''),
     { size: 12, color: resultColor(summary.result), align: 'left', width: 220, bold: true, outline: true });
   text(ml.content, -104, y - 56, dateText(summary.startedAt) + ' → ' + dateText(summary.endedAt),
     { size: 9, color: COL.dim, align: 'left', width: 240 });
@@ -179,13 +184,14 @@ export function buildHistoryDetail(
 
   // 2) 四个统计卡
   const cards: [string, string][] = [
-    ['到达波次', summary.reachedWave + '/' + summary.totalWaves],
+    ['到达波次', summary.endlessMode ? String(summary.reachedWave) : summary.reachedWave + '/' + summary.totalWaves],
     ['存活时间', mmss(summary.durationSeconds)],
     ['击杀数量', String(summary.killCount)],
     ['徽章', summary.badges.length ? String(summary.badges.length) : '—'],
   ];
   cards.forEach(([k, v], i) => {
-    const cx = -126 + (i % 2) * 168;
+    // 两列在 340 宽的内容区里居中：中心 ±84，卡宽 160 → 两端各留 6
+    const cx = -84 + (i % 2) * 168;
     const cy = y - 30 - Math.floor(i / 2) * 66;
     const card = panel(ml.content, cx, cy, 160, 58, { art: 'panel_soft' });
     text(card, 0, 14, k, { size: 10, color: COL.dim, width: 144 });
@@ -193,17 +199,19 @@ export function buildHistoryDetail(
   });
   y -= CARDS;
 
-  // 3) 战斗统计
+  // 3) 战斗统计：左 Key / 右 Value（行宽 316，两端对齐）
   text(ml.content, -152, y - 14, '战斗统计', { size: 12, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
-  statsLines.forEach((line, i) => {
-    text(ml.content, -146, y - 34 - i * 18, line, { size: 10, color: COL.cream, align: 'left', width: 280, outline: true });
+  statRows.forEach(([k, v], i) => {
+    const ry = y - 36 - i * 22;
+    text(ml.content, -158, ry, k, { size: 10, color: COL.dim, align: 'left', width: 160 });
+    text(ml.content, 158, ry, v, { size: 12, color: COL.cream, align: 'right', width: 140, bold: true, outline: true });
   });
   y -= STAT_BLOCK;
 
   // 4) 技能构筑
   text(ml.content, -152, y - 14, '技能构筑', { size: 12, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
   (skills.length ? skills : [{ id: '', lvl: 0, mods: [] }]).forEach((s, i) => {
-    const cy = y - 42 - i * 52;
+    const cy = y - 48 - i * 52;
     const card = panel(ml.content, 0, cy, 330, 46, { art: 'panel_soft' });
     const def = SKILLS[s.id];
     text(card, -146, 10, (def ? def.name : s.id || '—') + '  Lv.' + s.lvl,

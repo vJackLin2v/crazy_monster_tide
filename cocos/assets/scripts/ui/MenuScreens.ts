@@ -131,7 +131,7 @@ export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandl
   // ── 继续游戏卡片（第一优先级）──
   const cardY = S + 180;
   const hasSave = vm.saveState === 'ok' && !!vm.info;
-  const card = panel(root, at2(180, cardY).x, at2(180, cardY).y, 300, 74, { art: hasSave ? 'panel' : 'panel_soft' });
+  const card = panel(root, at2(180, cardY).x, at2(180, cardY).y, 300, 78, { art: hasSave ? 'panel' : 'panel_soft' });
   // 左侧高亮条：有存档时给一个明确的"可继续"信号
   const barColor = hasSave ? COL.accent : COL.line;
   const bar = mkNode(card, 'saveBar', 5, 58, -145, 0);
@@ -171,26 +171,30 @@ export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandl
   const btn1 = button(root, b1.x, b1.y, 270, 54, '开始游戏', { primary: true, size: 21 });
   onTap(btn1.node, h.onStart);
 
-  // ── 历史对局 / 图鉴 ──
-  const row1Y = startY + 78;
-  const hb = button(root, at2(107, row1Y).x, at2(107, row1Y).y, 145, 48, '历史对局', { size: 14 });
+  // ── 玩法说明（独占一行，与开始游戏同宽）──
+  const howY = startY + 74;
+  const btnHow = button(root, at2(180, howY).x, at2(180, howY).y, 270, 44, '玩法说明', { size: 15 });
+  onTap(btnHow.node, h.onHowto);
+
+  // ── 历史对局（独占一行，次主入口）──
+  const historyY = howY + 64;
+  const hb = button(root, at2(180, historyY).x, at2(180, historyY).y, 270, 44, '历史对局', { size: 15 });
   onTap(hb.node, h.onHistory);
-  const cb = button(root, at2(253, row1Y).x, at2(253, row1Y).y, 145, 48, '图鉴', { size: 14 });
-  onTap(cb.node, h.onCodex);
 
-  // ── 成就 / 设置 ──
-  const row2Y = row1Y + 60;
-  const ab = button(root, at2(107, row2Y).x, at2(107, row2Y).y, 145, 48, '成就', { size: 14 });
-  onTap(ab.node, h.onAchievements);
-  const sb = button(root, at2(253, row2Y).x, at2(253, row2Y).y, 145, 48, '设置', { size: 14 });
-  onTap(sb.node, h.onSettings);
+  // ── 图鉴 / 成就 / 设置：一行三个（100×46，间距 8）──
+  const toolsY = historyY + 62;
+  const ENTRIES: [string, () => void][] = [['图鉴', h.onCodex], ['成就', h.onAchievements], ['设置', h.onSettings]];
+  const EW = 100, EGAP = 8;
+  ENTRIES.forEach(([label, cb], i) => {
+    const cx = 180 - (EW + EGAP) + i * (EW + EGAP);
+    const b = button(root, at2(cx, toolsY).x, at2(cx, toolsY).y, EW, 46, label, { size: 14 });
+    onTap(b.node, cb);
+  });
 
-  // ── 页脚：玩法说明 + 版本 ──
-  const footY = Math.min(row2Y + 62, VH - B - 26);
-  const how = button(root, at2(100, footY).x, at2(100, footY).y, 132, 36, '玩法说明', { size: 12 });
-  onTap(how.node, h.onHowto);
-  text(root, at2(248, footY).x, at2(248, footY).y, '主菜单升级版',
-    { size: 9, color: COL.dim, width: 150, align: 'right' });
+  // ── 页脚：版本 ──
+  const footY = Math.min(toolsY + 46, VH - B - 12);
+  text(root, at2(180, footY).x, at2(180, footY).y, '主菜单升级版',
+    { size: 9, color: COL.dim, width: 200, align: 'center' });
 
   void seed;
   return root;
