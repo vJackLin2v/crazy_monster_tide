@@ -79,18 +79,18 @@ const md = [
   '',
   ...(warn.length ? warn.map(w => '- ' + w) : ['- 无明显异常']),
 ].join('\n');
-// 相对排序：只看同一模型内的强弱差，不用绝对阈值（模型假设了满配角色，绝对值不可比）
+// 相对排序：同一模型内可比（绝对值不可比，见模型局限）
 const ranking = BUILDS.map(b => {
   const dps = b.skills.map(x => skillDps(x.id, x.mods)).reduce((a, p2) => a + p2.dps, 0);
   return { name: b.name, dps };
 }).sort((a, b) => b.dps - a.dps);
-md.push('', '## 相对排序（同一模型内可比）', '', ...ranking.map((r, i) => (i + 1) + '. ' + r.name + ' — ' + r.dps.toFixed(0) + ' DPS'));
-md.push('', '## 模型局限（必读）', '',
-  '1. 假设角色**满配**（4 技能 Lv5 + 每个 3 个模块），实际第 5 波远达不到，所以绝对秒杀时间偏乐观；',
-  '2. 弹幕按“全部命中同一目标”保守估计，实际群怪时会溢出；',
-  '3. 范围技能统一按 4 目标，未区分技能半径；',
+const extra: string[] = ['', '## 相对排序（同一模型内可比）', ''];
+ranking.forEach((r, i) => extra.push((i + 1) + '. ' + r.name + ' - ' + r.dps.toFixed(0) + ' DPS'));
+extra.push('', '## 模型局限（必读）', '',
+  '1. 假设角色满配（4 技能 Lv5 + 每个 3 个模块），第 5 波远达不到，绝对秒杀时间偏乐观；',
+  '2. 弹幕按全部命中同一目标保守估计，群怪时会溢出；',
+  '3. 范围技能统一按 4 目标，未区分半径；',
   '4. 不含道具、角色天赋、难度倍率；',
-  '5. 结论只用于**相对排序与找异常**，不作为调数值的唯一依据。');
-writeFileSync('reports/build_balance_v2.md', md, 'utf8');
-console.log(rows.join('\n'));
-for (const w of warn) console.log('WARN ' + w);
+  '5. 结论只用于相对排序与找异常，不作为调数值的唯一依据。');
+writeFileSync('reports/build_balance_v2.md', md + '\n' + extra.join('\n'), 'utf8');
+console.log(ranking.map((r, i) => (i + 1) + '. ' + r.name + ' ' + r.dps.toFixed(0)).join('\n'));
