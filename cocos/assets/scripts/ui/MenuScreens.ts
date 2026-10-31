@@ -447,9 +447,10 @@ export function buildResult(parent: Node,
     text(root, at2(12, extraY).x, at2(12, extraY).y, '本局道具 ' + got.length,
       { size: 11, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
     const CELL = 30, CGAP = 6, COLS = 9;
+    const startLeft2 = 12;   // 与"本局技能"一致：左对齐，避免居中公式算错时全挤到一边
     got.slice(0, COLS).forEach((it, i) => {
       const col = i % COLS, rowi = Math.floor(i / COLS);
-      const cc = at2(180 - (COLS * (CELL + CGAP) - CGAP) / 2 + CELL / 2 + col * (CELL + CGAP),
+      const cc = at2(startLeft2 + CELL / 2 + col * (CELL + CGAP),
         extraY + 16 + CELL / 2 + rowi * (CELL + CGAP));
       void rowi;
       const box = panel(root, cc.x, cc.y, CELL, CELL, { art: 'slot' });
@@ -480,9 +481,9 @@ export function buildResult(parent: Node,
   const bh = at2(12, listTop);
   text(root, bh.x, bh.y, '本局构筑', { size: 13, color: COL.accent, align: 'left', width: 312, bold: true, outline: true });
   const rowsTop = listTop + 22;
-  const availH = (VH - B - 150) - rowsTop;
+  const availH = (VH - B - 60) - rowsTop;
   // 预留 18px 给"还有 N 项"提示，避免提示压到底部按钮上（回归截图确认）
-  const maxRows = Math.max(1, Math.floor((availH - 24) / 42));
+  const maxRows = Math.max(1, Math.min(3, Math.floor(availH / 42)));
   const list = stats.build.slice(0, maxRows);
   if (list.length) {
     list.forEach((r, i) => {

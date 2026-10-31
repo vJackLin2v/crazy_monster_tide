@@ -909,8 +909,11 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
 
       // 真机调试：一键复制本局日志（放在标题牌左侧，构建失败不阻断结算）
       const vs2 = view.getVisibleSize();
+      // 构建标记：用来确认玩家跑的是哪个包
+      text(this.cur, vs2.width / 2 - 76, vs2.height / 2 - 16, 'build 12:00',
+        { size: 8, color: new Color(150, 160, 180, 255), width: 140, align: 'right', outline: false });
       const chip = panel(this.cur, 58 - vs2.width / 2, vs2.height / 2 - (safeTop() + 56), 88, 26, { art: 'btn' });
-      text(chip, 0, 0, '复制日志', { size: 10, color: new Color(240, 236, 226, 255), width: 84, bold: true, outline: true });
+      text(chip, 0, 0, '导出日志', { size: 10, color: new Color(240, 236, 226, 255), width: 84, bold: true, outline: true });
       onTap(chip, () => this.copyRunLogs());
     } catch (e) {
       console.error('[UI] 结算面板构建失败，回到主菜单', e);
