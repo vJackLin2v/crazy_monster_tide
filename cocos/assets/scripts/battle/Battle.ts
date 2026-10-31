@@ -31,7 +31,8 @@ import type { SkillArt } from '../data/Types';
 import { ENEMIES, bossUnitFor } from '../data/Enemies';
 import { baseOf, modEffect } from '../data/Modules';
 import { FxPrefs } from '../game/Prefs';
-import { DamageContext, DamageSource, makeDamageContext, canVamp, nextCastId } from '../game/DamageContext';
+import { DamageContext, DamageSource, makeDamageContext, canVamp, nextCastId, ModuleUsage } from '../game/DamageContext';
+import { killblastDamage, killblastRadius, shieldAmount, SHIELD_CAP, SHIELD_COOLDOWN, SHIELD_DURATION, executePct, returnstrikePct, overchargePeriod, overchargeMul, lingeringChance, LINGER_TICKS, LINGER_TICK_DMG, LINGER_MAX_ZONES } from '../game/ModuleValues';
 import { CHARS } from '../data/Chars';
 const { ccclass } = _decorator;
 
@@ -75,6 +76,8 @@ interface Bullet {
   /** 回旋（回旋刃）：飞出去一段时间后折返，回程可再命中一次 */
   returning?: boolean;
   returned?: boolean;
+  /** 本次返程是否已经结算过 M4 返程斩（每次返程只触发一次） */
+  returnHit?: boolean;
   outT?: number;
   /** 回程自转角度（让刃"转着回来"） */
   spinAngle?: number;
@@ -162,6 +165,18 @@ export class Battle extends Component {
   /** 统一回血预算：吸血 + 击杀回血合计 ≤8HP/s（阶段3 结论：不改就"站桩不死"） */
   private healBudgetSpent = 0;
   private healBudgetSec = 0;
+
+  /** 当前施法 id（每次 fireSkill 生成，供 DamageContext 使用） */
+  private currentCastId = 'c0';
+  /** 每个技能的施法计数（M6 蓄势） */
+  private castCount: Record<number, number> = {};
+  /** 护盾（M2 残影护盾）与剩余时间 */
+  private shield = 0;
+  private shieldT = 0;
+  /** 模块触发闸门（冷却 / 单次施法上限） */
+  private modUsage = new ModuleUsage();
+  /** 运行时钟（秒），给模块冷却用 */
+  private runTime = 0;
 
   /** 所有自我回血都走这里：受每秒预算 + 最大生命双重夹取 */
   private healPlayer(amount: number): void {
@@ -743,6 +758,19 @@ export class Battle extends Component {
 
   private fireSkill(slot: number, rt: SkillRuntime) {
     this.currentCastId = nextCastId();
+    // M6 蓄势：按技能独立计数，达到周期的那一次享受加成，随后归零
+    const oc = this.modStacks('overcharge');
+    if (oc > 0) {
+      const period = overchargePeriod(oc);
+      const n = (this.castCount[slot] ?? 0) + 1;
+      if (n >= period) {
+        this.castCount[slot] = 0;
+        const mul = overchargeMul(oc);
+        rt = { ...rt, dmg: rt.dmg * mul };
+      } else {
+        this.castCount[slot] = n;
+      }
+    }
     const sk = this.rs.skills[slot];
     const def = SKILLS[sk.id];
     const art: SkillArt = (SKILL_ART as Record<string, SkillArt>)[sk.id] || ({} as SkillArt);
@@ -788,7 +816,7 @@ export class Battle extends Component {
           shotRt, art.proj, art.hit, def.tags.includes('homing'));
         // ★ 回旋刃（M46）：飞出去 0.5s 后折返，回程可再命中一次
         if (bl && def.tags.includes('return')) {
-          bl.returning = true;
+          bl.returning = true; bl.returnHit = false;
           bl.outT = 0.5;
           bl.life = 2.2;
         }
@@ -1065,6 +1093,21 @@ export class Battle extends Component {
   }
 
   /** 玩家 4 个技能里只要装了某个黑科技就返回 true（强化版 `id_2` 也算） */
+  /** 某个黑科技在本局的份数（含合成版，最多 3 份） */
+  private modStacks(id: string): number {
+    let n = 0;
+    for (const sk of this.rs.skills) for (const m of sk.mods) if (m === id || m.startsWith(id + '_')) n++;
+    return Math.min(3, n);
+  }
+
+  /** 纯伤害（不触发任何命中模块）：M1 爆炸、M4 返程额外伤害都用它 */
+  private applyRawDamage(e: Enemy, dmg: number): void {
+    if (e.dead) return;
+    e.hp -= dmg;
+    this.waveDmgDealt += dmg;
+    if (e.hp <= 0) this.killEnemy(e, undefined, 'module');
+  }
+
   private hasModule(id: string): boolean {
     return this.rs.skills.some(s => s.mods.some(m => m === id || m === id + '_2'));
   }
@@ -1085,6 +1128,11 @@ export class Battle extends Component {
     // 统一伤害上下文：来源由调用方声明，能否触发模块由入口推导（设计 v6）
     const ctx: DamageContext = makeDamageContext(src, this.currentCastId, { isBoss: !!e.boss });
     let { dmg, crit } = rollDamage(base, this.rs.stats, this.rs.rng);
+    // M3 处决：按结算前血量判定（BOSS 增伤减半）
+    const ex = this.modStacks('execute');
+    if (ex > 0 && e.maxhp > 0 && e.hp / e.maxhp < 0.30) {
+      dmg *= 1 + executePct(ex, !!e.boss);
+    }
     // ★ 精英伤害：对精英/BOSS 额外加成
     // 阶段 E：精英/首领伤害加成上限 +150%
     if ((e.elite || e.boss) && this.rs.stats.eliteDmg) dmg = Math.round(dmg * (1 + Math.min(1.5, this.rs.stats.eliteDmg)));
@@ -1125,7 +1173,36 @@ export class Battle extends Component {
       e.slowPct = slowFor(!!e.boss, rt.slow);   // 普通 35/45/55%，BOSS 封顶 30%
     }
     // 吸血：基础 4%/份（唯一模块可合成，Ⅱ = 1.6 份 → 6.4%，低于两份普通）
-    if (rt.vamp && canVamp(ctx)) this.healPlayer(dmg * 0.03 * rt.vamp);   // 每份 3%（原 4%），且受每秒 8HP 预算限制
+    if (rt.vamp && canVamp(ctx)) this.healPlayer(dmg * 0.03 * rt.vamp);
+    // M5 焚烧地带：伤害在生成瞬间快照，同屏最多 4 个（超出删最早）
+    {
+      const lg = this.modStacks('lingering');
+      if (lg > 0 && this.rs.rng.chance(lingeringChance(lg, ctx.source === 'split'))) {
+        const snap = Math.max(1, Math.round(dmg * LINGER_TICK_DMG));
+        this.spawnArea(e.x, e.y, 26, snap, LINGER_TICKS * 0.5, 'zone', undefined, rt, 0.5);
+        const created = this.areas[this.areas.length - 1];
+        if (created) created.tag = 'lingering';
+        const mine = this.areas.filter(a => a.kind === 'zone' && a.tag === 'lingering');
+        if (mine.length > LINGER_MAX_ZONES) {
+          const old = mine[0];
+          if (old && old.node && old.node.isValid) old.node.destroy();
+          const i = this.areas.indexOf(old);
+          if (i >= 0) this.areas.splice(i, 1);
+        }
+      }
+    }
+    // M2 残影护盾：全局 1.5s CD，单层池上限 9，获得即刷新 4s
+    {
+      const sh = this.modStacks('shieldonhit');
+      if (sh > 0) {
+        const gate = { id: 'shieldonhit', allowedSources: ['normal', 'chain', 'split'] as DamageSource[], cooldownSec: SHIELD_COOLDOWN };
+        if (this.modUsage.canTrigger(ctx, gate, this.runTime)) {
+          this.modUsage.mark(ctx, gate, this.runTime);
+          this.shield = Math.min(SHIELD_CAP, this.shield + shieldAmount(sh));
+          this.shieldT = SHIELD_DURATION;
+        }
+      }
+    }   // 每份 3%（原 4%），且受每秒 8HP 预算限制
     // ★ B7：原来只有特效、**没有伤害**（描述写"造成范围伤害"）。
     //   现在按 15%×份数 触发，对落点 60 半径内的敌人结算 50% 伤害。
     //   ⚠️ 这两个数值（半径/倍率）在 docs/systems 里没有规定，是候选值，已列入审计报告待确认；
@@ -1154,7 +1231,7 @@ export class Battle extends Component {
    * ⚠️ KI-001 教训：死亡后**先累加 deathT**，再跳过其它逻辑，否则实体永远回收不掉。
    *    见 docs/known-issues.md
    */
-  private killEnemy(e: Enemy, rt?: SkillRuntime) {
+  private killEnemy(e: Enemy, rt?: SkillRuntime, src: DamageSource = 'normal') {
     if (e.dead) return;
     e.dead = true; e.deathT = 0;
     // ★ 死亡动画：单位素材每套都有 death 帧（UNIT_FRAMES），以前从来没人播（M30 #2）
@@ -1167,6 +1244,20 @@ export class Battle extends Component {
       this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + kh);
       const healed = this.rs.stats.hp - before;
       if (healed >= 0.5) this.healFeedback(healed);
+    }
+    // M1 溢出爆裂：只由 normal/split 击杀触发，爆炸自身来源为 module（不连锁）
+    const kb = this.modStacks('killblast');
+    if (kb > 0 && src !== 'module') {
+      const radius = killblastRadius(kb);
+      const dmg = killblastDamage(kb);
+      const cand: { e: Enemy; d: number }[] = [];
+      for (const o of this.enemies) {
+        if (o.dead || o === e) continue;
+        const d = Math.hypot(o.x - e.x, o.y - e.y);
+        if (d <= radius) cand.push({ e: o, d });
+      }
+      cand.sort((a, b) => a.d - b.d);
+      for (const c of cand.slice(0, 60)) this.applyRawDamage(c.e, dmg);
     }
     this.hitstop = Math.max(this.hitstop, e.boss ? HITSTOP.boss : (e.elite ? HITSTOP.elite : HITSTOP.normal));
     this.cam.addShake(e.boss ? SHAKE.boss : (e.elite ? SHAKE.elite : SHAKE.kill));
@@ -1251,6 +1342,11 @@ export class Battle extends Component {
     let dt = dtRaw * this.timeScale;
     if (this.hitstop > 0) { dt = dtRaw * HITSTOP_SCALE; this.hitstop = Math.max(0, this.hitstop - dtRaw); }
     // 回血预算每秒清零
+    this.runTime += dt;
+    if (this.shield > 0) {
+      this.shieldT -= dt;
+      if (this.shieldT <= 0) { this.shield = 0; this.shieldT = 0; }
+    }
     this.healBudgetSec += dt;
     if (this.healBudgetSec >= 1) { this.healBudgetSec -= 1; this.healBudgetSpent = 0; }
 
@@ -1437,7 +1533,8 @@ export class Battle extends Component {
             this.shake(SHAKE.elite);
             const AI2 = balance().ai;
             if (d2 < AI2.bossSlamRadius && this.inv <= 0) {
-              const dm = playerTakenDamage(Math.round(e.dmg * AI2.bossSlamMul), this.rs.stats);
+              let dm = playerTakenDamage(Math.round(e.dmg * AI2.bossSlamMul), this.rs.stats);
+              if (this.shield > 0) { const a = Math.min(this.shield, dm); this.shield -= a; dm -= a; }
               this.rs.stats.hp -= dm;
         this.waveDmg += dm; this.totalDmg += dm;
               this.inv = Math.max(0.2, this.rs.stats.invuln ?? 0.8);
@@ -1501,7 +1598,8 @@ export class Battle extends Component {
       if (d < e.r + 12 && this.inv <= 0) {
         // 第三轮批准：屠魔者 = 受到精英/BOSS 伤害 -10%
         const bossGuard = (e.elite || e.boss) ? (1 - Math.min(0.5, this.rs.stats.bossArmor ?? 0)) : 1;
-        const dm = playerTakenDamage(e.dmg, this.rs.stats, bossGuard);
+        let dm = playerTakenDamage(e.dmg, this.rs.stats, bossGuard);
+        if (this.shield > 0) { const a = Math.min(this.shield, dm); this.shield -= a; dm -= a; }
         this.rs.stats.hp -= dm;
         this.waveDmg += dm; this.totalDmg += dm;
         // 受击无敌帧 0.55 -> 0.80（2026-10-13 实测标定）
@@ -1596,6 +1694,14 @@ export class Battle extends Component {
             }
             b.life = 0;
             break;
+          }
+          // M4 返程斩：只有 return 标签技能的返程阶段、且本次返程未结算过
+          if (b.returning && !b.returnHit) {
+            const rs4 = this.modStacks('returnstrike');
+            if (rs4 > 0) {
+              b.returnHit = true;
+              this.applyRawDamage(e, b.dmg * returnstrikePct(rs4));
+            }
           }
           // ★ 分裂（M49）：命中时炸成 2 枚小子弹（和"扇射"的发射时散射区分开）
           if (b.split > 0 && !b.splitDone) {

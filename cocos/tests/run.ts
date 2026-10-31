@@ -28,6 +28,7 @@ import { ACHIEVEMENTS, achViews, newlyUnlocked, applyUnlocks } from '../assets/s
 import { defaultSave } from '../assets/scripts/game/Progress';
 import { balance, balanceOverride, balanceReset, DEFAULT_BALANCE } from '../assets/scripts/core/Balance';
 import { canSourceTriggerModules, makeDamageContext, canHarvest, canVamp, ModuleUsage, type DamageSource } from '../assets/scripts/game/DamageContext';
+import { killblastDamage, killblastRadius, shieldAmount, SHIELD_CAP, SHIELD_COOLDOWN, SHIELD_DURATION, executePct, returnstrikePct, lingeringChance, LINGER_TICKS, LINGER_TICK_DMG, LINGER_MAX_ZONES, overchargePeriod, overchargeMul } from '../assets/scripts/game/ModuleValues';
 import { splitBullets, echoRepeats, echoDelay, burnDuration, burnTickMul, frostSlowPct, frostDuration, slowFor } from '../assets/scripts/game/ModuleScale';
 import { telemetryStart, telemetryWaveEnd, telemetryRunEnd, listRuns, summarize } from '../assets/scripts/game/Telemetry';
 import type { SaveData } from '../assets/scripts/game/Progress';
@@ -655,6 +656,36 @@ console.log('\n== 5n. 伤害上下文与模块闸门（设计 v6） ==');
   u2.mark(normalCtx, cdGate, 0);
   ok(!u2.canTrigger(normalCtx, cdGate, 1.0), '1.0s 时仍在 1.5s 冷却内');
   ok(u2.canTrigger(normalCtx, cdGate, 1.6), '1.6s 后冷却结束可再次触发');
+}
+
+console.log('\n== 5o. 新黑科技数值表（独立预期值） ==');
+{
+  // M1：伤害 8/14/20，半径 40/46/52
+  ok(killblastDamage(1) === 8 && killblastDamage(2) === 14 && killblastDamage(3) === 20, 'M1 伤害 8/14/20');
+  ok(killblastRadius(1) === 40 && killblastRadius(2) === 46 && killblastRadius(3) === 52, 'M1 半径 40/46/52');
+  ok(killblastDamage(9) === 20, 'M1 份数超上限按 3 份算');
+
+  // M2：护盾 3/5/7，池上限 9，CD 1.5，持续 4
+  ok(shieldAmount(1) === 3 && shieldAmount(2) === 5 && shieldAmount(3) === 7, 'M2 护盾 3/5/7');
+  ok(SHIELD_CAP === 9 && SHIELD_COOLDOWN === 1.5 && SHIELD_DURATION === 4, 'M2 上限/冷却/持续时间');
+
+  // M3：普通 40/58/76%，BOSS 20/29/38%
+  ok(Math.abs(executePct(1, false) - 0.40) < 1e-9, 'M3 一份 +40%');
+  ok(Math.abs(executePct(3, false) - 0.76) < 1e-9, 'M3 三份 +76%');
+  ok(Math.abs(executePct(1, true) - 0.20) < 1e-9 && Math.abs(executePct(3, true) - 0.38) < 1e-9, 'M3 BOSS 减半 20/38%');
+
+  // M4：70/95/120%
+  ok(Math.abs(returnstrikePct(1) - 0.70) < 1e-9 && Math.abs(returnstrikePct(2) - 0.95) < 1e-9 && Math.abs(returnstrikePct(3) - 1.20) < 1e-9, 'M4 70/95/120%');
+
+  // M5：概率 35/45/55%，split 减半
+  ok(Math.abs(lingeringChance(1, false) - 0.35) < 1e-9, 'M5 一份 35%');
+  ok(Math.abs(lingeringChance(3, false) - 0.55) < 1e-9, 'M5 三份 55%');
+  ok(Math.abs(lingeringChance(3, true) - 0.275) < 1e-9, 'M5 split 减半 27.5%');
+  ok(LINGER_TICKS === 3 && Math.abs(LINGER_TICK_DMG - 0.30) < 1e-9 && LINGER_MAX_ZONES === 4, 'M5 3 跳 / 30% / 4 区');
+
+  // M6：周期 3/2/2，倍率 1.8/2.1/2.4
+  ok(overchargePeriod(1) === 3 && overchargePeriod(2) === 2 && overchargePeriod(3) === 2, 'M6 周期 3/2/2');
+  ok(Math.abs(overchargeMul(1) - 1.8) < 1e-9 && Math.abs(overchargeMul(3) - 2.4) < 1e-9, 'M6 倍率 1.8/2.4');
 }
 
 console.log('\n== 6. 确定性与波次规则 ==');
