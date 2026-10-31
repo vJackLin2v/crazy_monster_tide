@@ -31,6 +31,7 @@ import type { SkillArt } from '../data/Types';
 import { ENEMIES, bossUnitFor } from '../data/Enemies';
 import { baseOf, modEffect } from '../data/Modules';
 import { FxPrefs } from '../game/Prefs';
+import { focusedMods, shatterMul, VOLTLOOP_CHANCE, VOLTLOOP_DMG, VOLTLOOP_CD } from '../game/SpecialItems';
 import { difficultyOf, healAmount, healBudget, spawnInterval } from '../data/Difficulties';
 import { BossSummonState } from '../game/BossSummon';
 import type { DifficultyId } from '../data/Difficulties';
@@ -186,6 +187,7 @@ export class Battle extends Component {
   private modUsage = new ModuleUsage();
   /** 运行时钟（秒），给模块冷却用 */
   private runTime = 0;
+  private voltloopAt = -9;
 
   /** 所有自我回血都走这里：受每秒预算 + 最大生命双重夹取 */
   private healPlayer(amount: number): void {
@@ -796,6 +798,8 @@ export class Battle extends Component {
         this.castCount[slot] = n;
       }
     }
+    const foc = focusedMods(this.rs.skills.length);
+    if (foc.dmg !== 1) rt = { ...rt, dmg: rt.dmg * foc.dmg };
     const sk = this.rs.skills[slot];
     const def = SKILLS[sk.id];
     const art: SkillArt = (SKILL_ART as Record<string, SkillArt>)[sk.id] || ({} as SkillArt);
@@ -1170,6 +1174,7 @@ export class Battle extends Component {
     // 统一伤害上下文：来源由调用方声明，能否触发模块由入口推导（设计 v6）
     const ctx: DamageContext = makeDamageContext(src, this.currentCastId, { isBoss: !!e.boss });
     let { dmg, crit } = rollDamage(base, this.rs.stats, this.rs.rng);
+    if (this.rs.hasItem('shatter')) dmg *= shatterMul((e.slowPct ?? 0) > 0);
     // M3 处决：按结算前血量判定（BOSS 增伤减半）
     const ex = this.modStacks('execute');
     if (ex > 0 && e.maxhp > 0 && e.hp / e.maxhp < 0.30) {
@@ -1216,6 +1221,10 @@ export class Battle extends Component {
     }
     // 吸血：基础 4%/份（唯一模块可合成，Ⅱ = 1.6 份 → 6.4%，低于两份普通）
     if (rt.vamp && canVamp(ctx)) this.healPlayer(dmg * 0.03 * rt.vamp);
+    if (this.rs.hasItem('voltloop') && this.runTime - this.voltloopAt >= VOLTLOOP_CD && this.rs.rng.chance(VOLTLOOP_CHANCE)) {
+      this.voltloopAt = this.runTime;
+      this.applyRawDamage(e, dmg * VOLTLOOP_DMG);
+    }
     // M5 焚烧地带：伤害在生成瞬间快照，同屏最多 4 个（超出删最早）
     {
       const lg = this.modStacks('lingering');

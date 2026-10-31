@@ -50,6 +50,8 @@ export class RunState {
   shopStock: ShopSlot[] | null = null;
   carryOver: ShopSlot[] = [];
 
+  hasItem(id: string): boolean { return this.items.some(i => i.id === id); }
+
   /** 本局难度（开局从存档复制，局内不可改） */
   difficulty: DifficultyId = 'normal';
 
@@ -408,7 +410,10 @@ export class RunState {
       : { kind: 'attr', id: 'attr', price: P.attrBase + this.wave * P.attrPerWave, sold: false, locked: false };
   }
 
-  rerollCost(): number { return Math.round((balance().shop.rerollBase + this.shopReroll) * difficultyOf(this.difficulty).rerollCostMul); }
+  rerollCost(): number {
+    const base = (balance().shop.rerollBase + this.shopReroll) * difficultyOf(this.difficulty).rerollCostMul;
+    return Math.round(this.hasItem('frugal') ? base * 0.5 : base);
+  }
 
   rerollShop(): boolean {
     const cost = this.rerollCost();

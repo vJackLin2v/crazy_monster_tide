@@ -11,6 +11,7 @@
  *  6. 确定性：同 seed 同结果
  *  7. 波次规则：BOSS 波 / 精英波 / 无尽
  */
+import { lastbreathMul, shatterMul, focusedMods, resonatorMul, VOLTLOOP_CHANCE, VOLTLOOP_DMG, VOLTLOOP_CD, greedPowerBonus, FRUGAL_REROLL_MUL, FRUGAL_WAVE_GOLD, THORNCOAT_DMG, THORNCOAT_CD } from '../assets/scripts/game/SpecialItems';
 import { RunState } from '../assets/scripts/game/RunState';
 import { calcSkill, makeSkill, canInstall, modCount } from '../assets/scripts/game/SkillCalc';
 import { MODULES, MODULE_IDS, MODULE_HOOKS, MODULE_NUMS, modEffect, modPower, TIER2_EFFECT } from '../assets/scripts/data/Modules';
@@ -752,6 +753,22 @@ console.log('\n== 5q. 新技能 × 黑科技 兼容白名单 ==');
   ok(canInstall(sn, 'overload').ok === false, '哨兵不能装 overload');
   const cp = { id: 'charge_pulse', lvl: 1, mods: [] } as never;
   ok(canInstall(cp, 'overload').ok === true && canInstall(cp, 'multi').ok === false, '蓄能可装 overload、不能装 multi');
+}
+
+console.log('\n== 5r. 特殊道具（独立预期值） ==');
+{
+  ok(Math.abs(lastbreathMul(0.2) - 1.35) < 1e-9, '背水：低血 x1.35');
+  ok(Math.abs(lastbreathMul(0.8) - 0.92) < 1e-9, '背水：高血 x0.92');
+  ok(Math.abs(shatterMul(true) - 1.20) < 1e-9 && Math.abs(shatterMul(false) - 0.95) < 1e-9, '碎冰：减速 +20% / 未减速 -5%');
+  const f2 = focusedMods(2), f4 = focusedMods(4);
+  ok(Math.abs(f2.dmg - 1.25) < 1e-9 && Math.abs(f2.cd - 0.90) < 1e-9, '专注核心：2 技能 +25% / -10% 冷却');
+  ok(f4.dmg === 1 && f4.cd === 1, '专注核心：4 技能不生效');
+  ok(Math.abs(resonatorMul(1) - 1.20) < 1e-9 && resonatorMul(0) === 1, '共鸣器：同 Hook 成对 +20%');
+  ok(VOLTLOOP_CHANCE === 0.15 && Math.abs(VOLTLOOP_DMG - 0.40) < 1e-9 && VOLTLOOP_CD === 0.6, '回响电弧：15% / 40% / 0.6s');
+  ok(Math.abs(greedPowerBonus(0)) < 1e-9 && Math.abs(greedPowerBonus(100) - 0.03) < 1e-9, '贪欲：每 100 金币 +3%');
+  ok(Math.abs(greedPowerBonus(9999) - 0.15) < 1e-9, '贪欲：封顶 +15%');
+  ok(FRUGAL_REROLL_MUL === 0.5 && FRUGAL_WAVE_GOLD === 2, '精打细算：刷新 -50% / 每波 -2');
+  ok(THORNCOAT_DMG === 12 && THORNCOAT_CD === 0.5, '荆棘外衣：12 点 / 0.5s CD');
 }
 
 console.log('\n== 6. 确定性与波次规则 ==');
