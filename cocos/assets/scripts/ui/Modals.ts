@@ -44,7 +44,8 @@ const KIND_LABEL: Record<string, string> = {
 
 /** 5. 升级 3 选 1 —— 竖屏下改成**三张等宽卡片纵向排列**（横排会让每张只剩 100px，读不清） */
 export function buildLevelUp(parent: Node, lv: number, cards: CardData[],
-                             onPick: (i: number) => void, onSkip: () => void): Node {
+                             onPick: (i: number) => void, onSkip: () => void,
+                             onPause?: () => void): Node {
   const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
   const A = (x: number, y: number) => at(VW, VH, x, y);
   const S = safeTop(), B = safeBottom();
@@ -64,6 +65,11 @@ export function buildLevelUp(parent: Node, lv: number, cards: CardData[],
   text(box, 0, PH / 2 - 30, '升级！  Lv.' + lv,
     { size: 24, color: COL.cream, width: 300, bold: true, outline: true, shadow: true });
   text(box, 0, PH / 2 - 54, '选一个带走', { size: 11, color: COL.dim, width: 300 });
+  if (onPause) {
+    // 升级弹窗是全屏的，HUD 暂停键被挡住；提供同功能入口
+    const pb = button(box, 120, PH / 2 - 30, 64, 28, '暂停', { size: 11 });
+    onTap(pb.node, onPause);
+  }
 
   // ── 卡片区：三张等宽等高的卡，自上而下贴满 ──
   const n = Math.min(3, cards.length);

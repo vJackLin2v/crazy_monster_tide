@@ -98,6 +98,8 @@ export class GameRoot extends Component {
   private charPreview = false;
   /** C6：复用同一个 HudData，避免每帧 new */
   private hudData: HudData | null = null;
+  /** 从升级弹窗打开暂停：继续时回到升级三选一 */
+  private pauseReturnLevelUp = false;
 
   onLoad() {
     // 设计分辨率写死在代码里，不依赖编辑器设置（编辑器里是 1280x720，见 KI-005）
@@ -690,7 +692,8 @@ export class GameRoot extends Component {
     try {
       const cards: CardData[] = rewards.map(r => this.toCard(r));
       this.curModal = buildLevelUp(this.uiRoot, this.battle.rs.lv, cards,
-        (i) => this.pickReward(i), () => this.pickReward(-1));
+        (i) => this.pickReward(i), () => this.pickReward(-1),
+        () => { this.pauseReturnLevelUp = true; this.closeModal(); this.showPause(); });
       this.saveActiveRunNow();       // 升级三选一也是可恢复状态
     } catch (e) {
       // ★ 防御：任何界面构建失败都不能把游戏留在「暂停 + 没弹窗」的状态（= 看起来卡死）
@@ -1451,10 +1454,18 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         desc: def ? def.desc : '—',
         mods: s.mods.map(m => {
           const d = moduleDef(m);
-          return {
-            id: m, name: d ? d.name : m, desc: d ? d.desc : '',
-            nums: MODULE_NUMS[baseOf(m)] ?? '',
-          };
+          const base = baseOf(m);
+          const mul = modEffect(m);
+          // 升级后的具体效果（不只是"跳 1 次"）
+          let nums = MODULE_NUMS[base] ?? '';
+          if (base === 'chain') nums = '跳 ' + Math.max(1, Math.round(mul)) + ' 次 · 每次 70% 伤害';
+          else if (base === 'multi') nums = '一次多打 ' + Math.max(1, Math.round(mul)) + ' 发';
+          else if (base === 'fan') nums = '散射 ' + (2 * Math.max(1, Math.round(mul))) + ' 枚（55% 伤害）';
+          else if (base === 'burn') nums = '每秒 ' + Math.round(10 * mul) + '% 伤害 · ' + (2 + 0.6 * (mul - 1)).toFixed(1) + 's';
+          else if (base === 'frost') nums = '减速 ' + Math.round(35 + 10 * (mul - 1)) + '% · ' + (1.2 + 0.4 * (mul - 1)).toFixed(1) + 's';
+          else if (base === 'thunder') nums = Math.round(15 * mul) + '% 概率落雷';
+          else if (base === 'echo') nums = '追加 ' + Math.max(1, Math.round(mul)) + ' 次 · 60% 伤害';
+          return { id: m, name: d ? d.name : m, desc: d ? d.desc : '', nums };
         }),
       };
     });
@@ -1502,7 +1513,16 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
     this.saveActiveRunNow();      // 打开暂停面板即落档（玩家可能直接杀进程）
     this.curModal = buildBuildDrawer(this.uiRoot, pages,
       () => { this.closeModal(); this.confirmQuit(); },
-      () => { this.closeModal(); this.battle.paused = false; },
+      () => {
+        this.closeModal();
+        if (this.pauseReturnLevelUp) {
+          this.pauseReturnLevelUp = false;
+          this.battle.paused = true;
+          this.showLevelUp(this.pendingRewards);
+        } else {
+          this.battle.paused = false;
+        }
+      },
       () => { this.showInstall('pause'); },
       this.battle.rs.modsBag.length,
       {

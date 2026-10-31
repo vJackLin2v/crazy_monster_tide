@@ -274,7 +274,7 @@ export function buildHistoryDetail(
   y -= GRID;
 
   // ── C. 技能构筑（图标 + 展开）──
-  text(ml.content, -152, y - 14, '技能构筑', { size: 12, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
+  text(ml.content, -165, y - 14, '技能构筑', { size: 12, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
   (skills.length ? skills : [{ id: '', lvl: 0, mods: [] }]).forEach((s, i) => {
     const cy = y - 56 - i * 54;
     const row = panel(ml.content, 0, cy, 330, 48, { art: 'panel_soft' });
@@ -290,11 +290,11 @@ export function buildHistoryDetail(
   y -= SKILL_H;
 
   // ── D. 道具 ──
-  text(ml.content, -152, y - 14, '道具收藏 (' + items.length + ')', { size: 12, color: COL.accent, align: 'left', width: 220, bold: true, outline: true });
+  text(ml.content, -165, y - 14, '道具收藏 (' + items.length + ')', { size: 12, color: COL.accent, align: 'left', width: 220, bold: true, outline: true });
   if (!items.length) {
-    text(ml.content, -146, y - 34, '（本局没有获得道具）', { size: 10, color: COL.dim, align: 'left', width: 280 });
+    text(ml.content, -165, y - 34, '（本局没有获得道具）', { size: 10, color: COL.dim, align: 'left', width: 300 });
   } else {
-    items.slice(0, 21).forEach((it, i) => {
+    items.forEach((it, i) => {
       const cx = -144 + (i % 7) * 48;
       const cy = y - 46 - Math.floor(i / 7) * 46;
       const box = panel(ml.content, cx, cy, 42, 42, { art: 'slot' });
@@ -305,12 +305,12 @@ export function buildHistoryDetail(
   y -= ITEM_H;
 
   // ── E. 关键事件 ──
-  text(ml.content, -152, y - 14, '关键事件', { size: 12, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
+  text(ml.content, -165, y - 14, '关键事件', { size: 12, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
   if (!milestones.length) {
-    text(ml.content, -146, y - 34, '（这一局没有记录到关键事件）', { size: 10, color: COL.dim, align: 'left', width: 290 });
+    text(ml.content, -165, y - 34, '（这一局没有记录到关键事件）', { size: 10, color: COL.dim, align: 'left', width: 300 });
   } else {
     milestones.slice(-12).forEach((m, i) => {
-      text(ml.content, -146, y - 34 - i * 20,
+      text(ml.content, -165, y - 34 - i * 20,
         '第 ' + m.wave + ' 波 · ' + mmss(m.at) + '  ' + m.text,
         { size: 10, color: m.kind === 'boss' ? COL.red : COL.cream, align: 'left', width: 300, outline: true });
     });

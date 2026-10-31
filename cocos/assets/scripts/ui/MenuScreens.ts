@@ -150,6 +150,8 @@ export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandl
   const coreY = Math.max(S + 200, Math.round(VH * 0.47));
   const hasSave = vm.saveState === 'ok' && !!vm.info;
   let lastActionY = coreY;
+  /** 开始按钮是否是橙色主样式（无继续/坏档时为 true），玩法说明跟随它保持同款 */
+  let startPrimary = false;
   // 2026-10-31：两个按钮统一为同一组件/尺寸，但颜色分主次：
   //   有「继续游戏」时，开始游戏用深蓝次级样式；没有继续按钮时，开始游戏才用橙色主样式。
   const BTN_W = 260, BTN_H = 56, BTN_GAP = 12;
@@ -180,17 +182,20 @@ export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandl
       { primary: true, size: 17 });
     pressable(startBtn.node, h.onStart);
     lastActionY = coreY + 76;
+    startPrimary = true;
   } else {
     const startBtn = button(root, at2(180, coreY + 6).x, at2(180, coreY + 6).y, BTN_W, BTN_H, '开始游戏',
       { primary: true, size: 17 });
     pressable(startBtn.node, h.onStart);
     lastActionY = coreY + 6;
+    startPrimary = true;
   }
 
-  // 玩法说明：从设置页移到主菜单（开始游戏下方），小尺寸文字按钮
-  const howtoY = lastActionY + 46;
-  const howto = button(root, at2(180, howtoY).x, at2(180, howtoY).y, 160, 34, '玩法说明', { size: 12 });
-  onTap(howto.node, h.onHowto);
+  // 玩法说明：与「开始游戏」同尺寸、同样式、间距 12（用户要求）
+  const howtoY = lastActionY + BTN_H + BTN_GAP;
+  const howto = button(root, at2(180, howtoY).x, at2(180, howtoY).y, BTN_W, BTN_H, '玩法说明',
+    { primary: startPrimary, size: 17 });
+  pressable(howto.node, h.onHowto);
 
   // 版本信息：主菜单最底部
   if (vm.version) {
