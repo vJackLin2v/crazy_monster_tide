@@ -65,11 +65,7 @@ export function buildLevelUp(parent: Node, lv: number, cards: CardData[],
   text(box, 0, PH / 2 - 30, '升级！  Lv.' + lv,
     { size: 24, color: COL.cream, width: 300, bold: true, outline: true, shadow: true });
   text(box, 0, PH / 2 - 54, '选一个带走', { size: 11, color: COL.dim, width: 300 });
-  if (onPause) {
-    // 升级弹窗是全屏的，HUD 暂停键被挡住；提供同功能入口
-    const pb = button(box, 120, PH / 2 - 30, 64, 28, '暂停', { size: 11 });
-    onTap(pb.node, onPause);
-  }
+  void onPause;   // 升级期间战斗继续，不再需要暂停入口
 
   // ── 卡片区：三张等宽等高的卡，自上而下贴满 ──
   const n = Math.min(3, cards.length);
@@ -421,12 +417,14 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
       }
       onTap(box, () => {
         if (list.isDragging()) return;
-        const pop = panel(root, 0, 0, 300, 150, { art: 'panel' });
-        text(pop, 0, 52, it.name + (it.count && it.count > 1 ? (' ×' + it.count) : ''), { size: 15, color: COL.accent, width: 280, bold: true, outline: true });
-        text(pop, 0, 6, it.desc ?? '（暂无说明）', { size: 11, color: COL.cream, width: 270, align: 'left' });
-        const close = button(pop, 0, -54, 120, 34, '关闭', { size: 12 });
+        // 已购道具详情：只展示名称/数量/说明，底部仅一个「关闭」（无价格、无购买）
+        const pop = panel(root, 0, 0, 310, 210, { art: 'panel' });
+        text(pop, 0, 78, it.name + (it.count && it.count > 1 ? (' ×' + it.count) : ''),
+          { size: 16, color: COL.accent, width: 280, bold: true, outline: true });
+        text(pop, -140, 34, it.desc ?? '（暂无说明）',
+          { size: 11, color: COL.cream, width: 280, h: 92, align: 'left' });
+        const close = button(pop, 0, -78, 140, 40, '关闭', { size: 14 });
         onTap(close.node, () => pop.destroy());
-        onTap(pop, () => pop.destroy());
       });
     });
   }

@@ -13,6 +13,8 @@ interface Area {
   w: number; h: number; contentH: number;
   off: number; dragging: boolean; startY: number; startOff: number;
   lastY: number; lastT: number; flingV: number;
+  /** 本次触摸累计位移（区分点击与拖动） */
+  moved: number;
   onScroll?: (off: number) => void;
 }
 
@@ -68,7 +70,7 @@ function bind(): void {
       if (!a.view.isValid) continue;
       const r = wrect(a.view);
       if (p.x >= r.x0 && p.x <= r.x1 && p.y >= r.y0 && p.y <= r.y1) {
-        a.dragging = true; a.startY = p.y; a.startOff = a.off;
+        a.dragging = true; a.moved = 0; a.startY = p.y; a.startOff = a.off;
         a.lastY = p.y; a.lastT = performance.now(); a.flingV = 0;
         return;
       }
@@ -80,6 +82,7 @@ function bind(): void {
     const p = e.getUILocation();
     const now = performance.now();
     const dtm = (now - a.lastT) / 1000;
+    a.moved += Math.abs(p.y - a.lastY);
     if (dtm > 0.004) { a.flingV = (p.y - a.lastY) / dtm; a.lastY = p.y; a.lastT = now; }
     a.off = clampOff(a, a.startOff + (p.y - a.startY));
     apply(a);
@@ -136,7 +139,7 @@ export function makeScroll(parent: Node, cx: number, cy: number, w: number, h: n
   const a: Area = {
     view, content, w, h, contentH: Math.max(h, contentH),
     off: 0, dragging: false, startY: 0, startOff: 0,
-    lastY: 0, lastT: 0, flingV: 0,
+    lastY: 0, lastT: 0, flingV: 0, moved: 0,
   };
   areas.push(a);
   a.onScroll = onScroll;
@@ -151,6 +154,7 @@ export function makeScroll(parent: Node, cx: number, cy: number, w: number, h: n
     const p = e.getUILocation();
     const now = performance.now();
     const dtm = (now - a.lastT) / 1000;
+    a.moved += Math.abs(p.y - a.lastY);
     if (dtm > 0.004) { a.flingV = (p.y - a.lastY) / dtm; a.lastY = p.y; a.lastT = now; }
     a.off = clampOff(a, a.startOff + (p.y - a.startY));
     apply(a);
@@ -173,7 +177,7 @@ export function makeScroll(parent: Node, cx: number, cy: number, w: number, h: n
   return {
     view, content, contentH: a.contentH, dispose,
     offset: () => a.off,
-    isDragging: () => a.dragging,
+    isDragging: () => a.dragging && a.moved > 8,
     setOffset: (v: number) => { a.off = clampOff(a, v); a.flingV = 0; apply(a); },
   };
 }

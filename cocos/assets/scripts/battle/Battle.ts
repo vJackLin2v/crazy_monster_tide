@@ -2656,9 +2656,9 @@ export class Battle extends Component {
 
   private onLevelUp(_ups: number) {
     Sfx.sfx('levelUp', 0.6, 300);
-    // 交给 UI：暂停战斗 + 弹 3 选 1；选完由 GameRoot 调 resumeFromModal()
+    // 升级三选一期间**不暂停**：血条/经验/击杀/倒计时继续计算（用户明确要求）
     this.pendingUps = _ups;
-    this.paused = true;
+    this.paused = false;
     this.hooks.onLevelUp?.(this.rs.rollRewards());
   }
 
