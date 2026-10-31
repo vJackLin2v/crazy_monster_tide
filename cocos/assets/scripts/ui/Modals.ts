@@ -11,6 +11,7 @@ import { Sfx } from '../engine/Audio';
 import { makeScroll } from './ScrollView';
 import { makeModalList } from './ModalList';
 import { safeTop, safeBottom } from './Safe';
+import { modEffect } from '../data/Modules';
 import type { UiArtName } from './Art';
 
 /** 规格坐标 → 节点坐标 */
@@ -233,7 +234,7 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
                           onBuy: (i: number) => void, onLock: (i: number) => void,
                           onReroll: () => void, rerollCost: number, onNext: () => void,
                           tip?: string, nextLabel?: string,
-                          owned: { name: string; icon?: string; count?: number }[] = []): Node {
+                          owned: { name: string; icon?: string; count?: number; desc?: string }[] = []): Node {
   const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
   const A = (x: number, y: number) => at(VW, VH, x, y);
   const S = safeTop(), B = safeBottom();
@@ -415,7 +416,7 @@ export interface SkillDetailView {
   summary: string;
   /** 技能本身的一句话（形态 + 标签） */
   desc: string;
-  mods: { name: string; desc: string }[];
+  mods: { id?: string; name: string; desc: string }[];
 }
 
 /** 道具页的详情（M42：暂停面板里的道具要有详细介绍，可展开） */
@@ -597,10 +598,11 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
       if (open) {
         const rows: { t: string; c: Color }[] = [{ t: s.desc, c: COL.mint }];
         for (const m of s.mods) {
-    const mul = modEffect(m.id ?? '');
-    const tag = mul > 1.01 ? ('（效果 ×' + mul.toFixed(1) + '）') : '';
-    rows.push({ t: '· ' + m.name + '：' + m.desc + tag, c: COL.cream });
-  }
+          // 合成过的模块（_2/_3…）在描述后标注实际效果份数：Ⅱ = ×1.6，不是 ×2
+          const mul = modEffect(m.id ?? '');
+          const tag = mul > 1.01 ? ('（效果 ×' + mul.toFixed(1) + '）') : '';
+          rows.push({ t: '· ' + m.name + '：' + m.desc + tag, c: COL.cream });
+        }
         if (!s.mods.length) rows.push({ t: '· 还没有装黑科技', c: COL.dim });
         rows.slice(0, 5).forEach((ln, k) => {
           text(skillRoot, -W / 2 + 12, y - 6 - k * 13, ln.t, { size: 9, color: ln.c, align: 'left', width: W - 20, outline: false });

@@ -23,6 +23,9 @@
 - 伤害计算保持**单一入口**。
 - 战斗对象使用对象池。
 - 状态更新是交付的一部分：`memory-bank/tasks.md` 未更新 = 任务未完成。
+- **类型检查是双配置**：`tsconfig.check.json` 只覆盖纯逻辑层（core/data/game/tests），**不含 ui/**。
+  只要动过 `assets/scripts/ui/` 或 `GameRoot.ts` 的 UI 传参，必须再跑 `tsconfig.ui-check.json`。
+  （2026-10-31 实例：`modEffect` 漏 import 在 check 配置下完全看不见，导致技能卡展开时 ReferenceError。）
 
 ## 3B. 资源纪律（2026-10-12 事故后新增，硬性）
 

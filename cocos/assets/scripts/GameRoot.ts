@@ -1016,7 +1016,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         desc: def ? def.desc : '—',
         mods: s.mods.map(m => {
           const d = moduleDef(m);
-          return { name: d ? d.name : m, desc: d ? d.desc : '' };
+          return { id: m, name: d ? d.name : m, desc: d ? d.desc : '' };
         }),
       };
     });

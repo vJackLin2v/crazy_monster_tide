@@ -14,5 +14,9 @@
 - 数值：怪少而强（间隔 .92 / 批量 2 / 同屏 24~34 / HP 成长 .34）、波时 22~46s、商店涨价加速、
   回血上限 5HP/s、吸血 2%、每波回血 6%、击退 26→12、5 波起每 2 波精英；
 - 测试 264 PASS / 0 FAIL；tsc 双配置 0；微信包 3.06MB / 10.89MB。
+- 2026-10-31 13:38 接手复查：`tsconfig.ui-check.json` 原本 3 个错误（提交 88363bc 引入）——
+  `ui/Modals.ts` 缺 `modEffect` import（技能卡展开→ReferenceError）、`SkillDetailView.mods` 缺 `id`、
+  商店 `owned` 形参缺 `desc`。已补 import + 类型与 `GameRoot` 传参，双配置 0，264 PASS，
+  已按 `build-wechat.bat -nopause` 重新出包（index.js 13:38:06）。
 - 构建只认 build-wechat.bat -nopause（直接调 CocosCreator CLI 会静默不产出）。
 
