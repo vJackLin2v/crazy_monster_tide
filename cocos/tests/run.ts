@@ -757,6 +757,10 @@ console.log('\n== 5q. 新技能 × 黑科技 兼容白名单 ==');
   ok(canInstall({ id: 'poison', lvl: 1, mods: [] } as never, 'vamp').ok === true, '毒雾可以装吸血');
   ok(canInstall({ id: 'fireball', lvl: 1, mods: [] } as never, 'harvest').ok === true, '火球可以装割韭菜');
   ok(canInstall({ id: 'poison', lvl: 1, mods: [] } as never, 'multi').ok === false, '毒雾不能装加量（无弹体）');
+  ok(canInstall({ id: 'ring_blade', lvl: 1, mods: [] } as never, 'echo').ok === true, '环刃可以装复读机');
+  ok(canInstall({ id: 'sentry', lvl: 1, mods: [] } as never, 'echo').ok === true, '哨兵可以装复读机');
+  ok(canInstall({ id: 'blade', lvl: 1, mods: [] } as never, 'echo').ok === true, '回旋刃可以装复读机');
+
 
 }
 

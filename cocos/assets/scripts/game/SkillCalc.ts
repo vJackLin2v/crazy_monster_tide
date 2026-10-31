@@ -1,9 +1,9 @@
 
 /** 四个新技能的黑科技白名单（设计 v6 兼容矩阵落地的第一版） */
 export const NEW_SKILL_ALLOW: Record<string, string[]> = {
-  ring_blade: ['orbit', 'giant', 'rapid', 'burn', 'frost', 'vamp', 'chain', 'thunder', 'harvest', 'thornmail'],
+  ring_blade: ['orbit', 'giant', 'rapid', 'burn', 'frost', 'vamp', 'chain', 'thunder', 'harvest', 'thornmail', 'echo'],
   mine_field: ['giant', 'rapid', 'burn', 'frost', 'vamp', 'chain', 'thunder', 'harvest', 'thornmail', 'split', 'echo', 'overload'],
-  sentry: ['multi', 'fan', 'split', 'bounce', 'pierce', 'giant', 'rapid', 'burn', 'frost', 'chain', 'snipe', 'harvest', 'thunder', 'vamp'],
+  sentry: ['multi', 'fan', 'split', 'bounce', 'pierce', 'giant', 'rapid', 'burn', 'frost', 'chain', 'snipe', 'harvest', 'thunder', 'vamp', 'echo'],
   charge_pulse: ['giant', 'rapid', 'burn', 'frost', 'vamp', 'chain', 'thunder', 'harvest', 'overload', 'echo'],
 };
 

@@ -11,7 +11,7 @@ export const MODULES: Record<string, ModuleDef> = {
   orbit:     { name: '转圈圈', icon: '◌', stack: 'additive', max: 3, requires: ['projectile'],               desc: '多 1 枚绕着角色转的子弹' },
   giant:     { name: '巨大', icon: '⬤', stack: 'additive', max: 3, requires: ['projectile','area','pulse','chain'], desc: '体积/范围 +30%' },
   rapid:     { name: '起飞', icon: '»', stack: 'tier',     max: 3, requires: ['projectile','pulse','chain','area'], desc: '技能冷却 -12%（可叠加）' },
-  echo:      { name: '复读机', icon: '↻', stack: 'tier',     max: 3, requires: ['area','pulse','chain'],      desc: '施放后 0.4s 再放一次（60% 伤害）；每份 +1 次重放' },
+  echo:      { name: '复读机', icon: '↻', stack: 'tier',     max: 3, requires: [], desc: '施放后 0.4s 再放一次（60% 伤害）；每份 +1 次重放' },
   burn:      { name: '上火', icon: '✹', stack: 'tier',     max: 3, requires: [],  desc: '命中挂灼烧：每 0.5s 掉 10% 伤害、持续 2s；每份 +10% 且 +0.6s' },
   frost:     { name: '冷静', icon: '✽', stack: 'tier',     max: 3, requires: [],                      desc: '命中减速 35%、1.2s；每份 +10% 减速、+0.4s' },
   vamp:      { name: '吸血', icon: '♥', stack: 'unique',   max: 3, requires: [],        desc: '伤害的 4% 回复自身生命（合成为 Ⅱ 后约 6.4%，低于两份普通）' },
