@@ -1,0 +1,1259 @@
+﻿{
+ "skills": [
+  {
+   "id": "ring_blade",
+   "name": "环刃",
+   "type": "orbit",
+   "cd": 1.6,
+   "dmg": 6,
+   "tags": [
+    "physical",
+    "orbit",
+    "melee"
+   ],
+   "desc": "两片刀刃绕身旋转，贴脸的敌人持续掉血。"
+  },
+  {
+   "id": "mine_field",
+   "name": "地雷阵",
+   "type": "trap",
+   "cd": 2.6,
+   "dmg": 22,
+   "tags": [
+    "physical",
+    "trap",
+    "area"
+   ],
+   "desc": "在脚下埋雷，敌人踩到才引爆；同屏最多 4 枚。"
+  },
+  {
+   "id": "sentry",
+   "name": "哨戒哨兵",
+   "type": "summon",
+   "cd": 1.2,
+   "dmg": 6,
+   "tags": [
+    "arcane",
+    "summon",
+    "projectile"
+   ],
+   "desc": "放一个哨兵自动射击，同时只能有一个。"
+  },
+  {
+   "id": "charge_pulse",
+   "name": "蓄能脉冲",
+   "type": "charge",
+   "cd": 4,
+   "dmg": 26,
+   "tags": [
+    "lightning",
+    "charge",
+    "pulse",
+    "burst"
+   ],
+   "desc": "蓄力后对锁定目标爆发，附带小范围溅射。"
+  },
+  {
+   "id": "fireball",
+   "name": "火球",
+   "type": "projectile",
+   "cd": 0.85,
+   "dmg": 12,
+   "tags": [
+    "fire",
+    "projectile"
+   ],
+   "desc": "向最近的敌人扔出火球，命中时炸开一团火。"
+  },
+  {
+   "id": "ice_spear",
+   "name": "冰晶矛",
+   "type": "projectile",
+   "cd": 1.25,
+   "dmg": 14,
+   "tags": [
+    "ice",
+    "projectile",
+    "pierceable"
+   ],
+   "desc": "一记重矛：穿透 1 个敌人，单发很疼，但出手偏慢。"
+  },
+  {
+   "id": "arcane",
+   "name": "奥术飞弹",
+   "type": "projectile",
+   "cd": 0.5,
+   "dmg": 5,
+   "tags": [
+    "arcane",
+    "projectile",
+    "homing"
+   ],
+   "desc": "高频小奥术弹：单发很轻，靠出手快堆伤害。"
+  },
+  {
+   "id": "blade",
+   "name": "回旋刃",
+   "type": "projectile",
+   "cd": 1.25,
+   "dmg": 11,
+   "tags": [
+    "physical",
+    "projectile",
+    "return"
+   ],
+   "desc": "甩出飞刃，飞出去后会朝你飞回来，来回都能伤人。"
+  },
+  {
+   "id": "shockwave",
+   "name": "震荡波",
+   "type": "pulse",
+   "cd": 2.4,
+   "dmg": 14,
+   "tags": [
+    "physical",
+    "area",
+    "pulse"
+   ],
+   "desc": "以自己为中心炸开一圈冲击波，同时打到周围所有敌人。"
+  },
+  {
+   "id": "chain",
+   "name": "连锁闪电",
+   "type": "chain",
+   "cd": 1.8,
+   "dmg": 9,
+   "tags": [
+    "lightning",
+    "chain"
+   ],
+   "desc": "从你身上劈出闪电，命中后会跳到附近的敌人身上。"
+  },
+  {
+   "id": "poison",
+   "name": "毒雾",
+   "type": "area",
+   "cd": 3,
+   "dmg": 4,
+   "tags": [
+    "poison",
+    "area",
+    "dot"
+   ],
+   "desc": "大范围毒雾，铺得最久，适合拖住怪群。"
+  },
+  {
+   "id": "meteor",
+   "name": "陨石",
+   "type": "area",
+   "cd": 3.6,
+   "dmg": 14,
+   "tags": [
+    "fire",
+    "area",
+    "dot"
+   ],
+   "desc": "陨石落地爆发最疼，燃烧短，点名硬目标。"
+  },
+  {
+   "id": "frostnova",
+   "name": "霜爆",
+   "type": "pulse",
+   "cd": 3.6,
+   "dmg": 7,
+   "tags": [
+    "ice",
+    "area",
+    "pulse",
+    "slow"
+   ],
+   "desc": "大范围寒霜：覆盖面广、冷却长，适合清场。"
+  },
+  {
+   "id": "blade_storm",
+   "name": "乱杀",
+   "type": "area",
+   "cd": 2.4,
+   "dmg": 7,
+   "tags": [
+    "physical",
+    "area",
+    "dot"
+   ],
+   "desc": "刃风贴脸转动最快，近身收益最高。"
+  },
+  {
+   "id": "holybolt",
+   "name": "圣光弹",
+   "type": "projectile",
+   "cd": 0.75,
+   "dmg": 7,
+   "tags": [
+    "holy",
+    "projectile",
+    "pierceable"
+   ],
+   "desc": "连发圣光：单发伤害低，但射速快，适合持续压制。"
+  },
+  {
+   "id": "thorn",
+   "name": "荆棘环",
+   "type": "pulse",
+   "cd": 2.6,
+   "dmg": 10,
+   "tags": [
+    "nature",
+    "area",
+    "pulse"
+   ],
+   "desc": "脚下炸开一圈荆棘，同时扎伤周围的敌人。"
+  },
+  {
+   "id": "orb",
+   "name": "雷球",
+   "type": "projectile",
+   "cd": 1.1,
+   "dmg": 12,
+   "tags": [
+    "lightning",
+    "projectile",
+    "homing"
+   ],
+   "desc": "慢速大雷球：出手慢但单发重，追着目标炸。"
+  },
+  {
+   "id": "spike",
+   "name": "扎心",
+   "type": "area",
+   "cd": 2,
+   "dmg": 5,
+   "tags": [
+    "nature",
+    "area",
+    "dot"
+   ],
+   "desc": "裂地施放最快、单次最轻，靠长尾磨血。"
+  },
+  {
+   "id": "frostring",
+   "name": "寒冰环",
+   "type": "pulse",
+   "cd": 1.6,
+   "dmg": 6,
+   "tags": [
+    "ice",
+    "area",
+    "pulse",
+    "slow"
+   ],
+   "desc": "贴身高频冰环：范围小、转得快，近身缠斗用。"
+  },
+  {
+   "id": "spirit",
+   "name": "灵能箭",
+   "type": "projectile",
+   "cd": 1,
+   "dmg": 8,
+   "tags": [
+    "arcane",
+    "projectile",
+    "pierceable",
+    "homing"
+   ],
+   "desc": "灵能箭会自动追着敌人，并穿透 1 个目标——最稳的命中。"
+  }
+ ],
+ "modules": [
+  {
+   "id": "multi",
+   "name": "多重射击",
+   "stack": "additive",
+   "max": 4,
+   "requires": [
+    "projectile"
+   ],
+   "desc": "一次开火多打出一发子弹，同方向",
+   "nums": "+1 发 · 全额伤害"
+  },
+  {
+   "id": "fan",
+   "name": "散射",
+   "stack": "additive",
+   "max": 3,
+   "requires": [
+    "projectile"
+   ],
+   "desc": "额外散开两枚小子弹，伤害较低、射程短",
+   "nums": "+2 发 · 每发 55% 伤害"
+  },
+  {
+   "id": "split",
+   "name": "分裂",
+   "stack": "additive",
+   "max": 3,
+   "requires": [
+    "projectile"
+   ],
+   "desc": "命中后炸出小子弹，继续伤人",
+   "nums": "命中后再炸 2 枚子弹"
+  },
+  {
+   "id": "bounce",
+   "name": "弹射",
+   "stack": "additive",
+   "max": 3,
+   "requires": [
+    "projectile"
+   ],
+   "desc": "命中后转向附近另一只敌人继续飞",
+   "nums": "+1 次转向弹射"
+  },
+  {
+   "id": "pierce",
+   "name": "穿透",
+   "stack": "additive",
+   "max": 3,
+   "requires": [
+    "projectile"
+   ],
+   "desc": "子弹可以多穿透一个目标",
+   "nums": "穿透 +1 个目标"
+  },
+  {
+   "id": "orbit",
+   "name": "环绕弹",
+   "stack": "additive",
+   "max": 3,
+   "requires": [
+    "projectile"
+   ],
+   "desc": "多一枚绕着角色旋转的子弹",
+   "nums": "+1 枚环绕弹"
+  },
+  {
+   "id": "giant",
+   "name": "增大",
+   "stack": "additive",
+   "max": 3,
+   "requires": [
+    "projectile",
+    "area",
+    "pulse",
+    "chain"
+   ],
+   "desc": "技能体积与范围更大",
+   "nums": "体积 / 范围 +30%"
+  },
+  {
+   "id": "rapid",
+   "name": "冷却缩减",
+   "stack": "tier",
+   "max": 3,
+   "requires": [
+    "projectile",
+    "pulse",
+    "chain",
+    "area"
+   ],
+   "desc": "技能冷却更短",
+   "nums": "冷却 -12%"
+  },
+  {
+   "id": "echo",
+   "name": "重复施放",
+   "stack": "tier",
+   "max": 3,
+   "requires": [],
+   "desc": "施放后短暂延迟再放一次，伤害较低",
+   "nums": "0.4s 后追加 60% 伤害"
+  },
+  {
+   "id": "burn",
+   "name": "灼烧",
+   "stack": "tier",
+   "max": 3,
+   "requires": [],
+   "desc": "命中附加灼烧，持续掉血",
+   "nums": "命中附加灼烧 2s"
+  },
+  {
+   "id": "frost",
+   "name": "减速",
+   "stack": "tier",
+   "max": 3,
+   "requires": [],
+   "desc": "命中减速目标",
+   "nums": "减速 35% · 1.2s"
+  },
+  {
+   "id": "vamp",
+   "name": "吸血",
+   "stack": "unique",
+   "max": 3,
+   "requires": [],
+   "desc": "伤害的 4% 回复自身生命（合成为 Ⅱ 后约 6.4%）",
+   "nums": "伤害的 4% 回血"
+  },
+  {
+   "id": "chain",
+   "name": "连锁",
+   "stack": "tier",
+   "max": 3,
+   "requires": [
+    "projectile",
+    "chain"
+   ],
+   "desc": "命中后跳到附近另一个敌人身上",
+   "nums": "跳 1 次 · 70% 伤害"
+  },
+  {
+   "id": "snipe",
+   "name": "狙击",
+   "stack": "tier",
+   "max": 3,
+   "requires": [
+    "projectile"
+   ],
+   "desc": "弹速更快、伤害更高",
+   "nums": "弹速 +40% · 伤害 +15%"
+  },
+  {
+   "id": "harvest",
+   "name": "击杀回血",
+   "stack": "unique",
+   "max": 3,
+   "requires": [],
+   "desc": "每次击杀回复 1 点生命（Ⅱ 约 1.6 点）",
+   "nums": "击杀回复 1 HP"
+  },
+  {
+   "id": "thunder",
+   "name": "落雷",
+   "stack": "tier",
+   "max": 3,
+   "requires": [],
+   "desc": "命中有概率落雷，对范围内敌人造成伤害",
+   "nums": "15% 概率落雷"
+  },
+  {
+   "id": "thornmail",
+   "name": "反伤",
+   "stack": "unique",
+   "max": 3,
+   "requires": [],
+   "desc": "被咬时反弹 6 点伤害（Ⅱ 约 9.6 点）",
+   "nums": "被咬时反伤 6"
+  },
+  {
+   "id": "overload",
+   "name": "强化伤害",
+   "stack": "tier",
+   "max": 3,
+   "requires": [
+    "projectile",
+    "area",
+    "pulse",
+    "chain"
+   ],
+   "desc": "伤害更高、技能范围更小",
+   "nums": "伤害 +25% · 范围 -10%"
+  }
+ ],
+ "items": [
+  {
+   "id": "power_s",
+   "name": "铁匠手套",
+   "tier": 1,
+   "desc": "攻击更疼一点"
+  },
+  {
+   "id": "power_l",
+   "name": "战锤碎片",
+   "tier": 1,
+   "desc": "攻击明显更疼"
+  },
+  {
+   "id": "haste_s",
+   "name": "疾风戒",
+   "tier": 1,
+   "desc": "出手更快一点"
+  },
+  {
+   "id": "haste_l",
+   "name": "迅捷护符",
+   "tier": 1,
+   "desc": "出手明显更快"
+  },
+  {
+   "id": "area_s",
+   "name": "放大镜",
+   "tier": 1,
+   "desc": "技能范围更大"
+  },
+  {
+   "id": "area_l",
+   "name": "广角符文",
+   "tier": 1,
+   "desc": "技能范围大很多"
+  },
+  {
+   "id": "maxhp_s",
+   "name": "生命护符",
+   "tier": 1,
+   "desc": "血条变长一点"
+  },
+  {
+   "id": "maxhp_l",
+   "name": "巨人之心",
+   "tier": 1,
+   "desc": "血条长一截"
+  },
+  {
+   "id": "speed_s",
+   "name": "轻羽靴",
+   "tier": 1,
+   "desc": "跑得更快一点"
+  },
+  {
+   "id": "speed_l",
+   "name": "疾风长靴",
+   "tier": 1,
+   "desc": "跑得明显更快"
+  },
+  {
+   "id": "crit_s",
+   "name": "鹰眼",
+   "tier": 1,
+   "desc": "更容易打出暴击"
+  },
+  {
+   "id": "crit_l",
+   "name": "猎手之瞳",
+   "tier": 1,
+   "desc": "暴击更容易了"
+  },
+  {
+   "id": "critdmg_s",
+   "name": "破甲锥",
+   "tier": 1,
+   "desc": "暴击打得更疼"
+  },
+  {
+   "id": "critdmg_l",
+   "name": "斩钢刃",
+   "tier": 1,
+   "desc": "暴击特别疼"
+  },
+  {
+   "id": "projSpd_s",
+   "name": "羽毛箭",
+   "tier": 1,
+   "desc": "子弹飞得更快"
+  },
+  {
+   "id": "projSpd_l",
+   "name": "追风矢",
+   "tier": 1,
+   "desc": "子弹快得离谱"
+  },
+  {
+   "id": "pierce_s",
+   "name": "穿甲尖",
+   "tier": 1,
+   "desc": "子弹多穿一个"
+  },
+  {
+   "id": "pierce_l",
+   "name": "破空矢",
+   "tier": 1,
+   "desc": "子弹多穿两个"
+  },
+  {
+   "id": "bounce_s",
+   "name": "弹跳石",
+   "tier": 1,
+   "desc": "子弹多弹一次"
+  },
+  {
+   "id": "bounce_l",
+   "name": "回音石",
+   "tier": 1,
+   "desc": "子弹多弹两次"
+  },
+  {
+   "id": "count_s",
+   "name": "分裂核心",
+   "tier": 1,
+   "desc": "一次多打一发"
+  },
+  {
+   "id": "count_l",
+   "name": "三重镜",
+   "tier": 1,
+   "desc": "多打一发，且额外那发更疼"
+  },
+  {
+   "id": "sizeMul_s",
+   "name": "巨兽骨",
+   "tier": 1,
+   "desc": "子弹变大了"
+  },
+  {
+   "id": "sizeMul_l",
+   "name": "大就是好",
+   "tier": 1,
+   "desc": "子弹特别大"
+  },
+  {
+   "id": "armor_s",
+   "name": "铁胸甲",
+   "tier": 1,
+   "desc": "挨打掉血更少"
+  },
+  {
+   "id": "armor_l",
+   "name": "龙鳞甲",
+   "tier": 1,
+   "desc": "挨打几乎不疼"
+  },
+  {
+   "id": "regen_s",
+   "name": "苔藓苔",
+   "tier": 1,
+   "desc": "慢慢自动回血"
+  },
+  {
+   "id": "regen_l",
+   "name": "生命之泉",
+   "tier": 1,
+   "desc": "自动回血更快"
+  },
+  {
+   "id": "invuln_s",
+   "name": "龟甲片",
+   "tier": 1,
+   "desc": "挨打后无敌更久"
+  },
+  {
+   "id": "invuln_l",
+   "name": "时之沙",
+   "tier": 1,
+   "desc": "挨打后无敌很久"
+  },
+  {
+   "id": "lifesteal_s",
+   "name": "血牙",
+   "tier": 1,
+   "desc": "攻击能回一点血"
+  },
+  {
+   "id": "lifesteal_l",
+   "name": "嗜血之刃",
+   "tier": 1,
+   "desc": "攻击能回不少血"
+  },
+  {
+   "id": "pickup_s",
+   "name": "吸尘器",
+   "tier": 1,
+   "desc": "经验吸得更远"
+  },
+  {
+   "id": "pickup_l",
+   "name": "吸铁石",
+   "tier": 1,
+   "desc": "经验吸得很远"
+  },
+  {
+   "id": "greed_s",
+   "name": "金币袋",
+   "tier": 1,
+   "desc": "金币掉得更多"
+  },
+  {
+   "id": "greed_l",
+   "name": "贪婪硬币",
+   "tier": 1,
+   "desc": "金币掉得很多"
+  },
+  {
+   "id": "expGain_s",
+   "name": "智慧卷轴",
+   "tier": 1,
+   "desc": "经验涨得更快"
+  },
+  {
+   "id": "expGain_l",
+   "name": "贤者之石",
+   "tier": 1,
+   "desc": "经验涨得很快"
+  },
+  {
+   "id": "killHeal_s",
+   "name": "猎魂刀",
+   "tier": 1,
+   "desc": "杀一个回点血"
+  },
+  {
+   "id": "killHeal_l",
+   "name": "死神镰刀",
+   "tier": 1,
+   "desc": "杀一个回不少血"
+  },
+  {
+   "id": "cdr_s",
+   "name": "齿轮",
+   "tier": 1,
+   "desc": "技能转得更快"
+  },
+  {
+   "id": "cdr_l",
+   "name": "时之轮",
+   "tier": 1,
+   "desc": "技能转得很快"
+  },
+  {
+   "id": "knockback_s",
+   "name": "铁拳套",
+   "tier": 1,
+   "desc": "把怪推得更远"
+  },
+  {
+   "id": "knockback_l",
+   "name": "巨力腰带",
+   "tier": 1,
+   "desc": "把怪推飞"
+  },
+  {
+   "id": "eliteDmg_s",
+   "name": "斩魔刃",
+   "tier": 1,
+   "desc": "打精英更疼"
+  },
+  {
+   "id": "eliteDmg_l",
+   "name": "屠龙剑",
+   "tier": 1,
+   "desc": "精英杀手"
+  },
+  {
+   "id": "aoe_s",
+   "name": "熔火符",
+   "tier": 1,
+   "desc": "范围技能更疼"
+  },
+  {
+   "id": "aoe_l",
+   "name": "烈焰之核",
+   "tier": 1,
+   "desc": "范围技能很疼"
+  },
+  {
+   "id": "heal1",
+   "name": "急救包",
+   "tier": 1,
+   "desc": "立刻回一口血"
+  },
+  {
+   "id": "heal2",
+   "name": "治疗药水",
+   "tier": 1,
+   "desc": "血直接回满"
+  },
+  {
+   "id": "t_fire",
+   "name": "余烬核心",
+   "tier": 2,
+   "desc": "火系技能更疼"
+  },
+  {
+   "id": "t_ice",
+   "name": "冰河之心",
+   "tier": 2,
+   "desc": "冰系技能更疼"
+  },
+  {
+   "id": "t_bolt",
+   "name": "雷神之锤",
+   "tier": 2,
+   "desc": "雷系技能更疼"
+  },
+  {
+   "id": "t_arcane",
+   "name": "奥术宝石",
+   "tier": 2,
+   "desc": "奥术技能更疼"
+  },
+  {
+   "id": "t_phys",
+   "name": "锋锐原石",
+   "tier": 2,
+   "desc": "物理技能更疼"
+  },
+  {
+   "id": "t_poison",
+   "name": "剧毒囊",
+   "tier": 2,
+   "desc": "毒系技能更疼"
+  },
+  {
+   "id": "t_holy",
+   "name": "圣徽",
+   "tier": 2,
+   "desc": "圣系技能更疼"
+  },
+  {
+   "id": "t_nature",
+   "name": "自然之心",
+   "tier": 2,
+   "desc": "自然技能更疼"
+  },
+  {
+   "id": "cdr_ice",
+   "name": "寒霜碎片",
+   "tier": 2,
+   "desc": "冰系技能转得更快"
+  },
+  {
+   "id": "cdr_bolt",
+   "name": "雷暴核心",
+   "tier": 2,
+   "desc": "雷系技能转得更快"
+  },
+  {
+   "id": "prism",
+   "name": "棱镜",
+   "tier": 2,
+   "desc": "所有技能都更疼"
+  },
+  {
+   "id": "dragon",
+   "name": "巨龙之心",
+   "tier": 2,
+   "desc": "血更厚，还会自动回血"
+  },
+  {
+   "id": "rage",
+   "name": "狂战之怒",
+   "tier": 2,
+   "desc": "打得更疼，也更爱暴击"
+  },
+  {
+   "id": "shadow",
+   "name": "迅捷之影",
+   "tier": 2,
+   "desc": "跑得快，出手也快"
+  },
+  {
+   "id": "aegis",
+   "name": "守护圣盾",
+   "tier": 2,
+   "desc": "挨打不疼，无敌更久"
+  },
+  {
+   "id": "reaper",
+   "name": "收割者",
+   "tier": 2,
+   "desc": "杀怪回血、涨经验"
+  },
+  {
+   "id": "aoe_x",
+   "name": "天火之心",
+   "tier": 2,
+   "desc": "范围技能非常疼"
+  },
+  {
+   "id": "slayer",
+   "name": "屠魔者",
+   "tier": 2,
+   "desc": "对精英与首领更狠，也更抗打"
+  },
+  {
+   "id": "grail",
+   "name": "贪婪金杯",
+   "tier": 2,
+   "desc": "金币哗哗地掉"
+  },
+  {
+   "id": "vampire",
+   "name": "吸血鬼牙",
+   "tier": 2,
+   "desc": "能吸血，暴击更疼"
+  },
+  {
+   "id": "emberstack",
+   "name": "灼烧增伤",
+   "tier": 2,
+   "desc": "火系命中的目标再受火伤 +25%",
+   "special": "emberstack"
+  },
+  {
+   "id": "shatter",
+   "name": "破冰增伤",
+   "tier": 2,
+   "desc": "对被减速目标 +20% 伤害，对未被减速目标 -5%",
+   "special": "shatter"
+  },
+  {
+   "id": "voltloop",
+   "name": "落雷追加",
+   "tier": 2,
+   "desc": "雷击命中 15% 概率追加 40% 小雷击",
+   "special": "voltloop"
+  },
+  {
+   "id": "bloodpact",
+   "name": "血契",
+   "tier": 3,
+   "desc": "攻击力 +30%，最大生命 -25%",
+   "special": "bloodpact"
+  },
+  {
+   "id": "lastbreath",
+   "name": "低血强化",
+   "tier": 2,
+   "desc": "生命低于 35% 时攻速 +35%，高于则 -8%",
+   "special": "lastbreath"
+  },
+  {
+   "id": "thorncoat",
+   "name": "受击反伤",
+   "tier": 1,
+   "desc": "受击反弹 12 点伤害（0.5s CD），移速 -6%",
+   "special": "thorncoat"
+  },
+  {
+   "id": "greed",
+   "name": "金币转攻击",
+   "tier": 2,
+   "desc": "金币 +25%，每 100 金币攻击 +3%（上限 +15%）",
+   "special": "greed"
+  },
+  {
+   "id": "frugal",
+   "name": "刷新省钱",
+   "tier": 1,
+   "desc": "刷新费用 -50%，每波结束金币 -2",
+   "special": "frugal"
+  },
+  {
+   "id": "focused",
+   "name": "极简专精",
+   "tier": 3,
+   "desc": "装备技能 ≤2 个时：技能伤害 +25%、冷却 -10%",
+   "special": "focused"
+  },
+  {
+   "id": "resonator",
+   "name": "黑科技共鸣",
+   "tier": 3,
+   "desc": "同一技能装了 2 个同类黑科技时，该技能伤害 +20%",
+   "special": "resonator"
+  }
+ ],
+ "diffs": [
+  {
+   "id": "casual",
+   "name": "休闲",
+   "stars": 1,
+   "tagline": "降低压力，先熟悉系统",
+   "hp": 0.8,
+   "dmg": 0.8,
+   "spawn": 1.15,
+   "elite": 0.8,
+   "bossHp": 0.9,
+   "startHp": 1.1,
+   "gold": 1.2,
+   "exp": 1.15,
+   "price": 0.9,
+   "reroll": 0.9,
+   "heal": 1.2,
+   "healBudget": 8,
+   "rules": [
+    {
+     "kind": "noEliteUntilWave",
+     "wave": 3
+    },
+    {
+     "kind": "lowHpHealBonus",
+     "thresholdPct": 30,
+     "mul": 1.2
+    },
+    {
+     "kind": "shopGuaranteeOffense",
+     "count": 1
+    }
+   ],
+   "unlock": {
+    "type": "default"
+   },
+   "reward": ""
+  },
+  {
+   "id": "normal",
+   "name": "普通",
+   "stars": 2,
+   "tagline": "标准体验：和以往一样",
+   "hp": 1,
+   "dmg": 1,
+   "spawn": 1,
+   "elite": 1,
+   "bossHp": 1,
+   "startHp": 1,
+   "gold": 1,
+   "exp": 1,
+   "price": 1,
+   "reroll": 1,
+   "heal": 1,
+   "healBudget": null,
+   "rules": [],
+   "unlock": {
+    "type": "default"
+   },
+   "reward": ""
+  },
+  {
+   "id": "hard",
+   "name": "困难",
+   "stars": 3,
+   "tagline": "需要开始理解构筑",
+   "hp": 1.25,
+   "dmg": 1.15,
+   "spawn": 0.92,
+   "elite": 1.2,
+   "bossHp": 1.2,
+   "startHp": 1,
+   "gold": 0.92,
+   "exp": 0.95,
+   "price": 1.1,
+   "reroll": 1.15,
+   "heal": 0.9,
+   "healBudget": 8,
+   "rules": [
+    {
+     "kind": "eliteAffixFromWave",
+     "wave": 12,
+     "chance": 0.25,
+     "affixes": [
+      "shield"
+     ]
+    },
+    {
+     "kind": "noHealInShop"
+    },
+    {
+     "kind": "rerollLimitPerWave",
+     "count": 3
+    }
+   ],
+   "unlock": {
+    "type": "win",
+    "difficulty": "normal"
+   },
+   "reward": "困难徽章"
+  },
+  {
+   "id": "nightmare",
+   "name": "噩梦",
+   "stars": 4,
+   "tagline": "考验构筑合理性",
+   "hp": 1.45,
+   "dmg": 1.35,
+   "spawn": 0.85,
+   "elite": 1.5,
+   "bossHp": 1.45,
+   "startHp": 0.95,
+   "gold": 0.85,
+   "exp": 0.9,
+   "price": 1.22,
+   "reroll": 1.3,
+   "heal": 0.8,
+   "healBudget": 6,
+   "rules": [
+    {
+     "kind": "eliteAlwaysAffixFromWave",
+     "wave": 8,
+     "count": 1,
+     "affixes": [
+      "shield",
+      "swift",
+      "split"
+     ]
+    },
+    {
+     "kind": "bossSummon",
+     "thresholds": [
+      70,
+      35
+     ],
+     "count": 3,
+     "maxAlive": 6,
+     "minIntervalSec": 12,
+     "warnSec": 1.2,
+     "hpMul": 0.7,
+     "dmgMul": 0.8
+    },
+    {
+     "kind": "lockCostPerLock",
+     "gold": 2
+    }
+   ],
+   "unlock": {
+    "type": "win",
+    "difficulty": "hard"
+   },
+   "reward": "噩梦徽章"
+  },
+  {
+   "id": "hell",
+   "name": "地狱",
+   "stars": 5,
+   "tagline": "熟练玩家的极限挑战",
+   "hp": 1.9,
+   "dmg": 1.55,
+   "spawn": 0.78,
+   "elite": 1.8,
+   "bossHp": 1.7,
+   "startHp": 0.9,
+   "gold": 0.78,
+   "exp": 0.85,
+   "price": 1.35,
+   "reroll": 1.5,
+   "heal": 0.7,
+   "healBudget": 5,
+   "rules": [
+    {
+     "kind": "eliteGuaranteedWaves",
+     "waves": [
+      5,
+      8,
+      11,
+      14,
+      17,
+      20
+     ]
+    },
+    {
+     "kind": "eliteAlwaysAffixFromWave",
+     "wave": 5,
+     "count": 2,
+     "affixes": [
+      "shield",
+      "swift",
+      "split"
+     ]
+    },
+    {
+     "kind": "bossEnrage",
+     "thresholdPct": 30,
+     "dmgMul": 1.25,
+     "speedMul": 1.15
+    }
+   ],
+   "unlock": {
+    "type": "win",
+    "difficulty": "nightmare"
+   },
+   "reward": "地狱徽章 + 金色图鉴框"
+  }
+ ],
+ "balance": {
+  "spawn": {
+   "baseInterval": 0.92,
+   "perWave": 0.012,
+   "minInterval": 0.52,
+   "batchEvery": 6,
+   "batchMax": 2,
+   "openBase": 4,
+   "openEvery": 3,
+   "openMax": 7,
+   "aliveSoft": 24,
+   "aliveHard": 34,
+   "slowMul": 1.7
+  },
+  "growth": {
+   "hpPerWave": 0.42,
+   "dmgPerWave": 0.2
+  },
+  "wave": {
+   "baseTime": 22,
+   "timeStep": 4,
+   "timeEvery": 3
+  },
+  "reward": {
+   "earlyMax": 5,
+   "midMax": 12,
+   "early": {
+    "skill": 0.35,
+    "module": 0.25,
+    "item": 0.25,
+    "attr": 0.15
+   },
+   "mid": {
+    "skill": 0.2,
+    "module": 0.35,
+    "item": 0.25,
+    "attr": 0.2
+   },
+   "late": {
+    "skill": 0.15,
+    "module": 0.35,
+    "item": 0.3,
+    "attr": 0.2
+   }
+  },
+  "shop": {
+   "slots": 4,
+   "itemBase": 14,
+   "itemRand": 6,
+   "itemPerWave": 3.4,
+   "modBase": 18,
+   "modRand": 7,
+   "modPerWave": 5,
+   "healBase": 8,
+   "healPerWave": 1,
+   "attrBase": 16,
+   "attrPerWave": 3,
+   "rerollBase": 3,
+   "clearGoldBase": 9,
+   "clearGoldPerWave": 3.5
+  },
+  "ai": {
+   "eliteChargeTele": 0.7,
+   "eliteChargeDash": 0.35,
+   "eliteChargeRec": 0.55,
+   "eliteChargeCd": 4.5,
+   "bossChargeTele": 0.7,
+   "bossChargeDash": 0.35,
+   "bossChargeRec": 0.55,
+   "bossChargeCd": 3.2,
+   "bossSlamTele": 0.9,
+   "bossSlamRadius": 70,
+   "bossSlamMul": 1.5,
+   "bossSlamRec": 0.5,
+   "bossFirstCd": 2.2,
+   "eliteFirstCd": 3,
+   "chargeSpeedMul": 2.2
+  },
+  "exp": {
+   "base": 5,
+   "perLevel": 3.2,
+   "waveEndMul": 0.5
+  },
+  "thunder": {
+   "radius": 60,
+   "mul": 0.5
+  }
+ },
+ "run": {
+  "waves": 20,
+  "bossEvery": 10,
+  "canContinue": true
+ },
+ "waveTime1": 22,
+ "waveTime20": 46,
+ "bossWaves": [
+  10,
+  20
+ ]
+}

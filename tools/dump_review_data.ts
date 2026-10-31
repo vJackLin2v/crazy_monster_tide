@@ -1,0 +1,11 @@
+import { SKILLS } from '../cocos/assets/scripts/data/Skills';
+import { MODULES, MODULE_NUMS, MODULE_IDS } from '../cocos/assets/scripts/data/Modules';
+import { ITEMS } from '../cocos/assets/scripts/data/Items';
+import { DIFFICULTIES } from '../cocos/assets/scripts/data/Difficulties';
+import { DEFAULT_BALANCE } from '../cocos/assets/scripts/core/Balance';
+import { RUN, waveTime, isBossWave } from '../cocos/assets/scripts/core/Const';
+const skills = Object.entries(SKILLS).map(([id, s]: any) => ({ id, name: s.name, type: s.type, cd: s.cd, dmg: s.dmg, tags: s.tags, desc: s.desc }));
+const modules = MODULE_IDS.map(id => ({ id, name: (MODULES as any)[id].name, stack: (MODULES as any)[id].stack, max: (MODULES as any)[id].max, requires: (MODULES as any)[id].requires, desc: (MODULES as any)[id].desc, nums: (MODULE_NUMS as any)[id] }));
+const items = Object.entries(ITEMS).map(([id, it]: any) => ({ id, name: it.name, tier: it.tier, desc: it.desc, special: it.special }));
+const diffs = DIFFICULTIES.map((d: any) => ({ id: d.id, name: d.name, stars: d.stars, tagline: d.tagline, hp: d.enemyHpMul, dmg: d.enemyDmgMul, spawn: d.spawnMul, elite: d.eliteChanceMul, bossHp: d.bossHpMul, startHp: d.startHpMul, gold: d.goldMul, exp: d.expMul, price: d.shopPriceMul, reroll: d.rerollCostMul, heal: d.healMul, healBudget: d.healBudgetPerSecond, rules: d.rules, unlock: d.unlock, reward: d.reward }));
+console.log(JSON.stringify({ skills, modules, items, diffs, balance: DEFAULT_BALANCE, run: { waves: RUN.waves, bossEvery: RUN.bossEvery, canContinue: RUN.canContinue }, waveTime1: waveTime(1), waveTime20: waveTime(20), bossWaves: Array.from({length:20},(_,i)=>i+1).filter(isBossWave) }, null, 1));
