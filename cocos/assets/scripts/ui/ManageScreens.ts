@@ -7,6 +7,7 @@
  */
 import { Node, Label, Color, Graphics, UITransform, UIOpacity, Sprite, view } from 'cc';
 import { panel, text, button, onTap, mkNode, mask, chip, slot } from './UIKit';
+import { makeModalList } from './ModalList';
 import { COL, FS, R, BORDER } from './Tokens';
 import { iconFrame, loadIcon } from '../engine/Assets';
 import { safeTop, safeBottom } from './Safe';
@@ -144,29 +145,32 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
   const bagTitleY = rowsTop - usedRows * ROW_H - (usedRows - 1) * ROW_GAP - (compact ? 16 : 20);
   text(box, -158, bagTitleY, '背包里的黑科技 ' + d.bag.length,
     { size: 13, color: COL.accent, align: 'left', width: 300, bold: true, outline: true });
-  // 背包格：视觉 40 高、行距 46 —— 保证 100×44 的热区上下不相交（P1-B）
-  const BW = 100, BHH = 34, BGAP = 6, BCOLS = 3;
-  const BAG_MAX = 9;                            // 全部展示（最多 3 行）
+  // 背包：全部展示 + 可滚动（ModalList v2）
+  const BW = 100, BHH = 38, BGAP = 8, BCOLS = 3;
   const bagTop = bagTitleY - 12;
+  const BAG_VIEW_H = 92;   // 正好两行，避免半行压住下面的合成区
+  let bagBottom = bagTop - 34;
   if (!d.bag.length) {
-    text(box, -158, bagTop - 14, '（空：黑科技都装在技能上了，或还没获得）',
+    text(box, -158, bagTop - 16, '（空：黑科技都装在技能上了，或还没获得）',
       { size: 11, color: COL.dim, align: 'left', width: 316 });
   } else {
-    d.bag.slice(0, BAG_MAX).forEach((m, i) => {
-      const col = i % BCOLS, rowi = Math.floor(i / BCOLS);
+    const rows = Math.ceil(d.bag.length / BCOLS);
+    const contentH = rows * (BHH + BGAP) + 6;
+    const list = makeModalList(box, 0, bagTop - BAG_VIEW_H / 2, 316, BAG_VIEW_H, contentH);
+    d.bag.forEach((m, i2) => {
+      const col = i2 % BCOLS, rowi = Math.floor(i2 / BCOLS);
       const cx = -158 + BW / 2 + col * (BW + BGAP);
-      const cyy = bagTop - BHH / 2 - rowi * (BHH + BGAP);
-      const on = d.selBag === i;
-      const n = panel(box, cx, cyy, BW, BHH, { art: on ? 'card_gold' : 'btn' });
+      const cyy = list.topY - BHH / 2 - rowi * (BHH + BGAP);
+      const on = d.selBag === i2;
+      const n = panel(list.content, cx, cyy, BW, BHH, { art: on ? 'card_gold' : 'btn' });
       drawIcon(n, -BW / 2 + 17, 0, 18, m.icon);
       text(n, 9, 0, (m.name.replace(/\s*[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+$/, '') + (m.merged ? ' Ⅱ' : '')).slice(0, 7),
         { size: 11, color: m.merged ? COL.accent : COL.cream, width: 62, outline: true });
-      const bagHit = mkNode(box, 'bagHit', BW, 44, cx, cyy);
-      onTap(bagHit, () => cb.onSelectBag(on ? null : i));
+      onTap(n, () => { if (list.isDragging()) return; cb.onSelectBag(on ? null : i2); });
     });
+    bagBottom = bagTop - BAG_VIEW_H - 8;
   }
-  const bagRows = d.bag.length ? Math.ceil(Math.min(d.bag.length, BAG_MAX) / BCOLS) : 1;
-  const bagBottom = bagTop - bagRows * (BHH + BGAP) + 4;
+
 
   // ── 合成区 ──
   const mergeTitleY = bagBottom - 12;

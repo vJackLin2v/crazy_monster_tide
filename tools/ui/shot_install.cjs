@@ -17,7 +17,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await sleep(4000);
   await page.evaluate(() => {
     const G = window.__G, rs = G.battle.rs;
-    rs.modsBag = ['multi', 'multi', 'multi', 'giant', 'rapid_2', 'burn', 'frost'];
+    rs.modsBag = ['multi', 'multi', 'multi', 'giant', 'rapid_2', 'burn', 'frost', 'chain', 'snipe', 'thunder', 'vamp', 'harvest'];
     rs.skills[0].mods = ['multi', 'giant'];
     G.showInstall('pause');
   });
