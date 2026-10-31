@@ -13,6 +13,7 @@ import { enemyPool, ENEMIES, bossUnitFor } from '../data/Enemies';
 import type { CharStats } from '../data/Types';
 import { freshStats } from './Stats';
 import { calcSkill, makeSkill, MAX_SKILLS, MAX_SLOTS, canInstall, isCompatible, modCount, type SkillInst } from './SkillCalc';
+import type { RunMilestone } from './RunHistory';
 
 export type RewardKind = 'skill' | 'skillup' | 'module' | 'item' | 'attr';
 export interface Reward { kind: RewardKind; id: string; needReplace?: boolean; }
@@ -57,6 +58,23 @@ export class RunState {
    * ⚠️ 商店与升级奖励**共享这一份计数**，不允许各维护一套。
    */
   legendaryTaken = false;
+
+  // ---------- 结算 / 历史对局统计（只做累加，不影响玩法） ----------
+  eliteKills = 0;
+  bossKills = 0;
+  /** 本局累计获得 / 花掉的金币（历史详情用） */
+  goldEarned = 0;
+  goldSpent = 0;
+  /** 关键事件时间线（进入波次 / BOSS / 升级 / 传说 / 无尽），最多 80 条 */
+  milestones: RunMilestone[] = [];
+
+  /** 记一条里程碑；同 kind+wave+文本不重复（防止同一波重复写） */
+  addMilestone(kind: RunMilestone['kind'], text: string): void {
+    if (this.milestones.length >= 80) return;
+    const last = this.milestones[this.milestones.length - 1];
+    if (last && last.kind === kind && last.wave === this.wave && last.text === text) return;
+    this.milestones.push({ wave: this.wave, at: Math.round(this.runTime * 10) / 10, kind, text });
+  }
 
   hasItem(id: string): boolean { return this.items.some(i => i.id === id); }
 
@@ -122,7 +140,9 @@ export class RunState {
     this.kills++;
     this.waveKills++;
     // 阶段 E：金币获取上限 +100%
-    this.gold += Math.round(gold * (1 + Math.min(1.0, this.stats.greed)));
+    const gain = Math.round(gold * (1 + Math.min(1.0, this.stats.greed)));
+    this.gold += gain;
+    this.goldEarned += gain;
   }
 
   nextWave(): number {
@@ -144,6 +164,7 @@ export class RunState {
     //    两处规则冲突。统一按"金币获取加成上限 +100%"处理。
     const gain = Math.round(raw * (1 + Math.min(1, this.stats.greed)));
     this.gold += gain;
+    this.goldEarned += gain;
     return gain;
   }
 
@@ -474,6 +495,7 @@ export class RunState {
     const cost = this.rerollCost();
     if (this.gold < cost) return false;
     this.gold -= cost;
+    this.goldSpent += cost;
     this.shopReroll++;
     this.refreshShop(true);
     return true;
@@ -493,6 +515,7 @@ export class RunState {
     }
     if (this.gold < s.price) return { ok: false, why: '金币不足' };
     this.gold -= s.price;
+    this.goldSpent += s.price;
     s.sold = true;
     s.locked = false;
     if (s.kind === 'item') {

@@ -17,6 +17,8 @@ export interface ModalList {
   content: Node;
   topY: number;
   isDragging(): boolean;
+  /** 当前滚动偏移（0 = 顶部）；用于"详情返回列表后保持位置" */
+  offset(): number;
   destroy(): void;
 }
 
@@ -24,6 +26,7 @@ const DRAG_THRESHOLD = 8;
 
 export function makeModalList(
   parent: Node, cx: number, cy: number, w: number, h: number, contentH: number,
+  initialOff = 0,
 ): ModalList {
   const view = mkNode(parent, 'mlView', w, h, cx, cy);
   const mask = view.addComponent(Mask);
@@ -32,7 +35,7 @@ export function makeModalList(
   const H = Math.max(h, contentH);
   const content = mkNode(view, 'mlContent', w, H, 0, 0);
 
-  let off = 0;
+  let off = Math.max(0, Math.min(initialOff, H - h));
   const maxOff = Math.max(0, H - h);
   const apply = () => { content.setPosition(0, (h - H) / 2 - off); };
   apply();
@@ -60,6 +63,7 @@ export function makeModalList(
   return {
     view, content, topY: H / 2,
     isDragging: () => dragging,
+    offset: () => off,
     destroy: () => { if (view.isValid) view.destroy(); },
   };
 }

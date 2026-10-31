@@ -54,9 +54,44 @@ function titleBar(root: Node, vw: number, s: number, label: string): Node {
   return screenHeader(root, vw, s, label);
 }
 
-/** 1. 主界面 */
-export function buildMenu(parent: Node, seed: number, onStart: () => void, onHowto: () => void,
-                        onCodex: () => void, onAchievements: () => void, onSettings: () => void): Node {
+/** 主菜单展示数据（由 GameRoot 从 ActiveRunSave 生成，页面不碰存档逻辑） */
+export interface MenuContinueInfo {
+  wave: number;
+  totalWaves: number;
+  difficultyName: string;
+  durationText: string;
+  hp: number;
+  maxhp: number;
+  dateText: string;
+  skillNames: string[];
+}
+
+export interface MenuView {
+  /** none = 没有存档；ok = 可继续；corrupt = 有存档但读不出来 */
+  saveState: 'none' | 'ok' | 'corrupt';
+  info?: MenuContinueInfo;
+  corruptNote?: string;
+}
+
+export interface MenuHandlers {
+  onContinue: () => void;
+  onStart: () => void;
+  onHistory: () => void;
+  onHowto: () => void;
+  onCodex: () => void;
+  onAchievements: () => void;
+  onSettings: () => void;
+  onDiscardSave?: () => void;
+}
+
+/**
+ * 1. 主界面（v3：继续游戏 + 历史对局）
+ *
+ * 设计坐标（360×640）：LOGO 28~100 / 继续卡 225~299 / 开始 314~368 /
+ * 历史·图鉴 384~432 / 成就·设置 444~492 / 页脚 580~604。
+ * 实际 y 用 safeTop/safeBottom 夹取，保证刘海与手势条安全。
+ */
+export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandlers): Node {
   const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
   const at2 = (x: number, y: number) => at(VW, VH, x, y);
   const S = safeTop(), B = safeBottom();
@@ -75,53 +110,113 @@ export function buildMenu(parent: Node, seed: number, onStart: () => void, onHow
     if (sf && bgSp.isValid) bgSp.spriteFrame = sf;
   });
 
-  // ── 上下暗角：用等宽色带模拟渐变（像素风不用模糊阴影），把标题/按钮从背景里托出来 ──
+  // ── 上下暗角：等宽色带模拟渐变（像素风不用模糊阴影）──
   const vig = mkNode(root, 'menu-vignette', VW, VH);
   const vg = vig.addComponent(Graphics);
   const VB = 8, vh0 = VH * 0.30 / VB;
   for (let i = 0; i < VB; i++) {
     const a = Math.round(160 * Math.pow(1 - i / VB, 2));
     vg.fillColor = new Color(9, 14, 30, a);
-    vg.rect(-VW / 2, VH / 2 - (i + 1) * vh0, VW, vh0 + 0.5); vg.fill();   // 顶部
+    vg.rect(-VW / 2, VH / 2 - (i + 1) * vh0, VW, vh0 + 0.5); vg.fill();
     vg.fillColor = new Color(9, 14, 30, a);
-    vg.rect(-VW / 2, -VH / 2 + i * vh0, VW, vh0 + 0.5); vg.fill();        // 底部
+    vg.rect(-VW / 2, -VH / 2 + i * vh0, VW, vh0 + 0.5); vg.fill();
   }
 
-  // ── 标题区（从安全区往下排）──
-  // 用户 2026-10-30：标题整体下移 24px（原来贴得太靠上）
-  text(root, 0, at2(180, S + 84).y, '疯狂鸽王',
-    { size: 40, color: COL.cream, bold: true, width: 354, outline: true, shadow: true });
-  text(root, 0, at2(180, S + 124).y, 'C R A Z Y   P I G E O N   K I N G',
-    { size: 10, color: COL.accent, width: 354, bold: true, outline: true });
-  // （用户 2026-10-30：去掉标题下那行小字，按钮整体上移）
-  // ── 底部动作栈：**底部留白 = 标题上方留白**（用户要求上下呼吸感一致）
-  //    640 参考：标题上沿 68 / CTA 398 / 次按钮 466 / 图标行 544 / 底部留白 68
-  const topGap = S + 40;                 // 标题上沿到屏幕顶的距离
-  // 用户 2026-10-30：按钮整体上移，块心落在屏高约 66%（居中偏下）
-  const LIFT = 100;   // 用户 2026-10-30：按钮再上移 28px
-  const iconRowY = VH - topGap - 28 - LIFT;   // 图标行中心（高 56）
-  const subBtnY = iconRowY - 78;
-  const ctaY = subBtnY - 68;
+  // ── LOGO ──
+  text(root, 0, at2(180, S + 56).y, '疯狂鸽王',
+    { size: 38, color: COL.cream, bold: true, width: 354, outline: true, shadow: true });
+  text(root, 0, at2(180, S + 92).y, 'C R A Z Y   P I G E O N   K I N G',
+    { size: 9, color: COL.accent, width: 354, bold: true, outline: true });
 
-  // ── CTA：主按钮是全页唯一"橙" ──
-  const b1 = at2(180, ctaY);
-  const btn1 = button(root, b1.x, b1.y, 276, 56, '开始游戏', { primary: true, size: 21 });
-  onTap(btn1.node, onStart);
-  const b2 = at2(180, subBtnY);
-  const btn2 = button(root, b2.x, b2.y, 276, 46, '玩法说明', { size: 17 });
-  onTap(btn2.node, onHowto);
+  // ── 继续游戏卡片（第一优先级）──
+  const cardY = S + 180;
+  const hasSave = vm.saveState === 'ok' && !!vm.info;
+  const card = panel(root, at2(180, cardY).x, at2(180, cardY).y, 300, 74, { art: hasSave ? 'panel' : 'panel_soft' });
+  // 左侧高亮条：有存档时给一个明确的"可继续"信号
+  const barColor = hasSave ? COL.accent : COL.line;
+  const bar = mkNode(card, 'saveBar', 5, 58, -145, 0);
+  const bg2 = bar.addComponent(Graphics);
+  bg2.fillColor = barColor; bg2.rect(-2.5, -29, 5, 58); bg2.fill();
 
-  // ── 次级入口：图鉴 / 成就 / 设置（每个 104×56，热区 >=44）──
-  const ENTRIES: [string, () => void][] = [['图鉴', onCodex], ['成就', onAchievements], ['设置', onSettings]];
-  const EW = 104, EGAP = 8;
-  ENTRIES.forEach(([label, cb], i) => {
-    const cx = 180 - (EW + EGAP) + i * (EW + EGAP);
-    const c = at2(cx, iconRowY);
-    const b = button(root, c.x, c.y, EW, 56, label, { size: 15 });
-    onTap(b.node, cb);
-  });
+  if (hasSave && vm.info) {
+    const info = vm.info;
+    text(card, -128, 22, '▶ 继续游戏', { size: 16, color: COL.accent, align: 'left', width: 180, bold: true, outline: true });
+    text(card, -128, 2, '第 ' + info.wave + '/' + info.totalWaves + ' 波 · ' + info.difficultyName,
+      { size: 11, color: COL.cream, align: 'left', width: 210, bold: true, outline: true });
+    text(card, -128, -16, '生命 ' + info.hp + '/' + info.maxhp + ' · ' + info.durationText + ' · ' + info.dateText,
+      { size: 9, color: COL.dim, align: 'left', width: 250 });
+    text(card, -128, -28, '构筑：' + (info.skillNames.join(' / ') || '—'),
+      { size: 9, color: COL.accent, align: 'left', width: 250 });
+    text(card, 132, 0, '»', { size: 18, color: COL.accent, width: 24, align: 'right' });
+    onTap(card, h.onContinue);
+  } else if (vm.saveState === 'corrupt') {
+    text(card, -128, 18, '继续游戏', { size: 16, color: COL.dim, align: 'left', width: 180, bold: true, outline: true });
+    text(card, -128, -4, '存档读不出来：' + (vm.corruptNote || '数据损坏'),
+      { size: 10, color: COL.red, align: 'left', width: 250, outline: true });
+    text(card, -128, -26, '点这里清除坏档，开始新游戏', { size: 9, color: COL.dim, align: 'left', width: 250 });
+    onTap(card, () => { if (h.onDiscardSave) h.onDiscardSave(); });
+  } else {
+    text(card, -128, 18, '继续游戏', { size: 16, color: COL.dim, align: 'left', width: 180, bold: true, outline: true });
+    text(card, -128, -4, '当前没有未完成的对局', { size: 11, color: COL.dim, align: 'left', width: 250 });
+    text(card, -128, -26, '开始新游戏，开启新的冒险', { size: 9, color: COL.dim, align: 'left', width: 250 });
+    onTap(card, () => {
+      // 不误启动新游戏：只给轻提示（复用卡片自身的文字闪一下）
+      text(card, 0, -46, '还没有存档', { size: 9, color: COL.red, width: 200 });
+    });
+  }
 
-  void seed;   // 页脚不再显示种子（用户要求去掉底部小字）
+  // ── 开始游戏（全页唯一橙色 CTA）──
+  const startY = cardY + 104;
+  const b1 = at2(180, startY);
+  const btn1 = button(root, b1.x, b1.y, 270, 54, '开始游戏', { primary: true, size: 21 });
+  onTap(btn1.node, h.onStart);
+
+  // ── 历史对局 / 图鉴 ──
+  const row1Y = startY + 78;
+  const hb = button(root, at2(107, row1Y).x, at2(107, row1Y).y, 145, 48, '历史对局', { size: 14 });
+  onTap(hb.node, h.onHistory);
+  const cb = button(root, at2(253, row1Y).x, at2(253, row1Y).y, 145, 48, '图鉴', { size: 14 });
+  onTap(cb.node, h.onCodex);
+
+  // ── 成就 / 设置 ──
+  const row2Y = row1Y + 60;
+  const ab = button(root, at2(107, row2Y).x, at2(107, row2Y).y, 145, 48, '成就', { size: 14 });
+  onTap(ab.node, h.onAchievements);
+  const sb = button(root, at2(253, row2Y).x, at2(253, row2Y).y, 145, 48, '设置', { size: 14 });
+  onTap(sb.node, h.onSettings);
+
+  // ── 页脚：玩法说明 + 版本 ──
+  const footY = Math.min(row2Y + 62, VH - B - 26);
+  const how = button(root, at2(100, footY).x, at2(100, footY).y, 132, 36, '玩法说明', { size: 12 });
+  onTap(how.node, h.onHowto);
+  text(root, at2(248, footY).x, at2(248, footY).y, '主菜单升级版',
+    { size: 9, color: COL.dim, width: 150, align: 'right' });
+
+  void seed;
+  return root;
+}
+
+/** 返回主菜单确认（三选：保存退出 / 放弃本局 / 继续游戏） */
+export function buildQuitConfirm(
+  parent: Node, onCancel: () => void, onSaveExit: () => void, onAbandon: () => void,
+): Node {
+  const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
+  const at2 = (x: number, y: number) => at(VW, VH, x, y);
+  const root = screen(parent, 'scr-quit-confirm', COL.bg1);
+  const dim = mkNode(root, 'dim', VW, VH);
+  const dg = dim.addComponent(Graphics);
+  dg.fillColor = new Color(4, 6, 12, 190); dg.rect(-VW / 2, -VH / 2, VW, VH); dg.fill();
+
+  const box = panel(root, 0, at2(180, 300).y, 320, 260, { art: 'panel' });
+  text(box, 0, 92, '返回主菜单？', { size: 18, color: COL.cream, width: 300, bold: true, outline: true });
+  text(box, 0, 58, '保存后可以从主菜单「继续游戏」接着打', { size: 10, color: COL.dim, width: 300 });
+
+  const saveBtn = button(box, 0, 18, 268, 46, '保存并退出', { primary: true, size: 15 });
+  onTap(saveBtn.node, onSaveExit);
+  const abandon = button(box, 0, -40, 268, 42, '放弃本局（写入历史）', { size: 13 });
+  onTap(abandon.node, onAbandon);
+  const cancel = button(box, 0, -98, 160, 36, '继续游戏', { size: 12 });
+  onTap(cancel.node, onCancel);
   return root;
 }
 

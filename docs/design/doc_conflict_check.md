@@ -45,6 +45,10 @@
 | L16 | 测试禁止用配置值当预期 | `tests/run.ts` 新断言全部写死独立期望值 | PASS |
 | L17 | 精英词缀三档有真实效果 | `game/EliteAffix.ts`；tests §9 | PASS |
 | L18 | 无尽徽章 30/40/50、幂等、按难度隔离 | `Progress.badgesForRun`；tests §10 | PASS |
+| L19 | 主菜单继续卡三态（ok/none/corrupt）与实现一致 | MenuScreens.buildMenu + GameRoot.showMenu | PASS |
+| L20 | 续玩恢复范围文档与代码一致（不含瞬时弹体） | run_save_and_history_design §2.1 + Battle.resumeRun | PASS |
+| L21 | 三条结束路径数据分离（保存/放弃/结算） | GameRoot.confirmQuit + finishRun | PASS |
+| L22 | 历史 50 局上限 + runId 幂等 | RunHistory + tests §18 | PASS |
 
 ## C. 本轮修掉的文档矛盾（记录）
 
@@ -57,4 +61,4 @@
 
 ## 结论
 
-关键词 **0 命中**；逻辑断言 **18/18 PASS**；测试 **349 PASS / 0 FAIL**。
+关键词 **0 命中**；逻辑断言 **22/22 PASS**；测试 **404 PASS / 0 FAIL**。

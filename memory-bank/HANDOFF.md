@@ -1,13 +1,13 @@
-# HANDOFF · 《疯狂鸽王》（2026-10-31 阶段3 收尾后）
+# HANDOFF · 《疯狂鸽王》（2026-10-31 主菜单升级后）
 
 > 新会话唯一必读（配合 START_PROMPT.md 与 AGENTS.md 路由表）。
-> 本轮已经把**设计文档 / 代码 / 测试**对齐；状态以本文件 + `docs/review/` 为准。
+> 本轮：主菜单升级（继续游戏 + 历史对局）+ 阶段3 三项偏差收尾。
 
 ## 0. 现状一句话
 
-Cocos 3.8.6 微信小游戏，可玩：20 波 + 精英 + BOSS + 无尽；16 老技能 + 4 新技能、24 黑科技、80 道具、5 档难度、11 屏 UI。
-**测试 349 PASS / 0 FAIL**，tsc 双配置 0，微信包 3.06MB / 10.9MB（2026-10-31 14:47 重新出包，commit 49a929a）。
-本轮补齐：伤害来源贯穿击杀链路、6 条 S 规则、精英词缀真实效果、传说道具共享上限、存档读取、无尽徽章、地狱商店经济遥测。
+Cocos 3.8.6 微信小游戏；16 老技能 + 4 新技能、24 黑科技、80 道具、5 档难度、11 屏 UI。
+**测试 404 PASS / 0 FAIL**，tsc 双配置 0，微信包构建成功（3.06MB / 10.9MB 级别）。
+新能力：**继续游戏（ActiveRunSave 波内恢复）+ 历史对局（摘要/详情、50 局、幂等）+ 自动存档（含切后台）**。
 
 ## 1. 开工三步
 
@@ -16,61 +16,67 @@ Cocos 3.8.6 微信小游戏，可玩：20 波 + 精英 + BOSS + 无尽；16 老�
     node H:/AI-game/xingnang/cocos_port/node_modules/typescript/bin/tsc -p tsconfig.ui-check.json
     node H:/AI-game/xingnang/cocos_port/node_modules/tsx/dist/cli.mjs tests/run.ts
 
-期望 **349 PASS / 0 FAIL**。然后读 `docs/review/stage3_final_review_report.md` 的"未完成/待验证"。
+期望 **404 PASS**。然后读 `docs/review/menu_upgrade_initial_audit.md` 与 `docs/review/menu_upgrade_test_report.md`。
 
 ## 2. 构建 / 出包（唯一正确方式）
 
     cd H:/AI-game/crazy_monster_tide
     cmd /c "build-wechat.bat -nopause"
 
-产物：`cocos/build/wechatgame`（用户导入的就是这个）。
-出包后必须校验 `assets/main/index.js` 的 LastWriteTime 是刚刚。
-不要直接调 CocosCreator CLI 出微信包（可能静默不产出）；web-mobile 可以直接调 CLI（截图用）。
+产物：`cocos/build/wechatgame`。出包后必须校验 `assets/main/index.js` 的 LastWriteTime 是刚刚。
+web-mobile 可直接 CLI 构建（截图用）：`CocosCreator.exe --project cocos --build 'platform=web-mobile;debug=false'`。
 
 ## 3. 本轮新增/变更的代码
 
 | 文件 | 作用 |
 |---|---|
-| `game/DamageContext.ts` | v7：canHarvest / canVamp 变字段，工厂 freeze；哨兵 `summonKind` 例外 |
-| `game/SkillRules.ts` | 环刃片数、地雷分裂/回声、蓄能回声、哨兵开火计划（纯函数） |
-| `game/EliteAffix.ts` | 精英词缀选择与数值（护盾/加速/分裂） |
-| `game/Progress.ts` | `parseSave` 读全字段 + 迁移；`badgesForRun` 无尽徽章 |
-| `game/Telemetry.ts` | 商店经济快照（进店/原价/成交/刷新/离店/难度） |
-| `game/RunState.ts` | 传说共享计数、商店原价 |
-| `battle/Battle.ts` | 来源贯穿击杀、elite 概率/词缀、环刃 orbit、地雷 split/echo、蓄能 echo、哨兵真实弹体、echo 不计蓄势 |
-| `GameRoot.ts` | 遥测接线、徽章写档/展示、商店回调 |
-| `tests/run.ts` | 新增 §7–§15（85 条新断言） |
+| `game/RunSave.ts` | ActiveRunSave 模型、校验、版本、继续卡片摘要 |
+| `game/RunHistory.ts` | 历史摘要/详情、50 局容量、runId 幂等、筛选/统计、坏数据重建 |
+| `engine/RunStore.ts` | 活动存档 / 历史记录 localStorage 读写 |
+| `game/CombatRules.ts` | 击杀/吸血判定分支（Battle 与单测共用，补 §7.1） |
+| `ui/HistoryScreens.ts` | 历史列表 + 详情（滚动、筛选、空态、滚动位置保持） |
+| `ui/MenuScreens.ts` | 新主菜单（继续卡片三态 + 历史入口 + 三选退出确认） |
+| `ui/ModalList.ts` | 增加 `offset()` 与 `initialOff`（返回列表保持位置） |
+| `battle/Battle.ts` | `snapshotBattle` / `resumeRun` / `restoreEnemy` / `resetCastCount`；背水改为冷却；击杀/精英/BOSS 计数与里程碑 |
+| `GameRoot.ts` | 自动存档、继续游戏、退出三选、历史页面、切后台钩子、结算写历史 |
+| `game/RunState.ts` | eliteKills/bossKills/goldEarned/goldSpent/milestones |
+| `core/Rng.ts` / `game/BossSummon.ts` | RNG 状态、BOSS 状态机快照/恢复 |
+| `tests/run.ts` | 新增 §16–§21（RNG/存档/历史/BOSS 快照/偏差/战斗判定） |
 
-## 4. 硬事实 / 踩坑
+## 4. 三条结束路径（最容易写错的地方）
 
-- `tsconfig.check.json` **不含 ui/ 与 GameRoot.ts**；动 UI 必须跑 `tsconfig.ui-check.json`。
-  另有诊断用全量配置 `tsconfig.full-check.json`（当前 14 条历史遗留错误，非本轮引入，不作门禁）。
-- `makeModalList` 漏 import 会被 try/catch 吞掉 → 列表空白；UI 改动后必须跑 ui-check。
-- `Battle.killEnemy` 的 `src` 参数必须由 `hitEnemy` 传下去，否则 summon 击杀会错误触发 harvest。
-- echo 重放走 `echoReplay` 标记：不计蓄势、不递归 echo。
-- 兼容矩阵与 `SkillCalc.NEW_SKILL_ALLOW` 必须逐格一致（tests §15 会抓）。
-- 结算页坐标用设计坐标算；at2() 返回节点坐标，别传回去。
+| 行为 | ActiveRunSave | RunHistory |
+|---|---|---|
+| 保存并退出 / 切后台 | 保留 | 不写 |
+| 放弃本局（确认） | 删除 | 写 `abandoned` |
+| 死亡 / 通关 / 无尽倒下 | 删除 | 写 `defeat` / `victory` / `endless_end` |
 
-## 5. 待办（按优先级）
+- 结算顺序：写历史成功 → 才清活动存档；写失败保留存档重试。
+- 恢复时 `shop` 不重刷货架（`resuming` 标记）、`levelup` 恢复原待选卡。
 
-1. **真机复测**（用户侧）：难度页、精英词缀辨识度（护盾蓝描边）、两处滚动手感、商店点道具详情、BOSS 通关→结算→无尽、结算页无尽徽章文案。
-2. **地狱 1.8225 倍**：拿真机 `[TELEMETRY]` 日志反标经济（已记波次/进店金币/原价/成交价/购买/刷新/离店/难度），再决定是否调参。
-3. **普通难度旧版逐项对照**：仓库没有阶段2 行为快照，只能证明公式层；若要做实，需要旧版本包或旧测试。
-4. ~~`telemetryWaveEnd` 未接收 `dmgDealt`~~ —— 已补签名，`WaveRec.dmgDealt` 现在会落盘。
-5. 精英模板仍固定 `gnollberserker`（词缀已生效，单位种类未随机化）。
+## 5. 硬事实 / 踩坑
 
-## 6. 汇报格式（强制）
+- `tsconfig.check.json` 不含 ui/ 与 GameRoot.ts；动 UI 必跑 `ui-check`。
+  `tsconfig.full-check.json` 是诊断用全量检查，有 13 条**历史遗留**错误，不是本轮引入。
+- 续玩不恢复子弹/区域/地雷/哨兵/蓄能（瞬时实体），文档已写明，不要对外宣称"100% 还原"。
+- 历史页按钮与标题条会轻微重叠（视觉上可接受），真机复测时若拥挤再调。
+- 主菜单继续卡在 360×640 上第 4 行（构筑）贴近卡片底边，改字号/坐标时注意别裁掉。
+- 截图脚本 `tools/ui/shot_menu_history.cjs` 用 headless Chrome；微信真机仍需人工。
 
-完成 / 验证（贴真实命令输出）/ 未完成 / 下一步，并停下等确认。
-禁止"应该可以 / 理论上没问题"；禁止没跑通就说"已修复"。
+## 6. 待办（优先级）
+
+1. **微信真机**：杀进程后继续、切后台继续、商店/升级中断恢复、历史详情滚动；
+2. 地狱 1.8225 倍经济数据（真机 `[TELEMETRY]`）；
+3. 普通难度逐项等于旧版（缺旧基线，只能公式层证明）；
+4. 余烬刻印是否升级为真叠层（当前简化版已入文档）；
+5. 图鉴技能分类筛选、文档由代码生成（未做，验收表已标注）。
 
 ## 7. 命令速查
 
 | 用途 | 命令 |
 |---|---|
 | 类型检查 | `tsc -p tsconfig.check.json` / `-p tsconfig.ui-check.json` |
-| 诊断全量检查 | `tsc -p tsconfig.full-check.json`（有历史错误，看新增） |
+| 诊断全量 | `tsc -p tsconfig.full-check.json`（看新增错误） |
 | 单测 | `tsx tests/run.ts` |
-| 构建（微信） | `cmd /c "build-wechat.bat -nopause"` |
-| 构建（网页截图） | `CocosCreator.exe --project cocos --build 'platform=web-mobile;debug=false'` |
-| 网页截图 | 先 `node tools/ui/serve.cjs`，再跑 `tools/ui/shot_*.cjs` |
+| 微信构建 | `cmd /c "build-wechat.bat -nopause"` |
+| 网页截图 | 先 `node tools/ui/serve.cjs`，再 `node tools/ui/shot_menu_history.cjs` |

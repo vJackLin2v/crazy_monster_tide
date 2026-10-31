@@ -5,9 +5,14 @@
  * 所以统一抽成纯函数，Battle / RunState 只调用，测试用独立预期值断言。
  */
 
-/** 背水：低血加速，高血减速 */
+/** 背水：攻速倍率（低血 +35%，高血 -8%）——注意这是"攻速"，落到技能上要换算成冷却 */
 export function lastbreathMul(hpPct: number): number {
   return hpPct < 0.35 ? 1.35 : 0.92;
+}
+
+/** 背水：技能冷却倍率 = 1 / 攻速倍率（低血 cd×0.741，高血 cd×1.087） */
+export function lastbreathCdMul(hpPct: number): number {
+  return 1 / lastbreathMul(hpPct);
 }
 
 /** 碎冰：对减速目标 +20%，对未被减速目标 -5% */

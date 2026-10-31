@@ -10,7 +10,7 @@
  *       battle ─阵亡/通关→ result
  *       battle ─暂停键→ build 抽屉
  */
-import { _decorator, Component, Node, view, ResolutionPolicy, Color } from 'cc';
+import { _decorator, Component, Node, view, ResolutionPolicy, Color, Game, game } from 'cc';
 import { SCREEN_W, SCREEN_H, RUN, waveTime, isBossWave, isEliteWave } from './core/Const';
 import { Joystick } from './engine/Joystick';
 import { Battle } from './battle/Battle';
@@ -19,7 +19,8 @@ import { safeTop } from './ui/Safe';
 import { preloadUiArt } from './ui/Art';
 import { Hud, type HudData } from './ui/Hud';
 import { COL } from './ui/Tokens';
-import { buildMenu, buildHowto, buildCharSelect, buildResult, type ResultBuildRow } from './ui/MenuScreens';
+import { buildMenu, buildHowto, buildCharSelect, buildResult, buildQuitConfirm, type ResultBuildRow, type MenuView } from './ui/MenuScreens';
+import { buildHistoryList, buildHistoryDetail } from './ui/HistoryScreens';
 import { buildSettings } from './ui/MetaScreens';
 import { buildDifficultySelect } from './ui/DifficultyScreens';
 import { nextDifficulty, difficultyOf } from './data/Difficulties';
@@ -29,6 +30,9 @@ import { applyFxPrefs } from './game/Prefs';
 import { migrateDifficulty, badgesForRun } from './game/Progress';
 import { setupUpdate, updateState, applyUpdate } from './game/Update';
 import { loadSave, writeSave } from './engine/Save';
+import { loadActiveRun, saveActiveRun, clearActiveRun, loadRunHistory, saveRunHistory } from './engine/RunStore';
+import { RUN_SAVE_VERSION, continueInfoOf, newRunId, type ActiveRunSave, type LoadCheck } from './game/RunSave';
+import { addRun, buildSummary, emptyHistory, endReasonText, type HistoryFilter, type RunDetail, type RunHistoryData, type RunResult, type RunSummary } from './game/RunHistory';
 import { telemetryStart, telemetryRunEnd, telemetryShopEnter, telemetryShopBuy, telemetryShopReroll, telemetryShopLeave, listRuns, exportLogs, clearLogs, summarize } from './game/Telemetry';
 import { balance, balanceOverride, balanceReset, exportBalance, importBalance } from './core/Balance';
 import { applyUnlocks } from './game/Achievements';
@@ -49,7 +53,7 @@ const { ccclass } = _decorator;
 /** 启动占位底色（与 COL.bg1 一致，避免首帧白/黑闪） */
 const COL_BG1 = new Color(38, 38, 54, 255);
 
-type Phase = 'menu' | 'howto' | 'charselect' | 'battle' | 'shop' | 'result' | 'codex' | 'ach';
+type Phase = 'menu' | 'howto' | 'charselect' | 'battle' | 'shop' | 'result' | 'codex' | 'ach' | 'history' | 'levelup';
 
 @ccclass('GameRoot')
 export class GameRoot extends Component {
@@ -75,6 +79,19 @@ export class GameRoot extends Component {
   private stuckT = 0;
   /** 本地存档（音频开关 + 成就进度），只读展示 + 结算时累计 */
   private save = loadSave();
+
+  // ---------- 继续游戏 / 历史对局 ----------
+  /** 本局唯一 id（结算写历史时用于幂等） */
+  private runId = '';
+  private runStartedAt = 0;
+  /** 启动时探测到的活动存档状态（菜单展示用） */
+  private activeCheck: LoadCheck = { status: 'none' };
+  private history: RunHistoryData = emptyHistory();
+  private historyFilter: HistoryFilter = 'all';
+  /** 历史列表滚动位置（详情返回后恢复） */
+  private historyScroll = 0;
+  /** 续玩恢复时：不要重新刷商店货架 */
+  private resuming = false;
 
   onLoad() {
     // 设计分辨率写死在代码里，不依赖编辑器设置（编辑器里是 1280x720，见 KI-005）
@@ -116,6 +133,12 @@ export class GameRoot extends Component {
     this.battle.hooks.onClear = () => { if (this.endShown) return; this.endShown = true; this.showResult(true); };
     // 成就统计（只计数，不参与战斗结算）
     this.battle.hooks.onBossKill = () => { this.save.bossKills++; writeSave(this.save); };
+
+    // 继续游戏 / 历史对局：启动时各读一次；切后台自动存档
+    this.history = loadRunHistory();
+    this.activeCheck = loadActiveRun();
+    game.on(Game.EVENT_HIDE, this.onAppHide, this);
+    game.on(Game.EVENT_SHOW, this.onAppShow, this);
     // 微信版本更新：冷启动检查 → 下载完成提示重启（浏览器里自动跳过）
     setupUpdate(() => {
       const g = globalThis as unknown as { wx?: { showModal?: (o: unknown) => void } };
@@ -146,6 +169,27 @@ export class GameRoot extends Component {
     // 用户反馈「进入游戏时会先卡顿一下」：根因是 startRun 里同步 await 加载
     // 玩家单位 + 全部技能 VFX。改成**开局就在后台预加载**，玩家在菜单停留的时间就把它偷完了。
     void this.preloadAll();
+  }
+
+  onDestroy() {
+    game.off(Game.EVENT_HIDE, this.onAppHide, this);
+    game.off(Game.EVENT_SHOW, this.onAppShow, this);
+  }
+
+  /** 微信/浏览器切后台：立刻落一份本局存档（异步存储在进程被挂起前通常已完成） */
+  private onAppHide() {
+    if (this.phase === 'battle' || this.phase === 'shop' || this.phase === 'levelup') {
+      this.saveActiveRunNow();
+    }
+    if (this.battle) this.battle.paused = true;
+  }
+
+  /** 回前台：战斗局保持暂停，等玩家点继续/暂停面板，避免一回来就被偷袭 */
+  private onAppShow() {
+    if (this.phase === 'battle' && this.battle && !this.curModal) {
+      this.battle.paused = true;
+      this.showPause();
+    }
   }
 
   /** 启动：先载 UI 素材，再出菜单（素材失败也照常进菜单，UIKit 会回退） */
@@ -207,19 +251,213 @@ export class GameRoot extends Component {
     this._curModal = n;
   }
 
+  private fmtDuration(sec: number): string {
+    const s = Math.max(0, Math.round(sec));
+    const m = Math.floor(s / 60), r = s % 60;
+    return (m < 10 ? '0' : '') + m + ':' + (r < 10 ? '0' : '') + r;
+  }
+
+  private fmtDate(ms: number): string {
+    const d = new Date(ms);
+    const p = (n: number) => (n < 10 ? '0' + n : '' + n);
+    return (d.getMonth() + 1) + '/' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  private skillName(id: string): string { return SKILLS[id] ? SKILLS[id].name : id; }
+
   private showMenu() {
     this.phase = 'menu'; this.closeModal(); this.clearScreen();
     Sfx.bgm('menu');
     this.battleNode.active = false; this.joyNode.active = false;
-    // 回到菜单就摇**下一局**的种子，菜单底部显示的就是即将用的那个
+    // 回到菜单就摇**下一局**的种子
     this.seed = this.newSeed();
     this.seedFresh = true;
-    this.cur = buildMenu(this.uiRoot, this.seed,
-      () => this.showDifficulty(),
-      () => this.showHowto(),
-      () => this.showCodex(),
-      () => this.showAchievements(),
-      () => this.showSettings());
+
+    // 每次回菜单都重新探测活动存档（可能在暂停面板里刚存过）
+    this.activeCheck = loadActiveRun();
+    const vm: MenuView = { saveState: 'none' };
+    if (this.activeCheck.status === 'ok') {
+      const save = this.activeCheck.save;
+      const info = continueInfoOf(save, id => this.skillName(id));
+      vm.saveState = 'ok';
+      vm.info = {
+        wave: info.wave,
+        totalWaves: RUN.waves,
+        difficultyName: difficultyOf(info.difficulty).name,
+        durationText: this.fmtDuration(save.runTime),
+        hp: info.hp, maxhp: info.maxhp,
+        dateText: this.fmtDate(save.savedAt),
+        skillNames: info.skillNames,
+      };
+    } else if (this.activeCheck.status === 'corrupt' || this.activeCheck.status === 'version') {
+      vm.saveState = 'corrupt';
+      vm.corruptNote = this.activeCheck.message;
+    }
+
+    this.cur = buildMenu(this.uiRoot, this.seed, vm, {
+      onContinue: () => void this.continueGame(),
+      onStart: () => this.showDifficulty(),
+      onHistory: () => this.showHistory(),
+      onHowto: () => this.showHowto(),
+      onCodex: () => this.showCodex(),
+      onAchievements: () => this.showAchievements(),
+      onSettings: () => this.showSettings(),
+      onDiscardSave: () => {
+        clearActiveRun();
+        this.activeCheck = { status: 'none' };
+        this.showMenu();
+      },
+    });
+  }
+
+  // ---------- 继续游戏：存档 / 恢复 ----------
+
+  /** 把当前局写成活动存档（幂等；商店/战斗/升级三态都支持） */
+  private saveActiveRunNow(): void {
+    if (!this.battle || !this.battle.rs) return;
+    if (this.endShown) return;
+    const ph = this.phase;
+    if (ph !== 'battle' && ph !== 'shop' && ph !== 'levelup') return;
+    const rs = this.battle.rs;
+    const save: ActiveRunSave = {
+      v: RUN_SAVE_VERSION,
+      runId: this.runId || newRunId(),
+      startedAt: this.runStartedAt || Date.now(),
+      savedAt: Date.now(),
+      charId: rs.charId,
+      difficulty: rs.difficulty,
+      seed: rs.seed,
+      rngState: rs.rng.snapshot(),
+      phase: ph,
+      wave: rs.wave,
+      endless: rs.endless,
+      gold: rs.gold, lv: rs.lv, exp: rs.exp, expNeed: rs.expNeed,
+      kills: rs.kills, waveKills: rs.waveKills, runTime: rs.runTime,
+      stats: rs.stats,
+      baseStats: rs.baseStats,
+      skills: rs.skills.map(s => ({ id: s.id, lvl: s.lvl, mods: s.mods.slice() })),
+      modsBag: rs.modsBag.slice(),
+      items: rs.items.map(i => ({ id: i.id })),
+      attrTaken: { ...rs.attrTaken },
+      shopReroll: rs.shopReroll,
+      shopStock: rs.shopStock ? rs.shopStock.map(s => ({ ...s })) : null,
+      carryOver: rs.carryOver.map(s => ({ ...s })),
+      legendaryTaken: rs.legendaryTaken,
+      pendingRewards: ph === 'levelup'
+        ? this.pendingRewards.map(r => ({ kind: r.kind, id: r.id, needReplace: r.needReplace }))
+        : undefined,
+      battle: this.battle.snapshotBattle(),
+    };
+    saveActiveRun(save);
+  }
+
+  /** 从活动存档继续上一局 */
+  private async continueGame(): Promise<void> {
+    const chk = loadActiveRun();
+    if (chk.status !== 'ok') {
+      this.activeCheck = chk;
+      this.showMenu();
+      return;
+    }
+    const save = chk.save;
+    this.charId = save.charId;
+    this.seed = save.seed;
+    this.seedFresh = false;
+    this.runId = save.runId;
+    this.runStartedAt = save.startedAt;
+    this.endShown = false;
+    this.stuckT = 0;
+    this.closeModal(); this.clearScreen();
+    this.battleNode.active = true;
+    this.joyNode.active = true;
+    const hudNode = mkNode(this.uiRoot, 'HudRoot', SCREEN_W, SCREEN_H);
+    this.hud = new Hud(hudNode, () => this.onPausePressed());
+    this.cur = hudNode;
+    this.battle.difficultyId = save.difficulty;
+    this.phase = 'battle';
+    await this.battle.resumeRun(save);
+    this.pendingRewards = (save.pendingRewards ?? []) as Reward[];
+    if (save.phase === 'shop') {
+      this.phase = 'shop';
+      this.resuming = true;
+      this.showShop();
+      this.resuming = false;
+    } else if (save.phase === 'levelup' && this.pendingRewards.length) {
+      this.phase = 'levelup';
+      this.showLevelUp(this.pendingRewards);
+    } else {
+      this.phase = 'battle';
+      this.battle.paused = false;
+    }
+    console.log('[Resume] 恢复 ' + save.charId + ' 第 ' + save.wave + ' 波（' + save.phase + '）');
+  }
+
+  /** 结束一局：写历史 + 清活动存档（runId 幂等，重复调用不会重复记） */
+  private finishRun(result: RunResult): void {
+    const rs = this.battle.rs;
+    if (!rs) return;
+    const runId = this.runId || newRunId();
+    const badges = this.save.endlessBadges.filter(b => b.startsWith(rs.difficulty + ':'));
+    const summary = buildSummary({
+      runId,
+      startedAt: this.runStartedAt || Date.now(),
+      endedAt: Date.now(),
+      characterId: rs.charId,
+      difficulty: rs.difficulty,
+      result,
+      reachedWave: rs.wave,
+      totalWaves: RUN.waves,
+      durationSeconds: rs.runTime,
+      killCount: rs.kills,
+      eliteKillCount: rs.eliteKills,
+      bossKillCount: rs.bossKills,
+      goldEarned: rs.goldEarned,
+      goldSpent: rs.goldSpent,
+      endlessMode: rs.endless,
+      finalSkillIds: rs.skills.map(s => s.id),
+      finalItemIds: rs.items.map(i => i.id),
+      badges,
+    });
+    const counts = new Map<string, number>();
+    for (const it of rs.items) counts.set(it.id, (counts.get(it.id) ?? 0) + 1);
+    const detail: RunDetail = {
+      runId,
+      skills: rs.skills.map(s => ({ id: s.id, lvl: s.lvl, mods: s.mods.slice() })),
+      items: Array.from(counts.entries()).map(([id, count]) => ({ id, count })),
+      stats: { hp: Math.round(rs.stats.hp), maxhp: Math.round(rs.stats.maxhp), power: rs.stats.power, gold: rs.gold },
+      milestones: rs.milestones.slice(),
+      endReason: endReasonText(result),
+    };
+    const { data, added } = addRun(this.history, summary, detail);
+    if (added) {
+      // ⚠️ 事务顺序：历史写失败就**不能**清活动存档，否则这局彻底丢失
+      if (!saveRunHistory(data)) {
+        console.warn('[History] 写入失败：保留活动存档，等待下次结算重试');
+        return;
+      }
+      this.history = data;
+    }
+    clearActiveRun();
+    this.runId = '';
+    console.log('[History] 记录一局：' + result + ' 第 ' + rs.wave + ' 波（' + (added ? '新增' : '已存在') + '）');
+  }
+
+  // ---------- 历史对局页面 ----------
+  private showHistory() {
+    this.phase = 'history'; this.closeModal(); this.clearScreen();
+    this.cur = buildHistoryList(
+      this.uiRoot, this.history.summaries, this.historyFilter, this.historyScroll,
+      (f) => { this.historyFilter = f; this.historyScroll = 0; this.showHistory(); },
+      () => this.showMenu(),
+      (runId, off) => { this.historyScroll = off; this.showHistoryDetail(runId); },
+    );
+  }
+
+  private showHistoryDetail(runId: string) {
+    const s = this.history.summaries.find(x => x.runId === runId);
+    if (!s) { this.showHistory(); return; }
+    this.phase = 'history'; this.closeModal(); this.clearScreen();
+    this.cur = buildHistoryDetail(this.uiRoot, s, this.history.details[runId] ?? null, () => this.showHistory());
   }
 
   // ---------- 元页面：图鉴 / 成就 / 设置 ----------
@@ -283,6 +521,10 @@ export class GameRoot extends Component {
   private async startBattle() {
     this.endShown = false;
     this.stuckT = 0;
+    // 新开局：生成唯一 runId / 开始时间，并清掉上一局的续玩存档（避免"开始新游戏却续到旧局"）
+    this.runId = newRunId();
+    this.runStartedAt = Date.now();
+    clearActiveRun();
     // 从结算页"再来一局"进来时没有经过菜单 → 这里重摇一次，保证每局不同
     if (!this.seedFresh) this.seed = this.newSeed();
     this.seedFresh = false;
@@ -304,6 +546,7 @@ export class GameRoot extends Component {
     await this.battle.startRun(this.charId, this.seed);
     console.log('[GameRoot] startRun 耗时 ' + Math.round(performance.now() - t0) + 'ms');
     this.battle.paused = false;
+    this.saveActiveRunNow();
   }
 
   // ---------- 5. 升级 3 选 1 ----------
@@ -315,10 +558,12 @@ export class GameRoot extends Component {
     }
     this.pendingRewards = rewards;
     this.closeModal();
+    this.phase = 'levelup';
     try {
       const cards: CardData[] = rewards.map(r => this.toCard(r));
       this.curModal = buildLevelUp(this.uiRoot, this.battle.rs.lv, cards,
         (i) => this.pickReward(i), () => this.pickReward(-1));
+      this.saveActiveRunNow();       // 升级三选一也是可恢复状态
     } catch (e) {
       // ★ 防御：任何界面构建失败都不能把游戏留在「暂停 + 没弹窗」的状态（= 看起来卡死）
       console.error('[UI] 升级面板构建失败，自动跳过本次升级', e);
@@ -353,10 +598,14 @@ export class GameRoot extends Component {
         //    调用方再 push 一次就会让模块翻倍（复制 BUG）。返还责任只在模型层。
         const back = rs.replaceSkill(slot, newId);
         console.log('[Replace] 退回背包 ' + back.length + ' 个（模型层已入库）');
+        // 蓄势计数按技能槽独立；换了技能必须清零，否则新技能会"继承"旧技能的施法次数
+        this.battle.resetCastCount(slot);
         this.installSelIdx = null; this.installSel = null;
         if (rs.modsBag.length) this.selectBag(0);
         this.closeModal();
+        this.phase = 'battle';
         this.battle.resumeFromModal();
+        this.saveActiveRunNow();
       },
       () => { this.closeModal(); this.battle.resumeFromModal(); });
   }
@@ -388,7 +637,9 @@ export class GameRoot extends Component {
     }
     if (r) this.battle.rs.applyReward(r);
     this.closeModal();
+    this.phase = 'battle';
     this.battle.resumeFromModal();
+    this.saveActiveRunNow();       // 奖励落袋后再存，避免"恢复了但奖励重复发"
   }
 
   // ---------- 6. 模块安装（槽位级交互，规格 §3.3）----------
@@ -711,9 +962,12 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       }
     }
     this.phase = 'shop';
-    this.battle.rs.refreshShop(true);
-    telemetryShopEnter(this.battle.rs.wave, this.battle.rs.gold);   // 经济遥测：进店
+    if (!this.resuming) {
+      this.battle.rs.refreshShop(true);
+      telemetryShopEnter(this.battle.rs.wave, this.battle.rs.gold);   // 经济遥测：进店
+    }
     this.renderShop();
+    this.saveActiveRunNow();       // 商店货架/金币变化后即可续玩
   }
 
   /** 商店构建的统一入口：构建失败时直接开下一波，别把人卡在空商店里 */
@@ -771,11 +1025,13 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         const info = slot
           ? { id: slot.id, kind: slot.kind, price: slot.price, basePrice: slot.basePrice ?? slot.price }
           : null;
-        if (rs.buySlot(i).ok && info) telemetryShopBuy(info.id, info.kind, info.price, info.basePrice);
+        const bought = rs.buySlot(i);
+        if (bought.ok && info) telemetryShopBuy(info.id, info.kind, info.price, info.basePrice);
         this.renderShop();
+        if (bought.ok) this.saveActiveRunNow();
       },
-      (i) => { rs.toggleLock(i); this.renderShop(); },
-      () => { if (rs.rerollShop()) telemetryShopReroll(); this.renderShop(); },
+      (i) => { rs.toggleLock(i); this.renderShop(); this.saveActiveRunNow(); },
+      () => { if (rs.rerollShop()) { telemetryShopReroll(); this.saveActiveRunNow(); } this.renderShop(); },
       rs.rerollCost(),
       () => this.nextWave(),
       nextTip, nextLabel,
@@ -828,6 +1084,9 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
   private nextWave() {
     const rs = this.battle.rs;
     telemetryShopLeave(rs.gold);            // 经济遥测：离店（不管后面进不进安装界面）
+    // 离开商店 = 回战斗态；先存一份，再决定要不要进安装屏
+    this.phase = 'battle';
+    this.saveActiveRunNow();
     // 用户指令：进下一关前**统一打开一次安装界面**，让玩家把背包里的模块装一装
     if (rs.modsBag.length > 0) {
       this.installReturn = 'nextwave';
@@ -840,6 +1099,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
     this.closeModal();
     this.phase = 'battle';
     this.battle.advanceWave();
+    this.saveActiveRunNow();
   }
 
   // ---------- 11. 结算 ----------
@@ -899,6 +1159,9 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       writeSave(this.save);
       if (unlocked) console.log('[Ach] 解锁新成就：' + this.save.ach.join(','));
     }
+    // 历史对局：写摘要+详情并清活动存档（runId 幂等；此时 badges 已在上面算好）
+    const rsFin = this.battle.rs;
+    this.finishRun(win ? 'victory' : (rsFin.endless ? 'endless_end' : 'defeat'));
     this.recordRunDiscovery();      // 图鉴：补记本局遇到的内容
     // 战斗日志：本局结束（阵亡/通关）
     // ⚠️ 上面成就块里的 rsP 是块级作用域，这里必须重新取
@@ -1082,6 +1345,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       return out;
     })();
     this.battle.paused = true;
+    this.saveActiveRunNow();      // 打开暂停面板即落档（玩家可能直接杀进程）
     this.curModal = buildBuildDrawer(this.uiRoot, pages,
       () => { this.closeModal(); this.confirmQuit(); },
       () => { this.closeModal(); this.battle.paused = false; },
@@ -1122,15 +1386,32 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       () => {
         const r = rs.dropSkill(si);
         console.log('[Drop] ' + name + ' → ' + (r.ok ? 'ok' : r.why));
+        if (r.ok) this.battle.resetCastCount(si);
         this.closeModal();
         this.showPause();
       });
   }
 
+  /**
+   * 返回主菜单：三选（保存退出 / 放弃本局 / 继续游戏）。
+   * ⚠️ "暂时离开"与"放弃"必须走不同数据路径：
+   *   · 保存退出 → 保留活动存档，**不写历史**；
+   *   · 放弃本局 → 清活动存档 + 写一条 abandoned 历史。
+   */
   private confirmQuit() {
-    this.curModal = buildConfirm(this.uiRoot, '返回主菜单？', '本局进度会丢失', '确认',
-      () => this.closeModal(),
-      () => { this.closeModal(); this.showMenu(); });
+    this.curModal = buildQuitConfirm(this.uiRoot,
+      () => { this.closeModal(); this.battle.paused = false; },
+      () => {
+        this.saveActiveRunNow();
+        this.closeModal();
+        this.showMenu();
+      },
+      () => {
+        this.closeModal();
+        this.battle.paused = false;
+        this.finishRun('abandoned');
+        this.showMenu();
+      });
   }
 
   // ---------- 暂停键热区（HUD 右上角）----------

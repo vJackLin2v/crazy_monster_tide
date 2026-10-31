@@ -37,4 +37,12 @@ export class Rng {
   }
   /** 派生子随机源：同一父 seed + 不同标签 → 稳定的独立序列 */
   derive(tag: number): Rng { return new Rng((this.s ^ Math.imul(tag, 0x9E3779B1)) >>> 0); }
+
+  /** 当前内部状态（用于"继续游戏"精确续接随机序列） */
+  snapshot(): number { return this.s >>> 0; }
+
+  /** 恢复内部状态；非法值回落到种子 */
+  restore(state: number, fallbackSeed = 1): void {
+    this.s = (isFinite(state) ? state : fallbackSeed) >>> 0;
+  }
 }

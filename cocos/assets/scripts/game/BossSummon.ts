@@ -4,6 +4,8 @@
  * 纯逻辑，便于单测：调用方每帧喂 hpPct / now / 当前存活召唤物数量，
  * 返回"现在应该召唤几只"（0 = 不召唤）。
  */
+import type { BossSummonSave } from './RunSave';
+
 export interface BossSummonConfig {
   thresholds: number[];      // [70, 35]
   count: number;             // 每个波次最多 3 只
@@ -22,6 +24,27 @@ export class BossSummonState {
 
   constructor(private cfg: BossSummonConfig) {
     this.fired = cfg.thresholds.map(() => false);
+  }
+
+  /** 保存/恢复（继续游戏用；字段与内部状态一一对应） */
+  snapshot(): BossSummonSave {
+    return {
+      fired: this.fired.slice(),
+      pendingWaves: this.pendingWaves,
+      warningActive: this.warningActive,
+      warningEndAt: this.warningEndAt,
+      lastSummonCompletedAt: this.lastSummonCompletedAt,
+      dead: this.dead,
+    };
+  }
+
+  restore(s: BossSummonSave): void {
+    this.fired = this.cfg.thresholds.map((_, i) => !!s.fired?.[i]);
+    this.pendingWaves = Math.max(0, Math.floor(s.pendingWaves || 0));
+    this.warningActive = !!s.warningActive;
+    this.warningEndAt = s.warningEndAt || 0;
+    this.lastSummonCompletedAt = isFinite(s.lastSummonCompletedAt) ? s.lastSummonCompletedAt : -Infinity;
+    this.dead = !!s.dead;
   }
 
   /** BOSS 死亡：取消所有未执行请求 */

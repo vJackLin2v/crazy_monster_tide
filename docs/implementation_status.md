@@ -1,57 +1,75 @@
 # 设计 → 实现 对照表（implementation_status）
 
 > 用途：设计文档（`docs/design/*`）是意图；这里是**代码实际做到哪、由哪条测试证明**。
-> 更新：2026-10-31（阶段3 收尾）｜ 基线：`349 PASS / 0 FAIL`，`tsc check + ui-check = 0`，微信包构建成功。
+> 更新：2026-10-31（主菜单升级：继续游戏 + 历史对局）｜ 基线：`404 PASS / 0 FAIL`、tsc 双配置 0、微信包构建成功。
 
-## 一、已实现且与设计一致（有测试）
+## 一、主菜单 / 续玩 / 历史（本轮新增）
 
-| 设计决策 | 代码位置 | 测试 |
+| 能力 | 代码 | 测试 / 证据 |
 |---|---|---|
-| DamageContext：三个 can* 由工厂推导并 freeze | `game/DamageContext.ts` | §5n、§7 |
-| 击杀链路传递来源（summon 不回血、不引爆） | `battle/Battle.ts` `hitEnemy` → `killEnemy` | §7（权限断言）+ 代码审查 |
-| 模块统一闸门（来源 / CD / 单次施法上限） | `ModuleUsage` | §5n |
-| M1–M6 数值与来源过滤 | `game/ModuleValues.ts` + Battle | §5o |
-| 蓄势不统计 echo | `Battle.echoReplay` | §7（castId）+ 代码审查 |
-| 四个新技能实体上限 | `data/Skills.ts` + Battle | §5q、§8 |
-| 6 条 S 规则 | `game/SkillRules.ts` + Battle | §8（纯函数） |
-| 矩阵 = 白名单 = 测试 | `SkillCalc.NEW_SKILL_ALLOW` | §15（72 格） |
-| 五档难度与公式 | `data/Difficulties.ts` | §5p、§13 |
-| 普通难度不介入（公式层） | `Difficulties` | §13 |
-| BOSS 召唤状态机（唯一版本） | `game/BossSummon.ts` | §5p、§14 |
-| 精英概率倍率 + 三词缀真实效果 | `game/EliteAffix.ts` + `Battle.updateSpawn` | §9 |
-| 存档读全 + 迁移 | `game/Progress.ts` `parseSave` | §10 |
-| 传说道具共享上限 | `RunState.legendaryTaken` | §11 |
-| 无尽徽章 30/40/50 | `Progress.badgesForRun` + GameRoot | §10 |
-| 商店经济遥测 | `game/Telemetry.ts` + GameRoot | §12 |
-| 10 件新道具 / 特殊道具 | `data/Items.ts`、`game/SpecialItems.ts` | §5r |
+| 主菜单继续卡片（有/无/损坏三态） | `ui/MenuScreens.buildMenu` + `MenuView` | 浏览器截图（无存档/有存档） |
+| 活动存档模型（ActiveRunSave） | `game/RunSave.ts` | tests §17（序列化/校验/非法字段/新版本） |
+| 续玩持久化 | `engine/RunStore.ts` | 同上 + 浏览器 resume-match |
+| 战斗恢复（敌人/波次/RNG/BOSS 状态机） | `battle/Battle.resumeRun/snapshotBattle` | 浏览器 resume-match（波次/构筑一致，金币击杀只增不减） |
+| 自动存档时机 | `GameRoot.saveActiveRunNow`（开局/商店/升级/暂停/切后台） | 代码审查 + 截图流程 |
+| 暂停退出三选（保存/放弃/继续） | `ui/MenuScreens.buildQuitConfirm` | 截图 + 代码路径 |
+| 历史摘要 / 详情（50 局、runId 幂等） | `game/RunHistory.ts` | tests §18 |
+| 历史列表 / 详情 / 空态 | `ui/HistoryScreens.ts` | 浏览器截图（列表/详情/空态） |
+| 结束路径数据一致性 | `GameRoot.finishRun`（历史失败不清档） | 代码审查 + tests §18 幂等 |
+| 战斗判定分支可测化 | `game/CombatRules.ts`（Battle 实际调用） | tests §21 |
 
-## 二、实现与设计的偏差（已记录，未隐藏）
+## 二、阶段3 遗留修复
+
+| 项 | 处理 | 测试 |
+|---|---|---|
+| 蓄势计数未清零 | 替换/丢弃技能时 `Battle.resetCastCount(slot)` | 代码审查（Battle 运行时） |
+| 背水用伤害近似 | 改为真实攻速 → 技能冷却倍率 `lastbreathCdMul` | tests §20 |
+| 余烬刻印叠层偏差 | **保留简化版**（灼烧 +25%），设计文档与决策表已标注 | tests §20 |
+| 文档测试数 344/349 冲突 | 统一为当前实测 404 | 全仓库检索 |
+| README 状态过期 | 更新为 404 PASS + 主菜单升级 | README |
+
+## 三、既有能力（阶段3 收尾时已验证）
+
+| 设计决策 | 代码 | 测试 |
+|---|---|---|
+| DamageContext v7（三个 can* 工厂推导 + freeze） | `game/DamageContext.ts` | §5n、§7 |
+| 击杀链路传递来源 | `Battle.hitEnemy → killEnemy` | §21 |
+| 6 条 S 规则 | `game/SkillRules.ts` + Battle | §8 |
+| 矩阵 × 白名单 72 格一致 | `SkillCalc.NEW_SKILL_ALLOW` | §15 |
+| 五档难度 / 普通不介入 | `data/Difficulties.ts` | §5p、§13 |
+| BOSS 召唤状态机（含快照） | `game/BossSummon.ts` | §5p、§14、§19 |
+| 精英词缀真实效果 | `game/EliteAffix.ts` + Battle | §9 |
+| 传说道具共享上限 | `RunState.legendaryTaken` | §11 |
+| 无尽徽章 | `Progress.badgesForRun` | §10 |
+| 商店经济遥测 | `game/Telemetry.ts` | §12 |
+
+## 四、实现与设计偏差（未隐藏）
 
 | 项 | 设计 | 实现 | 说明 |
 |---|---|---|---|
-| 矩阵里的 thunder/chain | 原矩阵多处 Y | 改为 N（无弹体技能） | 环刃/地雷/蓄能没有弹体，连锁/落雷无从生效；哨兵有真实弹体，保留 Y |
-| overload × 地雷 | S | Y（普通伤害乘区） | 见 skill_expansion §8.1；不为了 S 而造机制 |
-| 蓄势计数残留 | 替换技能后清零 | 未清零 | 影响极小（同槽位技能换掉后计数沿用），已在此标注 |
-| 余烬刻印 | 叠层 +25% | "目标处于灼烧时 +25%" | 与意图接近的简化 |
-| 背水 | 攻速 +35% | 伤害乘区近似 | 口径差异 |
-| 战斗日志 dmgDealt | 记录本波伤害 | 已补签名并写入 `WaveRec.dmgDealt` | 已修（本轮顺手补齐） |
+| 余烬刻印 | 叠层 +25%（3 层） | 灼烧目标 +25%，不叠层 | 已改文档为简化版；不声称叠层 |
+| 历史"加载中"状态 | 需要 | 未做骨架屏 | 本地存储同步读取，没有真实加载态；异步化再补 |
+| 续玩不含瞬时实体 | — | 不恢复子弹/区域/地雷/哨兵/蓄能 | 文档已写明；恢复后由技能重建 |
+| 精英单位种类 | 随机 | 固定 gnollberserker | 词缀已生效，单位种类仍固定 |
+| thunder/chain 对无弹体技能 | 原矩阵 Y | 矩阵与白名单均为 N | 见 skill_expansion §7 说明 |
 
-## 三、尚未实现 / 待人工验证
+## 五、尚未完成 / 待真机
 
 | 项 | 状态 | 原因 |
 |---|---|---|
-| 地狱 1.8225 倍经济合理性 | **暂定值** | 需要真机对局数据；已加遥测（波次/进店金币/原价/成交价/购买数/刷新/离店/难度） |
-| 精英词缀的视觉区分度 | 部分（护盾蓝色描边） | 需要真机看是否够显眼 |
-| 普通难度"完全复刻旧版" | **只能证明公式层** | 仓库没有阶段2 的旧行为快照；已如实标注 |
-| 微信真机运行 / 滚动手感 / 特效观感 | 待人工 | 本环境无微信开发者工具与真机 |
-| 结算页无尽徽章文案 | 已接 | 未真机确认排版（宽度 340、11px） |
+| 微信真机续玩（杀进程/切后台） | 待验证 | 本机无微信开发者工具与真机 |
+| 地狱 1.8225 倍经济 | 暂定 | 等真机 `[TELEMETRY]` |
+| 普通难度逐项等于旧版 | 无法证明 | 仓库缺阶段2 行为快照 |
+| 图鉴技能分类筛选 | 未做 | 非本轮范围，验收表已标注 |
+| 文档由代码生成 | 未做 | 非本轮范围 |
+| 历史列表滚动位置记忆 | 已实现（ModalList.offset） | 真机手感未验 |
 
-## 四、验证基线（写任何结论前先跑）
+## 六、验证基线（写任何结论前先跑）
 
     tsc -p tsconfig.check.json         -> 0
     tsc -p tsconfig.ui-check.json      -> 0
-    tsx tests/run.ts                   -> 349 PASS / 0 FAIL
-    cmd /c "build-wechat.bat -nopause" -> success（3.07MB / 10.90MB 级别）
+    tsx tests/run.ts                   -> 404 PASS / 0 FAIL
+    cmd /c "build-wechat.bat -nopause" -> success
 
-> `tsconfig.full-check.json` 是诊断用全量检查（含 Battle/GameRoot/UI），当前有 **14 条历史遗留类型错误**
-> （GameRoot 重复字段、Battle 旧签名等），**不是本轮引入**，未纳入门禁；本轮只把它当"新增错误过滤器"用。
+> `tsconfig.full-check.json` 仍有 13 条历史遗留错误（GameRoot 重复字段、Battle 旧签名等），
+> 不是本轮引入；本轮用它做"新增错误过滤器"，修改前后错误集合一致。

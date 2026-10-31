@@ -20,7 +20,8 @@ import { Assets, makeSolidFrame, shadowFrame, type UnitClips } from '../engine/A
 import { Sfx } from '../engine/Audio';
 import { FrameAnim } from '../engine/FrameAnim';
 import { Camera2D } from '../engine/Camera2D';
-import { RunState } from '../game/RunState';
+import { RunState, type ShopSlot } from '../game/RunState';
+import type { ActiveRunSave, BattleSave, EnemySave } from '../game/RunSave';
 import { calcSkill, type SkillRuntime } from '../game/SkillCalc';
 import { spawnPlan, spawnPointAround, waveScale, rollDamage, playerTakenDamage, aliveCaps } from '../game/Combat';
 import { balance } from '../core/Balance';
@@ -31,7 +32,7 @@ import type { SkillArt } from '../data/Types';
 import { ENEMIES, bossUnitFor } from '../data/Enemies';
 import { baseOf, modEffect } from '../data/Modules';
 import { FxPrefs } from '../game/Prefs';
-import { focusedMods, shatterMul, VOLTLOOP_CHANCE, VOLTLOOP_DMG, VOLTLOOP_CD, lastbreathMul, greedPowerBonus, EMBERSTACK_MUL, THORNCOAT_DMG, THORNCOAT_CD } from '../game/SpecialItems';
+import { focusedMods, shatterMul, VOLTLOOP_CHANCE, VOLTLOOP_DMG, VOLTLOOP_CD, lastbreathCdMul, greedPowerBonus, EMBERSTACK_MUL, THORNCOAT_DMG, THORNCOAT_CD } from '../game/SpecialItems';
 import { MODULE_HOOKS } from '../data/Modules';
 import { difficultyOf, healAmount, healBudget, spawnInterval } from '../data/Difficulties';
 import { BossSummonState } from '../game/BossSummon';
@@ -39,6 +40,7 @@ import type { DifficultyId } from '../data/Difficulties';
 import { DamageContext, DamageSource, SummonKind, makeDamageContext, canVamp, nextCastId, ModuleUsage } from '../game/DamageContext';
 import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, CHARGE_ECHO_MUL, sentryShotPlan, SENTRY_FAN_DMG_MUL, SENTRY_FAN_SPREAD, MINE_SPLIT_MUL } from '../game/SkillRules';
 import { rollEliteAffixes, affixHpMul, affixSpeedMul, affixSplits, AFFIX_SPLIT_COUNT, AFFIX_SPLIT_HP_MUL, AFFIX_SPLIT_SPEED_MUL, type EliteAffix } from '../game/EliteAffix';
+import { killOutcome, vampAllowed } from '../game/CombatRules';
 import { killblastDamage, killblastRadius, shieldAmount, SHIELD_CAP, SHIELD_COOLDOWN, SHIELD_DURATION, executePct, returnstrikePct, overchargePeriod, overchargeMul, lingeringChance, LINGER_TICKS, LINGER_TICK_DMG, LINGER_MAX_ZONES } from '../game/ModuleValues';
 import { CHARS } from '../data/Chars';
 const { ccclass } = _decorator;
@@ -295,6 +297,111 @@ export class Battle extends Component {
     this.running = true;
     this.paused = false;
     await this.startWave(1);
+  }
+
+  /**
+   * 继续游戏：从 ActiveRunSave 恢复战斗。
+   * 恢复范围：角色/属性/构筑/经济/波次/刷怪进度/存活敌人/BOSS 召唤状态/RNG。
+   * **不恢复**：子弹、区域、地雷、哨兵、蓄能（瞬时实体，寿命 <3s，由技能重新生成）。
+   */
+  async resumeRun(save: ActiveRunSave): Promise<void> {
+    if (!this.cam || !this.world) this.buildTree();
+    this.resetRunState();
+    const charDef = CHARS.find(c => c.id === save.charId) ?? CHARS[0];
+    const rs = new RunState(charDef.id, save.seed, save.difficulty);
+    rs.wave = save.wave;
+    rs.endless = save.endless;
+    rs.gold = save.gold; rs.lv = save.lv; rs.exp = save.exp; rs.expNeed = save.expNeed;
+    rs.kills = save.kills; rs.waveKills = save.waveKills; rs.runTime = save.runTime;
+    rs.stats = save.stats; rs.baseStats = save.baseStats;
+    rs.skills = save.skills.map(s => ({ id: s.id, lvl: s.lvl, mods: s.mods.slice() }));
+    rs.modsBag = save.modsBag.slice();
+    rs.items = save.items.map(i => ({ id: i.id }));
+    rs.attrTaken = { ...save.attrTaken };
+    rs.shopReroll = save.shopReroll;
+    rs.shopStock = save.shopStock ? (save.shopStock as unknown as ShopSlot[]).map(s => ({ ...s })) : null;
+    rs.carryOver = (save.carryOver as unknown as ShopSlot[]).map(s => ({ ...s }));
+    rs.legendaryTaken = save.legendaryTaken;
+    rs.rng.restore(save.rngState, save.seed);
+    this.rs = rs;
+    this.difficultyId = save.difficulty;
+
+    this.playerClips = await Assets.loadUnit(charDef.unit);
+    await Assets.loadVfx('pickup/gem');
+    void this.preloadVfx();
+    this.createPlayer(charDef.unit);
+    this.px = save.battle.px; this.py = save.battle.py;
+    this.place(this.playerNode, this.px, this.py);
+
+    for (const es of save.battle.enemies) this.restoreEnemy(es);
+
+    this.waveLeft = save.battle.waveLeft;
+    this.spawnAcc = save.battle.spawnAcc;
+    this.elitesSpawned = save.battle.elitesSpawned;
+    this.bossDefeated = !!save.battle.bossDefeated;
+    this.skillT = save.battle.skillT.slice(0, 4);
+    while (this.skillT.length < 4) this.skillT.push(0);
+
+    const sumCfg = difficultyOf(save.difficulty).rules.find(r => r.kind === 'bossSummon');
+    if (save.battle.bossSummon && sumCfg && sumCfg.kind === 'bossSummon') {
+      this.bossSummon = new BossSummonState(sumCfg);
+      this.bossSummon.restore(save.battle.bossSummon);
+    }
+
+    this.currentCastId = nextCastId();
+    this.modUsage.reset();
+    this.healBudgetSpent = 0; this.healBudgetSec = 0;
+    this.waveEnding = false; this.waveEndT = 0; this.waveEndPending = false;
+    this.inv = 1.2;
+    this.running = true;
+    this.paused = true;          // 由 GameRoot 决定恢复后停在战斗/商店/升级
+  }
+
+  /** 保存当前战斗快照（不保存瞬时弹体） */
+  snapshotBattle(): BattleSave {
+    const enemies: EnemySave[] = [];
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      enemies.push({
+        kind: e.kind, x: e.x, y: e.y, hp: Math.max(0, e.hp), maxhp: e.maxhp,
+        spd: e.spd, dmg: e.dmg, r: e.r, exp: e.exp, gold: e.gold,
+        elite: e.elite, boss: e.boss, summoned: e.summoned, fromSplit: e.fromSplit,
+        affixes: e.affixes ? e.affixes.slice() : undefined,
+        slowPct: e.slowPct, burnT: e.burnT, poisonT: e.poisonT,
+        burnDmg: e.burnDmg, poisonDmg: e.poisonDmg,
+      });
+    }
+    return {
+      waveLeft: this.waveLeft, spawnAcc: this.spawnAcc, elitesSpawned: this.elitesSpawned,
+      px: this.px, py: this.py, skillT: this.skillT.slice(),
+      enemies,
+      bossSummon: this.bossSummon ? this.bossSummon.snapshot() : undefined,
+      bossDefeated: this.bossDefeated,
+    };
+  }
+
+  /** 恢复一只敌人：先用数据表生成，再用快照覆盖绝对数值 */
+  private restoreEnemy(es: EnemySave): void {
+    this.spawnEnemy(es.kind, es.x, es.y);
+    const e = this.enemies[this.enemies.length - 1];
+    if (!e) return;
+    e.hp = Math.max(1, es.hp);
+    e.maxhp = Math.max(1, es.maxhp);
+    e.spd = es.spd; e.dmg = es.dmg; e.r = es.r;
+    e.exp = es.exp; e.gold = es.gold;
+    e.elite = !!es.elite; e.boss = !!es.boss;
+    e.summoned = !!es.summoned; e.fromSplit = !!es.fromSplit;
+    e.affixes = es.affixes as Enemy['affixes'];
+    e.slowPct = es.slowPct ?? e.slowPct;
+    e.burnT = es.burnT ?? 0; e.poisonT = es.poisonT ?? 0;
+    e.burnDmg = es.burnDmg ?? 0; e.poisonDmg = es.poisonDmg ?? 0;
+    e.spawnT = 0;
+    if (e.boss) { this.bossRef = e; this.bossAlive = e; }
+  }
+
+  /** 技能被替换/丢弃后清零该槽位的蓄势计数（M6） */
+  resetCastCount(slot: number): void {
+    delete this.castCount[slot];
   }
 
   /**
@@ -693,6 +800,7 @@ export class Battle extends Component {
     //    startWave 会铺开场怪 → 看起来还在刷。局已结束（running=false）就直接拒绝开波。
     if (!this.running) { console.log('[Battle] 已结束，忽略 startWave(' + n + ')'); return; }
     this.rs.wave = n;
+    this.rs.addMilestone('wave', '进入第 ' + n + ' 波');
     this.waveDmg = 0; this.waveDmgDealt = 0; this.waveAliveMax = 0;
     if (n === 1) this.totalDmg = 0;
     telemetryWaveStart(this.rs.kills);
@@ -730,6 +838,7 @@ export class Battle extends Component {
         1 + 0.35 * Math.floor(n / RUN.bossEvery - 1), bossUnitFor(n));
       this.bossRef = this.enemies[this.enemies.length - 1] ?? null;
       this.bossAlive = this.bossRef;
+      this.rs.addMilestone('boss', 'BOSS 出现（第 ' + n + ' 波）');
       this.shake(SHAKE.boss);
       this.addVfx(FX.killBig, this.px + 150, this.py - 110, 0.9, 2);
     }
@@ -818,11 +927,7 @@ export class Battle extends Component {
     }
     const foc = focusedMods(this.rs.skills.length);
     if (foc.dmg !== 1 || foc.cd !== 1) rt = { ...rt, dmg: rt.dmg * foc.dmg, cd: rt.cd * foc.cd };
-    // 背水：低血攻速提升（用伤害乘区近似，冷却不变）
-    if (this.rs.hasItem('lastbreath')) {
-      const hpPct = this.rs.stats.maxhp > 0 ? this.rs.stats.hp / this.rs.stats.maxhp : 1;
-      rt = { ...rt, dmg: rt.dmg * lastbreathMul(hpPct) };
-    }
+    // 背水：攻速在技能冷却处结算（见 updateSkills），这里不再用伤害乘区近似
     // 贪欲之心：金币换攻击（封顶 +15%）
     if (this.rs.hasItem('greed')) {
       const gb = greedPowerBonus(this.rs.gold);
@@ -1275,7 +1380,7 @@ export class Battle extends Component {
       e.slowPct = slowFor(!!e.boss, rt.slow);   // 普通 35/45/55%，BOSS 封顶 30%
     }
     // 吸血：基础 4%/份（唯一模块可合成，Ⅱ = 1.6 份 → 6.4%，低于两份普通）
-    if (rt.vamp && canVamp(ctx)) this.healPlayer(dmg * 0.02 * rt.vamp);
+    if (rt.vamp && vampAllowed(ctx.source, ctx.summonKind)) this.healPlayer(dmg * 0.02 * rt.vamp);
     if (this.rs.hasItem('voltloop') && this.runTime - this.voltloopAt >= VOLTLOOP_CD && this.rs.rng.chance(VOLTLOOP_CHANCE)) {
       this.voltloopAt = this.runTime;
       this.applyRawDamage(e, dmg * VOLTLOOP_DMG);
@@ -1344,12 +1449,14 @@ export class Battle extends Component {
     e.dead = true; e.deathT = 0;
     // ★ 死亡动画：单位素材每套都有 death 帧（UNIT_FRAMES），以前从来没人播（M30 #2）
     e.anim.playOnce('death');
+    if (e.boss) { this.rs.bossKills++; this.rs.addMilestone('boss', '击败 BOSS（第 ' + this.rs.wave + ' 波）'); }
+    else if (e.elite) this.rs.eliteKills++;
     this.rs.addKill(e.exp, e.gold);            // 击杀数 / 金币：召唤物击杀也计入（设计 §9）
     // 击杀来源上下文：harvest / killblast / 击杀回血属性都以它为准
-    const killCtx = makeDamageContext(src, this.currentCastId, { isBoss: !!e.boss, summonKind });
+    const outcome = killOutcome(src);
     // ★ 击杀回血属性：和 harvest 同一条规则 —— 召唤物击杀不算玩家击杀，不回血
     const kh = this.rs.stats.killHeal ?? 0;
-    if (kh > 0 && killCtx.canHarvest) {
+    if (kh > 0 && outcome.harvestHeal) {
       const before = this.rs.stats.hp;
       this.rs.stats.hp = Math.min(this.rs.stats.maxhp, this.rs.stats.hp + kh);
       const healed = this.rs.stats.hp - before;
@@ -1358,7 +1465,7 @@ export class Battle extends Component {
     // M1 溢出爆裂：只由玩家可直接造成的伤害（可触发模块的来源）击杀触发；
     //   module（爆炸自身）与 summon（召唤物）都不触发，避免连锁与"借召唤物白嫖"。
     const kb = this.modStacks('killblast');
-    if (kb > 0 && killCtx.canTriggerModules) {
+    if (kb > 0 && outcome.killblast) {
       const radius = killblastRadius(kb);
       const dmg = killblastDamage(kb);
       const cand: { e: Enemy; d: number }[] = [];
@@ -1383,7 +1490,7 @@ export class Battle extends Component {
     this.addVfx(FX.killDust, e.x, e.y + 4, 0.55, big ? 2.2 : 1.2);
     if (big) this.addVfx(FX.killRing, e.x, e.y, 0.55, e.boss ? 3.2 : 2.2);
     // 割韭菜：基础 1 点/份（Ⅱ = 1.6 点）；召唤物击杀**不触发**（设计 §9）
-    if (rt && rt.harvest && killCtx.canHarvest) this.healPlayer(rt.harvest);   // 和吸血共享每秒回血预算
+    if (rt && rt.harvest && outcome.harvestHeal) this.healPlayer(rt.harvest);   // 和吸血共享每秒回血预算
     // 裂变词缀：精英死亡分裂出 2 只小怪（小怪不再带词缀，不递归）
     if (!e.boss && !e.fromSplit && affixSplits(e.affixes ?? [])) {
       for (let i = 0; i < AFFIX_SPLIT_COUNT; i++) {
@@ -1547,7 +1654,12 @@ export class Battle extends Component {
       if (this.skillT[i] > 0) continue;
       // 铁拳骑士：受击后 2s 内攻击力 +20%（角色被动，之前只有描述）
       const atkMul = (this.rs.charId === 'knight' && this.hurtBoostT > 0) ? 1.2 : 1;
-      const rt = calcSkill(this.rs.skills[i], this.rs.stats, atkMul);
+      let rt = calcSkill(this.rs.skills[i], this.rs.stats, atkMul);
+      // 背水（设计：生命 <35% 攻速 +35%，>35% -8%）→ 真正作用在冷却上，不再用伤害乘区近似
+      if (this.rs.hasItem('lastbreath')) {
+        const hpPct = this.rs.stats.maxhp > 0 ? this.rs.stats.hp / this.rs.stats.maxhp : 1;
+        rt = { ...rt, cd: rt.cd * lastbreathCdMul(hpPct) };
+      }
       this.skillT[i] = rt.cd;
       this.atkT = 0.3;
       this.fireSkill(i, rt);

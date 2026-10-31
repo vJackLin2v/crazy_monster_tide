@@ -11,7 +11,7 @@
  *  6. 确定性：同 seed 同结果
  *  7. 波次规则：BOSS 波 / 精英波 / 无尽
  */
-import { lastbreathMul, shatterMul, focusedMods, resonatorMul, VOLTLOOP_CHANCE, VOLTLOOP_DMG, VOLTLOOP_CD, greedPowerBonus, FRUGAL_REROLL_MUL, FRUGAL_WAVE_GOLD, THORNCOAT_DMG, THORNCOAT_CD } from '../assets/scripts/game/SpecialItems';
+import { lastbreathMul, lastbreathCdMul, shatterMul, focusedMods, resonatorMul, VOLTLOOP_CHANCE, VOLTLOOP_DMG, VOLTLOOP_CD, greedPowerBonus, FRUGAL_REROLL_MUL, FRUGAL_WAVE_GOLD, THORNCOAT_DMG, THORNCOAT_CD, EMBERSTACK_MUL } from '../assets/scripts/game/SpecialItems';
 import { RunState } from '../assets/scripts/game/RunState';
 import { calcSkill, makeSkill, canInstall, modCount, NEW_SKILL_ALLOW } from '../assets/scripts/game/SkillCalc';
 import { MODULES, MODULE_IDS, MODULE_HOOKS, MODULE_NUMS, modEffect, modPower, TIER2_EFFECT } from '../assets/scripts/data/Modules';
@@ -40,6 +40,10 @@ import { canSourceTriggerModules as canTrigV7, canSourceHarvest, canSourceVamp, 
 import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, sentryShotPlan, SENTRY_BULLET_SPEED, RING_BLADE_MAX } from '../assets/scripts/game/SkillRules';
 import { rollEliteAffixes, affixHpMul, affixSpeedMul, affixSplits, eliteAffixRule, AFFIX_SPLIT_COUNT } from '../assets/scripts/game/EliteAffix';
 import { parseSave, badgesForRun, badgeId, ENDLESS_MILESTONES } from '../assets/scripts/game/Progress';
+import { killOutcome, vampAllowed } from '../assets/scripts/game/CombatRules';
+import { Rng } from '../assets/scripts/core/Rng';
+import { validateActiveRun, continueInfoOf, assertRestorable, newRunId, RUN_SAVE_VERSION, type ActiveRunSave } from '../assets/scripts/game/RunSave';
+import { emptyHistory, addRun, buildSummary, validateHistory, filterRuns, historyStats, hasRun, HISTORY_MAX, type RunSummary, type RunDetail } from '../assets/scripts/game/RunHistory';
 
 let pass = 0, fail = 0;
 const ok = (c: boolean, m: string) => { c ? (pass++, console.log('  PASS ' + m)) : (fail++, console.log('  FAIL ' + m)); };
@@ -1064,6 +1068,210 @@ console.log('\n== 15. 兼容矩阵 × 白名单逐格一致（18 模块 × 4 技
   }
   const totalCells = Object.keys(MATRIX).length * MODULE_IDS.length;
   ok(totalCells === 72, '矩阵覆盖 18 模块 × 4 技能 = 72 格');
+}
+
+console.log('\n== 16. RNG 状态续接 ==');
+{
+  const a = new Rng(123456);
+  a.next(); a.next();
+  const s = a.snapshot();
+  const expected = a.next();
+  const b = new Rng(1);
+  b.restore(s, 1);
+  ok(b.next() === expected, 'RNG 快照恢复后序列与原来一致');
+  b.restore(NaN, 777);
+  ok(b.next() === new Rng(777).next(), '非法状态回落到 fallback seed');
+}
+
+console.log('\n== 17. 本局续玩存档（ActiveRunSave） ==');
+{
+  const stats = freshStats(CHARS[0]);
+  function makeSave(): ActiveRunSave {
+    return {
+      v: RUN_SAVE_VERSION,
+      runId: 'r-test-1',
+      startedAt: 1000,
+      savedAt: 2000,
+      charId: 'knight',
+      difficulty: 'hard',
+      seed: 42,
+      rngState: 99,
+      phase: 'battle',
+      wave: 12,
+      endless: false,
+      gold: 120, lv: 8, exp: 4, expNeed: 30,
+      kills: 88, waveKills: 7, runTime: 516,
+      stats, baseStats: { ...stats },
+      skills: [{ id: 'ring_blade', lvl: 3, mods: ['orbit', 'giant'] }],
+      modsBag: ['burn'],
+      items: [{ id: 'power_s' }, { id: 'power_s' }],
+      attrTaken: { power: 2 },
+      shopReroll: 1,
+      shopStock: null,
+      carryOver: [],
+      legendaryTaken: false,
+      battle: {
+        waveLeft: 18.5, spawnAcc: 0.3, elitesSpawned: 1,
+        px: 180, py: 240, skillT: [0.5, 0, 0, 0],
+        enemies: [{ kind: 'goblin', x: 100, y: 120, hp: 12, maxhp: 20, spd: 60, dmg: 5, r: 8, exp: 1, gold: 2, elite: false, boss: false }],
+        bossDefeated: false,
+      },
+    };
+  }
+
+  const original = makeSave();
+  const round = validateActiveRun(JSON.parse(JSON.stringify(original)));
+  ok(round.status === 'ok', '存档 JSON 序列化 → 校验通过');
+  if (round.status === 'ok') {
+    const s = round.save;
+    ok(s.wave === 12 && s.gold === 120 && s.kills === 88, '基础进度字段还原正确');
+    ok(s.skills[0].id === 'ring_blade' && s.skills[0].mods.length === 2, '技能构筑（含黑科技）还原');
+    ok(s.items.length === 2 && s.battle.enemies.length === 1, '道具与敌人快照还原');
+    ok(Math.abs(s.stats.hp - original.stats.hp) < 1e-9, '角色属性还原');
+    ok(continueInfoOf(s, id => id).wave === 12 && continueInfoOf(s, id => id).skillNames[0] === 'ring_blade',
+      '继续卡片摘要（波次/技能）正确');
+    ok(assertRestorable(s).length === 0, '合法存档可恢复');
+  }
+
+  ok(validateActiveRun(null).status === 'none', '没有存档 → none');
+  ok(validateActiveRun({ v: RUN_SAVE_VERSION, charId: 'knight' }).status === 'corrupt', '缺字段 → corrupt');
+  const noBattle = makeSave() as unknown as Record<string, unknown>;
+  delete noBattle.battle;
+  ok(validateActiveRun(noBattle).status === 'corrupt', '缺战斗快照 → corrupt');
+  const noSkills = makeSave() as unknown as Record<string, unknown>;
+  noSkills.skills = [];
+  ok(validateActiveRun(noSkills).status === 'corrupt', '没有技能 → corrupt');
+  const future = makeSave() as unknown as Record<string, unknown>;
+  future.v = RUN_SAVE_VERSION + 1;
+  ok(validateActiveRun(future).status === 'version', '更高版本存档 → version');
+  const old = makeSave() as unknown as Record<string, unknown>;
+  old.v = 0;
+  ok(validateActiveRun(old).status === 'version', '旧版本存档 → version');
+
+  const bad = makeSave();
+  bad.stats.hp = 0;
+  ok(assertRestorable(bad).length > 0, '生命值非法时拒绝恢复');
+  ok(newRunId(1, 0.5) !== newRunId(2, 0.5) && newRunId(1, 0.5).startsWith('r'), '不同时间生成的 runId 不重复');
+}
+
+console.log('\n== 18. 历史对局（摘要 / 详情 / 容量 / 幂等） ==');
+{
+  const mk = (i: number, result: RunSummary['result'] = 'defeat'): RunSummary => buildSummary({
+    runId: 'run-' + i,
+    startedAt: i * 1000,
+    endedAt: i * 1000 + 500,
+    characterId: 'knight',
+    difficulty: 'normal',
+    result,
+    reachedWave: i,
+    totalWaves: 20,
+    durationSeconds: i * 10,
+    killCount: i * 3,
+    eliteKillCount: 0,
+    bossKillCount: 0,
+    goldEarned: i * 5,
+    goldSpent: 0,
+    endlessMode: i > 20,
+    finalSkillIds: ['blade'],
+    finalItemIds: ['power_s'],
+    badges: [],
+  });
+  const mkDetail = (id: string): RunDetail => ({
+    runId: id, skills: [{ id: 'blade', lvl: 2, mods: ['multi'] }],
+    items: [{ id: 'power_s', count: 2 }], stats: { hp: 10, maxhp: 72 },
+    milestones: [{ wave: 1, at: 3, kind: 'wave', text: '进入第 1 波' }],
+    endReason: '生命归零，被怪潮击败',
+  });
+
+  let h = emptyHistory();
+  const one = addRun(h, mk(30, 'victory'), mkDetail('run-30'));
+  ok(one.added && one.data.summaries.length === 1, '结束一局 → 写入历史');
+  h = one.data;
+  const dup = addRun(h, mk(30, 'victory'), mkDetail('run-30'));
+  ok(!dup.added && dup.data.summaries.length === 1, '同一 runId 重复结算 → 不重复记录');
+  ok(hasRun(h, 'run-30'), 'hasRun 能命中已记录 runId');
+
+  for (let i = 1; i <= 55; i++) {
+    const r = addRun(h, mk(i), mkDetail('run-' + i));
+    h = r.data;
+  }
+  ok(h.summaries.length === HISTORY_MAX, '历史容量上限 50 生效');
+  ok(Object.keys(h.details).length === HISTORY_MAX, '详情随摘要一起裁剪');
+  ok(h.summaries[0].runId === 'run-55', '列表按结束时间倒序（最新在最前）');
+  ok(!h.details['run-1'], '被裁掉的最旧局详情已删除');
+  ok(!!h.details['run-30'], '较新的详情保留');
+
+  const all = filterRuns(h.summaries, 'all');
+  const wins = filterRuns(h.summaries, 'win');
+  const loses = filterRuns(h.summaries, 'lose');
+  const endless = filterRuns(h.summaries, 'endless');
+  ok(all.length === h.summaries.length, '筛选：全部');
+  ok(wins.every(s => s.result === 'victory'), '筛选：胜利');
+  ok(loses.every(s => s.result === 'defeat' || s.result === 'abandoned'), '筛选：失败/放弃');
+  ok(endless.every(s => s.endlessMode), '筛选：无尽');
+
+  const st = historyStats(h.summaries);
+  ok(st.total === HISTORY_MAX && st.wins >= 1, '总览统计：总对局 / 胜利数');
+  ok(st.bestWave === 55, '总览统计：最远波次');
+  ok(st.longestSeconds >= 500, '总览统计：最长存活');
+
+  const bad = validateHistory({ v: 1, summaries: [{ runId: '', result: 'nope' }, mk(3)], details: {} });
+  ok(bad.summaries.length === 1 && bad.summaries[0].runId === 'run-3', '坏记录被过滤，合法记录保留');
+  ok(validateHistory({ v: 99 }).summaries.length === 0, '版本不符 → 重建空历史');
+  ok(validateHistory('oops').summaries.length === 0, '垃圾数据 → 空历史，不抛异常');
+}
+
+console.log('\n== 19. BOSS 召唤状态机快照 ==');
+{
+  const cfg = { thresholds: [70, 35], count: 3, maxAlive: 6, minIntervalSec: 12, warnSec: 1.2 };
+  const a = new BossSummonState(cfg);
+  a.update(70, 1, 0);
+  const snap = a.snapshot();
+  const b = new BossSummonState(cfg);
+  b.restore(snap);
+  ok(b.pending === a.pending && b.isWarning === a.isWarning, '恢复请求数与预警状态');
+  ok(b.update(35, 2.3, 0) === 3, '恢复后预警照常结算（3 只）');
+  ok(a.update(35, 2.3, 0) === 3, '原状态机给出同样结果');
+  ok(b.update(35, 3, 0) === 0, '恢复后冷却状态一致（12s 内不再召唤）');
+}
+
+
+console.log('\n== 20. 遗留偏差：背水 / 余烬刻印 ==');
+{
+  // 背水：设计是"攻速 +35%"，本轮已落到技能冷却（不再用伤害乘区近似）
+  ok(Math.abs(lastbreathCdMul(0.20) - (1 / 1.35)) < 1e-9, '背水低血：冷却倍率 = 1/1.35（攻速 +35%）');
+  ok(Math.abs(lastbreathCdMul(0.80) - (1 / 0.92)) < 1e-9, '背水高血：冷却倍率 = 1/0.92（攻速 -8%）');
+  ok(lastbreathCdMul(0.20) < 1 && lastbreathCdMul(0.80) > 1, '背水方向正确：低血更快、高血更慢');
+
+  // 余烬刻印：保留简化实现（灼烧目标 +25%），设计文档与决策表已同步标注偏差
+  ok(Math.abs(EMBERSTACK_MUL - 0.25) < 1e-9, '余烬刻印：+25%（简化版，非叠层；文档已标注）');
+}
+
+
+console.log('\n== 21. 战斗链路规则（Battle 实际调用的同一份函数） ==');
+{
+  const normal = killOutcome('normal');
+  ok(normal.countKill && normal.harvestHeal && normal.killblast, '普通击杀：计击杀 / 可 harvest / 可引爆 M1');
+
+  const sentry = killOutcome('summon');
+  ok(sentry.countKill, '哨兵击杀：计入总击杀数');
+  ok(!sentry.harvestHeal, '哨兵击杀：不触发 Harvest');
+  ok(!sentry.killblast, '哨兵击杀：不引爆 M1');
+
+  const moduleKill = killOutcome('module');
+  ok(moduleKill.harvestHeal && !moduleKill.killblast, 'module 击杀：可回血但不递归引爆');
+
+  const echoKill = killOutcome('echo');
+  ok(echoKill.harvestHeal && echoKill.killblast, 'echo 击杀：仍算玩家伤害，可 harvest / 引爆');
+
+  ok(vampAllowed('normal') && vampAllowed('split') && vampAllowed('echo') && vampAllowed('chain'), '普通/分裂/echo/chain 命中可吸血');
+  ok(!vampAllowed('module'), 'module 命中不吸血');
+  ok(vampAllowed('summon', 'sentry'), '哨兵命中可吸血');
+  ok(!vampAllowed('summon'), '普通召唤物命中和其它召唤物一样不吸血');
+
+  // 地雷 / echo 的递归次数由 SkillRules 限定（同一份函数 Battle 在用）
+  ok(mineSplitCount(3) === 4 && mineSplitCount(0) === 0, '地雷 split 有上限，不会无限分裂');
+  ok(mineEchoRepeats(3) === 1 && chargeEchoRepeats(3) === 1, 'echo 最多复制/重放 1 次，不会递归');
 }
 console.log('\n================ 结果 ================');
 console.log(`PASS ${pass} / FAIL ${fail}`);
