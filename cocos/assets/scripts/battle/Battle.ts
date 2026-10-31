@@ -2656,9 +2656,9 @@ export class Battle extends Component {
 
   private onLevelUp(_ups: number) {
     Sfx.sfx('levelUp', 0.6, 300);
-    // 升级三选一期间**不暂停**：血条/经验/击杀/倒计时继续计算（用户明确要求）
+    // 升级三选一期间暂停（正确行为）；关键是选完后必须恢复，见 resumeFromModal
     this.pendingUps = _ups;
-    this.paused = false;
+    this.paused = true;
     this.hooks.onLevelUp?.(this.rs.rollRewards());
   }
 

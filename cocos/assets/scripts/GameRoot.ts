@@ -697,6 +697,7 @@ export class GameRoot extends Component {
       // ★ 防御：任何界面构建失败都不能把游戏留在「暂停 + 没弹窗」的状态（= 看起来卡死）
       console.error('[UI] 升级面板构建失败，自动跳过本次升级', e);
       this.closeModal();
+      this.phase = 'battle';
       this.battle.resumeFromModal();
     }
   }
@@ -808,7 +809,12 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
     if (this.installReturn === 'pause') this.showPause();
     else if (this.installReturn === 'shop') this.renderShop();
     else if (this.installReturn === 'nextwave') { this.phase = 'battle'; this.battle.advanceWave(); }
-    else this.battle.resumeFromModal();
+    else {
+      // ⚠️ 从升级三选一进来的安装屏：选完必须把 phase 从 'levelup' 改回 'battle'，
+      //    否则战斗虽然 resume 了，暂停键仍判定为不可用、玩家会以为还在暂停态。
+      this.phase = 'battle';
+      this.battle.resumeFromModal();
+    }
   }
 
   /** 选中背包里的第 i 份（同名模块各自独立） */
@@ -1593,6 +1599,13 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
     if (this.hud && this.battle.rs
       && (this.phase === 'battle' || this.phase === 'levelup' || this.phase === 'shop')) {
       try { this.syncHud(); } catch (e) { this.hudError(e); }
+    }
+    // 升级三选一的兜底：phase 还停在 levelup 但弹窗已经没了 → 说明某个选卡分支
+    // 忘了恢复，直接把状态和暂停一起解除（否则暂停键失效、玩家以为卡死）。
+    if (this.phase === 'levelup' && !this.curModal && this.battle && this.battle.paused) {
+      console.warn('[Recover] 升级弹窗已关闭但仍处于暂停，自动恢复战斗');
+      this.phase = 'battle';
+      this.battle.paused = false;
     }
     this.watchdog(_dt);
   }
