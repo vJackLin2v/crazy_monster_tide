@@ -776,6 +776,8 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         for (const it of rs.items) counts.set(it.id, (counts.get(it.id) ?? 0) + 1);
         return Array.from(counts.entries()).map(([id, count]) => ({
           name: ITEMS[id] ? ITEMS[id].name : id, icon: ITEM_ICON[id], count,
+          // 商店里点道具要能看说明：数值能算就显示数值，算不出就退回描述
+          desc: ITEMS[id] ? (itemNumbers(ITEMS[id], id) || ITEMS[id].desc) : '',
         }));
       })());
   }

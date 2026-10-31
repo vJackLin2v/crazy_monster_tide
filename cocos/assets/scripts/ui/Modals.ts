@@ -254,7 +254,7 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
 
   // ── 已有道具：先算它的位置（贴底），货架的高度再按剩余空间自适应 ──
   const btnY = -VH / 2 + B + 25;
-  const CELL = 40, CGAP = 8, COLS = 8, MAXR = 3;
+  const CELL = 40, CGAP = 8, COLS = 7, MAXR = 3;   // 7 列才装得进 336（8 列会溢出被裁）
   const shown = owned.slice(0, COLS * MAXR);
   const nRows = Math.max(1, Math.ceil(shown.length / COLS));
   const gridBottom = VH - B - 58 - 18;       // 按钮顶边再往上让 18（一排道具都不许压到按钮）
@@ -367,6 +367,15 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
       } else {
         text(box, 0, 1, '◆', { size: 14, color: COL.cream, width: CELL, outline: false });
       }
+      // 点击查看详情（用户要求：道具能点开看说明）
+      onTap(box, () => {
+        const pop = panel(root, 0, 0, 300, 150, { art: 'panel' });
+        text(pop, 0, 52, it.name + (it.count && it.count > 1 ? (' ×' + it.count) : ''), { size: 15, color: COL.accent, width: 280, bold: true, outline: true });
+        text(pop, 0, 6, it.desc ?? '（暂无说明）', { size: 11, color: COL.cream, width: 270, align: 'left' });
+        const close = button(pop, 0, -54, 120, 34, '关闭', { size: 12 });
+        onTap(close.node, () => pop.destroy());
+        onTap(pop, () => pop.destroy());
+      });
     });
     if (owned.length > COLS * MAXR) {
       text(root, A(12, gridTop - 12).x, A(12, gridTop - 12).y, '… 还有 ' + (owned.length - COLS * MAXR) + ' 件',

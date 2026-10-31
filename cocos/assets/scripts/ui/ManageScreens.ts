@@ -142,12 +142,11 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
   // 背包紧跟"最后一行技能"，技能不满 4 个时不会在中间留一个大洞
   const usedRows = Math.max(1, Math.min(4, d.skills.length));
   const bagTitleY = rowsTop - usedRows * ROW_H - (usedRows - 1) * ROW_GAP - (compact ? 16 : 20);
-  const moreTxt = d.bag.length > (compact ? 3 : 6) ? '（还有 ' + (d.bag.length - (compact ? 3 : 6)) + ' 个）' : '';
-  text(box, -158, bagTitleY, '背包里的黑科技' + moreTxt,
+  text(box, -158, bagTitleY, '背包里的黑科技 ' + d.bag.length,
     { size: 13, color: COL.accent, align: 'left', width: 300, bold: true, outline: true });
   // 背包格：视觉 40 高、行距 46 —— 保证 100×44 的热区上下不相交（P1-B）
-  const BW = 100, BHH = 40, BGAP = 6, BCOLS = 3;
-  const BAG_MAX = compact ? 3 : 6;              // 矮屏只放一排
+  const BW = 100, BHH = 34, BGAP = 6, BCOLS = 3;
+  const BAG_MAX = 9;                            // 全部展示（最多 3 行）
   const bagTop = bagTitleY - 12;
   if (!d.bag.length) {
     text(box, -158, bagTop - 14, '（空：黑科技都装在技能上了，或还没获得）',
@@ -166,13 +165,16 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
       onTap(bagHit, () => cb.onSelectBag(on ? null : i));
     });
   }
-  const bagRows = d.bag.length ? Math.min(compact ? 1 : 2, Math.ceil(Math.min(d.bag.length, BAG_MAX) / BCOLS)) : 1;
+  const bagRows = d.bag.length ? Math.ceil(Math.min(d.bag.length, BAG_MAX) / BCOLS) : 1;
   const bagBottom = bagTop - bagRows * (BHH + BGAP) + 4;
 
   // ── 合成区 ──
   const mergeTitleY = bagBottom - 12;
-  text(box, -158, mergeTitleY, '合成区（3 个同名 → 1 个更强版）',
-    { size: 11, color: COL.accent, align: 'left', width: 316, bold: true, outline: true });
+  const canMerge = d.merges.some(m => m.count >= 3);
+  if (canMerge) {
+    text(box, -158, mergeTitleY, '合成区（3 个同名 → 1 个更强版）',
+      { size: 11, color: COL.accent, align: 'left', width: 316, bold: true, outline: true });
+  }
   const descY = -PH / 2 + (d.pickedDesc ? 104 : 66);
   const mergeTop = mergeTitleY - 12;
   // 行距必须 > 44：热区要 44 高，行距不够相邻热区就会相交（P1-B）
@@ -183,9 +185,8 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
     .filter(m => m.count > 0)
     .sort((a, b) => b.count - a.count)
     .slice(0, maxRows);
-  if (!cands.length) {
-    text(box, -158, mergeTop - 14, '（同名黑科技凑满 3 个才能合成）',
-      { size: 11, color: COL.dim, align: 'left', width: 316 });
+  if (!cands.length || !canMerge) {
+    // 没有可合成项：整块不显示
   } else {
     cands.forEach((m, i) => {
       const cy = mergeTop - 20 - i * MERGE_PITCH;
