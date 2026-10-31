@@ -496,7 +496,8 @@ export class RunState {
   }
 
   rerollCost(): number {
-    const base = (balance().shop.rerollBase + this.shopReroll) * difficultyOf(this.difficulty).rerollCostMul;
+    // 刷新费用增长：基础 + 次数 ×3（原来每刷一次只 +1，后期金币溢出时几乎无成本）
+    const base = (balance().shop.rerollBase + this.shopReroll * 3) * difficultyOf(this.difficulty).rerollCostMul;
     return Math.round(this.hasItem('frugal') ? base * 0.5 : base);
   }
 

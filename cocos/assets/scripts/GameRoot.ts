@@ -27,6 +27,7 @@ import { nextDifficulty, difficultyOf } from './data/Difficulties';
 import type { DifficultyId } from './data/Difficulties';
 import { buildCodex, buildAchievements } from './ui/CodexScreens';
 import { applyFxPrefs } from './game/Prefs';
+import { BUILD_TAG } from './core/BuildTag';
 import { migrateDifficulty, badgesForRun } from './game/Progress';
 import { setupUpdate, updateState, applyUpdate } from './game/Update';
 import { loadSave, writeSave } from './engine/Save';
@@ -300,7 +301,7 @@ export class GameRoot extends Component {
     // 每次回菜单都重新探测活动存档（可能在暂停面板里刚存过）
     this.activeCheck = loadActiveRun();
     const cdef = CHARS.find(c => c.id === this.charId) ?? CHARS[0];
-    const vm: MenuView = { saveState: 'none' };
+    const vm: MenuView = { saveState: 'none', version: BUILD_TAG };
     if (this.activeCheck.status === 'ok') {
       const save = this.activeCheck.save;
       const info = continueInfoOf(save, id => this.skillName(id));
@@ -326,6 +327,7 @@ export class GameRoot extends Component {
       onCodex: () => { logEvent('page_view', { page: 'codex' }); this.showCodex(); },
       onAchievements: () => { logEvent('page_view', { page: 'achievements' }); this.showAchievements(); },
       onSettings: () => { logEvent('page_view', { page: 'settings' }); this.showSettings(); },
+      onHowto: () => { logEvent('page_view', { page: 'howto' }); this.showHowto(); },
       onDiscardSave: () => {
         logEvent('save_discard');
         clearActiveRun();
@@ -1245,10 +1247,19 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
   /** 真机/网页一键复制本局日志（含每波统计），方便回传分析 */
   private copyRunLogs(): void {
     const data = exportLogs();
-    const wxAny = (globalThis as unknown as { wx?: { setClipboardData?: (o: { data: string }) => void } }).wx;
+    const wxAny = (globalThis as unknown as {
+      wx?: { setClipboardData?: (o: { data: string; success?: () => void; fail?: (e: unknown) => void }) => void };
+    }).wx;
     if (wxAny && wxAny.setClipboardData) {
-      wxAny.setClipboardData({ data });
-      console.log('[日志] 已写入剪贴板，共 ' + data.length + ' 字符');
+      // 微信隐私协议未声明剪贴板时 setClipboardData 会失败：不能让异常冒到控制台
+      wxAny.setClipboardData({
+        data,
+        success: () => console.log('[日志] 已写入剪贴板，共 ' + data.length + ' 字符'),
+        fail: (e) => {
+          console.warn('[日志] 剪贴板不可用（隐私协议未声明），改为输出到控制台', e);
+          console.log(data);
+        },
+      });
       return;
     }
     const nav = (globalThis as unknown as { navigator?: { clipboard?: { writeText: (t: string) => Promise<void> } } }).navigator;
@@ -1389,7 +1400,6 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
           const sub = '    ' + '伤害 ' + Math.round(rt.dmg) + '   冷却 ' + rt.cd.toFixed(2) + 's';
           return [head, sub];
         }) },
-      { tab: '黑科技', lines: rs.modsBag.length ? rs.modsBag.map(m => { const d = moduleDef(m); return '· ' + (d ? d.name : m) + '：' + (d ? d.desc : ''); }) : ['（背包为空）'] },
       { tab: '道具', lines: rs.items.length ? rs.items.map(i => '· ' + (ITEMS[i.id] ? ITEMS[i.id].name : i.id) + '：' + (ITEMS[i.id] ? ITEMS[i.id].desc : '')) : ['（没有道具）'] },
       // 属性页签：不再拼字符串，改由抽屉渲染「2 列对齐网格」（图标 + 名称 + 数值，正绿负红）。
       //   数据从 ATTRS 表自动生成，加属性不会漏显示。
@@ -1441,7 +1451,10 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         desc: def ? def.desc : '—',
         mods: s.mods.map(m => {
           const d = moduleDef(m);
-          return { id: m, name: d ? d.name : m, desc: d ? d.desc : '' };
+          return {
+            id: m, name: d ? d.name : m, desc: d ? d.desc : '',
+            nums: MODULE_NUMS[baseOf(m)] ?? '',
+          };
         }),
       };
     });
@@ -1493,7 +1506,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       () => { this.showInstall('pause'); },
       this.battle.rs.modsBag.length,
       {
-        index: 3, rows: attrRows,
+        index: 2, rows: attrRows,
         more: (hiddenAttrs > 0 || this.attrShowAll)
           ? {
             label: this.attrShowAll
@@ -1506,9 +1519,9 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       rs.wave,
       skillDetails,
       itemDetails,
-      this.pauseTab,
+      Math.min(this.pauseTab, 2),
       (i) => { this.pauseTab = i; },
-      modDetails,
+      undefined,
       (si) => this.askDropSkill(si));
   }
 
@@ -1568,7 +1581,8 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       this.battle.inputX = this.joy.outX;
       this.battle.inputY = this.joy.outY;
     }
-    if (this.hud && this.battle.rs && this.phase === 'battle') {
+    if (this.hud && this.battle.rs
+      && (this.phase === 'battle' || this.phase === 'levelup' || this.phase === 'shop')) {
       try { this.syncHud(); } catch (e) { this.hudError(e); }
     }
     this.watchdog(_dt);

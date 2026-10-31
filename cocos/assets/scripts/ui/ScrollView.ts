@@ -118,6 +118,12 @@ export interface ScrollHandle {
   contentH: number;
   /** 主动释放：从全局列表移除并销毁视图（切换页签/关闭抽屉时调用） */
   dispose(): void;
+  /** 当前滚动偏移（0 = 顶部） */
+  offset(): number;
+  /** 是否正在拖动 */
+  isDragging(): boolean;
+  /** 设置滚动偏移（会夹到合法范围） */
+  setOffset(v: number): void;
 }
 
 export function makeScroll(parent: Node, cx: number, cy: number, w: number, h: number, contentH: number, onScroll?: (off: number) => void): ScrollHandle {
@@ -164,7 +170,12 @@ export function makeScroll(parent: Node, cx: number, cy: number, w: number, h: n
     a.flingV = 0;
     if (view.isValid) view.destroy();
   };
-  return { view, content, contentH: a.contentH, dispose };
+  return {
+    view, content, contentH: a.contentH, dispose,
+    offset: () => a.off,
+    isDragging: () => a.dragging,
+    setOffset: (v: number) => { a.off = clampOff(a, v); a.flingV = 0; apply(a); },
+  };
 }
 
 /** 回到顶部（切换页签时用） */

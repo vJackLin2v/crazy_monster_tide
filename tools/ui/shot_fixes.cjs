@@ -1,0 +1,36 @@
+const path = require('path');
+const { chromium } = require('H:/AI-game/xingnang/cocos_port/node_modules/playwright-core');
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const OUT = 'H:/AI-game/crazy_monster_tide/deliverables/fix2_2026-10-31/screenshots';
+(async () => {
+  const browser = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true });
+  const ctx = await browser.newContext({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 2 });
+  const page = await ctx.newPage();
+  const errs = [];
+  page.on('pageerror', e => errs.push(e.message.slice(0, 120)));
+  await page.goto('http://127.0.0.1:8123/', { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('canvas'); await sleep(9000);
+  await page.evaluate(() => localStorage.clear());
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('canvas'); await sleep(9000);
+  await page.evaluate(() => {
+    const cc = window.cc, sc = cc.director.getScene();
+    const find = (n, p, d = 0) => { if (d > 30 || !n) return null; if (p(n)) return n; for (const c of n.children) { const t = find(c, p, d + 1); if (t) return t; } return null; };
+    window.__G = find(sc, x => x.getComponent && x.getComponent('GameRoot')).getComponent('GameRoot');
+  });
+  const shot = (n) => page.locator('canvas').screenshot({ path: path.join(OUT, n) });
+  await shot('menu_no_save.png');
+  await page.evaluate(async () => { const g = window.__G; g.charId = 'knight'; await g.startBattle(); g.battle.rs.stats.hp = 45; g.battle.paused = true; g.saveActiveRunNow(); g.showMenu(); });
+  await sleep(1200); await shot('menu_has_save.png');
+  await page.evaluate(() => window.__G.showSettings()); await sleep(900); await shot('settings.png');
+  await page.evaluate(() => { window.__G.closeModal(); }); await sleep(400);
+  await page.evaluate(async () => { const g = window.__G; await g.startBattle(); g.battle.rs.modsBag.push('burn','frost'); g.showInstall('pause'); g.selectBag(0); g.renderInstall(); });
+  await sleep(1000); await shot('install.png');
+  await page.evaluate(() => { window.__G.closeModal(); window.__G.battle.paused = true; window.__G.showShop(); });
+  await sleep(1000); await shot('shop.png');
+  await page.evaluate(() => { window.__G.closeModal(); window.__G.battle.paused = false; window.__G.showResult(false); });
+  await sleep(1200); await shot('result.png');
+  await page.evaluate(() => { window.__G.showPause(); }); await sleep(900); await shot('drawer.png');
+  console.log('errors=' + (errs.join(' | ') || 'none'));
+  await browser.close();
+})().catch(e => { console.log('FAIL', e.stack || e.message); process.exit(1); });

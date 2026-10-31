@@ -9,7 +9,7 @@ export const SKILLS: Record<string, SkillDef> = {
                 desc: '在脚下埋雷，敌人踩到才引爆；同屏最多 4 枚。' },
   sentry:     { name: '哨戒哨兵', icon: 'skill-arcane_missile.png', type: 'summon', tags: ['arcane','summon','projectile'], cd: 1.2, dmg: 6, spd: 0, color: '#8C63CF', size: 8,
                 desc: '放一个哨兵自动射击，同时只能有一个。' },
-  charge_pulse: { name: '蓄能脉冲', icon: 'skill-thunder_beam.png', type: 'charge', tags: ['lightning','charge','burst'], cd: 4.0, dmg: 26, spd: 0, color: '#9BE7FF', size: 90,
+  charge_pulse: { name: '蓄能脉冲', icon: 'skill-thunder_beam.png', type: 'charge', tags: ['lightning','charge','pulse','burst'], cd: 4.0, dmg: 26, spd: 0, color: '#9BE7FF', size: 90,
                 desc: '蓄力后对锁定目标爆发，附带小范围溅射。' },
   fireball:    { name: '火球',     icon: 'skill-fireball.png',        type: 'projectile', tags: ['fire','projectile'],              cd: 0.85, dmg: 12, spd: 190, color: '#FFA84B', size: 5,
                  desc: '向最近的敌人扔出火球，命中时炸开一团火。' },

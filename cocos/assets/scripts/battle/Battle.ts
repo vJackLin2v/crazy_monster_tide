@@ -78,6 +78,8 @@ function compact<T>(arr: T[], keep: (x: T) => boolean): void {
 interface Enemy {
   /** 身体 Sprite（C2：spawn 时缓存，避免每帧 getChildByName） */
   bodySp?: Sprite | null;
+  /** 远程/弹幕冷却（秒） */
+  shotT?: number;
   /** 是否为 BOSS 召唤出来的小怪（噩梦难度） */
   summoned?: boolean;
   /** BOSS 是否已进入狂怒（地狱） */
@@ -267,6 +269,10 @@ export class Battle extends Component {
   private bossRef: Enemy | null = null;
   /** 噩梦 BOSS 召唤状态机 */
   private bossSummon: BossSummonState | null = null;
+  /** 敌方弹幕（红球，和玩家弹体区分开） */
+  private enemyBullets: { node: Node; x: number; y: number; vx: number; vy: number; dmg: number; life: number }[] = [];
+  /** 蓄能脉冲的蓄力指示圈（按技能槽） */
+  private chargeFx: Record<number, Node> = {};
   /** 环刃状态（按技能槽） */
   private orbits: Record<number, { n: number; radius: number; dmg: number; rot: number; tick: number; rt: SkillRuntime }> = {};
   /** 地雷（同屏上限 4） */
@@ -318,6 +324,8 @@ export class Battle extends Component {
     this.resetRunState();
     const charDef = CHARS.find(c => c.id === charId) ?? CHARS[0];
     this.rs = new RunState(charDef.id, seed, this.difficultyId);
+    // 难度「初始生命」倍率（此前配置存在但从未应用）
+    this.rs.stats.hp = Math.max(1, Math.round(this.rs.stats.maxhp * difficultyOf(this.rs.difficulty).startHpMul));
     // 预载：玩家单位 + 初始技能的投射物/命中特效
     this.playerClips = await Assets.loadUnit(charDef.unit);
     // 经验球素材（5 帧，很小）：开局就同步载入，保证第一只怪掉球时就能看见
@@ -479,6 +487,8 @@ export class Battle extends Component {
     this.bolts = [];
     for (const m of this.meteors) kill(m.node);
     this.meteors = [];
+    for (const b of this.enemyBullets) kill(b.node);
+    this.enemyBullets = [];
     this.echoQueue = [];
 
     this.waveLeft = 0; this.elitesSpawned = 0; this.spawnAcc = 0;
@@ -875,11 +885,31 @@ export class Battle extends Component {
     for (const k of keys) await Assets.loadVfx(k);
   }
 
+  /** 新一波开始：清掉上一波残留的子弹/区域/特效，避免"技能特效跟着进下一波" */
+  private clearWaveLeftovers(): void {
+    for (const f of this.fx) if (f.node && f.node.isValid) f.node.destroy();
+    this.fx = [];
+    for (const a of this.areas) if (a.node && a.node.isValid) a.node.destroy();
+    this.areas = [];
+    for (const b of this.bullets) if (b.node && b.node.isValid) b.node.destroy();
+    this.bullets = [];
+    for (const m of this.meteors) if (m.node && m.node.isValid) m.node.destroy();
+    this.meteors = [];
+    for (const bo of this.bolts) if (bo.node && bo.node.isValid) bo.node.destroy();
+    this.bolts = [];
+    for (const b of this.enemyBullets) if (b.node && b.node.isValid) b.node.destroy();
+    this.enemyBullets = [];
+    this.echoQueue = [];
+  }
+
   private async startWave(n: number) {
     // ⚠️ 用户反馈"一局结束还会刷怪"：result 之后仍有排队中的 finishWave/advanceWave 走到这里，
     //    startWave 会铺开场怪 → 看起来还在刷。局已结束（running=false）就直接拒绝开波。
     if (!this.running) { console.log('[Battle] 已结束，忽略 startWave(' + n + ')'); return; }
     this.rs.wave = n;
+    // 每波开始回满血（第 1 波保留难度初始生命倍率；从第 2 波起满血进场）
+    if (n > 1) this.rs.stats.hp = this.rs.stats.maxhp;
+    this.clearWaveLeftovers();
     this.rs.addMilestone('wave', '进入第 ' + n + ' 波');
     this.waveDmg = 0; this.waveDmgDealt = 0; this.waveAliveMax = 0;
     if (n === 1) this.totalDmg = 0;
@@ -968,7 +998,7 @@ export class Battle extends Component {
     //   改成"同帧放大 + 染色 + 半透明"的两层光晕垫在身体后面 —— 就是《吞噬守卫》里稀有度角色的做法。
     if (e.elite) {
       // 用户 2026-10-30：之前 alpha 235/120 太实，三层同帧叠在一起像"三只怪"
-      this.setBodyGlow(node, new Color(120, 255, 140), 90, new Color(52, 210, 90), 52);
+      this.setBodyGlow(node, new Color(120, 255, 140), 145, new Color(52, 210, 90), 85);
       const ol = (node as unknown as { _outline?: Sprite })._outline;
       if (ol) ol.color = new Color(88, 232, 120, 255);     // 描边染绿 = 清晰的绿色轮廓
     }
@@ -1108,6 +1138,18 @@ export class Battle extends Component {
     } else if (def.type === 'charge') {
       // 蓄能脉冲：进入蓄力（无目标也允许，结算时空放返还冷却）
       this.charges[slot] = { t: 0, dmg: rt.dmg, r: Math.max(60, rt.size), rt };
+      // 蓄力指示：青色收缩圈，3 秒内收拢 → 让玩家看出"正在蓄能"
+      if (this.chargeFx[slot] && this.chargeFx[slot].isValid) this.chargeFx[slot].destroy();
+      const ring = new Node('chargeFx');
+      ring.parent = this.layerPlayer;
+      const rg = ring.addComponent(Graphics);
+      rg.lineWidth = 2;
+      rg.strokeColor = new Color(120, 235, 255, 220);
+      rg.circle(0, 0, 46); rg.stroke();
+      rg.strokeColor = new Color(120, 235, 255, 90);
+      rg.circle(0, 0, 56); rg.stroke();
+      ring.setPosition(this.px, ARENA_H - this.py, 0);
+      this.chargeFx[slot] = ring;
       // echo × 蓄能脉冲（S）：重放不重新蓄力，最多 1 次（见 updateEcho）
       if (!this.echoReplay) this.queueEcho(slot, chargeEchoRepeats(rt.echo));
     } else if (def.type === 'area') {
@@ -1642,7 +1684,7 @@ export class Battle extends Component {
     this.fx.push({ node: n, anim: null as unknown as FrameAnim, t: 0, life: 0.8 });
   }
 
-  private addDamageText(x: number, y: number, dmg: number, crit: boolean, kind?: 'poison' | 'burn') {
+  private addDamageText(x: number, y: number, dmg: number, crit: boolean, kind?: 'poison' | 'burn' | 'hurt') {
     // C3：伤害数字复用节点（字符串/颜色/字号仍按次设置）
     let n: Node | undefined = this.dmgPool.pop();
     let l: Label | null = null;
@@ -1663,9 +1705,11 @@ export class Battle extends Component {
     label.string = String(dmg);
     label.fontSize = kind ? 9 : (crit ? 12 : 10);
     label.lineHeight = kind ? 11 : (crit ? 14 : 12);
+    // 暴击=金色；玩家受击=红色；持续伤害=毒绿/灼烧橙；普通=白
     label.color = kind === 'poison' ? new Color(150, 230, 160, 255)
       : kind === 'burn' ? new Color(255, 160, 110, 255)
-        : crit ? new Color(240, 70, 62, 255) : new Color(255, 255, 255, 255);
+        : kind === 'hurt' ? new Color(235, 74, 74, 255)
+          : crit ? new Color(255, 205, 80, 255) : new Color(255, 255, 255, 255);
     n.setPosition(x, ARENA_H - y, 0);
     this.fx.push({ node: n, anim: null as unknown as FrameAnim, t: 0, life: 0.75, pool: 'dmg' });
   }
@@ -1693,6 +1737,8 @@ export class Battle extends Component {
     this.updateBossMechanics();
     this.updateNewSkillTypes(dt);
     this.updateEnemies(dt);
+    this.updateEnemyShooting(dt);
+    this.updateEnemyBullets(dt);
     this.updateBullets(dt);
     this.updateAreas(dt);
     this.updateMeteors(dt);
@@ -1842,6 +1888,14 @@ export class Battle extends Component {
       const slot = Number(key);
       const c = this.charges[slot];
       c.t += dt;
+      const ring = this.chargeFx[slot];
+      if (ring && ring.isValid) {
+        const p = Math.min(1, c.t / 3);
+        ring.setPosition(this.px, ARENA_H - this.py, 0);
+        ring.setScale(1 - 0.55 * p, 1 - 0.55 * p, 1);
+        const op = ring.getComponent(UIOpacity) ?? ring.addComponent(UIOpacity);
+        op.opacity = Math.round(220 * (0.45 + 0.55 * (1 - p)));
+      }
       if (c.t < 3) continue;
       delete this.charges[slot];
       this.resolveCharge(slot, c);
@@ -1853,6 +1907,9 @@ export class Battle extends Component {
    * 空放（没有目标）返还剩余冷却 50%。
    */
   private resolveCharge(slot: number, c: { dmg: number; r: number; rt: SkillRuntime }): void {
+    if (this.chargeFx[slot] && this.chargeFx[slot].isValid) this.chargeFx[slot].destroy();
+    delete this.chargeFx[slot];
+    this.addVfx('core/ring/zap-ring', this.px, this.py, 0.35, Math.max(1.2, c.r / 30));
     const tgt = this.nearestEnemy(this.px, this.py, 200);
     if (!tgt) { this.skillT[slot] = Math.max(0, (this.skillT[slot] ?? 0) * 0.5); return; }
     this.hitEnemy(tgt, c.dmg, c.rt, undefined, true);
@@ -1971,6 +2028,93 @@ export class Battle extends Component {
     }
   }
 
+  /** 敌方红色弹幕（土豆兄弟式：红球，和玩家金色/元素弹体区分） */
+  private spawnEnemyBullet(x: number, y: number, vx: number, vy: number, dmg: number): void {
+    const n = new Node('ebullet');
+    n.parent = this.layerUnit;
+    const g = n.addComponent(Graphics);
+    g.fillColor = new Color(232, 64, 64, 255);
+    g.circle(0, 0, 4); g.fill();
+    g.fillColor = new Color(255, 196, 170, 230);
+    g.circle(-1, 1, 1.4); g.fill();
+    n.setPosition(x, ARENA_H - y, 0);
+    this.enemyBullets.push({ node: n, x, y, vx, vy, dmg, life: 4.5 });
+  }
+
+  /** 远程怪 / 精英 / BOSS 的远程技能 */
+  private updateEnemyShooting(dt: number): void {
+    const RANGED = ['eyebat', 'succubus', 'observer', 'basilisk'];
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      const dist = Math.hypot(this.px - e.x, this.py - e.y);
+      const isBoss = e === this.bossRef;
+      const ranged = RANGED.indexOf(e.kind) >= 0;
+      if (!isBoss && !e.elite && !ranged) continue;
+      if (e.shotT === undefined) e.shotT = 2 + this.rs.rng.next() * 2;
+      e.shotT -= dt;
+      if (e.shotT > 0) continue;
+      if (dist > (isBoss ? 420 : 300)) { e.shotT = 0.5; continue; }
+      const ang = Math.atan2(this.py - e.y, this.px - e.x);
+      if (isBoss) {
+        // BOSS 技能①：5 向红色弹幕（技能②冲锋 / ③砸地由 AI 状态机负责）
+        for (let k = -2; k <= 2; k++) {
+          const a = ang + k * 0.22;
+          this.spawnEnemyBullet(e.x, e.y, Math.cos(a) * 155, Math.sin(a) * 155, Math.round(e.dmg * 0.55));
+        }
+        e.shotT = 3.2;
+      } else if (e.elite) {
+        // 精英独有技能：3 向扇形弹（与普通远程的单发区分）
+        for (let k = -1; k <= 1; k++) {
+          const a = ang + k * 0.28;
+          this.spawnEnemyBullet(e.x, e.y, Math.cos(a) * 140, Math.sin(a) * 140, Math.round(e.dmg * 0.7));
+        }
+        e.shotT = 4.0;
+      } else {
+        this.spawnEnemyBullet(e.x, e.y, Math.cos(ang) * 145, Math.sin(ang) * 145, Math.round(e.dmg * 0.8));
+        e.shotT = 4.5 + this.rs.rng.next() * 1.5;
+      }
+    }
+  }
+
+  /** 玩家受到弹幕伤害（与近战共享护盾/无敌帧/受击数字） */
+  private hitPlayerByBullet(dmg: number): void {
+    if (this.inv > 0) return;
+    let d = playerTakenDamage(dmg, this.rs.stats);
+    if (this.shield > 0) { const a = Math.min(this.shield, d); this.shield -= a; d -= a; }
+    if (d <= 0) return;
+    this.rs.stats.hp -= d;
+    this.waveDmg += d; this.totalDmg += d;
+    this.addDamageText(this.px, this.py - 14, d, false, 'hurt');
+    this.inv = Math.max(0.2, this.rs.stats.invuln ?? 0.8);
+    this.dmgFlash = 1;
+    if (FxPrefs.hurt) this.hurtFlash = 1;
+    this.shake(SHAKE.hurt);
+    if (this.rs.stats.hp <= 0 && this.running) {
+      this.running = false; this.paused = true;
+      console.log('[Battle] 玩家阵亡（弹幕）');
+      this.hooks.onDead?.();
+    }
+  }
+
+  private updateEnemyBullets(dt: number): void {
+    compact(this.enemyBullets, (b) => {
+      b.life -= dt;
+      if (b.life <= 0) { if (b.node && b.node.isValid) b.node.destroy(); return false; }
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      if (b.x < -30 || b.x > ARENA_W + 30 || b.y < -30 || b.y > ARENA_H + 30) {
+        if (b.node && b.node.isValid) b.node.destroy();
+        return false;
+      }
+      b.node.setPosition(b.x, ARENA_H - b.y, 0);
+      if (this.inv <= 0 && Math.hypot(this.px - b.x, this.py - b.y) < 14) {
+        if (b.node && b.node.isValid) b.node.destroy();
+        this.hitPlayerByBullet(b.dmg);
+        return false;
+      }
+      return true;
+    });
+  }
+
   private updateEnemies(dt: number) {
     for (const e of this.enemies) {
       // ⚠️ KI-001：死亡单位必须先累加 deathT 再跳过，否则实体永远回收不掉
@@ -2044,6 +2188,7 @@ export class Battle extends Component {
               let dm = playerTakenDamage(Math.round(e.dmg * AI2.bossSlamMul), this.rs.stats);
               if (this.shield > 0) { const a = Math.min(this.shield, dm); this.shield -= a; dm -= a; }
               this.rs.stats.hp -= dm;
+              if (dm > 0) this.addDamageText(this.px, this.py - 14, dm, false, 'hurt');
               this.tryThorncoat(e);
         this.waveDmg += dm; this.totalDmg += dm;
               this.inv = Math.max(0.2, this.rs.stats.invuln ?? 0.8);
@@ -2110,6 +2255,7 @@ export class Battle extends Component {
         let dm = playerTakenDamage(e.dmg, this.rs.stats, bossGuard);
         if (this.shield > 0) { const a = Math.min(this.shield, dm); this.shield -= a; dm -= a; }
         this.rs.stats.hp -= dm;
+        if (dm > 0) this.addDamageText(this.px, this.py - 14, dm, false, 'hurt');
         this.tryThorncoat(e);
         this.waveDmg += dm; this.totalDmg += dm;
         // 受击无敌帧 0.55 -> 0.80（2026-10-13 实测标定）
@@ -2429,6 +2575,8 @@ export class Battle extends Component {
     this.bolts = [];
     for (const m of this.meteors) kill(m.node);
     this.meteors = [];
+    for (const b of this.enemyBullets) kill(b.node);
+    this.enemyBullets = [];
     this.echoQueue = [];
   }
 

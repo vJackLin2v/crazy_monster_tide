@@ -15,6 +15,7 @@ import { Node, Label, Color, Graphics, UITransform, view, Sprite, SpriteFrame } 
 import { panel, text, button, onTap, mkNode, screen, radialGlow, paintPanel, screenHeader } from './UIKit';
 import { COL, FS, R, BORDER } from './Tokens';
 import { drawMenuIcon, type MenuIconKind } from './MenuIcons';
+import { makeScroll } from './ScrollView';
 import { CHARS } from '../data/Chars';
 import { SKILLS, SKILL_ART } from '../data/Skills';
 import { Assets, iconFrame, loadIcon } from '../engine/Assets';
@@ -71,6 +72,8 @@ export interface MenuView {
   saveState: 'none' | 'ok' | 'corrupt';
   info?: MenuContinueInfo;
   corruptNote?: string;
+  /** 主菜单底部版本行 */
+  version?: string;
 }
 
 export interface MenuHandlers {
@@ -80,6 +83,7 @@ export interface MenuHandlers {
   onCodex: () => void;
   onAchievements: () => void;
   onSettings: () => void;
+  onHowto: () => void;
   onDiscardSave?: () => void;
 }
 
@@ -145,6 +149,7 @@ export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandl
   // ── B. 中央操作区 ──
   const coreY = Math.max(S + 200, Math.round(VH * 0.47));
   const hasSave = vm.saveState === 'ok' && !!vm.info;
+  let lastActionY = coreY;
   // 2026-10-31：两个按钮统一为同一组件/尺寸，但颜色分主次：
   //   有「继续游戏」时，开始游戏用深蓝次级样式；没有继续按钮时，开始游戏才用橙色主样式。
   const BTN_W = 260, BTN_H = 56, BTN_GAP = 12;
@@ -163,6 +168,7 @@ export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandl
     const newBtn = button(root, at2(180, startY2).x, at2(180, startY2).y, BTN_W, BTN_H, '开始游戏',
       { size: 17 });
     pressable(newBtn.node, h.onStart);
+    lastActionY = startY2;
   } else if (vm.saveState === 'corrupt') {
     const card = panel(root, at2(180, coreY - 8).x, at2(180, coreY - 8).y, 300, 100, { art: 'panel_soft' });
     text(card, -132, 30, '存档不可用', { size: 15, color: COL.dim, align: 'left', width: 220, bold: true, outline: true });
@@ -173,10 +179,22 @@ export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandl
     const startBtn = button(root, at2(180, coreY + 76).x, at2(180, coreY + 76).y, BTN_W, BTN_H, '开始游戏',
       { primary: true, size: 17 });
     pressable(startBtn.node, h.onStart);
+    lastActionY = coreY + 76;
   } else {
     const startBtn = button(root, at2(180, coreY + 6).x, at2(180, coreY + 6).y, BTN_W, BTN_H, '开始游戏',
       { primary: true, size: 17 });
     pressable(startBtn.node, h.onStart);
+    lastActionY = coreY + 6;
+  }
+
+  // 玩法说明：从设置页移到主菜单（开始游戏下方），小尺寸文字按钮
+  const howtoY = lastActionY + 46;
+  const howto = button(root, at2(180, howtoY).x, at2(180, howtoY).y, 160, 34, '玩法说明', { size: 12 });
+  onTap(howto.node, h.onHowto);
+
+  // 版本信息：主菜单最底部
+  if (vm.version) {
+    text(root, 0, at2(180, VH - 10).y, vm.version, { size: 8, color: COL.dim2, width: 340 });
   }
 
   // ── C. 底部功能入口（真实像素图标，无汉字替代）──
@@ -528,51 +546,24 @@ export function buildResult(parent: Node,
     text(card, 0, -10, v, { size: v.length > 7 ? 15 : 22, color: COL.cream, width: CW - 16, bold: true, outline: true });
   });
 
-  // 本局技能：4 个技能图标 + 每个技能已装黑科技数（x/3）
-  const sk = stats.skills ?? [];
-  const skillTop = S + 152 + CH * 2 + GAP + 18;
-  if (sk.length) {
-    text(root, at2(12, skillTop).x, at2(12, skillTop).y, '本局技能',
-      { size: 11, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
-    const SC = 34, SGAP = 8, SCOLS = 4;
-    // ⚠️ 左对齐（原来按 4 格居中排，只有一个技能时会飘到屏幕中间，看起来"错位"）
-    const startLeft = 12;
-    sk.slice(0, SCOLS).forEach((s, i) => {
-      const cx = startLeft + SC / 2 + i * (SC + SGAP);
-      const c2 = at2(cx, skillTop + 16 + SC / 2);
-      const cell = panel(root, c2.x, c2.y, SC, SC, { art: 'slot' });
-      if (s.icon) {
-        const n = mkNode(cell, 'ic', SC - 10, SC - 10);
-        const sp = n.addComponent(Sprite);
-        sp.sizeMode = Sprite.SizeMode.CUSTOM; sp.trim = false;
-        const f = iconFrame(s.icon);
-        if (f) sp.spriteFrame = f;
-        else void loadIcon(s.icon).then(() => { const g3 = iconFrame(s.icon); if (g3 && sp.isValid) sp.spriteFrame = g3; });
-      }
-      // 已装数量：贴右上角小徽章（原来放在底部压住图标）
-      const badge = mkNode(cell, 'modBadge', 18, 12, SC / 2 - 1, SC / 2 - 1);
-      const bg2 = badge.addComponent(Graphics);
-      bg2.fillColor = new Color(16, 20, 30, 220); bg2.rect(-9, -6, 18, 12); bg2.fill();
-      text(badge, 0, 0, String(s.mods), { size: 9, color: COL.accent, width: 18, bold: true, outline: false });
-    });
-  }
-
-  // 本局道具（技能区存在时整体下移）
-  // ⚠️ 必须用设计坐标算（at2 返回的是节点坐标，拿它再加偏移会全挤到左上角）
-  const extraY = skillTop + (sk.length ? 62 : 0);
-  // 用户 2026-10-30：去掉种子/同屏峰值，改成展示本局拿到的道具
+  // 本局道具：全部展示，两行高度内滚动（不再按 9 个截断）
   const got = stats.items ?? [];
+  const itemsTop = S + 152 + CH * 2 + GAP + 18;
+  let listTop = itemsTop + 24;
   if (got.length) {
-    text(root, at2(12, extraY).x, at2(12, extraY).y, '本局道具 ' + got.length,
+    text(root, at2(12, itemsTop).x, at2(12, itemsTop).y, '本局道具 ' + got.length,
       { size: 11, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
     const CELL = 30, CGAP = 6, COLS = 9;
-    const startLeft2 = 12;   // 与"本局技能"一致：左对齐，避免居中公式算错时全挤到一边
-    got.slice(0, COLS).forEach((it, i) => {
+    const startLeft2 = 12;
+    const VIEW_H = 68;
+    const rows = Math.ceil(got.length / COLS);
+    const contentH = Math.max(VIEW_H, rows * (CELL + CGAP) + 4);
+    const sc = makeScroll(root, at2(180, itemsTop + 16 + VIEW_H / 2).x, at2(180, itemsTop + 16 + VIEW_H / 2).y,
+      336, VIEW_H, contentH);
+    const topY = contentH / 2 - CELL / 2 - 2;
+    got.forEach((it, i) => {
       const col = i % COLS, rowi = Math.floor(i / COLS);
-      const cc = at2(startLeft2 + CELL / 2 + col * (CELL + CGAP),
-        extraY + 16 + CELL / 2 + rowi * (CELL + CGAP));
-      void rowi;
-      const box = panel(root, cc.x, cc.y, CELL, CELL, { art: 'slot' });
+      const box = panel(sc.content, -168 + CELL / 2 + col * (CELL + CGAP), topY - rowi * (CELL + CGAP), CELL, CELL, { art: 'slot' });
       if (it.icon) {
         const n = mkNode(box, 'ic', CELL - 8, CELL - 8);
         const sp = n.addComponent(Sprite);
@@ -586,50 +577,28 @@ export function buildResult(parent: Node,
           { size: 9, color: COL.accent, align: 'right', width: CELL - 4, bold: true, outline: false });
       }
     });
-    if (got.length > COLS) {
-      text(root, at2(348, extraY + 26).x, at2(348, extraY + 26).y,
-        '+' + (got.length - COLS), { size: 10, color: COL.dim, align: 'right', width: 60 });
-    }
+    listTop = itemsTop + 16 + VIEW_H + 26;
   }
 
-  // 本局构筑
-  // 有道具时「本局构筑」要往下让一行（用户 2026-10-30 加的道具展示）
-  // ⚠️ 必须用**设计坐标**（从屏幕顶算），不能拿 at2() 返回的节点 y 再算——那样会把"本局构筑"
-  //    画到屏幕顶部，压住标题和统计卡（用户截图确认"结算页技能都错位"）
-  const listTop = skillTop + (sk.length ? 62 : 0) + ((stats.items?.length ?? 0) > 0 ? 52 : 0) + 24;
+  // 本局构筑：直接展示全部 4 项，不再截断/提示"仅显示前 N 项"
   const bh = at2(12, listTop);
   text(root, bh.x, bh.y, '本局构筑', { size: 13, color: COL.accent, align: 'left', width: 312, bold: true, outline: true });
   const rowsTop = listTop + 22;
-  const availH = (VH - B - 60) - rowsTop;
-  // 预留 18px 给"还有 N 项"提示，避免提示压到底部按钮上（回归截图确认）
-  const maxRows = Math.max(1, Math.min(3, Math.floor(availH / 42)));
-  const list = stats.build.slice(0, maxRows);
-  if (list.length) {
-    list.forEach((r, i) => {
-      const c = at2(180, rowsTop + i * 42 + 19);
-      const row = panel(root, c.x, c.y, 336, 38, { art: 'panel' });
-      const ic = mkNode(row, 'ic', 26, 26, -146, 0);
-      const isp = ic.addComponent(Sprite);
-      isp.sizeMode = Sprite.SizeMode.CUSTOM; isp.trim = false;
-      if (r.icon) {
-        const f = iconFrame(r.icon);
-        if (f) { isp.spriteFrame = f; }
-        else { void loadIcon(r.icon).then(() => { const g2 = iconFrame(r.icon); if (g2 && isp.isValid) isp.spriteFrame = g2; }); }
-      }
-      text(row, -126, 0, r.name, { size: FS.s, color: COL.cream, align: 'left', width: 150, bold: true, outline: true });
-      text(row, 152, 0, r.sub, { size: 10, color: COL.dim, align: 'right', width: 190 });
-    });
-  } else {
-    text(root, at2(12, rowsTop + 10).x, at2(12, rowsTop + 10).y, '· 没有收获',
-      { size: FS.xs, color: COL.dim, align: 'left', width: 312 });
-  }
-  // 列表被可用高度截断时必须说清楚，别让玩家以为只有这几行
-  if (stats.build.length > list.length) {
-    const moreY = rowsTop + list.length * 42 + 4;
-    text(root, at2(12, moreY).x, at2(12, moreY).y,
-      '仅显示前 ' + list.length + ' 项（共 ' + stats.build.length + ' 项）',
-      { size: 10, color: COL.dim, align: 'left', width: 336 });
-  }
+  const list = stats.build.slice(0, 4);
+  list.forEach((r, i) => {
+    const c = at2(180, rowsTop + i * 42 + 19);
+    const row = panel(root, c.x, c.y, 336, 38, { art: 'panel' });
+    const ic = mkNode(row, 'ic', 26, 26, -146, 0);
+    const isp = ic.addComponent(Sprite);
+    isp.sizeMode = Sprite.SizeMode.CUSTOM; isp.trim = false;
+    if (r.icon) {
+      const f = iconFrame(r.icon);
+      if (f) { isp.spriteFrame = f; }
+      else { void loadIcon(r.icon).then(() => { const g2 = iconFrame(r.icon); if (g2 && isp.isValid) isp.spriteFrame = g2; }); }
+    }
+    text(row, -126, 0, r.name, { size: FS.s, color: COL.cream, align: 'left', width: 150, bold: true, outline: true });
+    text(row, 152, 0, r.sub, { size: 10, color: COL.dim, align: 'right', width: 190 });
+  });
 
   // 底部：主界面(96) + 再来一局；通关且 onContinue 存在时变成三按钮 96/96/128
   const byy = -VH / 2 + B + 25;

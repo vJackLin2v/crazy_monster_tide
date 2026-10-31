@@ -1,16 +1,13 @@
 /**
- * 模态面板滚动列表（ui/ModalList.ts）v2
+ * 模态面板滚动列表（ui/ModalList.ts）v3
  *
- * 上一版整块空白的两个根因（已修）：
- *   1. 用 NodeEventType 常量做事件名——3.8 里不一定导出，取值 undefined 时挂事件会抛异常，
- *      buildInstall 的 try/catch 吞掉后，面板只画了上半截（背包与底部按钮全没了）；
- *   2. content 位移公式符号写反：显示顶部应是 y = (viewportH - contentH) / 2，
- *      写成 (contentH - viewportH) / 2 会把内容整体顶出可视区 → 裁剪后一片空白。
- *
- * 触摸只挂在自己的 viewport 上（不抢全局 input），拖拽超过 8px 才算滚动。
+ * v3：委托给全局 ScrollView（makeScroll）——旧版自己挂节点 TOUCH_MOVE，
+ * 在本场景节点触摸派发不可靠，安装屏背包 / 战绩详情道具经常"滚不动"。
+ * ScrollView 用全局 input + 命中测试，且带惯性；这里只保留同一套 API。
  */
-import { Node, Mask, EventTouch } from 'cc';
+import { Node } from 'cc';
 import { mkNode } from './UIKit';
+import { makeScroll, type ScrollHandle } from './ScrollView';
 
 export interface ModalList {
   view: Node;
@@ -22,48 +19,19 @@ export interface ModalList {
   destroy(): void;
 }
 
-const DRAG_THRESHOLD = 8;
-
 export function makeModalList(
   parent: Node, cx: number, cy: number, w: number, h: number, contentH: number,
   initialOff = 0,
 ): ModalList {
-  const view = mkNode(parent, 'mlView', w, h, cx, cy);
-  const mask = view.addComponent(Mask);
-  mask.type = Mask.Type.GRAPHICS_RECT;
-
-  const H = Math.max(h, contentH);
-  const content = mkNode(view, 'mlContent', w, H, 0, 0);
-
-  let off = Math.max(0, Math.min(initialOff, H - h));
-  const maxOff = Math.max(0, H - h);
-  const apply = () => { content.setPosition(0, (h - H) / 2 - off); };
-  apply();
-
-  let startY = 0, dragging = false, moved = 0;
-
-  view.on(Node.EventType.TOUCH_START, (e: EventTouch) => {
-    startY = e.getUILocation().y; dragging = false; moved = 0;
-  });
-  view.on(Node.EventType.TOUCH_MOVE, (e: EventTouch) => {
-    const y = e.getUILocation().y;
-    const dy = y - startY;
-    moved = Math.max(moved, Math.abs(dy));
-    if (moved > DRAG_THRESHOLD) dragging = true;
-    if (!dragging) return;
-    off = Math.max(0, Math.min(maxOff, off - dy));
-    startY = y;
-    apply();
-    e.propagationStopped = true;
-  });
-  const stop = () => { setTimeout(() => { dragging = false; }, 0); };
-  view.on(Node.EventType.TOUCH_END, stop);
-  view.on(Node.EventType.TOUCH_CANCEL, stop);
-
+  const contentH2 = Math.max(h, contentH);
+  const sc: ScrollHandle = makeScroll(parent, cx, cy, w, h, contentH2);
+  if (initialOff > 0) sc.setOffset(initialOff);
   return {
-    view, content, topY: H / 2,
-    isDragging: () => dragging,
-    offset: () => off,
-    destroy: () => { if (view.isValid) view.destroy(); },
+    view: sc.view,
+    content: sc.content,
+    topY: contentH2 / 2,
+    isDragging: () => sc.isDragging(),
+    offset: () => sc.offset(),
+    destroy: () => sc.dispose(),
   };
 }

@@ -179,7 +179,8 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
     text(box, -158, mergeTitleY, '合成区（3 个同名 → 1 个更强版）',
       { size: 11, color: COL.accent, align: 'left', width: 316, bold: true, outline: true });
   }
-  const descY = -PH / 2 + (d.pickedDesc ? 104 : 66);
+  // 效果说明抬高，避免 36 高的文本底部压到「一键卸下/出售」按钮（用户截图）
+  const descY = -PH / 2 + (d.pickedDesc ? 136 : 70);
   const mergeTop = mergeTitleY - 12;
   // 行距必须 > 44：热区要 44 高，行距不够相邻热区就会相交（P1-B）
   const MERGE_PITCH = 46;
@@ -218,7 +219,7 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
     // ★ 不再拼「名称」前缀：顶部提示已经写了"已拿起「X」"，加前缀会把文案挤到第二行只掉 2~3 个字（孤字）
     //    宽度给「卸下」让位（按钮左边缘 82），11px 下 1~2 行都能完整显示
     text(box, -158, descY, d.pickedDesc,
-      { size: 11, color: COL.mint, align: 'left', width: d.selSlot ? 236 : 316, h: 36 });
+      { size: 10, color: COL.mint, align: 'left', width: d.selSlot ? 236 : 316, h: 26 });
   }
   if (d.selSlot) {
     // 右边缘收到 162（面板半宽 170，留 8px）：原来 x=132 + 40 = 172，**超出面板 2px**

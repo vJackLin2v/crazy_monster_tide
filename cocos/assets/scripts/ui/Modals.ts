@@ -168,12 +168,12 @@ export function buildConfirm(parent: Node, t: string, body: string, okText: stri
   const root = mkNode(parent, 'scr-confirm', VW, VH);
   mask(root, VW, VH);
 
-  const W = 312, H = 196;
+  const W = 312, H = 214;
   const c = A(180, VH / 2);                 // 垂直居中（旧版按 230 硬编码，长屏偏低）
   const box = panel(root, c.x, c.y, W, H, { art: 'panel' });
   text(box, 0, H / 2 - 32, t, { size: 19, color: COL.cream, width: W - 30, bold: true, outline: true, shadow: true });
   // body 可能是两行（如"用A替换B？B会退回背包"），必须给足高度，否则第二行被按钮压住
-  text(box, 0, 6, body, { size: 12, color: COL.dim, width: W - 40, h: 64 });
+  text(box, 0, 10, body, { size: 12, color: COL.dim, width: W - 40, h: 84 });
   const b1 = button(box, -78, -H / 2 + 38, 136, 48, '取消', { size: 16 });
   onTap(b1.node, onCancel);
   const b2 = button(box, 78, -H / 2 + 38, 136, 48, okText, { danger: true, size: 16 });
@@ -417,7 +417,8 @@ export interface SkillDetailView {
   summary: string;
   /** 技能本身的一句话（形态 + 标签） */
   desc: string;
-  mods: { id?: string; name: string; desc: string }[];
+  /** nums = 该黑科技的精确效果（MODULE_NUMS），优先于 desc 展示，避免长描述换行 */
+  mods: { id?: string; name: string; desc: string; nums?: string }[];
 }
 
 /** 道具页的详情（M42：暂停面板里的道具要有详细介绍，可展开） */
@@ -602,7 +603,8 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
           // 合成过的模块（_2/_3…）在描述后标注实际效果份数：Ⅱ = ×1.6，不是 ×2
           const mul = modEffect(m.id ?? '');
           const tag = mul > 1.01 ? ('（效果 ×' + mul.toFixed(1) + '）') : '';
-          rows.push({ t: '· ' + m.name + '：' + m.desc + tag, c: COL.cream });
+          // 优先显示精确数值（MODULE_NUMS），desc 太长会换行压到下一行
+          rows.push({ t: '· ' + m.name + '：' + (m.nums || m.desc) + tag, c: COL.cream });
         }
         if (!s.mods.length) rows.push({ t: '· 还没有装黑科技', c: COL.dim });
         rows.slice(0, 5).forEach((ln, k) => {
@@ -761,7 +763,7 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
     const isSkills = cur === 0 && !!skillDetails;
     skillRoot.active = isSkills;
     if (isSkills) renderSkills();
-    const isItems = cur === 2 && !!itemDetails;
+    const isItems = cur === 1 && !!itemDetails;
     itemRoot.active = isItems;
     if (isItems) renderItems();
     const isMods = cur === 1 && !!modDetails;

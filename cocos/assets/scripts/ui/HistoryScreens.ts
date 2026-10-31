@@ -138,7 +138,7 @@ export function buildHistoryList(
 
   // ── B. 筛选 Tab ──
   const TABS: [HistoryFilter, string][] = [['all', '全部'], ['win', '胜利'], ['lose', '失败'], ['endless', '无尽']];
-  const tabY = S + 164;
+  const tabY = S + 172;   // 与统计面板多留 8px 呼吸（用户反馈贴太近）
   TABS.forEach(([f, label], i) => {
     const cx = 51 + i * 86;
     const b = button(root, at(VW, VH, cx, tabY).x, at(VW, VH, cx, tabY).y, 78, 36, label,
@@ -147,7 +147,7 @@ export function buildHistoryList(
   });
 
   // ── C. 列表 / 空态 ──
-  const listTop = S + 190;
+  const listTop = S + 198;
   const listH = VH - listTop - B - 10;
   const shown = filterRuns(list, filter);
 
@@ -267,8 +267,9 @@ export function buildHistoryDetail(
     const cx = -84 + (i % 2) * 168;
     const cy = y - 30 - Math.floor(i / 2) * 64;
     const card = panel(ml.content, cx, cy, 158, 56, { art: 'panel_soft' });
-    text(card, 0, 12, k, { size: 9, color: COL.dim, width: 146 });
-    text(card, 0, -10, v, { size: v.length > 6 ? 15 : 19, color: COL.cream, width: 146, bold: true, outline: true });
+    // 统一左对齐，避免 2×3 卡片里数值长度不同导致视觉错位
+    text(card, -64, 12, k, { size: 9, color: COL.dim, align: 'left', width: 128 });
+    text(card, -64, -10, v, { size: v.length > 6 ? 15 : 19, color: COL.cream, align: 'left', width: 128, bold: true, outline: true });
   });
   y -= GRID;
 

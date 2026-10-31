@@ -65,7 +65,7 @@ export const DEFAULT_BALANCE: Balance = {
     openBase: 4, openEvery: 3, openMax: 7,
     aliveSoft: 24, aliveHard: 34, slowMul: 1.7,
   },
-  growth: { hpPerWave: 0.34, dmgPerWave: 0.15 },
+  growth: { hpPerWave: 0.42, dmgPerWave: 0.20 },
   wave: { baseTime: 22, timeStep: 4, timeEvery: 3 },
   reward: {
     earlyMax: 5, midMax: 12,
