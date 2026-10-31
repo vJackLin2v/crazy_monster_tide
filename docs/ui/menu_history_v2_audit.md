@@ -49,7 +49,7 @@
 
 ## 6. 现有测试覆盖
 
-- `tests/run.ts`：404 PASS / 0 FAIL（纯逻辑）。
+- `tests/run.ts`：404 PASS / 0 FAIL（**当时**的基线；当前已更新为 435 PASS，见 `menu_v3_test_report.md`）。
 - 覆盖：RNG 快照、ActiveRunSave 校验、历史幂等/容量/筛选、BOSS 快照、击杀/吸血判定分支。
 - **未覆盖**：Battle 实体层、真实商店/升级恢复（只有代码路径）、HP 恢复的具体数值断言、damageDealt/damageTaken 统计。
 

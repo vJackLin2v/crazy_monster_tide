@@ -63,7 +63,7 @@ function unitSlot(parent: Node, x: number, y: number, size: number, unit: string
 
 // ------------------------------------------------ 设置 ------------------------------------------------
 export function buildSettings(parent: Node, s: SaveData, onToggle: (k: 'music' | 'sfx') => void,
-                              onClose: () => void): Node {
+                              onClose: () => void, onHelp?: () => void): Node {
   const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
   const root = mkNode(parent, 'scr-settings', VW, VH);
   mask(root, VW, VH);
@@ -72,7 +72,13 @@ export function buildSettings(parent: Node, s: SaveData, onToggle: (k: 'music' |
   const c = at(VW, VH, 180, VH / 2);
   const box = panel(root, c.x, c.y, W, H, { art: 'panel' });
   title(box, H / 2 - 30, '设置', { width: W - 40 });
-  text(box, 0, H / 2 - 54, '音频开关会立刻生效并记住', { size: 10, color: COL.dim, width: W - 30, outline: false });
+  text(box, -W / 2 + 18, H / 2 - 54, '音频开关会立刻生效并记住',
+    { size: 10, color: COL.dim, width: W - 140, align: 'left', outline: false });
+  // 玩法说明从主菜单移到这里（V3：主菜单不再放独立按钮）
+  if (onHelp) {
+    const help = button(box, W / 2 - 58, H / 2 - 54, 104, 30, '玩法说明', { size: 11 });
+    onTap(help.node, onHelp);
+  }
 
   const rows: { key: 'music' | 'sfx'; label: string; y: number }[] = [
     { key: 'music', label: '音乐', y: H / 2 - 96 },
@@ -163,8 +169,9 @@ export function buildSettings(parent: Node, s: SaveData, onToggle: (k: 'music' |
       : st === 'checking' ? '· 正在检查更新'
       : st === 'unsupported' ? '' : '';
   })();
-  text(box, 0, H / 2 - 74, '版本 ' + BUILD_TAG + ' ' + updLabel,
-    { size: 9, color: COL.dim2, width: W - 20, outline: false });
+  // 版本行靠左，右侧让给"玩法说明"入口，避免文字压到按钮
+  text(box, -W / 2 + 18, H / 2 - 74, '版本 ' + BUILD_TAG + ' ' + updLabel,
+    { size: 9, color: COL.dim2, width: W - 140, align: 'left', outline: false });
   if (updateState() === 'ready') {
     const hitU = mkNode(box, 'updHit', W - 40, 24, 0, H / 2 - 74);
     (hitU as unknown as { __hit?: boolean }).__hit = true;

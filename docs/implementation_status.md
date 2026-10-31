@@ -1,13 +1,15 @@
 # 设计 → 实现 对照表（implementation_status）
 
 > 用途：设计文档（`docs/design/*`）是意图；这里是**代码实际做到哪、由哪条测试证明**。
-> 更新：2026-10-31（主菜单/战绩 V2）｜ 基线：`425 PASS / 0 FAIL`、tsc 双配置 0、微信包构建成功。
+> 更新：2026-10-31（主菜单 V3）｜ 基线：`435 PASS / 0 FAIL`、tsc 双配置 0、微信包构建成功。
 
 ## 一、主菜单 / 续玩 / 历史（本轮新增）
 
 | 能力 | 代码 | 测试 / 证据 |
 |---|---|---|
-| 主菜单 V2（品牌/角色展示/核心操作/次级图标） | `ui/MenuScreens.buildMenu` | 截图 menu_no_save / menu_has_save |
+| 主菜单 V3（LOGO/继续卡或开始按钮/四个像素图标） | `ui/MenuScreens.buildMenu` | 截图 menu_no_save / menu_has_save |
+| 功能图标（卷轴/书/奖杯/齿轮，16×16 Graphics） | `ui/MenuIcons.ts` | `docs/ui/menu_v3_icons_preview.png` + 截图 |
+| 玩法说明移入设置 | `ui/MetaScreens.buildSettings` | 截图 settings.png |
 | 开始新冒险确认（不静默覆盖存档） | `buildStartNewConfirm` + `GameRoot.requestStart` | 截图 start_confirm |
 | 战绩档案 V2（统计面板/Tab/卡片/空态） | `ui/HistoryScreens.buildHistoryList` | 截图 history_list / history_empty |
 | 对局详情 V2（结果标题/2×3/图标/展开） | `ui/HistoryScreens.buildHistoryDetail` | 截图 detail_victory / defeat / abandon |
@@ -31,7 +33,7 @@
 | 背水用伤害近似 | 改为真实攻速 → 技能冷却倍率 `lastbreathCdMul` | tests §20 |
 | 余烬刻印叠层偏差 | **保留简化版**（灼烧 +25%），设计文档与决策表已标注 | tests §20 |
 | 文档测试数 344/349 冲突 | 统一为当前实测 404 | 全仓库检索 |
-| README 状态过期 | 更新为 404 PASS + 主菜单升级 | README |
+| README 状态过期 | 已更新为 435 PASS + 主菜单 V3 | README |
 
 ## 三、既有能力（阶段3 收尾时已验证）
 
@@ -73,7 +75,7 @@
 
     tsc -p tsconfig.check.json         -> 0
     tsc -p tsconfig.ui-check.json      -> 0
-    tsx tests/run.ts                   -> 425 PASS / 0 FAIL
+    tsx tests/run.ts                   -> 435 PASS / 0 FAIL
     cmd /c "build-wechat.bat -nopause" -> success
 
 > `tsconfig.full-check.json` 仍有 13 条历史遗留错误（GameRoot 重复字段、Battle 旧签名等），

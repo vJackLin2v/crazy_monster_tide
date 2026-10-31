@@ -5,7 +5,8 @@
 
 ## 0. 现状
 
-Cocos 3.8.6 微信小游戏；测试 **425 PASS / 0 FAIL**，tsc 双配置 0，微信包约 3.1MB / 10.94MB。
+Cocos 3.8.6 微信小游戏；测试 **435 PASS / 0 FAIL**，tsc 双配置 0，微信包约 3.1MB / 10.94MB。
+主菜单 **V3 极简版**：LOGO / 继续冒险（或开始冒险）/ 底部四个像素图标（战绩·图鉴·成就·设置）；
 主菜单：品牌 + 角色立绘 + 继续冒险（有存档时第一优先）/ 开始冒险 + 四个次级图标入口。
 战绩：统计面板 + Tab + 战绩卡片 + 单局报告（结果大字 / 伤害数据 / 图标化技能可展开）。
 续玩：45/72 恢复为 45/72（纯函数 + 浏览器断言双重证据）；商店货架、升级三选一可恢复。
@@ -17,7 +18,7 @@ Cocos 3.8.6 微信小游戏；测试 **425 PASS / 0 FAIL**，tsc 双配置 0，�
     node H:/AI-game/xingnang/cocos_port/node_modules/typescript/bin/tsc -p tsconfig.ui-check.json
     node H:/AI-game/xingnang/cocos_port/node_modules/tsx/dist/cli.mjs tests/run.ts
 
-期望 425 PASS。再读 `docs/ui/menu_history_v2_audit.md`、`docs/review/menu_history_v2_test_report.md`。
+期望 435 PASS。再读 `docs/ui/menu_v3_design.md`、`docs/ui/menu_v3_icon_design.md`、`docs/review/menu_v3_test_report.md`。
 
 ## 2. 构建 / 截图
 

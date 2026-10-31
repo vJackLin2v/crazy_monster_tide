@@ -280,15 +280,7 @@ export class GameRoot extends Component {
     // 每次回菜单都重新探测活动存档（可能在暂停面板里刚存过）
     this.activeCheck = loadActiveRun();
     const cdef = CHARS.find(c => c.id === this.charId) ?? CHARS[0];
-    const vm: MenuView = {
-      saveState: 'none',
-      charId: cdef.id,
-      charName: cdef.name,
-      charDesc: cdef.pos,
-      unlockedChars: CHARS.length,
-      totalChars: CHARS.length,
-      version: 'v1.0 · 2026-10-31 · 菜单 V2',
-    };
+    const vm: MenuView = { saveState: 'none' };
     if (this.activeCheck.status === 'ok') {
       const save = this.activeCheck.save;
       const info = continueInfoOf(save, id => this.skillName(id));
@@ -299,10 +291,7 @@ export class GameRoot extends Component {
         difficultyName: difficultyOf(info.difficulty).name,
         durationText: this.fmtDuration(save.runTime),
         hp: info.hp, maxhp: info.maxhp,
-        dateText: this.fmtDate(save.savedAt),
-        skillNames: info.skillNames,
-        skillCount: info.skillCount,
-        itemCount: info.itemCount,
+        charName: cdef.name,
       };
     } else if (this.activeCheck.status === 'corrupt' || this.activeCheck.status === 'version') {
       vm.saveState = 'corrupt';
@@ -313,8 +302,6 @@ export class GameRoot extends Component {
       onContinue: () => void this.continueGame(),
       onStart: () => this.requestStart(),
       onHistory: () => this.showHistory(),
-      onCharSelect: () => { this.charPreview = true; this.showCharSelect(); },
-      onHowto: () => this.showHowto(),
       onCodex: () => this.showCodex(),
       onAchievements: () => this.showAchievements(),
       onSettings: () => this.showSettings(),
@@ -570,7 +557,7 @@ export class GameRoot extends Component {
       if (k === 'music') Sfx.setMusic(this.save.music);
       else Sfx.setSfx(this.save.sfx);
       writeSave(this.save);
-    }, () => this.closeModal());
+    }, () => this.closeModal(), () => { this.closeModal(); this.showHowto(); });
   }
   private showHowto() {
     this.phase = 'howto'; this.clearScreen();

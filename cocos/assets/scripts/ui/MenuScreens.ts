@@ -14,6 +14,7 @@
 import { Node, Label, Color, Graphics, UITransform, view, Sprite, SpriteFrame } from 'cc';
 import { panel, text, button, onTap, mkNode, screen, radialGlow, paintPanel, screenHeader } from './UIKit';
 import { COL, FS, R, BORDER } from './Tokens';
+import { drawMenuIcon, type MenuIconKind } from './MenuIcons';
 import { CHARS } from '../data/Chars';
 import { SKILLS, SKILL_ART } from '../data/Skills';
 import { Assets, iconFrame, loadIcon } from '../engine/Assets';
@@ -62,10 +63,7 @@ export interface MenuContinueInfo {
   durationText: string;
   hp: number;
   maxhp: number;
-  dateText: string;
-  skillNames: string[];
-  skillCount: number;
-  itemCount: number;
+  charName: string;
 }
 
 export interface MenuView {
@@ -73,44 +71,40 @@ export interface MenuView {
   saveState: 'none' | 'ok' | 'corrupt';
   info?: MenuContinueInfo;
   corruptNote?: string;
-  charId: string;
-  charName: string;
-  charDesc: string;
-  unlockedChars: number;
-  totalChars: number;
-  version: string;
 }
 
 export interface MenuHandlers {
   onContinue: () => void;
   onStart: () => void;
   onHistory: () => void;
-  onHowto: () => void;
   onCodex: () => void;
   onAchievements: () => void;
   onSettings: () => void;
-  onCharSelect: () => void;
   onDiscardSave?: () => void;
 }
 
-/** 次级入口：44×44 图标槽 + 短文字（视觉权重低于主操作） */
-function menuEntry(root: Node, x: number, y: number, glyph: string, label: string, cb: () => void): Node {
-  const box = mkNode(root, 'entry', 84, 72, x, y);
-  const slotN = panel(box, 0, 8, 44, 44, { art: 'slot' });
-  text(slotN, 0, 1, glyph, { size: 18, color: COL.cream, width: 44, bold: true, outline: true });
-  text(box, 0, -22, label, { size: 10, color: COL.cream, width: 84, bold: true, outline: true });
-  onTap(box, cb);
-  return box;
+/** 按下缩放反馈（点击音由 onTap 统一播放） */
+function pressable(n: Node, cb: () => void): void {
+  n.on(Node.EventType.TOUCH_START, () => n.setScale(0.97, 0.97, 1));
+  n.on(Node.EventType.TOUCH_END, () => n.setScale(1, 1, 1));
+  n.on(Node.EventType.TOUCH_CANCEL, () => n.setScale(1, 1, 1));
+  onTap(n, cb);
+}
+
+/** 底部功能入口：真实像素图标 + 短标签（无大面积按钮背景） */
+function menuEntry(root: Node, x: number, y: number, kind: MenuIconKind, label: string, cb: () => void): void {
+  const hit = mkNode(root, 'entry-' + kind, 84, 72, x, y);
+  drawMenuIcon(hit, kind, 0, 8, 2);
+  text(hit, 0, -26, label, { size: 10, color: COL.cream, width: 80, bold: true, outline: true });
+  pressable(hit, cb);
 }
 
 /**
- * 主菜单 V2（360×640）
+ * 主菜单 V3（极简）
  *
- * A 品牌区：LOGO + 副标
- * B 角色展示：当前角色立绘 + 平台 + 名称/描述/解锁数（点击进角色选择）
- * C 核心操作：有存档 → 「继续上次冒险」主卡片 + 开始新冒险次按钮；无存档 → 开始冒险主按钮
- * D 次级入口：战绩 / 图鉴 / 成就 / 设置（图标 + 短文字）
- * E 页脚：版本 + 安全区
+ * A 顶部 LOGO；B 中央唯一操作区（继续冒险卡 / 开始冒险）；C 底部四个像素图标入口。
+ * 角色展示、角色描述、解锁数、独立玩法说明按钮全部移除：
+ * 角色选择仍在"开始冒险"后的流程里，玩法说明移入设置页。
  */
 export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandlers): Node {
   const vs = view.getVisibleSize(); const VW = vs.width, VH = vs.height;
@@ -118,7 +112,7 @@ export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandl
   const S = safeTop(), B = safeBottom();
   const root = screen(parent, 'scr-menu', COL.bg1);
 
-  // ── 背景：cover 缩放 + 上下暗角（像素风不用模糊阴影）──
+  // ── 背景 + 暗角 ──
   const bgNode = new Node('menu-bg');
   bgNode.parent = root;
   const bgUt = bgNode.addComponent(UITransform);
@@ -142,97 +136,57 @@ export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandl
     vg.rect(-VW / 2, -VH / 2 + i * vh0, VW, vh0 + 0.5); vg.fill();
   }
 
-  // ── A. 品牌区 ──
-  text(root, 0, at2(180, S + 42).y, '疯狂鸽王',
-    { size: 34, color: COL.cream, bold: true, width: 354, outline: true, shadow: true });
-  text(root, 0, at2(180, S + 68).y, 'C R A Z Y   P I G E O N   K I N G',
+  // ── A. LOGO ──
+  text(root, 0, at2(180, S + 40).y, '疯狂鸽王',
+    { size: 32, color: COL.cream, bold: true, width: 354, outline: true, shadow: true });
+  text(root, 0, at2(180, S + 64).y, 'C R A Z Y   P I G E O N   K I N G',
     { size: 8, color: COL.accent, width: 354, bold: true, outline: true });
 
-  // ── B. 角色展示 ──
-  const charY = S + 152;
-  const plat = mkNode(root, 'char-platform', 168, 26, at2(180, charY + 66).x, at2(180, charY + 66).y);
-  const pg = plat.addComponent(Graphics);
-  pg.fillColor = new Color(10, 14, 26, 120); pg.ellipse(0, -2, 78, 12); pg.fill();
-  pg.fillColor = new Color(120, 150, 210, 40); pg.ellipse(0, 2, 74, 8); pg.fill();
-
-  const charHit = mkNode(root, 'charShow', 168, 160, at2(180, charY).x, at2(180, charY).y);
-  const pn = new Node('portrait');
-  pn.parent = charHit;
-  const put = pn.addComponent(UITransform);
-  put.setContentSize(116, 136);
-  const psp = pn.addComponent(Sprite);
-  psp.sizeMode = Sprite.SizeMode.CUSTOM;
-  psp.trim = false;
-  const unit = CHARS.find(c => c.id === vm.charId)?.unit ?? CHARS[0].unit;
-  void Assets.loadPortrait(unit).then((sf) => {
-    if (sf && psp.isValid) psp.spriteFrame = sf;
-  });
-  onTap(charHit, h.onCharSelect);
-
-  text(root, 0, at2(180, charY + 82).y, vm.charName,
-    { size: 16, color: COL.cream, width: 280, bold: true, outline: true });
-  text(root, 0, at2(180, charY + 100).y, vm.charDesc,
-    { size: 9, color: COL.dim, width: 300 });
-  text(root, 0, at2(180, charY + 116).y, '已解锁角色 ' + vm.unlockedChars + '/' + vm.totalChars + ' · 点击角色可更换',
-    { size: 8, color: COL.accent, width: 300 });
-
-  // ── C. 核心操作 ──
+  // ── B. 中央操作区 ──
+  const coreY = Math.max(S + 200, Math.round(VH * 0.47));
   const hasSave = vm.saveState === 'ok' && !!vm.info;
   if (hasSave && vm.info) {
     const info = vm.info;
-    const cardY = S + 322;
-    const card = panel(root, at2(180, cardY).x, at2(180, cardY).y, 300, 96, { art: 'panel' });
-    const bar = mkNode(card, 'saveBar', 5, 78, -145, 0);
+    const card = panel(root, at2(180, coreY).x, at2(180, coreY).y, 310, 120, { art: 'panel' });
+    const bar = mkNode(card, 'saveBar', 5, 100, -150, 0);
     const bg2 = bar.addComponent(Graphics);
-    bg2.fillColor = COL.accent; bg2.rect(-2.5, -39, 5, 78); bg2.fill();
+    bg2.fillColor = COL.accent; bg2.rect(-2.5, -50, 5, 100); bg2.fill();
 
-    text(card, -128, 34, '继续上次冒险', { size: 16, color: COL.accent, align: 'left', width: 190, bold: true, outline: true });
-    text(card, -128, 12, '第 ' + info.wave + '/' + info.totalWaves + ' 波 · ' + info.difficultyName,
-      { size: 11, color: COL.cream, align: 'left', width: 210, bold: true, outline: true });
-    text(card, -128, -8, '生命 ' + info.hp + '/' + info.maxhp + ' · ' + info.durationText + ' · ' + info.dateText,
-      { size: 9, color: COL.dim, align: 'left', width: 240 });
-    text(card, -128, -26, '构筑：技能 ' + info.skillCount + ' · 道具 ' + info.itemCount + ' · ' + (info.skillNames.join('/') || '—'),
-      { size: 9, color: COL.accent, align: 'left', width: 240 });
-    text(card, 100, 4, '继续 ▶', { size: 13, color: COL.accent, width: 80, align: 'right', bold: true, outline: true });
-    onTap(card, h.onContinue);
+    text(card, -138, 36, '继续冒险', { size: 18, color: COL.accent, align: 'left', width: 200, bold: true, outline: true });
+    // 继续图标：像素三角形（不是文字 ▶）
+    const tri = mkNode(card, 'go', 18, 18, 128, 36);
+    const tg = tri.addComponent(Graphics);
+    tg.fillColor = COL.accent;
+    tg.rect(-6, -7, 4, 14); tg.rect(-2, -4, 4, 8); tg.rect(2, -2, 4, 4); tg.fill();
 
-    const newBtn = button(root, at2(180, cardY + 70).x, at2(180, cardY + 70).y, 270, 46, '开始新冒险', { size: 15 });
+    text(card, -138, 4, info.charName + ' · 第 ' + info.wave + '/' + info.totalWaves + ' 波 · ' + info.difficultyName,
+      { size: 11, color: COL.cream, align: 'left', width: 280, bold: true, outline: true });
+    text(card, -138, -26, '生命 ' + info.hp + '/' + info.maxhp + ' · ' + info.durationText,
+      { size: 10, color: COL.dim, align: 'left', width: 260 });
+    pressable(card, h.onContinue);
+
+    const newBtn = button(root, at2(180, coreY + 86).x, at2(180, coreY + 86).y, 260, 42, '开始新冒险', { size: 14 });
     onTap(newBtn.node, h.onStart);
   } else if (vm.saveState === 'corrupt') {
-    const cardY = S + 322;
-    const card = panel(root, at2(180, cardY).x, at2(180, cardY).y, 300, 86, { art: 'panel_soft' });
-    text(card, -128, 24, '存档不可用', { size: 15, color: COL.dim, align: 'left', width: 200, bold: true, outline: true });
-    text(card, -128, 2, vm.corruptNote || '存档损坏或版本不兼容', { size: 10, color: COL.red, align: 'left', width: 250, outline: true });
-    text(card, -128, -20, '点此清除坏档后重新开始', { size: 9, color: COL.dim, align: 'left', width: 250 });
+    const card = panel(root, at2(180, coreY).x, at2(180, coreY).y, 310, 110, { art: 'panel_soft' });
+    text(card, -132, 30, '存档不可用', { size: 15, color: COL.dim, align: 'left', width: 220, bold: true, outline: true });
+    text(card, -132, 4, vm.corruptNote || '存档损坏或版本不兼容', { size: 10, color: COL.red, align: 'left', width: 280, outline: true });
+    text(card, -132, -24, '点此清除坏档后重新开始', { size: 9, color: COL.dim, align: 'left', width: 280 });
     onTap(card, () => { if (h.onDiscardSave) h.onDiscardSave(); });
-    const startBtn = button(root, at2(180, cardY + 70).x, at2(180, cardY + 70).y, 270, 50, '开始冒险', { primary: true, size: 18 });
+
+    const startBtn = button(root, at2(180, coreY + 86).x, at2(180, coreY + 86).y, 260, 46, '开始冒险', { primary: true, size: 17 });
     onTap(startBtn.node, h.onStart);
   } else {
-    const startBtn = button(root, at2(180, S + 332).x, at2(180, S + 332).y, 270, 58, '开始冒险', { primary: true, size: 20 });
+    const startBtn = button(root, at2(180, coreY + 6).x, at2(180, coreY + 6).y, 280, 60, '开始冒险', { primary: true, size: 21 });
     onTap(startBtn.node, h.onStart);
-    text(root, 0, at2(180, S + 374).y, '选择角色，开启新一轮挑战',
-      { size: 10, color: COL.dim, width: 300 });
   }
 
-  // ── D. 次级入口：战绩 / 图鉴 / 成就 / 设置 ──
-  const rowY = S + 452;
-  const entries: [string, string, () => void][] = [
-    ['战', '战绩', h.onHistory],
-    ['册', '图鉴', h.onCodex],
-    ['勋', '成就', h.onAchievements],
-    ['设', '设置', h.onSettings],
-  ];
-  entries.forEach(([glyph, label, cb], i) => {
-    menuEntry(root, at2(60 + i * 80, rowY).x, at2(60 + i * 80, rowY).y, glyph, label, cb);
-  });
-
-  // ── 玩法说明（小号文字按钮，不占视觉中心）──
-  const how = button(root, at2(180, rowY + 84).x, at2(180, rowY + 84).y, 160, 30, '玩法说明', { size: 11 });
-  onTap(how.node, h.onHowto);
-
-  // ── E. 页脚 ──
-  text(root, 0, at2(180, VH - B - 12).y, vm.version,
-    { size: 8, color: COL.dim, width: 260, align: 'center' });
+  // ── C. 底部功能入口（真实像素图标，无汉字替代）──
+  const rowY = VH - B - 64;
+  menuEntry(root, at2(45, rowY).x, at2(45, rowY).y, 'history', '战绩', h.onHistory);
+  menuEntry(root, at2(135, rowY).x, at2(135, rowY).y, 'codex', '图鉴', h.onCodex);
+  menuEntry(root, at2(225, rowY).x, at2(225, rowY).y, 'achievement', '成就', h.onAchievements);
+  menuEntry(root, at2(315, rowY).x, at2(315, rowY).y, 'settings', '设置', h.onSettings);
 
   void seed;
   return root;

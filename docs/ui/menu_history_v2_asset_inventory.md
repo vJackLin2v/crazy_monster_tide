@@ -1,5 +1,8 @@
 # 主菜单 / 战绩 V2 素材清单（menu_history_v2_asset_inventory）
 
+> V3 更新：主菜单四个功能图标改为 `ui/MenuIcons.ts` 的 16×16 Graphics 像素图（无新增 PNG）；
+> 详见 `menu_v3_icon_design.md`。历史页仍使用原有角色立绘/技能/道具图标。
+
 > 原则：优先复用现有像素素材；缺的用"现有素材组合 + 文字/图形"，不引入风格不一致的新图。
 
 ## 1. 现有素材

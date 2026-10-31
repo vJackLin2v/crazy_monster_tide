@@ -1,5 +1,7 @@
 # 主菜单 / 战绩 V2 设计（menu_history_v2_design）
 
+> ⚠️ 主菜单部分已被 **V3 极简版** 取代：见 `menu_v3_design.md`。本文仅保留历史列表/详情（V2 仍在使用）。当前测试基线以 435 为准。
+
 > 360×640；坐标是设计坐标（y 从屏幕顶算），实现用 `at()` + `safeTop()/safeBottom()`。
 > 组件复用 `UIKit`（panel/button/text/onTap）+ `ModalList`；素材见 `menu_history_v2_asset_inventory.md`。
 

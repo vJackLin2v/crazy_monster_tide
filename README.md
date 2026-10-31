@@ -1,15 +1,15 @@
 # 《疯狂鸽王》 crazy_monster_tide
 
 > 竖屏像素风 · 自动攻击割草 · 构筑向肉鸽 · 微信小游戏
-> **Cocos Creator 3.8.6 + TypeScript** ｜ 设计分辨率 **360×640 竖屏** ｜ 当前进度 **主菜单/战绩 V2（425 PASS / 0 FAIL）**
+> **Cocos Creator 3.8.6 + TypeScript** ｜ 设计分辨率 **360×640 竖屏** ｜ 当前进度 **主菜单 V3 极简 + 像素图标（435 PASS / 0 FAIL）**
 
 **一句话玩法**：你只负责走位，技能自动开火；4 个主动技能 × 每个 3 个可插拔「黑科技」槽，
 怪潮铺满屏幕，撑过 20 波就算通关（每 3 波精英，第 10 / 20 波 BOSS）。
 
 ![主菜单](screenshots/ui-redesign/390x844-01-menu.png)
 
-> **当前状态（2026-10-31）**：主菜单/战绩 V2 完成——角色展示、继续冒险优先、战绩档案与单局报告；测试 **425 PASS / 0 FAIL**。
-> 接手先读 `docs/HANDOFF.md`；本轮交付包在 `deliverables/menu_history_v2_2026-10-31/`。
+> **当前状态（2026-10-31）**：主菜单 V3 完成——极简三区布局、继续冒险优先、四个独立像素图标；测试 **435 PASS / 0 FAIL**。
+> 接手先读 `docs/HANDOFF.md`；本轮交付包在 `deliverables/menu_v3_2026-10-31/`。
 
 ---
 
@@ -90,7 +90,7 @@ CocosCreator.exe --project <仓库>/cocos --build "platform=web-mobile;debug=fal
 
 ```bash
 cd cocos
-node <tsx-cli> tests/run.ts     # 当前：PASS 425 / FAIL 0
+node <tsx-cli> tests/run.ts     # 当前：PASS 435 / FAIL 0
 ```
 
 ---
