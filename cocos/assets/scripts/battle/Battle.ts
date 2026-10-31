@@ -31,7 +31,8 @@ import type { SkillArt } from '../data/Types';
 import { ENEMIES, bossUnitFor } from '../data/Enemies';
 import { baseOf, modEffect } from '../data/Modules';
 import { FxPrefs } from '../game/Prefs';
-import { focusedMods, shatterMul, VOLTLOOP_CHANCE, VOLTLOOP_DMG, VOLTLOOP_CD } from '../game/SpecialItems';
+import { focusedMods, shatterMul, VOLTLOOP_CHANCE, VOLTLOOP_DMG, VOLTLOOP_CD, lastbreathMul, greedPowerBonus, EMBERSTACK_MUL, THORNCOAT_DMG, THORNCOAT_CD } from '../game/SpecialItems';
+import { MODULE_HOOKS } from '../data/Modules';
 import { difficultyOf, healAmount, healBudget, spawnInterval } from '../data/Difficulties';
 import { BossSummonState } from '../game/BossSummon';
 import type { DifficultyId } from '../data/Difficulties';
@@ -188,6 +189,8 @@ export class Battle extends Component {
   /** 运行时钟（秒），给模块冷却用 */
   private runTime = 0;
   private voltloopAt = -9;
+  /** 荆棘外衣上次反弹时间 */
+  private thorncoatAt = -9;
 
   /** 所有自我回血都走这里：受每秒预算 + 最大生命双重夹取 */
   private healPlayer(amount: number): void {
@@ -800,6 +803,23 @@ export class Battle extends Component {
     }
     const foc = focusedMods(this.rs.skills.length);
     if (foc.dmg !== 1) rt = { ...rt, dmg: rt.dmg * foc.dmg };
+    // 背水：低血攻速提升（用伤害乘区近似，冷却不变）
+    if (this.rs.hasItem('lastbreath')) {
+      const hpPct = this.rs.stats.maxhp > 0 ? this.rs.stats.hp / this.rs.stats.maxhp : 1;
+      rt = { ...rt, dmg: rt.dmg * lastbreathMul(hpPct) };
+    }
+    // 贪欲之心：金币换攻击（封顶 +15%）
+    if (this.rs.hasItem('greed')) {
+      const gb = greedPowerBonus(this.rs.gold);
+      if (gb > 0) rt = { ...rt, dmg: rt.dmg * (1 + gb) };
+    }
+    // 共鸣器：同一技能装 2 个同 Hook 模块 → 该技能 +20%
+    if (this.rs.hasItem('resonator')) {
+      const hookCount: Record<string, number> = {};
+      const skCur = this.rs.skills[slot];
+      for (const m of (skCur ? skCur.mods : [])) for (const h of (MODULE_HOOKS[m.replace(/_(\d+)$/, '')] ?? [])) hookCount[h] = (hookCount[h] ?? 0) + 1;
+      if (Object.values(hookCount).some(n => n >= 2)) rt = { ...rt, dmg: rt.dmg * 1.2 };
+    }
     const sk = this.rs.skills[slot];
     const def = SKILLS[sk.id];
     const art: SkillArt = (SKILL_ART as Record<string, SkillArt>)[sk.id] || ({} as SkillArt);
@@ -1175,6 +1195,8 @@ export class Battle extends Component {
     const ctx: DamageContext = makeDamageContext(src, this.currentCastId, { isBoss: !!e.boss });
     let { dmg, crit } = rollDamage(base, this.rs.stats, this.rs.rng);
     if (this.rs.hasItem('shatter')) dmg *= shatterMul((e.slowPct ?? 0) > 0);
+    // 余烬刻印：对已处于灼烧的目标再受火伤 +25%
+    if (this.rs.hasItem('emberstack') && (e.burnT ?? 0) > 0) dmg *= 1 + EMBERSTACK_MUL;
     // M3 处决：按结算前血量判定（BOSS 增伤减半）
     const ex = this.modStacks('execute');
     if (ex > 0 && e.maxhp > 0 && e.hp / e.maxhp < 0.30) {
@@ -1557,6 +1579,14 @@ export class Battle extends Component {
     }
   }
 
+  /** 荆棘外衣：受击反弹 12 点（0.5s 内置 CD） */
+  private tryThorncoat(attacker: Enemy): void {
+    if (!this.rs.hasItem('thorncoat')) return;
+    if (this.runTime - this.thorncoatAt < THORNCOAT_CD) return;
+    this.thorncoatAt = this.runTime;
+    this.applyRawDamage(attacker, THORNCOAT_DMG);
+  }
+
   /** BOSS 难度机制：地狱狂怒 / 噩梦召唤（状态机驱动） */
   private updateBossMechanics(): void {
     const boss = this.bossRef;
@@ -1692,6 +1722,7 @@ export class Battle extends Component {
               let dm = playerTakenDamage(Math.round(e.dmg * AI2.bossSlamMul), this.rs.stats);
               if (this.shield > 0) { const a = Math.min(this.shield, dm); this.shield -= a; dm -= a; }
               this.rs.stats.hp -= dm;
+              this.tryThorncoat(e);
         this.waveDmg += dm; this.totalDmg += dm;
               this.inv = Math.max(0.2, this.rs.stats.invuln ?? 0.8);
               this.dmgFlash = 1; this.hurtFlash = 1;
@@ -1757,6 +1788,7 @@ export class Battle extends Component {
         let dm = playerTakenDamage(e.dmg, this.rs.stats, bossGuard);
         if (this.shield > 0) { const a = Math.min(this.shield, dm); this.shield -= a; dm -= a; }
         this.rs.stats.hp -= dm;
+        this.tryThorncoat(e);
         this.waveDmg += dm; this.totalDmg += dm;
         // 受击无敌帧 0.55 -> 0.80（2026-10-13 实测标定）
         // 原来 0.55s 把承伤封顶在 ~11 伤害/秒，120 血只够撑 11 秒，而一波 18 秒 ——
