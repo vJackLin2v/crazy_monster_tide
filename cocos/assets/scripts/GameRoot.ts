@@ -153,6 +153,8 @@ export class GameRoot extends Component {
     dbg.__balExport = () => exportBalance();
     dbg.__balImport = (j: string) => importBalance(j);
 
+    // 采集诊断：标记当前运行的构建版本（用来确认 DevTools 是否加载了最新包）
+    try { localStorage.setItem('cmt_build_tag', 'm2a-telemetry-20261101-1045'); } catch { /* ignore */ }
     // 真机行为日志：初始化实时日志通道，并记录本次启动（机型/平台，不含账号）
     initDeviceLog();
     logEvent('session_start', deviceInfo());
