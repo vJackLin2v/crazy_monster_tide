@@ -14,7 +14,7 @@
 import { lastbreathMul, lastbreathCdMul, shatterMul, focusedMods, resonatorMul, VOLTLOOP_CHANCE, VOLTLOOP_DMG, VOLTLOOP_CD, greedPowerBonus, FRUGAL_REROLL_MUL, FRUGAL_WAVE_GOLD, THORNCOAT_DMG, THORNCOAT_CD, EMBERSTACK_MUL } from '../assets/scripts/game/SpecialItems';
 import { RunState } from '../assets/scripts/game/RunState';
 import { calcSkill, makeSkill, canInstall, modCount, NEW_SKILL_ALLOW } from '../assets/scripts/game/SkillCalc';
-import { MODULES, MODULE_IDS, MODULE_HOOKS, MODULE_NUMS, modEffect, modPower, TIER2_EFFECT } from '../assets/scripts/data/Modules';
+import { MODULES, MODULE_IDS, MODULE_HOOKS, MODULE_NUMS, modEffect, modPower, modIntEffect, TIER2_EFFECT } from '../assets/scripts/data/Modules';
 import { assertStatsSane, freshStats, emptyStats } from '../assets/scripts/game/Stats';
 import { CHARS } from '../assets/scripts/data/Chars';
 import { RUN, waveTime, isBossWave, isEliteWave, eliteCount, BASE_SPEED, BASE_PICKUP, SHOP_SLOTS } from '../assets/scripts/core/Const';
@@ -238,6 +238,17 @@ console.log('== 4c. 道具数量（需求 §10：52 普通 + 25 高级） ==')
   ok(moduleDetailText('rapid_2').indexOf('18.5%') >= 0, '冷却缩减 Lv.2 = 18.5%（与 Lv.1 不同）');
   ok(moduleDetailText('rapid_3').indexOf('24.5%') >= 0, '冷却缩减 Lv.3 = 24.5%');
   ok(moduleDetailText('multi').indexOf('连续') >= 0, '多重射击文案为连续发射');
+
+  // M2-B.3 后续：整数型模块效果份数与容量份数分离
+  ok(modIntEffect('multi_3') === 3, '整数型效果：multi_3 = 3 份');
+  ok(modIntEffect('multi_2') === 2, '整数型效果：multi_2 = 2 份');
+  ok(modPower('multi_3') === 2, '容量语义不变：multi_3 仍占 2 份');
+  ok(moduleDetailText('multi_3').indexOf('+3 发') >= 0, 'multi_3 文案 = +3 发');
+  ok(moduleDetailText('chain_3').indexOf('跳 3 次') >= 0, 'chain_3 文案 = 跳 3 次');
+  ok(calcSkill(Object.assign(makeSkill('fireball'), { mods: ['multi_3'] }), emptyStats()).count === 4, 'multi_3 装到火球：count = 1+3 = 4');
+  ok(calcSkill(Object.assign(makeSkill('fireball'), { mods: ['echo_3'] }), emptyStats()).echo === 3, 'echo_3 = 3 次');
+  ok(moduleDetailText('echo_3').indexOf('追加 3 次') >= 0, 'echo_3 文案 = 追加 3 次');
+
 
   // M2-B.3：rapid 六条（普通三级 + 法师三级）
   ok(moduleDetailText('rapid') === '冷却 -12.0%', '普通 rapid Lv.1 = 12.0%');

@@ -2,7 +2,7 @@
  * 黑科技面板的精确数值文案（按当前等级）。
  * 与 SkillCalc/Battle 公式保持一致；用于安装屏、Build 面板、商店。
  */
-import { MODULES, baseOf, modEffect, modPower, levelOf } from '../data/Modules';
+import { MODULES, baseOf, modEffect, modIntEffect, levelOf } from '../data/Modules';
 import { canInstall, makeSkill } from './SkillCalc';
 
 function pct(v: number): string {
@@ -13,7 +13,7 @@ export function moduleDetailText(id: string, stats?: { modCdrMul?: number }): st
   const base = baseOf(id);
   const lvl = levelOf(id);
   const e = modEffect(id);
-  const n = modPower(id);
+  const n = modIntEffect(id);   // 整数型效果份数：Ⅰ=1、Ⅱ=2、Ⅲ=3
   const prefix = levelOf(id) > 1 ? 'Lv.' + lvl + ' · ' : '';
   switch (base) {
     case 'multi': return prefix + '连续 +' + n + ' 发（间隔 0.08s，同向）';
@@ -28,7 +28,7 @@ export function moduleDetailText(id: string, stats?: { modCdrMul?: number }): st
       const mul = stats?.modCdrMul ?? 1;
       return prefix + '冷却 -' + pct(1 - Math.pow(0.88, mul * e));
     }
-    case 'echo': return prefix + '追加 ' + Math.max(1, Math.round(e)) + ' 次 · 60% 伤害';
+    case 'echo': return prefix + '追加 ' + n + ' 次 · 60% 伤害';
     case 'burn': return prefix + '每秒 ' + Math.round(10 * e) + '% 伤害 · ' + (2 + 0.6 * (e - 1)).toFixed(1) + 's';
     case 'frost': return prefix + '减速 ' + Math.round(35 + 10 * (e - 1)) + '% · ' + (1.2 + 0.4 * (e - 1)).toFixed(1) + 's';
     case 'vamp': return prefix + '伤害的 ' + pct(0.04 * e) + ' 回血';

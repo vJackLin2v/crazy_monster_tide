@@ -11,7 +11,7 @@ export const NEW_SKILL_ALLOW: Record<string, string[]> = {
   charge_pulse: ['giant', 'burn', 'frost', 'vamp', 'harvest', 'overload', 'echo'],
 };
 
-import { moduleDef, baseOf, modPower, modEffect } from '../data/Modules';
+import { moduleDef, baseOf, modPower, modEffect, modIntEffect } from '../data/Modules';
 import { SKILLS } from '../data/Skills';
 import type { CharStats, SkillDef, Tag } from '../data/Types';
 
@@ -95,8 +95,8 @@ export function calcSkill(sk: SkillInst, stats: CharStats, atkMul = 1): SkillRun
   let chain = 0, snipe = 0, overload = 0, harvest = 0, thunder = 0, thornmail = 0;
 
   for (const mid of sk.mods) {
-    // 强化模块（`multi_2`）= 2 份效果，占 1 槽（M32 合成规则）
-    const n = modPower(mid);      // 整数型（子弹/跳数）用"份数"
+    // 整数型（子弹/跳数）用实际效果份数：Ⅰ=1、Ⅱ=2、Ⅲ=3；容量仍由 modPower 管
+    const n = modIntEffect(mid);
     const e = modEffect(mid);     // 数值型（倍率/概率/DoT）用"效果份数"：Ⅱ = 1.6 而不是 2
     switch (baseOf(mid)) {
       case 'multi':     count += n; break;
@@ -108,7 +108,7 @@ export function calcSkill(sk: SkillInst, stats: CharStats, atkMul = 1): SkillRun
       // —— 数值型：按"效果份数" e 累加，合成后收益递减 ——
       case 'giant':     sizeMul *= Math.pow(1.30, e); break;
       case 'rapid':     rapid += e; break;
-      case 'echo':      echo += e; break;
+      case 'echo':      echo += modIntEffect(mid); break; // Ⅰ=1、Ⅱ=2、Ⅲ=3 次
       case 'burn':      burn += e; break;
       case 'frost':     slow += e; break;
       case 'vamp':      vamp += e; break;

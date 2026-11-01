@@ -31,8 +31,8 @@ export const MODULE_IDS = Object.keys(MODULES);
  * 三个概念要分清：
  *   · 占位/合成计数 = `modPower()`：Ⅱ 仍算 **2 份**（占 1 槽、用于上限与合成判定）
  *   · 实际效果     = `modEffect()`：Ⅱ 只给 **1.6 份**效果（2 × 0.8）
- *   · 整数型模块（子弹数/跳数）无法出半份，因此它们的"递减"体现在
- *     「3 份普通 → 合成后 2 份」这一步（本来就是 3 → 2）
+ *   · 整数型模块效果 = `modIntEffect()`：Ⅰ=1、Ⅱ=2、Ⅲ=3、Ⅳ=4…
+ *     整数无法出半份，不参与 1.6/2.2 的数值折算；Ⅲ 必须实际得到 3 份效果
  *
  * 结果：同投入下 Ⅱ 永远比"三份普通"弱，但省 2 个槽 —— 这才是合成的取舍。
  */
@@ -136,8 +136,19 @@ export function baseOf(id: string): string {
 export function isMerged(id: string): boolean { return levelOf(id) > 1; }
 /** 下一级 id：multi -> multi_2，multi_3 -> multi_4 */
 export function nextLevelId(id: string): string { return baseOf(id) + '_' + (levelOf(id) + 1); }
-/** 一次模块条目算几份效果：普通 1，强化 2 */
+/**
+ * 占位/容量份数：普通 1，强化 2。
+ * 只用于 canInstall 的叠加上限与 modsBag 的合成计数；
+ * 禁止把它当整数型模块的实际效果份数（效果请用 modIntEffect）。
+ */
 export function modPower(id: string): number { return levelOf(id) > 1 ? 2 : 1; }
+
+/**
+ * 整数型模块的实际效果份数：Ⅰ=1、Ⅱ=2、Ⅲ=3、Ⅳ=4……（即 levelOf）。
+ * 与 modPower 的区别：modPower 是容量/上限语义，modIntEffect 是战斗效果语义；
+ * 两者不得互相替代。
+ */
+export function modIntEffect(id: string): number { return levelOf(id); }
 /** 统一定义查询：基础表 + 强化表 */
 export function moduleDef(id: string): ModuleDef | undefined {
   return MODULES[baseOf(id)] ?? MERGED_MODULES[id];
