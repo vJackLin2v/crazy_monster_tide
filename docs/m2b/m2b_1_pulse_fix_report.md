@@ -1,6 +1,6 @@
 # M2-B.1 pulse 技能命中修复报告
 
-> 基线：HEAD `0818ae9`（530 PASS）  
+> 基线：HEAD `0818ae9`（530 PASS）｜修复 commit：`2f55a73`  
 > 修复后：536 PASS / 0 FAIL；tsc check/ui-check = 0  
 > 微信构建：3.14MB / 10.97MB，index.js 333,472 B（2026-11-01 14:50:45）  
 > 本轮只修 pulse 命中时序/去重，不修改任何数值。
