@@ -43,7 +43,7 @@ import { parseSave, badgesForRun, badgeId, ENDLESS_MILESTONES } from '../assets/
 import { killOutcome, vampAllowed } from '../assets/scripts/game/CombatRules';
 import { normalizeRestoredStats } from '../assets/scripts/game/RunRestore';
 import { healStep, effectiveHealBudget } from '../assets/scripts/game/HealRules';
-import { VAMP_HEAL_PER_STACK, thornmailBack } from '../assets/scripts/game/ModuleValues';
+import { VAMP_HEAL_PER_STACK } from '../assets/scripts/game/ModuleValues';
 import { Rng } from '../assets/scripts/core/Rng';
 import { validateActiveRun, continueInfoOf, assertRestorable, newRunId, RUN_SAVE_VERSION, isLegalModuleId, isLegalItemId, type ActiveRunSave } from '../assets/scripts/game/RunSave';
 import { TelemetryRecorder } from '../assets/scripts/game/telemetry/TelemetryRecorder';
@@ -565,7 +565,7 @@ console.log('\n== 5j. 唯一模块可合成 + 合成收益递减 ==');
   ok(TIER2_EFFECT < 2, '合成收益递减：Ⅱ 效果 < 2 份普通');
 
   // 唯一模块现在都能凑够 3 份 → 出现在合成候选里
-  for (const id of ['vamp', 'harvest', 'thornmail']) {
+  for (const id of ['vamp', 'harvest']) {
     ok(MODULES[id].max >= 3, id + ' 的 max >= 3（可以凑 3 个合成）');
   }
 
@@ -1105,12 +1105,12 @@ console.log('\n== 14. BOSS 召唤：请求不丢 / 间隔 / 空位 ==');
 }
 
 
-console.log('\n== 15. 兼容矩阵 × 白名单逐格一致（18 模块 × 4 技能） ==');
+console.log('\n== 15. 兼容矩阵 × 白名单逐格一致（17 模块 × 4 技能） ==');
 {
   // 这张表与 skill_expansion_design.md §7 的矩阵逐格对应；改了矩阵必须同时改这里。
   const MATRIX: Record<string, string[]> = {
-    ring_blade: ['orbit', 'giant', 'rapid', 'burn', 'frost', 'vamp', 'harvest', 'thornmail'],
-    mine_field: ['giant', 'rapid', 'burn', 'frost', 'vamp', 'harvest', 'thornmail', 'split', 'echo', 'overload'],
+    ring_blade: ['orbit', 'giant', 'rapid', 'burn', 'frost', 'vamp', 'harvest'],
+    mine_field: ['giant', 'rapid', 'burn', 'frost', 'vamp', 'harvest', 'split', 'echo', 'overload'],
     sentry: ['multi', 'fan', 'split', 'bounce', 'pierce', 'rapid', 'burn', 'frost', 'chain', 'snipe', 'harvest', 'thunder', 'vamp'],
     charge_pulse: ['giant', 'burn', 'frost', 'vamp', 'harvest', 'overload', 'echo'],
   };
@@ -1123,7 +1123,7 @@ console.log('\n== 15. 兼容矩阵 × 白名单逐格一致（18 模块 × 4 技
       skill + ' 白名单与矩阵一致（缺 ' + (missing.join(',') || '无') + ' / 多 ' + (extra.join(',') || '无') + '）');
   }
   const totalCells = Object.keys(MATRIX).length * MODULE_IDS.length;
-  ok(totalCells === 72, '矩阵覆盖 18 模块 × 4 技能 = 72 格');
+  ok(totalCells === 68, '矩阵覆盖 17 模块 × 4 技能 = 68 格');
 }
 
 console.log('\n== 16. RNG 状态续接 ==');
@@ -1433,9 +1433,8 @@ console.log('\n== 24. 回血预算（A4）与 vamp/反伤数值（A6） ==');
 
   // vamp 每份 4%；反伤每份 6 点
   ok(Math.abs(VAMP_HEAL_PER_STACK - 0.04) < 1e-9, 'vamp 每份 4%');
-  ok(thornmailBack(1) === 6 && thornmailBack(1.6) === 10, '反伤每份 6 点（Ⅱ 约 10）');
   ok(MODULE_NUMS.vamp.indexOf('4%') >= 0, '黑科技数值行写 4%');
-  ok(MODULE_NUMS.thornmail.indexOf('6') >= 0, '黑科技数值行写 6');
+  ok(!MODULES.thornmail, '反伤黑科技已移除，由 thorncoat 道具承载');
 }
 
 console.log('\n== 25. 统一回血入口（M1） ==');

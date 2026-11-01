@@ -14,7 +14,7 @@ import { ITEMS } from '../data/Items';
 import type { CharStats } from '../data/Types';
 import type { RunMilestone } from './RunHistory';
 
-export const RUN_SAVE_VERSION = 1;
+export const RUN_SAVE_VERSION = 2;
 
 export type RunPhase = 'battle' | 'shop' | 'levelup';
 

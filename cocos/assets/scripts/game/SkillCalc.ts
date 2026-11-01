@@ -5,8 +5,8 @@ export const NEW_SKILL_ALLOW: Record<string, string[]> = {
   // 矩阵里是 N 的组合**这里也必须没有**，否则会出现"装得上但没效果"。
   // 说明：thunder/chain 这类"弹体触发"的模块，对环刃/地雷阵/蓄能脉冲（无弹体）没有效果，
   // 因此矩阵与白名单都标 N —— 宁可不给装，也不给"装上去看不出来"的假选项。
-  ring_blade: ['orbit', 'giant', 'rapid', 'burn', 'frost', 'vamp', 'harvest', 'thornmail'],
-  mine_field: ['giant', 'rapid', 'burn', 'frost', 'vamp', 'harvest', 'thornmail', 'split', 'echo', 'overload'],
+  ring_blade: ['orbit', 'giant', 'rapid', 'burn', 'frost', 'vamp', 'harvest'],
+  mine_field: ['giant', 'rapid', 'burn', 'frost', 'vamp', 'harvest', 'split', 'echo', 'overload'],
   sentry: ['multi', 'fan', 'split', 'bounce', 'pierce', 'rapid', 'burn', 'frost', 'chain', 'snipe', 'harvest', 'thunder', 'vamp'],
   charge_pulse: ['giant', 'burn', 'frost', 'vamp', 'harvest', 'overload', 'echo'],
 };
@@ -69,7 +69,7 @@ export interface SkillRuntime {
   count: number; fan: number; pierce: number; bounce: number;
   orbit: number; split: number; chain: number;
   echo: number; burn: number; slow: number; vamp: number;
-  thunder: number; thornmail: number; harvest: number;   // 效果份数（0 = 没装）
+  thunder: number; harvest: number;   // 效果份数（0 = 没装）
 }
 
 /**
@@ -92,7 +92,7 @@ export function calcSkill(sk: SkillInst, stats: CharStats, atkMul = 1): SkillRun
 
   let count = 1, fan = 0, pierce = 0, bounce = 0, orbit = 0, split = 0;
   let sizeMul = 1, echo = 0, burn = 0, slow = 0, vamp = 0, rapid = 0;
-  let chain = 0, snipe = 0, overload = 0, harvest = 0, thunder = 0, thornmail = 0;
+  let chain = 0, snipe = 0, overload = 0, harvest = 0, thunder = 0;
 
   for (const mid of sk.mods) {
     // 整数型（子弹/跳数）用实际效果份数：Ⅰ=1、Ⅱ=2、Ⅲ=3；容量仍由 modPower 管
@@ -115,7 +115,6 @@ export function calcSkill(sk: SkillInst, stats: CharStats, atkMul = 1): SkillRun
       case 'snipe':     snipe += e; break;
       case 'harvest':   harvest += e; break;
       case 'thunder':   thunder += e; break;
-      case 'thornmail': thornmail += e; break;
       case 'overload':  overload += e; break;
       // —— 整数型：只能整份（3 份 → 合成 2 份，本身就是递减）——
       case 'chain':     chain += n; break;
@@ -176,7 +175,7 @@ export function calcSkill(sk: SkillInst, stats: CharStats, atkMul = 1): SkillRun
     // 范围属性上限 ×2.2（+120%）：继续堆只会变难看，不会更强
   size: b.size * sizeMul * (0.9 + 0.1 * Math.min(2.2, stats.area)) * Math.min(2.2, stats.area) * (stats.sizeMul ?? 1),
     count, fan, pierce, bounce, orbit, split, chain,
-    echo, burn, slow, vamp, thunder, thornmail,
+    echo, burn, slow, vamp, thunder,
     harvest,
   };
 }

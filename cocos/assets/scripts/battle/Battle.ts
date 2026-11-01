@@ -30,7 +30,6 @@ import { splitBullets, echoRepeats, echoDelay, burnDuration, burnTickMul, frostS
 import { SKILLS, SKILL_ART, FX } from '../data/Skills';
 import type { SkillArt } from '../data/Types';
 import { ENEMIES, bossUnitFor } from '../data/Enemies';
-import { baseOf, modEffect } from '../data/Modules';
 import { FxPrefs } from '../game/Prefs';
 import { focusedMods, shatterMul, VOLTLOOP_CHANCE, VOLTLOOP_DMG, VOLTLOOP_CD, lastbreathCdMul, greedPowerBonus, EMBERSTACK_MUL, THORNCOAT_DMG, THORNCOAT_CD } from '../game/SpecialItems';
 import { MODULE_HOOKS } from '../data/Modules';
@@ -45,7 +44,7 @@ import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, CHA
 import { rollEliteAffixes, affixHpMul, affixSpeedMul, affixSplits, AFFIX_SPLIT_COUNT, AFFIX_SPLIT_HP_MUL, AFFIX_SPLIT_SPEED_MUL, type EliteAffix } from '../game/EliteAffix';
 import { killOutcome, vampAllowed } from '../game/CombatRules';
 import { normalizeRestoredStats } from '../game/RunRestore';
-import { killblastDamage, killblastRadius, shieldAmount, SHIELD_CAP, SHIELD_COOLDOWN, SHIELD_DURATION, executePct, returnstrikePct, overchargePeriod, overchargeMul, lingeringChance, LINGER_TICKS, LINGER_TICK_DMG, LINGER_MAX_ZONES, VAMP_HEAL_PER_STACK, thornmailBack } from '../game/ModuleValues';
+import { killblastDamage, killblastRadius, shieldAmount, SHIELD_CAP, SHIELD_COOLDOWN, SHIELD_DURATION, executePct, returnstrikePct, overchargePeriod, overchargeMul, lingeringChance, LINGER_TICKS, LINGER_TICK_DMG, LINGER_MAX_ZONES, VAMP_HEAL_PER_STACK } from '../game/ModuleValues';
 import { CHARS } from '../data/Chars';
 const { ccclass } = _decorator;
 
@@ -1336,13 +1335,6 @@ export class Battle extends Component {
     });
   }
 
-  /** 刺猬的实际效果份数（普通 1、Ⅱ 1.6，可跨技能叠加） */
-  private thornEffect(): number {
-    let sum = 0;
-    for (const sk of this.rs.skills) for (const m of sk.mods) if (baseOf(m) === 'thornmail') sum += modEffect(m);
-    return sum;
-  }
-
   /** 复读机：按份数排队重放（0.4s / 0.8s / 1.2s…），每份 +1 次 */
   private queueEcho(slot: number, n: number) {
     const reps = echoRepeats(n);
@@ -2382,16 +2374,6 @@ export class Battle extends Component {
         if (this.rs.charId === 'knight') this.hurtBoostT = 2.0;   // 骑士受击强化 2s
         Sfx.sfx('hitMetal', 0.4, 180);      // 玩家挨打
         this.shake(SHAKE.hurt);
-        // ★ 刺猬：基础 6 点/份（Ⅱ = 1.6 份 → 9.6 点），按效果份数结算
-        const thorn = this.thornEffect();
-        if (thorn > 0) {
-          const back = thornmailBack(thorn);
-          e.hp -= back;
-      this.waveDmgDealt += Math.min(back);
-          this.addDamageText(e.x, e.y - 10, back, false);
-          this.addVfx('core/spark/block-spark', e.x, e.y, 0.3, 1.2);
-          if (e.hp <= 0) this.killEnemy(e, undefined, 'normal', undefined, 'unknown');
-        }
         if (this.rs.stats.hp <= 0 && this.running) { this.running = false; this.paused = true; console.log('[Battle] 玩家阵亡'); this.hooks.onDead?.(); }
       }
     }
@@ -2525,7 +2507,7 @@ export class Battle extends Component {
     return { cd: 0, dmg: b.dmg, spd: 0, size: b.r, count: 1, fan: 0, pierce: b.pierce,
       bounce: b.bounce, orbit: 0, split: b.split, chain: b.chain,
       echo: 0, burn: b.burn ?? 0, slow: b.slow ?? 0, vamp: b.vamp ?? 0, thunder: b.thunder ?? 0,
-      thornmail: 0, harvest: false };
+      harvest: false };
   }
 
   private updateAreas(dt: number) {
@@ -2583,7 +2565,7 @@ export class Battle extends Component {
 
   private bulletRt2(dmg: number): SkillRuntime {
     return { cd: 0, dmg, spd: 0, size: 0, count: 1, fan: 0, pierce: 0, bounce: 0, orbit: 0,
-      split: 0, chain: 0, echo: 0, burn: 0, slow: 0, vamp: 0, thunder: 0, thornmail: 0, harvest: false };
+      split: 0, chain: 0, echo: 0, burn: 0, slow: 0, vamp: 0, thunder: 0, harvest: false };
   }
 
   private gemT = 0;

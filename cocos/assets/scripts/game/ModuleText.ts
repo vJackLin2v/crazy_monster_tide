@@ -36,7 +36,6 @@ export function moduleDetailText(id: string, stats?: { modCdrMul?: number }): st
     case 'snipe': return prefix + '弹速 +' + pct(Math.pow(1.4, e) - 1) + ' · 伤害 +' + pct(Math.pow(1.15, e) - 1);
     case 'harvest': return prefix + '击杀回 ' + (Math.round(e * 10) / 10) + ' HP';
     case 'thunder': return prefix + pct(0.15 * e) + ' 概率落雷';
-    case 'thornmail': return prefix + '受击反伤 ' + (Math.round(6 * e * 10) / 10);
     case 'overload': return prefix + '伤害 +' + pct(Math.pow(1.25, e) - 1) + ' · 范围 -' + pct(1 - Math.pow(0.9, e));
     default: return prefix + (MODULES[base]?.desc ?? '');
   }

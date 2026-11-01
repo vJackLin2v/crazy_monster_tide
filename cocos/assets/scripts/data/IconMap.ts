@@ -122,7 +122,6 @@ export const MODULE_ICON: Record<string, string> = {
   snipe: 'sk-precision.png',
   harvest: 'sh-execute.png',
   thunder: 'sh-multihit.png',
-  thornmail: 'relic-004.png',
   overload: 'sk-voltsaw.png',
 };
 

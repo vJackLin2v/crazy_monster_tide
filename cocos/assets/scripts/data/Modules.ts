@@ -19,7 +19,6 @@ export const MODULES: Record<string, ModuleDef> = {
   snipe:     { name: '狙击', icon: '⌖', stack: 'tier',     max: 3, requires: ['projectile'],               desc: '弹速更快、伤害更高' },
   harvest:   { name: '击杀回血', icon: '✂', stack: 'unique',   max: 3, requires: [],  desc: '每次击杀回复 1 点生命（Ⅱ 约 1.6 点）' },
   thunder:   { name: '落雷', icon: '⚡', stack: 'tier',     max: 3, requires: [], desc: '命中有概率落雷，对范围内敌人造成伤害' },
-  thornmail: { name: '反伤', icon: '✜', stack: 'unique',   max: 3, requires: [], desc: '被咬时反弹 6 点伤害（Ⅱ 约 9.6 点）' },
   overload:  { name: '强化伤害', icon: '⚠', stack: 'tier',     max: 3, requires: ['projectile','area','pulse','chain'], desc: '伤害更高、技能范围更小' },
 };
 
@@ -71,14 +70,13 @@ export const MODULE_NUMS: Record<string, string> = {
   snipe:     '弹速 +40% · 伤害 +15%',
   harvest:   '击杀回复 1 HP',
   thunder:   '15% 概率落雷',
-  thornmail: '被咬时反伤 6',
   overload:  '伤害 +25% · 范围 -10%',
 };
 
 /**
  * 黑科技的**运行时落点**清单（M50）。
  *
- * 为什么要这张表：M49 排查发现 bounce / chain / split / echo / thornmail 这 5 个模块
+ * 为什么要这张表：M49 排查发现 bounce / chain / split / echo 这 4 个模块
  * 数据表里写得好好的，但代码里**从来没有被用过** —— 玩家装了等于没装。
  * 这张表 + `tests/run.ts` 的断言保证：每个模块都必须至少在某一层真正生效。
  *
@@ -107,7 +105,6 @@ export const MODULE_HOOKS: Record<string, ModuleHook[]> = {
   snipe: ['calc'],
   harvest: ['kill'],
   thunder: ['onhit'],
-  thornmail: ['player'],
   overload: ['calc'],
 };
 
