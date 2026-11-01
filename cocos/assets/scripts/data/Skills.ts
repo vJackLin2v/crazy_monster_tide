@@ -1,6 +1,6 @@
 import type { SkillDef, SkillArt } from './Types';
 
-/** 20 个基础主动技能（当前实际；docs/systems/skill_types.md） */
+/** 18 个基础主动技能（移除震荡波/荆棘环后；docs/systems/skill_types.md） */
 export const SKILLS: Record<string, SkillDef> = {
   // ── 第一批新技能（设计 v6）──
   ring_blade: { name: '环刃', icon: 'sk-ring.png', type: 'orbit', tags: ['physical','orbit','melee'], cd: 1.6, dmg: 6, spd: 0, color: '#E8DCC8', size: 40,
@@ -19,8 +19,6 @@ export const SKILLS: Record<string, SkillDef> = {
                  desc: '高频小奥术弹：单发很轻，靠出手快堆伤害。' },
   blade:       { name: '回旋刃',   icon: 'skill-returning_blade.png', type: 'projectile', tags: ['physical','projectile','return'],  cd: 1.25, dmg: 11, spd: 200, color: '#F7E9E0', size: 8,
                  desc: '甩出飞刃，飞出去后会朝你飞回来，来回都能伤人。' },
-  shockwave:   { name: '震荡波',   icon: 'skill-shockwave.png',       type: 'pulse',      tags: ['physical','area','pulse'],         cd: 2.4,  dmg: 14, spd: 0,   color: '#FFD166', size: 26,
-                 desc: '以自己为中心炸开一圈冲击波，同时打到周围所有敌人。' },
   chain:       { name: '连锁闪电', icon: 'skill-chain_lightning.png', type: 'chain',      tags: ['lightning','chain'],               cd: 1.8,  dmg: 9,  spd: 0,   color: '#9BE7FF', size: 0,
                  desc: '从你身上劈出闪电，命中后会跳到附近的敌人身上。' },
   poison:      { name: '毒雾',     icon: 'skill-poison_mist.png',     type: 'area',       tags: ['poison','area','dot'],             cd: 3.0,  dmg: 4,  spd: 0,   color: '#5FB79C', size: 34, zoneLife: 4.2, tickRate: 0.4,
@@ -33,8 +31,6 @@ export const SKILLS: Record<string, SkillDef> = {
                  desc: '刃风贴脸转动最快，近身收益最高。' },
   holybolt:    { name: '圣光弹',   icon: 'skill-holy_bolt.png',       type: 'projectile', tags: ['holy','projectile','pierceable'],  cd: 0.75, dmg: 7,  spd: 300, color: '#FFF3C4', size: 6,
                  desc: '连发圣光：单发伤害低，但射速快，适合持续压制。' },
-  thorn:       { name: '荆棘环',   icon: 'skill-poison_thorn.png',    type: 'pulse',      tags: ['nature','area','pulse'],           cd: 2.6,  dmg: 10, spd: 0,   color: '#8FE07A', size: 30,
-                 desc: '脚下炸开一圈荆棘，同时扎伤周围的敌人。' },
   orb:         { name: '雷球',     icon: 'skill-arcane_pulse.png',    type: 'projectile', tags: ['lightning','projectile','homing'], cd: 1.10, dmg: 12, spd: 165, color: '#9BE7FF', size: 8,
                  desc: '慢速大雷球：出手慢但单发重，追着目标炸。' },
   spike:       { name: '扎心',     icon: 'sh-earthquake.png',     type: 'area',       tags: ['nature','area','dot'],             cd: 2.0,  dmg: 5,  spd: 0,   color: '#A8E06A', size: 24, zoneLife: 3.2, tickRate: 0.50,
@@ -62,7 +58,6 @@ export const SKILL_ART: Record<string, SkillArt> = {
   ice_spear:   { icon: 'skill-ice_spear.png',       proj: 'projectile/ice/ice-shard-shot',    hit: 'feedback/hit/ice-hit' },
   arcane:      { icon: 'skill-arcane_missile.png',  proj: 'projectile/arcane/magic-missile',  hit: 'core/spark/hit-spark' },
   blade:       { icon: 'skill-returning_blade.png', proj: 'melee/slash/wide-cleave',          hit: 'feedback/hit/slash-hit' },
-  shockwave:   { icon: 'skill-shockwave.png',       aoe: 'core/ring/shockwave',               hit: 'feedback/hit/heavy-hit' },
   chain:       { icon: 'skill-chain_lightning.png', proj: 'projectile/lightning/energy-bolt', hit: 'feedback/hit/shock-hit' },
   poison:      { icon: 'skill-poison_mist.png',     zone: 'ground/fill/ground-fill-poison',   hit: 'feedback/hit/poison-hit',
                  cast: 'ground/poison/acid-splash' },
@@ -72,7 +67,6 @@ export const SKILL_ART: Record<string, SkillArt> = {
   blade_storm: { icon: 'sh-swordplus.png',          zone: 'ground/ring/burning-ground',       hit: 'feedback/hit/slash-hit',
                  cast: 'melee/slash/spin-slash', swing: 'melee/slash/wide-cleave' },
   holybolt:    { icon: 'skill-holy_bolt.png',       proj: 'projectile/lightning/plasma-shot', hit: 'core/spark/hit-spark' },
-  thorn:       { icon: 'skill-poison_thorn.png',    aoe: 'ground/ring/cast-circle',           hit: 'core/spark/block-spark' },
   orb:         { icon: 'skill-arcane_pulse.png',    proj: 'projectile/lightning/plasma-shot', hit: 'feedback/hit/shock-hit' },
   spike:       { icon: 'sh-earthquake.png',         zone: 'ground/earth/stone-burst',         hit: 'feedback/hit/heavy-hit',
                  cast: 'core/dust/dirt-kick' },

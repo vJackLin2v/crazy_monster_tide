@@ -52,7 +52,7 @@ import { SKILLS, SKILL_ART } from './data/Skills';
 import { Assets, preloadIcons } from './engine/Assets';
 import { Sfx } from './engine/Audio';
 import { MODULES, MODULE_IDS, MODULE_NUMS, modEffect, moduleDef, baseOf, isMerged, levelOf, nextLevelId } from './data/Modules';
-import { moduleDetailText, moduleRequiresHint } from './game/ModuleText';
+import { moduleDetailText } from './game/ModuleText';
 import { ITEMS, itemNumbers } from './data/Items';
 import { ITEM_ICON, MODULE_ICON, ATTR_ICON } from './data/IconMap';
 import { ATTRS } from './data/Attrs';
@@ -1213,9 +1213,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       const sub = s.kind === 'item'
         ? (ITEMS[s.id] ? itemNumbers(ITEMS[s.id], s.id) || ITEMS[s.id].desc : '')
         // 用户 2026-10-30：商店也只留"一句话"——黑科技显示数值短句，不再显示长效果描述
-        : s.kind === 'module'
-          ? moduleRequiresHint(s.id, rs.skills.map(x => x.id)) + '\n' + moduleDetailText(s.id, rs.stats)
-          : '';
+        : s.kind === 'module' ? moduleDetailText(s.id, rs.stats) : '';
       const icon = s.kind === 'item' ? ITEM_ICON[s.id]
         : s.kind === 'module' ? MODULE_ICON[s.id] : undefined;
       // M52：稀有度（1 普通 / 2 高级）+ 已持有数量（堆叠提示）

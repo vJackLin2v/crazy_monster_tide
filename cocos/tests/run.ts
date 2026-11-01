@@ -136,7 +136,7 @@ console.log('\n== 3. 奖励池 ==');
 }
 {
   const rs = new RunState('knight', 7);
-  rs.skills = ['fireball','ice_spear','arcane','shockwave'].map(makeSkill);
+  rs.skills = ['fireball','ice_spear','arcane','frostnova'].map(makeSkill);
   let sawReplace = false;
   for (let i = 0; i < 60; i++) if (rs.rollRewards().some(r => r.needReplace)) { sawReplace = true; break; }
   ok(sawReplace, '技能满 4 个时会给出「需替换」的新技能');
@@ -145,7 +145,7 @@ console.log('\n== 3. 奖励池 ==');
 console.log('\n== 4. 替换不让玩家损失 ==');
 {
   const rs = new RunState('knight', 1);
-  rs.skills = [makeSkill('fireball'), makeSkill('ice_spear'), makeSkill('arcane'), makeSkill('shockwave')];
+  rs.skills = [makeSkill('fireball'), makeSkill('ice_spear'), makeSkill('arcane'), makeSkill('frostnova')];
   rs.skills[0].mods = ['multi', 'pierce'];
   rs.modsBag = [];
   const back = rs.replaceSkill(0, 'blade');
@@ -255,6 +255,7 @@ console.log('== 4c. 道具数量（需求 §10：52 普通 + 25 高级） ==')
     && (SKILLS.frostring.tags as unknown as string[]).indexOf('slow') >= 0, '霜爆不再标 slow；寒冰环保留 slow');
   ok(SKILLS.frostnova.desc.indexOf('减速目标') >= 0 && SKILLS.frostring.desc.indexOf('减速') >= 0,
     '霜爆/寒冰环描述区分');
+  ok(!SKILLS.shockwave && !SKILLS.thorn, '重复范围技能震荡波/荆棘环已移除');
 
 
   const iconGroups = [

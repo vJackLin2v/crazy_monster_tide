@@ -1384,13 +1384,14 @@ export class Battle extends Component {
       const y = m.fromY + (m.toY - m.fromY) * e;
       if (m.node && m.node.isValid) {
         m.node.setPosition(x, ARENA_H - y, 0);
-        // 石块是"团"状，不做朝向旋转，靠**竖直下落 + 火焰拖尾**表现"砸下来"
+        // 素材本身是横向长条；旋转 90° 才能读作"竖直下落"
+        m.node.angle = 90;
         m.node.setScale(Math.max(2.4, m.size / 10) * (1 + 0.15 * k));
       }
       m.trailT -= dt;
       if (m.trailT <= 0) {
         m.trailT = 0.05;
-        this.addVfx('projectile/fire/fire-trail', x, y + 6, 0.3, Math.max(1.0, m.size / 16));
+        this.addVfx('projectile/fire/fire-trail', x, y + 6, 0.3, Math.max(1.0, m.size / 16), 90);
       }
       if (k >= 1 && !m.done) {
         m.done = true;
