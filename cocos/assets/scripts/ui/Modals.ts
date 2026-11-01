@@ -262,7 +262,8 @@ function coinGlyph(parent: Node, x: number, y: number, size = 13): Node {
 /** 价格 chip：金币图标 + 数字（不再用 "◆ 20" 这种字符占位） */
 function priceChip(parent: Node, x: number, y: number, price: number, color: Color): Node {
   const w = Math.max(52, String(price).length * 9 + 40);
-  const c = panel(parent, x, y, w, 24, { bg: COL.bg3, line: color, radius: 3, shadow: false });
+  // 价格 chip 不画橙色描边/下划线；只保留深色底 + 金币 + 数字
+  const c = panel(parent, x, y, w, 24, { bg: COL.bg3, line: color, radius: 3, shadow: false, border: false });
   coinGlyph(c, -w / 2 + 12, 0, 13);
   text(c, 10, 1, String(price), { size: 12, color, width: w - 30, align: 'center', bold: true, outline: false });
   return c;
