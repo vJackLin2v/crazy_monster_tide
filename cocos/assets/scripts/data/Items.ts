@@ -2,7 +2,7 @@ import type { ItemDef, CharStats } from './Types';
 import { emptyStats } from '../game/Stats';
 
 /**
- * 道具 —— **70 个**（需求 §10：50 普通 + 20 高级，现已补齐）
+ * 道具 —— **79 个**（当前实际：51 普通 + 24 高级 + 4 传说）
  *
  * 构成：
  *   · tier 1 × 50 = 24 个属性各 2 档（小/大）+ 2 个治疗
@@ -89,7 +89,7 @@ export const ITEMS: Record<string, ItemDef> = {
   bloodpact:  { name: '血契',     icon: 'sh-blood', tier: 3, desc: '攻击力 +30%，最大生命 -25%', special: 'bloodpact', apply: (s) => { s.power *= 1.30; s.maxhp = Math.round(s.maxhp * 0.75); } },
   lastbreath: { name: '低血强化',     icon: 'sh-execute', tier: 2, desc: '生命低于 35% 时攻速 +35%，高于则 -8%', special: 'lastbreath', apply: () => { /* 运行时处理 */ } },
   thorncoat:  { name: '受击反伤', icon: 'sh-heart', tier: 1, desc: '受击反弹 12 点伤害（0.5s CD），移速 -6%', special: 'thorncoat', apply: () => { /* 移速 -6% 由运行时处理 */ } },
-  greed:      { name: '金币转攻击', icon: 'relic-007', tier: 2, desc: '金币 +25%，每 100 金币攻击 +3%（上限 +15%）', special: 'greed', apply: () => { /* 金币 +25% 由运行时处理 */ } },
+  greed:      { name: '金币转攻击', icon: 'relic-007', tier: 2, desc: '金币 +25%，每 100 金币攻击 +3%（上限 +15%）', special: 'greed', apply: (s: CharStats) => { s.greed += 0.25; } },
   frugal:     { name: '刷新省钱', icon: 'relic-019', tier: 1, desc: '刷新费用 -50%，每波结束金币 -2', special: 'frugal', apply: () => { /* 运行时处理 */ } },
   focused:    { name: '极简专精', icon: 'sh-sizeup', tier: 3, desc: '装备技能 ≤2 个时：技能伤害 +25%、冷却 -10%', special: 'focused', apply: () => { /* 运行时处理 */ } },
   resonator:  { name: '黑科技共鸣',   icon: 'relic-030', tier: 3, desc: '同一技能装了 2 个相同触发时机（Hook）的黑科技时，该技能伤害 +20%', special: 'resonator', apply: () => { /* 运行时处理 */ } },

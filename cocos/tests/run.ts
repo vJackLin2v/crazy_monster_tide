@@ -314,6 +314,13 @@ console.log('== 4c. 道具数量（需求 §10：52 普通 + 25 高级） ==')
   ok(itemNumbers(ITEMS.speed_l, 'speed_l').indexOf('移动速度 +14%') === 0, '数值说明：移速类按百分比显示');
   ok(itemNumbers(ITEMS.t_fire, 't_fire') === '火系技能伤害 +25%', '数值说明：余烬核心 = 火系技能伤害 +25%');
   {
+    const gs = emptyStats(); ITEMS.greed.apply(gs);
+    ok(Math.abs(gs.greed - 0.25) < 1e-9, '金币转攻击：apply 实际 +25% 金币');
+    const gr = new RunState('knight', 31); gr.gold = 0; gr.stats.greed = 0;
+    ITEMS.greed.apply(gr.stats); gr.addKill(0, 100);
+    ok(gr.gold === 125, '金币转攻击：100 金币击杀 → 125（+25%）');
+  }
+  {
     const st = emptyStats(); ITEMS.t_ice.apply(st);
     ok(Math.abs(st.tagBonus.ice - 0.25) < 1e-9, '冰河之心 = 冰系 +25%（与其余系统一）');
     const st2 = emptyStats(); ITEMS.cdr_ice.apply(st2);

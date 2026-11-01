@@ -1,6 +1,6 @@
 import type { SkillDef, SkillArt } from './Types';
 
-/** 16 个基础主动技能（docs/systems/skill_types.md；需求 §10 目标 16） */
+/** 20 个基础主动技能（当前实际；docs/systems/skill_types.md） */
 export const SKILLS: Record<string, SkillDef> = {
   // ── 第一批新技能（设计 v6）──
   ring_blade: { name: '环刃', icon: 'sk-ring.png', type: 'orbit', tags: ['physical','orbit','melee'], cd: 1.6, dmg: 6, spd: 0, color: '#E8DCC8', size: 40,
