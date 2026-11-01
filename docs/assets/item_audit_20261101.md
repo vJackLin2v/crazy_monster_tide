@@ -64,14 +64,14 @@
 | armor_l | 龙鳞甲 | sh-blockshield.png | armor+0.11 | 挨打几乎不疼 |
 | armor_s | 铁胸甲 | sh-shield.png | armor+0.05 | 挨打掉血更少 |
 | bloodpact | 血契 | relic-026.png | special:bloodpact power×1.3 maxhp×0.75 | 攻击力 +30%，最大生命 -25% |
-| bounce_l | 回音石 | sh-multihits.png | bounce+2 | 子弹多弹两次 |
-| bounce_s | 弹跳石 | sh-diffusion.png | bounce+1 | 子弹多弹一次 |
+| bounce_l | 回音石 | relic-009.png | bounce+2 | 子弹多弹两次 |
+| bounce_s | 弹跳石 | relic-008.png | bounce+1 | 子弹多弹一次 |
 | cdr_bolt | 雷暴核心 | sh-meteor.png | tagCdr.lightning+0.15 | 雷系技能转得更快 |
 | cdr_ice | 寒霜碎片 | relic-036.png | tagCdr.ice+0.15 | 冰系技能转得更快 |
 | cdr_l | 时之轮 | relic-018.png | cdr+0.11 | 技能转得很快 |
 | cdr_s | 齿轮 | relic-040.png | cdr+0.05 | 技能转得更快 |
-| count_l | 三重镜 | sk-tripleshot.png | count+1 extraProjDmg+0.15 | 多打一发，且额外那发更疼 |
-| count_s | 分裂核心 | sh-multihit.png | count+1 | 一次多打一发 |
+| count_l | 三重镜 | relic-061.png | count+1 extraProjDmg+0.15 | 多打一发，且额外那发更疼 |
+| count_s | 分裂核心 | relic-023.png | count+1 | 一次多打一发 |
 | crit_l | 猎手之瞳 | sh-pierce.png | crit×2.8 | 暴击更容易了 |
 | crit_s | 鹰眼 | sh-eye.png | crit×1.8 | 更容易打出暴击 |
 | critdmg_l | 斩钢刃 | w-blade.png | critdmg×1.233 | 暴击特别疼 |
@@ -89,7 +89,7 @@
 | greed_l | 贪婪硬币 | up-startgold.png | greed+0.35 | 金币掉得很多 |
 | greed_s | 金币袋 | gold-bag.png | greed+0.15 | 金币掉得更多 |
 | haste_l | 迅捷护符 | up-speed.png | haste×1.16 | 出手明显更快 |
-| haste_s | 疾风戒 | aspd-up.png | haste×1.08 | 出手更快一点 |
+| haste_s | 疾风戒 | ui-aspd.png | haste×1.08 | 出手更快一点 |
 | heal1 | 急救包 | relic-045.png | hp+30 | 立刻回一口血 |
 | invuln_l | 时之沙 | sh-hourglass.png | invuln×1.275 | 挨打后无敌很久 |
 | invuln_s | 龟甲片 | relic-017.png | invuln×1.125 | 挨打后无敌更久 |
@@ -104,15 +104,15 @@
 | maxhp_s | 生命护符 | sh-heart.png | maxhp×1.208 | 血条变长一点 |
 | pickup_l | 吸铁石 | ui-magnet-core.png | pickup×1.55 | 经验吸得很远 |
 | pickup_s | 吸尘器 | ui-essence.png | pickup×1.25 | 经验吸得更远 |
-| pierce_l | 破空矢 | sk-piercebul.png | pierce+2 | 子弹多穿两个 |
+| pierce_l | 破空矢 | w-tusk.png | pierce+2 | 子弹多穿两个 |
 | pierce_s | 穿甲尖 | relic-020.png | pierce+1 | 子弹多穿一个 |
 | power_l | 战锤碎片 | atk-up.png | power×1.16 | 攻击明显更疼 |
 | power_s | 铁匠手套 | sh-fist.png | power×1.08 | 攻击更疼一点 |
 | prism | 棱镜 | relic-010.png | tagAll+0.08 | 所有技能都更疼 |
-| projSpd_l | 追风矢 | sk-galebow.png | projSpd×1.22 | 子弹快得离谱 |
+| projSpd_l | 追风矢 | ui-arrow.png | projSpd×1.22 | 子弹快得离谱 |
 | projSpd_s | 羽毛箭 | up-arrow.png | projSpd×1.1 | 子弹飞得更快 |
 | rage | 狂战之怒 | sh-angry.png | power×1.2 crit×2.6 | 打得更疼，也更爱暴击 |
-| reaper | 收割者 | sh-execute.png | expGain+0.15 killHeal+2 | 杀怪回血、涨经验 |
+| reaper | 收割者 | relic-064.png | expGain+0.15 killHeal+2 | 杀怪回血、涨经验 |
 | regen_l | 生命之泉 | relic-042.png | regen+0.7 | 自动回血更快 |
 | regen_s | 苔藓苔 | sh-cross.png | regen+0.3 | 慢慢自动回血 |
 | resonator | 黑科技共鸣 | relic-031.png | special:resonator | 同一技能装了 2 个相同触发时机（Hook）的黑科技时，该技能伤害 +20% |
@@ -124,10 +124,10 @@
 | speed_l | 疾风长靴 | relic-053.png | speed×1.14 | 跑得明显更快 |
 | speed_s | 轻羽靴 | relic-030.png | speed×1.06 | 跑得更快一点 |
 | t_arcane | 奥术宝石 | sk-arcanecore.png | tagBonus.arcane+0.25 | 奥术技能更疼 |
-| t_bolt | 雷神之锤 | sk-overload.png | tagBonus.lightning+0.25 | 雷系技能更疼 |
-| t_fire | 余烬核心 | sh-fire.png | tagBonus.fire+0.25 | 火系技能更疼 |
-| t_holy | 圣徽 | sh-holy.png | tagBonus.holy+0.25 | 圣系技能更疼 |
-| t_ice | 冰河之心 | sh-ice.png | tagBonus.ice+0.25 | 冰系技能更疼 |
+| t_bolt | 雷神之锤 | relic-065.png | tagBonus.lightning+0.25 | 雷系技能更疼 |
+| t_fire | 余烬核心 | skill-flame_field.png | tagBonus.fire+0.25 | 火系技能更疼 |
+| t_holy | 圣徽 | relic-051.png | tagBonus.holy+0.25 | 圣系技能更疼 |
+| t_ice | 冰河之心 | relic-035.png | tagBonus.ice+0.25 | 冰系技能更疼 |
 | t_nature | 自然之心 | sk-healingsanct.png | tagBonus.nature+0.25 | 自然技能更疼 |
 | t_phys | 锋锐原石 | relic-044.png | tagBonus.physical+0.25 | 物理技能更疼 |
 | t_poison | 剧毒囊 | sh-poison.png | tagBonus.poison+0.25 | 毒系技能更疼 |

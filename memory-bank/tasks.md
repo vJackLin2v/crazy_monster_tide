@@ -10,22 +10,22 @@
 
 ### 验证
 - tsc check = 0；tsc ui-check = 0
-- tests/run.ts = **588 PASS / 0 FAIL**
+- tests/run.ts = **587 PASS / 0 FAIL**
 - 反伤模块已移除，thorncoat 保留；RUN_SAVE_VERSION 2 拒绝旧存档
 - 整数型 Ⅲ 级空转已修（modIntEffect / modPower 分离）
 - chain 图标/描述与弹射区分；黑科技统一青色底框
-- 技能 4 组、道具 14 组重复图标已拆分
+- 技能/道具重复图标已拆分；全局 113 个图标唯一
 - 冰系 t_ice 25%、cdr_ice 15%
-- 寒冰环自带减速；霜爆对减速目标 1.5x
+- 移除寒冰环；霜爆保留为唯一范围爆发（对减速目标 1.5x）
 - aoe_x tier3；resonator 描述统一；greed 金币 +25% 实装
-- 道具/技能头注释 79/18；item_audit 已按当前代码重新生成（79 图标 / 0 重复 / 23 同属性档）
-- 移除重复范围技能 shockwave/thorn；商店去掉 requires 长提示；HUD 橙色波次条删除；陨石旋转 90° 竖直下落
-- 微信构建 success：3.14MB / 10.97MB；index.js 333,242 B（2026-11-01 20:00:38）
+- 道具/技能头注释 79/17；item_audit 当前 79 图标 / 0 重复 / 23 同属性档
+- 移除重复范围技能 shockwave/thorn/frostring；商店去掉 requires 长提示；HUD 橙色波次条删除；陨石旋转 90° 竖直下落
+- 微信构建 success：3.14MB / 10.97MB；index.js 332,622 B（2026-11-01 20:20:40）
 
 ### 未完成 / 待决策
-- 微信真机视觉/交互确认；
+- 微信真机视觉/交互确认（最高优先）；
 - 可选：卡片显示 Hook 标签（resonator 目前用文字说明）；
-- item_audit 只统计道具；跨类图标仍由黑科技底框区分。
+- 设计文档仍按旧技能池描述，需同步。
 
 ### 下一步
 - 等待用户决定是否做 Hook 标签或真机验证；无其他已知代码缺陷。
