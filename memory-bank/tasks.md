@@ -10,18 +10,19 @@
 
 ### 验证
 - tsc check = 0；tsc ui-check = 0
-- tests/run.ts = **558 PASS / 0 FAIL**（修复前实际 550；新增 8 条）
+- tests/run.ts = **556 PASS / 0 FAIL**（移除旧反伤模块测试 2 条、新增 1 条后，相对 558 基线 -2）
+- 反伤模块已从 MODULES/MODULE_IDS/MODULE_HOOKS/图标/Battle/SkillCalc 移除；thorncoat 道具保留
+- RUN_SAVE_VERSION 1 → 2，旧存档按“版本过旧”拒绝，用户已确认可删旧存档
 - multi_3 装火球 count=4；multi_3 文案 +3 发；chain_3 文案跳 3 次；echo_3 = 3 次
-- 微信构建 success（本机时间见 build 输出）
+- 微信构建 success：3.14MB / 10.97MB；index.js 333,422 B（15:31:56）
 
 ### 未完成 / 待决策
-- 反伤黑科技改道具：需先定是复用现有 thorncoat 还是删模块+新增道具；涉及存档迁移/图标/掉落池/数值，未动。
 - chain 与 bounce 行为已有区别（chain 终结弹体跳击 70%，bounce 弹体转向续飞并 0.8 衰减），但图标/描述仍易混；未动。
 - reports/全量审核_黑科技_道具_技能_20261101.xlsx 的 P2-P14（图标、冰系标签、霜爆/寒冰环重叠、文档漂移、tier 倒挂等）已记录，未修。
 - 同类 modPower 误用排查：除已修处外，未发现其他“效果读取”使用 modPower；剩余用法均为 canInstall/合成容量语义。
 
 ### 下一步
-- 等用户确认下一里程碑（优先反伤载体改造或图标/描述修正，二者不要混做）。
+- 下一里程碑：chain/bounce 图标与描述区分（先做 chain 图标，不动数值/商品池）。
 
 
 
