@@ -301,6 +301,12 @@ console.log('== 4c. 道具数量（需求 §10：52 普通 + 25 高级） ==')
   ok(itemNumbers(ITEMS.power_s, 'power_s') === '攻击力 +8%', '数值说明：铁匠手套 = 攻击力 +8%');
   ok(itemNumbers(ITEMS.speed_l, 'speed_l').indexOf('移动速度 +14%') === 0, '数值说明：移速类按百分比显示');
   ok(itemNumbers(ITEMS.t_fire, 't_fire') === '火系技能伤害 +25%', '数值说明：余烬核心 = 火系技能伤害 +25%');
+  {
+    const st = emptyStats(); ITEMS.t_ice.apply(st);
+    ok(Math.abs(st.tagBonus.ice - 0.25) < 1e-9, '冰河之心 = 冰系 +25%（与其余系统一）');
+    const st2 = emptyStats(); ITEMS.cdr_ice.apply(st2);
+    ok(Math.abs(st2.tagCdr.ice - 0.15) < 1e-9, '寒霜碎片 = 冰系冷却 -15%（与雷系统一）');
+  }
   ok(itemNumbers(ITEMS.dragon, 'dragon').indexOf('生命上限 +40') === 0, '数值说明：巨龙之心含「生命上限 +40」');
   // 抽一个道具验证它真的改属性
   const st = emptyStats();
