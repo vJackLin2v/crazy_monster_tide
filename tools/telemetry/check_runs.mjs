@@ -35,7 +35,8 @@ for (const f of files) {
   let parsed;
   try { parsed = JSON.parse(buf.toString('utf8').replace(/^\uFEFF/, '')); }
   catch (e) { errors.push(f + ': JSON 解析失败 - ' + e.message); fileInfos.push({ file: f, sha256: sha, records: 0, error: 'parse' }); continue; }
-  const list = Array.isArray(parsed?.records) ? parsed.records : [parsed];
+  // 支持：{records:[...]} / 顶层数组（微信 Storage 里 cmt_telemetry_v1 原值）/ 单条记录
+  const list = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.records) ? parsed.records : [parsed]);
   let added = 0;
   for (const r of list) {
     if (!r || typeof r !== 'object' || typeof r.runId !== 'string') { errors.push(f + ': 记录缺少 runId'); continue; }

@@ -46,7 +46,7 @@
 
    - 先确认微信开发者工具已重新编译最新 `cocos/build/wechatgame`；
    - 尝试 `GameGlobal.__m2aJson()`；
-   - 仍不行则绕过钩子，直接读本地存储：
+   - 仍不行则绕过钩子，直接读本地存储（保存原始数组即可，校验工具已支持顶层数组）：
 
    ```js
    const v = wx.getStorageSync('cmt_telemetry_v1');
@@ -54,7 +54,8 @@
    wx.setClipboardData({ data: JSON.stringify({ schemaVersion: 2, records: recs }) });
    ```
 
-   （有 `copy` 时把最后一句换成 `copy(JSON.stringify({schemaVersion:2,records:recs}))`）
+   （有 `copy` 时把最后一句换成 `copy(JSON.stringify({schemaVersion:2,records:recs}))`；
+   也可以直接把 `wx.getStorageSync('cmt_telemetry_v1')` 的原始字符串保存为 JSON 文件）
 
    再粘贴到本机文本文件；
 4. 保存为 `raw/run_001.json`（可包含多局 records；校验工具按 runId 去重）；
