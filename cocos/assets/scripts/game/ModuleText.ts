@@ -2,8 +2,7 @@
  * 黑科技面板的精确数值文案（按当前等级）。
  * 与 SkillCalc/Battle 公式保持一致；用于安装屏、Build 面板、商店。
  */
-import { MODULES, baseOf, modEffect, modIntEffect, levelOf } from '../data/Modules';
-import { canInstall, makeSkill } from './SkillCalc';
+import { MODULES, MODULE_HOOKS, baseOf, modEffect, modIntEffect, levelOf } from '../data/Modules';
 
 function pct(v: number): string {
   return (Math.round(v * 1000) / 10).toFixed(1) + '%';
@@ -41,25 +40,13 @@ export function moduleDetailText(id: string, stats?: { modCdrMul?: number }): st
   }
 }
 
-/** 模块 requires 标签 → 玩家可读的短标签 */
-const TAG_CN: Record<string, string> = {
-  projectile: '投射物', pulse: '脉冲', chain: '连锁', area: '范围',
-  orbit: '环绕', melee: '近战', trap: '陷阱', summon: '召唤',
+/** 模块触发时机（Hook）→ 玩家可读短标签 */
+const HOOK_CN: Record<string, string> = {
+  calc: '计算', onhit: '命中', cast: '施放', kill: '击杀', player: '受击',
 };
 
-/**
- * 商店模块的兼容条件提示。
- * 兼容判断复用 canInstall（与安装/战斗规则同源）；这里只做展示，不改变购买/安装。
- */
-export function moduleRequiresHint(id: string, skillIds: string[]): string {
-  const tags = MODULES[baseOf(id)]?.requires ?? [];
-  if (!tags.length) return '无需特定技能';
-  const ok = skillIds.some(sid => {
-    const r = canInstall(makeSkill(sid), id);
-    // 槽位已满/已满级仍表示类型兼容，不能误报“不兼容”
-    return r.ok || r.why === '需替换槽位' || r.why === '已满级';
-  });
-  const need = tags.map(t => TAG_CN[t] ?? t).join('/');
-  return (ok ? '需要：' : '暂无兼容，可留用 · 需要：') + need;
+export function moduleHookText(id: string): string {
+  const hooks = MODULE_HOOKS[baseOf(id)] ?? [];
+  return hooks.map(h => HOOK_CN[h] ?? h).join('/');
 }
 

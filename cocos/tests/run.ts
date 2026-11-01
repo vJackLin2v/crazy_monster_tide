@@ -52,7 +52,7 @@ import { TelemetryRecorder } from '../assets/scripts/game/telemetry/TelemetryRec
 import { loadRecords, saveRecord, exportAllJson, exportRunJson, aggregate, clearAll, skillTotals, TELEMETRY_MAX_RUNS, type TelemetryStorageLike } from '../assets/scripts/game/telemetry/TelemetryStore';
 import { TELEMETRY_SCHEMA_VERSION } from '../assets/scripts/game/telemetry/TelemetryTypes';
 import { pickDotSource } from '../assets/scripts/game/telemetry/DotAttribution';
-import { moduleDetailText, moduleRequiresHint } from '../assets/scripts/game/ModuleText';
+import { moduleDetailText, moduleHookText } from '../assets/scripts/game/ModuleText';
 import { stepPulse } from '../assets/scripts/game/PulseHit';
 import { emptyHistory, addRun, buildSummary, validateHistory, filterRuns, historyStats, hasRun, HISTORY_MAX, type RunSummary, type RunDetail } from '../assets/scripts/game/RunHistory';
 
@@ -296,10 +296,9 @@ console.log('== 4c. 道具数量（需求 §10：52 普通 + 25 高级） ==')
   ok(moduleDetailText('rapid_3', { modCdrMul: 1.25 }) === 'Lv.3 · 冷却 -29.6%', '法师 rapid Lv.3 = 29.6%');
 
   // M2-B.3：商店 requires 提示（复用 canInstall 兼容判断）
-  ok(moduleRequiresHint('multi', ['spirit']) === '需要：投射物', '兼容时显示需要：投射物');
-  ok(moduleRequiresHint('multi', ['meteor']).indexOf('暂无兼容') === 0, '无兼容时显示暂时不兼容提示');
-  ok(moduleRequiresHint('giant', ['spirit']) === '需要：投射物/范围/脉冲/连锁', '多条件完整显示');
-  ok(moduleRequiresHint('burn', ['meteor']) === '无需特定技能', '空 requires 显示无需特定技能');
+  ok(moduleHookText('multi') === '计算' && moduleHookText('chain') === '命中', '模块 Hook 标签：计算/命中');
+  ok(moduleHookText('harvest') === '击杀' && moduleHookText('echo') === '施放', '模块 Hook 标签：击杀/施放');
+  ok(moduleHookText('unknown') === '', '未知模块 Hook 为空，不误报');
   {
     const rs = new RunState('monk', 1);
     rs.skills = [makeSkill('meteor')];

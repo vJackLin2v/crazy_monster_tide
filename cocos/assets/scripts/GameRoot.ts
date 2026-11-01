@@ -52,7 +52,7 @@ import { SKILLS, SKILL_ART } from './data/Skills';
 import { Assets, preloadIcons } from './engine/Assets';
 import { Sfx } from './engine/Audio';
 import { MODULES, MODULE_IDS, MODULE_NUMS, modEffect, moduleDef, baseOf, isMerged, levelOf, nextLevelId } from './data/Modules';
-import { moduleDetailText } from './game/ModuleText';
+import { moduleDetailText, moduleHookText } from './game/ModuleText';
 import { ITEMS, itemNumbers } from './data/Items';
 import { ITEM_ICON, MODULE_ICON, ATTR_ICON } from './data/IconMap';
 import { ATTRS } from './data/Attrs';
@@ -948,7 +948,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       pickedId: from && fromMod ? fromMod : this.installSel,
       pickedDesc: (() => {
         const id = from && fromMod ? fromMod : this.installSel;
-        return id ? moduleDetailText(id, rs.stats) : '';
+        return id ? moduleDetailText(id, rs.stats) + ' · 触发：' + moduleHookText(id) : '';
       })(),
       // 只列「max >= 3」的模块：max 1~2 的模块永远凑不到 3 个同名，
       // 列出来只会显示"还差 1 个"却永远凑不齐（B4 的体验问题）
