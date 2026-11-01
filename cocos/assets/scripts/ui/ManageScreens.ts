@@ -127,6 +127,8 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
       const isSel = !!d.selSlot && d.selSlot.si === si && d.selSlot.sl === k;
       const b = panel(row, slotCx(k), 0, SW, SH, { art: isSel ? 'card_gold' : (mod ? 'slot' : 'well') });
       if (mod) {
+        // 黑科技统一底框：与道具图标区分
+        panel(b, -SW / 2 + 16, 0, 22, 22, { art: 'rim_cyan' });
         drawIcon(b, -SW / 2 + 16, 0, 18, mod.icon);
         text(b, 10, 0, (mod.name.replace(/\s*[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+$/, '') + (mod.merged ? ' Ⅱ' : '')).slice(0, 7),
           { size: 10, color: mod.merged ? COL.accent : COL.cream, width: 48, outline: true });

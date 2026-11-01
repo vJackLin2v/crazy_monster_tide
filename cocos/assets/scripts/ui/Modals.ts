@@ -325,6 +325,8 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
 
     // 图标槽（44），垂直居中
     const iconBox = slot(row, -138, 0, 44, { empty: s.sold });
+    // 黑科技统一底框：与道具图标区分，不替换既有素材
+    if (s.kind === 'module') panel(iconBox, 0, 0, 40, 40, { art: 'rim_cyan' });
     if (s.icon) {
       const inode = mkNode(iconBox, 'icon', 32, 32);
       const isp = inode.addComponent(Sprite);
