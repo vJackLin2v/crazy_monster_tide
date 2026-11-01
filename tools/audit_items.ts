@@ -56,14 +56,7 @@ md += '- 相同效果签名组（数值完全一致）：' + dupEffects.length +
 md += '- 相同效果类型组（同一属性/标签，数值可不同）：' + dupKeys.length + '\n\n';
 md += '> 说明：剩余重复图标均为同语义家族（生命/护盾/元素/时间等）或同属性 1/2/3 档；本轮修复了跨语义重复。\n';
 md += '> 效果类型组均为同属性的不同档位，**没有发现数值完全相同的重复道具**。\n\n';
-md += '## 本轮已修图标\n\n| 道具 | 旧图标 | 新图标 | 原因 |\n|---|---|---|---|\n';
-md += '| 战锤碎片(power_l) | relic-007 | atk-up | 与金币转攻击(greed) 跨语义重复 |\n';
-md += '| 广角符文(area_l) | relic-019 | sh-enlarge | 与刷新省钱(frugal) 跨语义重复 |\n';
-md += '| 贤者之石(expGain_l) | relic-014 | relic-054 | 与烈焰之核(aoe_l) 跨语义重复 |\n';
-md += '| 治疗药水(heal2) | sh-heart | relic-055 | 与生命/回复类图标重复 |\n';
-md += '| 烈焰之核(aoe_l) | relic-014 | sh-explosion | 原图标是羽毛，语义不符 |\n';
-md += '| 极简专精(focused) | sh-sizeup | concentrate | 与放大镜(area_s) 跨语义重复 |\n';
-md += '| 黑科技共鸣(resonator) | relic-030 | relic-031 | 与轻羽靴(speed_s) 跨语义重复 |\n\n';
+md += '## 图标修复记录\n\n修复明细见 git 历史与 docs/m2b/m2b_3_* 报告；本表只列当前剩余重复。\n\n';
 md += '## 重复图标\n\n| 图标 | 数量 | 道具 |\n|---|---|---|\n';
 for (const [icon, list] of dupIcons) md += '| ' + icon + ' | ' + list.length + ' | ' + list.map(x => x.name + '(' + x.id + ')').join('、') + ' |\n';
 md += '\n## 相同效果签名（数值完全一致）\n\n| 效果签名 | 数量 | 道具 |\n|---|---|---|\n';
