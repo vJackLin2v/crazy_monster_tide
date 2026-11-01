@@ -42,6 +42,20 @@
    wx.setClipboardData({ data: __m2aJson() })
    ```
 
+   若提示 `__m2aJson is not defined`：
+
+   - 先确认微信开发者工具已重新编译最新 `cocos/build/wechatgame`；
+   - 尝试 `GameGlobal.__m2aJson()`；
+   - 仍不行则绕过钩子，直接读本地存储：
+
+   ```js
+   const v = wx.getStorageSync('cmt_telemetry_v1');
+   const recs = typeof v === 'string' ? JSON.parse(v) : v;
+   wx.setClipboardData({ data: JSON.stringify({ schemaVersion: 2, records: recs }) });
+   ```
+
+   （有 `copy` 时把最后一句换成 `copy(JSON.stringify({schemaVersion:2,records:recs}))`）
+
    再粘贴到本机文本文件；
 4. 保存为 `raw/run_001.json`（可包含多局 records；校验工具按 runId 去重）；
 5. **不要手工修改 JSON**。

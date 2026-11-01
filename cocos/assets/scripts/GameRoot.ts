@@ -125,11 +125,21 @@ export class GameRoot extends Component {
     dbg.__deviceLogDump = () => console.log(dumpDeviceLog());
     dbg.__deviceLogClear = () => { clearDeviceLog(); console.log('[DeviceLog] 已清空'); };
     dbg.__deviceLogCount = () => deviceLogCount();
-    // M2-A 遥测调试
-    dbg.__m2a = () => aggregate();
-    dbg.__m2aJson = () => exportAllJson();
-    dbg.__m2aRun = (id: string) => exportRunJson(id);
-    dbg.__m2aClear = () => clearAll();
+    // M2-A 遥测调试（同时挂到 GameGlobal/window，微信控制台顶层可直接调用）
+    const expose = (name: string, fn: unknown) => {
+      dbg[name] = fn;
+      try {
+        const g = globalThis as unknown as Record<string, unknown>;
+        const gg = g.GameGlobal as Record<string, unknown> | undefined;
+        if (gg && gg !== dbg) gg[name] = fn;
+        const w = g.window as Record<string, unknown> | undefined;
+        if (w && w !== dbg) w[name] = fn;
+      } catch { /* 非微信环境忽略 */ }
+    };
+    expose('__m2a', () => aggregate());
+    expose('__m2aJson', () => exportAllJson());
+    expose('__m2aRun', (id: string) => exportRunJson(id));
+    expose('__m2aClear', () => clearAll());
     dbg.__bal = () => balance();
     dbg.__balSet = (p: unknown) => balanceOverride(p as never);
     dbg.__balReset = () => balanceReset();
