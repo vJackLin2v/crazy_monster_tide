@@ -38,6 +38,7 @@ import { difficultyOf, spawnInterval } from '../data/Difficulties';
 import { BossSummonState } from '../game/BossSummon';
 import type { TelemetryRecorder } from '../game/telemetry/TelemetryRecorder';
 import { pickDotSource } from '../game/telemetry/DotAttribution';
+import { stepPulse } from '../game/PulseHit';
 import type { DifficultyId } from '../data/Difficulties';
 import { DamageContext, DamageSource, SummonKind, makeDamageContext, canVamp, nextCastId, ModuleUsage } from '../game/DamageContext';
 import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, CHARGE_ECHO_MUL, sentryShotPlan, SENTRY_FAN_DMG_MUL, SENTRY_FAN_SPREAD, MINE_SPLIT_MUL } from '../game/SkillRules';
@@ -150,6 +151,8 @@ interface Area {
   burn?: number;
   /** M2-A：来源技能 */
   telSkill?: string;
+  /** M2-B.1：pulse 已命中的目标（保证同一次扩散不重复命中） */
+  hit?: Set<Enemy>;
 }
 interface Gem { node: Node; x: number; y: number; v: number; pop: number; vx: number; vy: number; base: number; }
 interface Fx {
@@ -1301,6 +1304,7 @@ export class Battle extends Component {
       node, anim, x, y, r: kind === 'pulse' ? 0 : r, maxR: r, dmg,
       life, t: 0, tick: 0, tickRate, kind, done: false, burn: _rt.burn,
       telSkill: telSkill ?? this.telSkillId,
+      hit: kind === 'pulse' ? new Set<Enemy>() : undefined,
     });
   }
 
@@ -2526,18 +2530,20 @@ export class Battle extends Component {
 
   private updateAreas(dt: number) {
     for (const a of this.areas) {
-      a.t += dt;
+      // pulse 的 t 由 stepPulse 推进；zone 仍按原逻辑推进
+      if (a.kind !== 'pulse') a.t += dt;
       if (a.kind === 'pulse') {
-        a.r = a.maxR * Math.min(1, a.t / a.life);
+        // M2-B.1：波前扩散过程中逐帧判定；同一 pulse 每个敌人只命中一次。
+        // 不再在首帧半径≈0 时提前 done，也不改变最大半径/生命周期。
+        if (!a.hit) a.hit = new Set<Enemy>();
+        const wave = stepPulse(a, dt, this.enemies);
+        for (const e of wave.hits) {
+          this.hitEnemy(e, a.dmg, this.bulletRt2(a.dmg), undefined, false, undefined, undefined, a.telSkill);
+        }
         // ★ M33 #3：脉冲的**画面**也要跟着扩散（之前节点固定 r*2，看着像"闪了一下"）
         const k = Math.max(0.15, a.r / a.maxR);
         if (a.node && a.node.isValid) a.node.setScale(k, k, 1);
-        if (!a.done) {
-          for (const e of this.enemies) {
-            if (!e.dead && Math.hypot(e.x - a.x, e.y - a.y) < a.r + e.r) this.hitEnemy(e, a.dmg, this.bulletRt2(a.dmg), undefined, false, undefined, undefined, a.telSkill);
-          }
-          a.done = true;
-        }
+        if (wave.expired) a.done = true;
       } else {
         a.tick -= dt;
         if (a.tick <= 0) {

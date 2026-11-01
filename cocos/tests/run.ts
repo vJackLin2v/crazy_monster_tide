@@ -51,6 +51,7 @@ import { loadRecords, saveRecord, exportAllJson, exportRunJson, aggregate, clear
 import { TELEMETRY_SCHEMA_VERSION } from '../assets/scripts/game/telemetry/TelemetryTypes';
 import { pickDotSource } from '../assets/scripts/game/telemetry/DotAttribution';
 import { moduleDetailText } from '../assets/scripts/game/ModuleText';
+import { stepPulse } from '../assets/scripts/game/PulseHit';
 import { emptyHistory, addRun, buildSummary, validateHistory, filterRuns, historyStats, hasRun, HISTORY_MAX, type RunSummary, type RunDetail } from '../assets/scripts/game/RunHistory';
 
 let pass = 0, fail = 0;
@@ -1708,6 +1709,27 @@ console.log('\n== 28. M2-A 战斗遥测 ==');
   ok(tel3.toRecord().completeness.complete === false, '中断对局不算完整');
   clearAll(mem);
   ok(loadRecords(mem).length === 0, '清空存储');
+}
+
+
+console.log('\n== 29. M2-B.1 pulse 命中 ==');
+{
+  interface Fake { id: string; x: number; y: number; r: number; dead: boolean }
+  const e1: Fake = { id: 'e1', x: 40, y: 0, r: 10, dead: false };
+  const out: Fake = { id: 'out', x: 100, y: 0, r: 10, dead: false };
+  const w = { x: 0, y: 0, maxR: 56, life: 0.45, t: 0, r: 0, hit: new Set<Fake>() };
+  const a = stepPulse(w, 0.10, [e1, out]);
+  ok(a.hits.length === 0, '扩散初期半径未到，不命中');
+  const b = stepPulse(w, 0.20, [e1, out]);
+  ok(b.hits.length === 1 && b.hits[0] === e1, '扩散路径上的敌人命中一次');
+  const c = stepPulse(w, 0.20, [e1, out]);
+  ok(c.hits.length === 0 && c.expired, '同一 pulse 不重复命中，且生命周期结束');
+  ok(!w.hit.has(out), '范围外敌人不会受到伤害');
+  ok(w.t >= w.life && w.hit.has(e1), '结束后 hit 记录保留供清理');
+  const dead: Fake = { id: 'dead', x: 10, y: 0, r: 10, dead: true };
+  const w2 = { x: 0, y: 0, maxR: 56, life: 0.45, t: 0, r: 0, hit: new Set<Fake>() };
+  stepPulse(w2, 0.5, [dead]);
+  ok(w2.hit.size === 0, '死亡目标不被命中');
 }
 
 console.log('\n================ 结果 ================');
