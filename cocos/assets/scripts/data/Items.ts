@@ -77,7 +77,7 @@ export const ITEMS: Record<string, ItemDef> = {
   shadow: { name: '迅捷之影', icon: '💨', tier: 2, desc: '跑得快，出手也快', apply: (s: CharStats) => { s.speed *= 1.15; s.haste *= 1.10; } },
   aegis: { name: '守护圣盾', icon: '🔰', tier: 2, desc: '挨打不疼，无敌更久', apply: (s: CharStats) => { s.armor += 0.10; s.invuln += 0.20; } },
   reaper: { name: '收割者', icon: '💀', tier: 2, desc: '杀怪回血、涨经验', apply: (s: CharStats) => { s.killHeal += 2; s.expGain += 0.15; } },
-  aoe_x: { name: '天火之心', icon: '◎', tier: 2, desc: '范围技能非常疼', apply: (s: CharStats) => { s.aoeDmg += 0.40; } },
+  aoe_x: { name: '天火之心', icon: '◎', tier: 3, desc: '范围技能非常疼', apply: (s: CharStats) => { s.aoeDmg += 0.40; } },
   slayer: { name: '屠魔者', icon: '⚔', tier: 2, desc: '对精英与首领更狠，也更抗打', apply: (s: CharStats) => { s.eliteDmg += 0.20; s.bossArmor += 0.10; } },
   grail: { name: '贪婪金杯', icon: '🏆', tier: 2, desc: '金币哗哗地掉', apply: (s: CharStats) => { s.greed += 0.40; } },
   vampire: { name: '吸血鬼牙', icon: '🩸', tier: 2, desc: '能吸血，暴击更疼', apply: (s: CharStats) => { s.lifesteal += 0.08; s.critdmg += 0.20; } },

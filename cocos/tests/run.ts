@@ -231,9 +231,12 @@ console.log('== 4c. 道具数量（需求 §10：52 普通 + 25 高级） ==')
   const ids = Object.keys(ITEMS);
   const t1 = ids.filter(k => ITEMS[k].tier === 1).length;
   const t2 = ids.filter(k => ITEMS[k].tier === 2).length;
+  const t3 = ids.filter(k => ITEMS[k].tier === 3).length;
   ok(ids.length === 79, '道具共 79 个（移除治疗药水后；实际 ' + ids.length + '）');
   ok(t1 === 51, '普通道具 51 个（实际 ' + t1 + '）');
-  ok(t2 === 25, '高级道具 20 个（实际 ' + t2 + '）');
+  ok(t2 === 24, '高级道具 24 个（实际 ' + t2 + '）');
+  ok(t3 === 4, '传说道具 4 个（实际 ' + t3 + '）');
+  ok(ITEMS.aoe_x.tier === 3, '天火之心 tier 2 → 3，稀有度与强度对齐');
   ok(ELITE_POOL.every(k => ITEMS[k] && ITEMS[k].tier === 2), '精英掉落池里全是高级道具');
   ok(!ITEMS.heal2, '治疗药水已移除（每波回满后无意义）');
   ok(moduleDetailText('rapid').indexOf('12.0%') >= 0, '冷却缩减 Lv.1 = 12.0%');
