@@ -10,7 +10,7 @@
 
 ### 验证
 - tsc check = 0；tsc ui-check = 0
-- tests/run.ts = **587 PASS / 0 FAIL**
+- tests/run.ts = **586 PASS / 0 FAIL**
 - 反伤模块已移除，thorncoat 保留；RUN_SAVE_VERSION 2 拒绝旧存档
 - 整数型 Ⅲ 级空转已修（modIntEffect / modPower 分离）
 - chain 图标/描述与弹射区分；黑科技统一青色底框
@@ -20,12 +20,12 @@
 - aoe_x tier3；resonator 描述统一；greed 金币 +25% 实装
 - 道具/技能头注释 79/17；item_audit 当前 79 图标 / 0 重复 / 23 同属性档
 - 移除重复范围技能 shockwave/thorn/frostring；商店去掉 requires 长提示；HUD 橙色波次条删除；陨石旋转 90° 竖直下落
-- 微信构建 success：3.14MB / 10.97MB；index.js 332,622 B（2026-11-01 20:20:40）
+- 移除 moduleRequiresHint 死代码；安装详情增加“触发：”Hook 标签
+- 设计/交付文档已加当前状态说明（17 技能/17 黑科技，移除旧技能/反伤模块）
+- 微信构建 success：3.14MB / 10.97MB；index.js 332,335 B（2026-11-01 20:35:05）
 
 ### 未完成 / 待决策
-- 微信真机视觉/交互确认（最高优先）；
-- 可选：卡片显示 Hook 标签（resonator 目前用文字说明）；
-- 设计文档仍按旧技能池描述，需同步。
+- 微信真机视觉/交互确认（唯一剩余）。
 
 ### 下一步
 - 等待用户决定是否做 Hook 标签或真机验证；无其他已知代码缺陷。

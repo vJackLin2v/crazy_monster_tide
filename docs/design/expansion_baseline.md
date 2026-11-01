@@ -1,5 +1,7 @@
 # 扩展基线审计（expansion_baseline）
 
+> 2026-11-01 注意：本文为旧版技能/模块基线；当前已移除 shockwave / thorn / frostring / thornmail，技能 17、黑科技 17。以代码为准。
+
 > 2026-10-30 ｜ 依据：仓库实际代码 + 一次全量测试（182 PASS）｜ 不抄历史报告
 
 ## 1. 技能（16 个，data/Skills.ts）

@@ -1,5 +1,7 @@
 # 技能系统（类型与能力接口）
 
+> 2026-11-01 现状：当前实际 17 个主动技能；已移除 shockwave（震荡波）、thorn（荆棘环）、frostring（寒冰环），仅保留 frostnova（霜爆）作为范围爆发。本文旧 TBD 条目仅作历史参考，具体以代码与 docs/m2b 报告为准。
+
 > **状态标记约定**：`[定]` = `requirements.md` 已明确的规则；`[TBD]` = 尚未定义，**不得自行脑补**，
 > 需经用户确认后写入 `memory-bank/decisions.md` 再回填本文件。
 > **迁移候选**：母本工程 `H:\AI-game\pixel_roguelike_wechat_agent_kit\docs\systems\` 有同主题成稿，
