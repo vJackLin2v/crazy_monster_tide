@@ -50,7 +50,7 @@ import { TelemetryRecorder } from '../assets/scripts/game/telemetry/TelemetryRec
 import { loadRecords, saveRecord, exportAllJson, exportRunJson, aggregate, clearAll, skillTotals, TELEMETRY_MAX_RUNS, type TelemetryStorageLike } from '../assets/scripts/game/telemetry/TelemetryStore';
 import { TELEMETRY_SCHEMA_VERSION } from '../assets/scripts/game/telemetry/TelemetryTypes';
 import { pickDotSource } from '../assets/scripts/game/telemetry/DotAttribution';
-import { moduleDetailText } from '../assets/scripts/game/ModuleText';
+import { moduleDetailText, moduleRequiresHint } from '../assets/scripts/game/ModuleText';
 import { stepPulse } from '../assets/scripts/game/PulseHit';
 import { emptyHistory, addRun, buildSummary, validateHistory, filterRuns, historyStats, hasRun, HISTORY_MAX, type RunSummary, type RunDetail } from '../assets/scripts/game/RunHistory';
 
@@ -238,6 +238,34 @@ console.log('== 4c. 道具数量（需求 §10：52 普通 + 25 高级） ==')
   ok(moduleDetailText('rapid_2').indexOf('18.5%') >= 0, '冷却缩减 Lv.2 = 18.5%（与 Lv.1 不同）');
   ok(moduleDetailText('rapid_3').indexOf('24.5%') >= 0, '冷却缩减 Lv.3 = 24.5%');
   ok(moduleDetailText('multi').indexOf('连续') >= 0, '多重射击文案为连续发射');
+
+  // M2-B.3：rapid 六条（普通三级 + 法师三级）
+  ok(moduleDetailText('rapid') === '冷却 -12.0%', '普通 rapid Lv.1 = 12.0%');
+  ok(moduleDetailText('rapid_2') === 'Lv.2 · 冷却 -18.5%', '普通 rapid Lv.2 = 18.5%');
+  ok(moduleDetailText('rapid_3') === 'Lv.3 · 冷却 -24.5%', '普通 rapid Lv.3 = 24.5%');
+  ok(moduleDetailText('rapid', { modCdrMul: 1.25 }) === '冷却 -14.8%', '法师 rapid Lv.1 = 14.8%');
+  ok(moduleDetailText('rapid_2', { modCdrMul: 1.25 }) === 'Lv.2 · 冷却 -22.6%', '法师 rapid Lv.2 = 22.6%');
+  ok(moduleDetailText('rapid_3', { modCdrMul: 1.25 }) === 'Lv.3 · 冷却 -29.6%', '法师 rapid Lv.3 = 29.6%');
+
+  // M2-B.3：商店 requires 提示（复用 canInstall 兼容判断）
+  ok(moduleRequiresHint('multi', ['spirit']) === '需要：投射物', '兼容时显示需要：投射物');
+  ok(moduleRequiresHint('multi', ['meteor']).indexOf('暂无兼容') === 0, '无兼容时显示暂时不兼容提示');
+  ok(moduleRequiresHint('giant', ['spirit']) === '需要：投射物/范围/脉冲/连锁', '多条件完整显示');
+  ok(moduleRequiresHint('burn', ['meteor']) === '无需特定技能', '空 requires 显示无需特定技能');
+  {
+    const rs = new RunState('monk', 1);
+    rs.skills = [makeSkill('meteor')];
+    rs.gold = 100;
+    rs.shopStock = [{ kind: 'module', id: 'multi', price: 20, basePrice: 20, sold: false, locked: false }] as any;
+    const bought = rs.buySlot(0);
+    ok(bought.ok && rs.modsBag.indexOf('multi') >= 0, '暂时不兼容的模块仍可购买并保留');
+    ok(!canInstall(rs.skills[0], 'multi').ok, '购买后当前技能仍不兼容（未改变规则）');
+    rs.skills.push(makeSkill('spirit'));
+    ok(canInstall(rs.skills[1], 'multi').ok, '获得兼容技能后可安装');
+    const sold = rs.sellMod(rs.modsBag.indexOf('multi'));
+    ok(sold > 0 && rs.modsBag.indexOf('multi') < 0, '保留的模块仍可出售');
+  }
+
   // M43：道具详情的数值说明（从 apply 反推）
   ok(itemNumbers(ITEMS.power_s, 'power_s') === '攻击力 +8%', '数值说明：铁匠手套 = 攻击力 +8%');
   ok(itemNumbers(ITEMS.speed_l, 'speed_l').indexOf('移动速度 +14%') === 0, '数值说明：移速类按百分比显示');

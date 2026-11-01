@@ -52,7 +52,7 @@ import { SKILLS, SKILL_ART } from './data/Skills';
 import { Assets, preloadIcons } from './engine/Assets';
 import { Sfx } from './engine/Audio';
 import { MODULES, MODULE_IDS, MODULE_NUMS, modEffect, moduleDef, baseOf, isMerged, levelOf, nextLevelId } from './data/Modules';
-import { moduleDetailText } from './game/ModuleText';
+import { moduleDetailText, moduleRequiresHint } from './game/ModuleText';
 import { ITEMS, itemNumbers } from './data/Items';
 import { ITEM_ICON, MODULE_ICON, ATTR_ICON } from './data/IconMap';
 import { ATTRS } from './data/Attrs';
@@ -948,7 +948,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       pickedId: from && fromMod ? fromMod : this.installSel,
       pickedDesc: (() => {
         const id = from && fromMod ? fromMod : this.installSel;
-        return id ? moduleDetailText(id) : '';
+        return id ? moduleDetailText(id, rs.stats) : '';
       })(),
       // 只列「max >= 3」的模块：max 1~2 的模块永远凑不到 3 个同名，
       // 列出来只会显示"还差 1 个"却永远凑不齐（B4 的体验问题）
@@ -1118,7 +1118,8 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       return {
         kind: 'module', title: m ? m.name : r.id, sub: r.needReplace ? '装到技能上' : '黑科技',
         desc: '',
-        nums: MODULE_NUMS[r.id] ?? '',
+        // rapid 的数值受角色 modCdrMul 影响；升级卡也走同一份动态文案
+        nums: baseOf(r.id) === 'rapid' ? moduleDetailText(r.id, this.battle?.rs.stats) : (MODULE_NUMS[r.id] ?? ''),
         meta: '已持有 ×' + owned + ' · 上限 ' + (m ? m.max : 1) + (r.needReplace ? ' · 需装到技能槽' : ''),
         glyph: m ? m.icon : '⇢',
         art: MODULE_ICON[r.id],            // 用模块自己的图标，别写死
@@ -1212,7 +1213,9 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       const sub = s.kind === 'item'
         ? (ITEMS[s.id] ? itemNumbers(ITEMS[s.id], s.id) || ITEMS[s.id].desc : '')
         // 用户 2026-10-30：商店也只留"一句话"——黑科技显示数值短句，不再显示长效果描述
-        : s.kind === 'module' ? moduleDetailText(s.id) : '';
+        : s.kind === 'module'
+          ? moduleRequiresHint(s.id, rs.skills.map(x => x.id)) + '\n' + moduleDetailText(s.id, rs.stats)
+          : '';
       const icon = s.kind === 'item' ? ITEM_ICON[s.id]
         : s.kind === 'module' ? MODULE_ICON[s.id] : undefined;
       // M52：稀有度（1 普通 / 2 高级）+ 已持有数量（堆叠提示）
@@ -1546,7 +1549,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         desc: def ? def.desc : '—',
         mods: s.mods.map(m => {
           const d = moduleDef(m);
-          return { id: m, name: d ? d.name : m, desc: d ? d.desc : '', nums: moduleDetailText(m) };
+          return { id: m, name: d ? d.name : m, desc: d ? d.desc : '', nums: moduleDetailText(m, rs.stats) };
         }),
       };
     });
@@ -1575,7 +1578,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
           const d = moduleDef(m);
           out.push({
             name: this.modName(m) + (s.mods.length > 1 ? '' : ''), icon: MODULE_ICON[baseOf(m)],
-            count: 1, desc: d ? d.desc : '', nums: moduleDetailText(m), installed: true,
+            count: 1, desc: d ? d.desc : '', nums: moduleDetailText(m, rs.stats), installed: true,
           });
         });
       });
@@ -1585,7 +1588,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         const d = moduleDef(m);
         out.push({
           name: this.modName(m), icon: MODULE_ICON[baseOf(m)],
-          count: n, desc: d ? d.desc : '', nums: moduleDetailText(m), installed: false,
+          count: n, desc: d ? d.desc : '', nums: moduleDetailText(m, rs.stats), installed: false,
         });
       });
       return out;
