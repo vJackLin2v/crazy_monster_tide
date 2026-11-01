@@ -14,6 +14,7 @@
 - 反伤模块已从 MODULES/MODULE_IDS/MODULE_HOOKS/图标/Battle/SkillCalc 移除；thorncoat 道具保留
 - RUN_SAVE_VERSION 1 → 2，旧存档按“版本过旧”拒绝，用户已确认可删旧存档
 - multi_3 装火球 count=4；multi_3 文案 +3 发；chain_3 文案跳 3 次；echo_3 = 3 次
+- chain 图标改为 ui-thunder-core；multi 保留 sh-multihits；两模块描述区分“终结/不终结”
 - 微信构建 success：3.14MB / 10.97MB；index.js 333,422 B（15:31:56）
 
 ### 未完成 / 待决策
@@ -22,7 +23,7 @@
 - 同类 modPower 误用排查：除已修处外，未发现其他“效果读取”使用 modPower；剩余用法均为 canInstall/合成容量语义。
 
 ### 下一步
-- 下一里程碑：chain/bounce 图标与描述区分（先做 chain 图标，不动数值/商品池）。
+- 下一里程碑：跨类同图标 12 组（黑科技统一角标/底框，优先 multi/chain 已完成的后续组）。
 
 
 
