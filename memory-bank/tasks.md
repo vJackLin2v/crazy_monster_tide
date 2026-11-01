@@ -16,6 +16,7 @@
 - multi_3 装火球 count=4；multi_3 文案 +3 发；chain_3 文案跳 3 次；echo_3 = 3 次
 - chain 图标改为 ui-thunder-core；multi 保留 sh-multihits；两模块描述区分“终结/不终结”
 - 黑科技图标加统一青色底框（商店/安装屏），覆盖跨类同图标 11 组
+- 技能 4 组重复图标已拆分：ring_blade/blade_storm、arcane/sentry、mine_field/spike、charge_pulse/orb
 - 微信构建 success：3.14MB / 10.97MB；index.js 333,422 B（15:31:56）
 
 ### 未完成 / 待决策
@@ -24,7 +25,7 @@
 - 同类 modPower 误用排查：除已修处外，未发现其他“效果读取”使用 modPower；剩余用法均为 canInstall/合成容量语义。
 
 ### 下一步
-- 下一里程碑：技能图标 4 组重复 / 道具 27 件共用 14 图标（按 05 表逐组）；冰系与冷却数值一致性另开。
+- 下一里程碑：道具 27 件共用 14 图标（按 05 表逐组）；冰系与冷却数值一致性另开。
 
 
 
