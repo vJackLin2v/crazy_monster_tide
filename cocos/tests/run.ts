@@ -15,6 +15,7 @@ import { lastbreathMul, lastbreathCdMul, shatterMul, focusedMods, resonatorMul, 
 import { RunState } from '../assets/scripts/game/RunState';
 import { calcSkill, makeSkill, canInstall, modCount, NEW_SKILL_ALLOW } from '../assets/scripts/game/SkillCalc';
 import { MODULES, MODULE_IDS, MODULE_HOOKS, MODULE_NUMS, modEffect, modPower, modIntEffect, TIER2_EFFECT } from '../assets/scripts/data/Modules';
+import { MODULE_ICON } from '../assets/scripts/data/IconMap';
 import { assertStatsSane, freshStats, emptyStats } from '../assets/scripts/game/Stats';
 import { CHARS } from '../assets/scripts/data/Chars';
 import { RUN, waveTime, isBossWave, isEliteWave, eliteCount, BASE_SPEED, BASE_PICKUP, SHOP_SLOTS } from '../assets/scripts/core/Const';
@@ -238,6 +239,9 @@ console.log('== 4c. 道具数量（需求 §10：52 普通 + 25 高级） ==')
   ok(moduleDetailText('rapid_2').indexOf('18.5%') >= 0, '冷却缩减 Lv.2 = 18.5%（与 Lv.1 不同）');
   ok(moduleDetailText('rapid_3').indexOf('24.5%') >= 0, '冷却缩减 Lv.3 = 24.5%');
   ok(moduleDetailText('multi').indexOf('连续') >= 0, '多重射击文案为连续发射');
+  ok(MODULE_ICON.chain !== MODULE_ICON.multi, '连锁与多重的图标已拆分');
+  ok(MODULES.chain.desc.indexOf('终结') >= 0 && MODULES.bounce.desc.indexOf('不终结') >= 0,
+    '连锁/弹射描述区分终结与续飞');
 
   // M2-B.3 后续：整数型模块效果份数与容量份数分离
   ok(modIntEffect('multi_3') === 3, '整数型效果：multi_3 = 3 份');

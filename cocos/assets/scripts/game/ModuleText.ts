@@ -32,7 +32,7 @@ export function moduleDetailText(id: string, stats?: { modCdrMul?: number }): st
     case 'burn': return prefix + '每秒 ' + Math.round(10 * e) + '% 伤害 · ' + (2 + 0.6 * (e - 1)).toFixed(1) + 's';
     case 'frost': return prefix + '减速 ' + Math.round(35 + 10 * (e - 1)) + '% · ' + (1.2 + 0.4 * (e - 1)).toFixed(1) + 's';
     case 'vamp': return prefix + '伤害的 ' + pct(0.04 * e) + ' 回血';
-    case 'chain': return prefix + '跳 ' + n + ' 次 · 每次 70% 伤害';
+    case 'chain': return prefix + '跳 ' + n + ' 次 · 每次 70% · 终结';
     case 'snipe': return prefix + '弹速 +' + pct(Math.pow(1.4, e) - 1) + ' · 伤害 +' + pct(Math.pow(1.15, e) - 1);
     case 'harvest': return prefix + '击杀回 ' + (Math.round(e * 10) / 10) + ' HP';
     case 'thunder': return prefix + pct(0.15 * e) + ' 概率落雷';

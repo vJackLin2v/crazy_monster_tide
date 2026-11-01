@@ -118,7 +118,7 @@ export const MODULE_ICON: Record<string, string> = {
   burn: 'sh-fire.png',
   frost: 'sh-ice.png',
   vamp: 'sk-lifesap.png',
-  chain: 'sh-multihits.png',
+  chain: 'ui-thunder-core.png',       // 连锁：闪电链路；与 multi 区分
   snipe: 'sk-precision.png',
   harvest: 'sh-execute.png',
   thunder: 'sh-multihit.png',
