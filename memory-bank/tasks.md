@@ -1,6 +1,31 @@
 # 当前任务
 
-## 当前阶段
+## M2-B.3.x 整数型黑科技 Ⅲ 级空转（2026-11-01）
+
+### 完成
+- 新增 data/Modules.ts modIntEffect(id)=levelOf(id)（Ⅰ/Ⅱ/Ⅲ = 1/2/3）。
+- 效果读取改用 modIntEffect：SkillCalc 的 multi/fan/split/bounce/pierce/orbit/chain/echo；ModuleText 对应文案。
+- modPower 保持 1/2，仍只服务 canInstall 容量上限与合成计数。
+- 数值型模块继续 modEffect（1.6/2.2），未动。
+
+### 验证
+- tsc check = 0；tsc ui-check = 0
+- tests/run.ts = **558 PASS / 0 FAIL**（修复前实际 550；新增 8 条）
+- multi_3 装火球 count=4；multi_3 文案 +3 发；chain_3 文案跳 3 次；echo_3 = 3 次
+- 微信构建 success（本机时间见 build 输出）
+
+### 未完成 / 待决策
+- 反伤黑科技改道具：需先定是复用现有 thorncoat 还是删模块+新增道具；涉及存档迁移/图标/掉落池/数值，未动。
+- chain 与 bounce 行为已有区别（chain 终结弹体跳击 70%，bounce 弹体转向续飞并 0.8 衰减），但图标/描述仍易混；未动。
+- reports/全量审核_黑科技_道具_技能_20261101.xlsx 的 P2-P14（图标、冰系标签、霜爆/寒冰环重叠、文档漂移、tier 倒挂等）已记录，未修。
+- 同类 modPower 误用排查：除已修处外，未发现其他“效果读取”使用 modPower；剩余用法均为 canInstall/合成容量语义。
+
+### 下一步
+- 等用户确认下一里程碑（优先反伤载体改造或图标/描述修正，二者不要混做）。
+
+
+
+## 当前阶段（历史记录）
 
 **主菜单 V3 已交付 + 真机行为日志监听就绪（2026-10-31）— 等真机实测数据**
 
