@@ -877,6 +877,8 @@ console.log('\n== 5r. 特殊道具（独立预期值） ==');
   ok(Math.abs(f2.dmg - 1.25) < 1e-9 && Math.abs(f2.cd - 0.90) < 1e-9, '专注核心：2 技能 +25% / -10% 冷却');
   ok(f4.dmg === 1 && f4.cd === 1, '专注核心：4 技能不生效');
   ok(Math.abs(resonatorMul(1) - 1.20) < 1e-9 && resonatorMul(0) === 1, '共鸣器：同 Hook 成对 +20%');
+  ok(ITEMS.resonator.desc.indexOf('相同触发时机') >= 0 || ITEMS.resonator.desc.indexOf('同 Hook') >= 0,
+    '共鸣器描述与 sameHookPairs 实现一致');
   ok(VOLTLOOP_CHANCE === 0.15 && Math.abs(VOLTLOOP_DMG - 0.40) < 1e-9 && VOLTLOOP_CD === 0.6, '回响电弧：15% / 40% / 0.6s');
   ok(Math.abs(greedPowerBonus(0)) < 1e-9 && Math.abs(greedPowerBonus(100) - 0.03) < 1e-9, '贪欲：每 100 金币 +3%');
   ok(Math.abs(greedPowerBonus(9999) - 0.15) < 1e-9, '贪欲：封顶 +15%');

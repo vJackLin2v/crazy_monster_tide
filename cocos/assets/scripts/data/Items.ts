@@ -92,7 +92,7 @@ export const ITEMS: Record<string, ItemDef> = {
   greed:      { name: '金币转攻击', icon: 'relic-007', tier: 2, desc: '金币 +25%，每 100 金币攻击 +3%（上限 +15%）', special: 'greed', apply: () => { /* 金币 +25% 由运行时处理 */ } },
   frugal:     { name: '刷新省钱', icon: 'relic-019', tier: 1, desc: '刷新费用 -50%，每波结束金币 -2', special: 'frugal', apply: () => { /* 运行时处理 */ } },
   focused:    { name: '极简专精', icon: 'sh-sizeup', tier: 3, desc: '装备技能 ≤2 个时：技能伤害 +25%、冷却 -10%', special: 'focused', apply: () => { /* 运行时处理 */ } },
-  resonator:  { name: '黑科技共鸣',   icon: 'relic-030', tier: 3, desc: '同一技能装了 2 个同类黑科技时，该技能伤害 +20%', special: 'resonator', apply: () => { /* 运行时处理 */ } },
+  resonator:  { name: '黑科技共鸣',   icon: 'relic-030', tier: 3, desc: '同一技能装了 2 个相同触发时机（Hook）的黑科技时，该技能伤害 +20%', special: 'resonator', apply: () => { /* 运行时处理 */ } },
 };
 
 /** 精英 / BOSS 掉落池（高级道具） */
