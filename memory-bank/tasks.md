@@ -19,6 +19,7 @@
 - 技能 4 组重复图标已拆分：ring_blade/blade_storm、arcane/sentry、mine_field/spike、charge_pulse/orb
 - 道具 14 组图标已拆分（生命/护盾/金币/血/回复/拳/时/拾取/移速/暴伤/冰/火/低血）
 - 冰系数值统一：t_ice 20%→25%，cdr_ice 18%→15%
+- 霜爆/寒冰环拆分：寒冰环自带 35%/BOSS30% 减速；霜爆不再自带减速，对减速目标 1.5x 爆发
 - 微信构建 success：3.14MB / 10.97MB；index.js 333,422 B（15:31:56）
 
 ### 未完成 / 待决策
@@ -27,7 +28,7 @@
 - 同类 modPower 误用排查：除已修处外，未发现其他“效果读取”使用 modPower；剩余用法均为 canInstall/合成容量语义。
 
 ### 下一步
-- 下一里程碑：霜爆/寒冰环定位重叠（技能设计，需先定一个改 DoT 或保留减速）。
+- 下一里程碑：aoe_x tier 倒挂（tier2 +40% 范围伤害 vs tier3 纯属性）——需先定 rarity/强度策略；或先做非数值的 resonator 文案。
 
 
 
