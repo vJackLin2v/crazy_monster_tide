@@ -240,6 +240,10 @@ console.log('== 4c. 道具数量（需求 §10：52 普通 + 25 高级） ==')
   ok(moduleDetailText('rapid_3').indexOf('24.5%') >= 0, '冷却缩减 Lv.3 = 24.5%');
   ok(moduleDetailText('multi').indexOf('连续') >= 0, '多重射击文案为连续发射');
   ok(MODULE_ICON.chain !== MODULE_ICON.multi, '连锁与多重的图标已拆分');
+  ok(SKILLS.ring_blade.icon !== SKILLS.blade_storm.icon, '环刃/乱杀图标已拆分');
+  ok(SKILLS.arcane.icon !== SKILLS.sentry.icon, '奥术飞弹/哨戒哨兵图标已拆分');
+  ok(SKILLS.mine_field.icon !== SKILLS.spike.icon, '地雷阵/扎心图标已拆分');
+  ok(SKILLS.charge_pulse.icon !== SKILLS.orb.icon, '蓄能脉冲/雷球图标已拆分');
   ok(MODULES.chain.desc.indexOf('终结') >= 0 && MODULES.bounce.desc.indexOf('不终结') >= 0,
     '连锁/弹射描述区分终结与续飞');
 
