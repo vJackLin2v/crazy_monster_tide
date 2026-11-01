@@ -15,7 +15,7 @@ import { lastbreathMul, lastbreathCdMul, shatterMul, focusedMods, resonatorMul, 
 import { RunState } from '../assets/scripts/game/RunState';
 import { calcSkill, makeSkill, canInstall, modCount, NEW_SKILL_ALLOW } from '../assets/scripts/game/SkillCalc';
 import { MODULES, MODULE_IDS, MODULE_HOOKS, MODULE_NUMS, modEffect, modPower, modIntEffect, TIER2_EFFECT } from '../assets/scripts/data/Modules';
-import { MODULE_ICON } from '../assets/scripts/data/IconMap';
+import { MODULE_ICON, ITEM_ICON } from '../assets/scripts/data/IconMap';
 import { assertStatsSane, freshStats, emptyStats } from '../assets/scripts/game/Stats';
 import { CHARS } from '../assets/scripts/data/Chars';
 import { RUN, waveTime, isBossWave, isEliteWave, eliteCount, BASE_SPEED, BASE_PICKUP, SHOP_SLOTS } from '../assets/scripts/core/Const';
@@ -244,6 +244,18 @@ console.log('== 4c. 道具数量（需求 §10：52 普通 + 25 高级） ==')
   ok(SKILLS.arcane.icon !== SKILLS.sentry.icon, '奥术飞弹/哨戒哨兵图标已拆分');
   ok(SKILLS.mine_field.icon !== SKILLS.spike.icon, '地雷阵/扎心图标已拆分');
   ok(SKILLS.charge_pulse.icon !== SKILLS.orb.icon, '蓄能脉冲/雷球图标已拆分');
+
+  const iconGroups = [
+    ['maxhp_s','regen_l','thorncoat'], ['armor_s','invuln_s','shatter'],
+    ['greed_s','grail'], ['armor_l','aegis'], ['lifesteal_s','bloodpact'],
+    ['regen_s','heal1'], ['power_s','knockback_s'], ['invuln_l','cdr_l'],
+    ['pickup_s','pickup_l'], ['haste_l','speed_l'], ['critdmg_s','pierce_s'],
+    ['t_ice','cdr_ice'], ['emberstack','t_fire'], ['lastbreath','reaper'],
+  ];
+  for (const g of iconGroups) {
+    ok(new Set(g.map(id => ITEM_ICON[id])).size === g.length, '道具图标已拆分：' + g.join('/'));
+  }
+
   ok(MODULES.chain.desc.indexOf('终结') >= 0 && MODULES.bounce.desc.indexOf('不终结') >= 0,
     '连锁/弹射描述区分终结与续飞');
 
