@@ -9,7 +9,7 @@
 ![主菜单](screenshots/ui-redesign/390x844-01-menu.png)
 
 > **当前状态（2026-10-31）**：主菜单 V3 完成——极简三区布局、继续/开始同款按钮、四个独立像素图标；真机行为日志监听就绪；测试 **435 PASS / 0 FAIL**，微信包 3.11MB / 10.95MB。
-> 接手先读 `docs/HANDOFF.md`；本轮交付包在 `deliverables/menu_v3_2026-10-31/`。
+> 接手先读 `docs/HANDOFF.md`；最新交付包在 `deliverables/m2a3b_dot_20261031_2240/`。
 
 ---
 

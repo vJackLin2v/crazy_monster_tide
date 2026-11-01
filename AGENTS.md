@@ -218,6 +218,6 @@ memory-bank/               ← 实时状态：project / architecture / decisions
 tools/                     ← 构建 / 截图 / 素材索引 / 分析脚本
 tests/                     ← 早期 HTML 原型的 E2E 与门禁脚本
 screenshots/               ← 历史 UI 截图（按批次分子目录）
-deliverables/              ← 交付包（本机，已 gitignore）
+deliverables/              ← 交付包（本机，已 gitignore）；只保留最新一包，生成前用 tools/clean_deliverables.ps1 清理旧包
 archive/                   ← 调试日志与旧评审包（本机，已 gitignore）
 ```
