@@ -40,6 +40,9 @@ import { initDeviceLog, logEvent, dumpDeviceLog, clearDeviceLog, deviceLogCount,
 import { TelemetryRecorder } from './game/telemetry/TelemetryRecorder';
 import { saveRecord, loadRecords, exportAllJson, exportRunJson, clearAll, aggregate } from './game/telemetry/TelemetryStore';
 import { buildTelemetryScreen } from './ui/TelemetryScreen';
+
+/** 微信小游戏全局对象（浏览器/编辑器里不存在；用 typeof 访问保证安全） */
+declare const GameGlobal: Record<string, unknown> | undefined;
 import { balance, balanceOverride, balanceReset, exportBalance, importBalance } from './core/Balance';
 import { applyUnlocks } from './game/Achievements';
 import { buildLevelUp, buildShop, buildBuildDrawer, buildConfirm, type CardData, type ShopSlotView } from './ui/Modals';
@@ -129,6 +132,10 @@ export class GameRoot extends Component {
     const expose = (name: string, fn: unknown) => {
       dbg[name] = fn;
       try {
+        // 微信的全局对象是 GameGlobal；它不一定是 globalThis 的属性
+        if (typeof GameGlobal !== 'undefined' && GameGlobal && GameGlobal !== dbg) {
+          GameGlobal[name] = fn;
+        }
         const g = globalThis as unknown as Record<string, unknown>;
         const gg = g.GameGlobal as Record<string, unknown> | undefined;
         if (gg && gg !== dbg) gg[name] = fn;
