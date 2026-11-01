@@ -50,6 +50,7 @@ import { TelemetryRecorder } from '../assets/scripts/game/telemetry/TelemetryRec
 import { loadRecords, saveRecord, exportAllJson, exportRunJson, aggregate, clearAll, skillTotals, TELEMETRY_MAX_RUNS, type TelemetryStorageLike } from '../assets/scripts/game/telemetry/TelemetryStore';
 import { TELEMETRY_SCHEMA_VERSION } from '../assets/scripts/game/telemetry/TelemetryTypes';
 import { pickDotSource } from '../assets/scripts/game/telemetry/DotAttribution';
+import { moduleDetailText } from '../assets/scripts/game/ModuleText';
 import { emptyHistory, addRun, buildSummary, validateHistory, filterRuns, historyStats, hasRun, HISTORY_MAX, type RunSummary, type RunDetail } from '../assets/scripts/game/RunHistory';
 
 let pass = 0, fail = 0;
@@ -227,10 +228,15 @@ console.log('== 4c. 道具数量（需求 §10：52 普通 + 25 高级） ==')
   const ids = Object.keys(ITEMS);
   const t1 = ids.filter(k => ITEMS[k].tier === 1).length;
   const t2 = ids.filter(k => ITEMS[k].tier === 2).length;
-  ok(ids.length === 80, '道具共 70 个（实际 ' + ids.length + '）');
-  ok(t1 === 52, '普通道具 50 个（实际 ' + t1 + '）');
+  ok(ids.length === 79, '道具共 79 个（移除治疗药水后；实际 ' + ids.length + '）');
+  ok(t1 === 51, '普通道具 51 个（实际 ' + t1 + '）');
   ok(t2 === 25, '高级道具 20 个（实际 ' + t2 + '）');
   ok(ELITE_POOL.every(k => ITEMS[k] && ITEMS[k].tier === 2), '精英掉落池里全是高级道具');
+  ok(!ITEMS.heal2, '治疗药水已移除（每波回满后无意义）');
+  ok(moduleDetailText('rapid').indexOf('12.0%') >= 0, '冷却缩减 Lv.1 = 12.0%');
+  ok(moduleDetailText('rapid_2').indexOf('18.5%') >= 0, '冷却缩减 Lv.2 = 18.5%（与 Lv.1 不同）');
+  ok(moduleDetailText('rapid_3').indexOf('24.5%') >= 0, '冷却缩减 Lv.3 = 24.5%');
+  ok(moduleDetailText('multi').indexOf('连续') >= 0, '多重射击文案为连续发射');
   // M43：道具详情的数值说明（从 apply 反推）
   ok(itemNumbers(ITEMS.power_s, 'power_s') === '攻击力 +8%', '数值说明：铁匠手套 = 攻击力 +8%');
   ok(itemNumbers(ITEMS.speed_l, 'speed_l').indexOf('移动速度 +14%') === 0, '数值说明：移速类按百分比显示');

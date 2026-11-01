@@ -75,7 +75,6 @@ export const ITEM_ICON: Record<string, string> = {
   aoe_s: 'relic-013.png',
   aoe_l: 'sh-explosion.png',
   heal1: 'sh-cross.png',
-  heal2: 'relic-055.png',
   t_fire: 'sh-fire.png',
   t_ice: 'sh-ice.png',
   t_bolt: 'sk-overload.png',

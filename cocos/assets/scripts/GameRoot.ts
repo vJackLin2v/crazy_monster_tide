@@ -52,6 +52,7 @@ import { SKILLS, SKILL_ART } from './data/Skills';
 import { Assets, preloadIcons } from './engine/Assets';
 import { Sfx } from './engine/Audio';
 import { MODULES, MODULE_IDS, MODULE_NUMS, modEffect, moduleDef, baseOf, isMerged, levelOf, nextLevelId } from './data/Modules';
+import { moduleDetailText } from './game/ModuleText';
 import { ITEMS, itemNumbers } from './data/Items';
 import { ITEM_ICON, MODULE_ICON, ATTR_ICON } from './data/IconMap';
 import { ATTRS } from './data/Attrs';
@@ -947,8 +948,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       pickedId: from && fromMod ? fromMod : this.installSel,
       pickedDesc: (() => {
         const id = from && fromMod ? fromMod : this.installSel;
-        const d = id ? moduleDef(id) : undefined;
-        return d ? d.desc : '';
+        return id ? moduleDetailText(id) : '';
       })(),
       // 只列「max >= 3」的模块：max 1~2 的模块永远凑不到 3 个同名，
       // 列出来只会显示"还差 1 个"却永远凑不齐（B4 的体验问题）
@@ -1212,7 +1212,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       const sub = s.kind === 'item'
         ? (ITEMS[s.id] ? itemNumbers(ITEMS[s.id], s.id) || ITEMS[s.id].desc : '')
         // 用户 2026-10-30：商店也只留"一句话"——黑科技显示数值短句，不再显示长效果描述
-        : s.kind === 'module' ? (MODULE_NUMS[s.id] ?? (MODULES[s.id] ? MODULES[s.id].name : '')) : '';
+        : s.kind === 'module' ? moduleDetailText(s.id) : '';
       const icon = s.kind === 'item' ? ITEM_ICON[s.id]
         : s.kind === 'module' ? MODULE_ICON[s.id] : undefined;
       // M52：稀有度（1 普通 / 2 高级）+ 已持有数量（堆叠提示）
@@ -1546,18 +1546,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         desc: def ? def.desc : '—',
         mods: s.mods.map(m => {
           const d = moduleDef(m);
-          const base = baseOf(m);
-          const mul = modEffect(m);
-          // 升级后的具体效果（不只是"跳 1 次"）
-          let nums = MODULE_NUMS[base] ?? '';
-          if (base === 'chain') nums = '跳 ' + Math.max(1, Math.round(mul)) + ' 次 · 每次 70% 伤害';
-          else if (base === 'multi') nums = '一次多打 ' + Math.max(1, Math.round(mul)) + ' 发';
-          else if (base === 'fan') nums = '散射 ' + (2 * Math.max(1, Math.round(mul))) + ' 枚（55% 伤害）';
-          else if (base === 'burn') nums = '每秒 ' + Math.round(10 * mul) + '% 伤害 · ' + (2 + 0.6 * (mul - 1)).toFixed(1) + 's';
-          else if (base === 'frost') nums = '减速 ' + Math.round(35 + 10 * (mul - 1)) + '% · ' + (1.2 + 0.4 * (mul - 1)).toFixed(1) + 's';
-          else if (base === 'thunder') nums = Math.round(15 * mul) + '% 概率落雷';
-          else if (base === 'echo') nums = '追加 ' + Math.max(1, Math.round(mul)) + ' 次 · 60% 伤害';
-          return { id: m, name: d ? d.name : m, desc: d ? d.desc : '', nums };
+          return { id: m, name: d ? d.name : m, desc: d ? d.desc : '', nums: moduleDetailText(m) };
         }),
       };
     });
@@ -1580,13 +1569,13 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
     })();
     // 黑科技页的结构化数据：已装（按技能逐个列）+ 背包（按同名合并计数）
     const modDetails = (() => {
-      const out: { name: string; icon?: string; count: number; desc: string; installed: boolean }[] = [];
+      const out: { name: string; icon?: string; count: number; desc: string; nums?: string; installed: boolean }[] = [];
       rs.skills.forEach((s) => {
         (s.mods || []).forEach((m) => {
           const d = moduleDef(m);
           out.push({
             name: this.modName(m) + (s.mods.length > 1 ? '' : ''), icon: MODULE_ICON[baseOf(m)],
-            count: 1, desc: d ? d.desc : '', installed: true,
+            count: 1, desc: d ? d.desc : '', nums: moduleDetailText(m), installed: true,
           });
         });
       });
@@ -1596,7 +1585,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         const d = moduleDef(m);
         out.push({
           name: this.modName(m), icon: MODULE_ICON[baseOf(m)],
-          count: n, desc: d ? d.desc : '', installed: false,
+          count: n, desc: d ? d.desc : '', nums: moduleDetailText(m), installed: false,
         });
       });
       return out;

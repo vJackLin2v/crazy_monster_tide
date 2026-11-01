@@ -1,10 +1,10 @@
 # 道具图标与效果全量审计
 
-- 道具总数：80
-- 不同图标数：64
+- 道具总数：79
+- 不同图标数：63
 - 重复图标组：14
 - 相同效果签名组（数值完全一致）：0
-- 相同效果类型组（同一属性/标签，数值可不同）：24
+- 相同效果类型组（同一属性/标签，数值可不同）：23
 
 > 说明：剩余重复图标均为同语义家族（生命/护盾/元素/时间等）或同属性 1/2/3 档；本轮修复了跨语义重复。
 > 效果类型组均为同属性的不同档位，**没有发现数值完全相同的重复道具**。
@@ -72,7 +72,6 @@
 | cdr | 2 | 齿轮(cdr_s：cdr+0.05)；时之轮(cdr_l：cdr+0.11) |
 | knockback | 2 | 铁拳套(knockback_s：knockback×1.5)；巨力腰带(knockback_l：knockback×2.167) |
 | eliteDmg | 2 | 斩魔刃(eliteDmg_s：eliteDmg+0.1)；屠龙剑(eliteDmg_l：eliteDmg+0.25) |
-| hp | 2 | 急救包(heal1：hp+30)；治疗药水(heal2：hp+71) |
 
 ## 全部道具
 
@@ -114,7 +113,6 @@
 | haste_l | 迅捷护符 | up-speed.png | haste×1.16 | 出手明显更快 |
 | haste_s | 疾风戒 | aspd-up.png | haste×1.08 | 出手更快一点 |
 | heal1 | 急救包 | sh-cross.png | hp+30 | 立刻回一口血 |
-| heal2 | 治疗药水 | relic-055.png | hp+71 | 血直接回满 |
 | invuln_l | 时之沙 | sh-hourglass.png | invuln×1.275 | 挨打后无敌很久 |
 | invuln_s | 龟甲片 | sh-shield.png | invuln×1.125 | 挨打后无敌更久 |
 | killHeal_l | 死神镰刀 | item-scythe.png | killHeal+1.5 | 杀一个回不少血 |

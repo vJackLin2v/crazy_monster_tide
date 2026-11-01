@@ -3,7 +3,7 @@ import type { ModuleDef } from './Types';
 /** 18 个行为模块（docs/systems/behavior_modules.md；需求 §10 目标约 18）
  *  核心规则：可重复安装；模块自己声明叠加方式与上限；兼容性由标签决定。 */
 export const MODULES: Record<string, ModuleDef> = {
-  multi:     { name: '多重射击', icon: '≡', stack: 'additive', max: 4, requires: ['projectile'],               desc: '一次开火多打出一发子弹，同方向' },
+  multi:     { name: '多重射击', icon: '≡', stack: 'additive', max: 4, requires: ['projectile'],               desc: '连续发射额外子弹，同方向（与分裂不同）' },
   fan:       { name: '散射', icon: '⋔', stack: 'additive', max: 3, requires: ['projectile'],               desc: '额外散开两枚小子弹，伤害较低、射程短' },
   split:     { name: '分裂', icon: '⋉', stack: 'additive', max: 3, requires: ['projectile'],               desc: '命中后炸出小子弹，继续伤人' },
   bounce:    { name: '弹射', icon: '↺', stack: 'additive', max: 3, requires: ['projectile'],               desc: '命中后转向附近另一只敌人继续飞' },
@@ -55,7 +55,7 @@ export function modEffect(id: string): number {
  * 必须与 SkillCalc / Battle 里的实际系数一致（tests/run.ts 有断言防漂移）。
  */
 export const MODULE_NUMS: Record<string, string> = {
-  multi:     '+1 发 · 全额伤害',
+  multi:     '连续 +1 发 · 同向',
   fan:       '+2 发 · 每发 55% 伤害',
   split:     '命中后再炸 2 枚子弹',
   bounce:    '+1 次转向弹射',

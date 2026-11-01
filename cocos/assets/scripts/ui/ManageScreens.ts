@@ -218,8 +218,9 @@ export function buildInstall(parent: Node, d: InstallData, cb: InstallCallbacks)
   if (d.pickedDesc) {
     // ★ 不再拼「名称」前缀：顶部提示已经写了"已拿起「X」"，加前缀会把文案挤到第二行只掉 2~3 个字（孤字）
     //    宽度给「卸下」让位（按钮左边缘 82），11px 下 1~2 行都能完整显示
+    // 精确数值可能到 2 行（如 Ⅱ 级冷却缩减）；固定 32 高，避免第二行被裁切
     text(box, -158, descY, d.pickedDesc,
-      { size: 10, color: COL.mint, align: 'left', width: d.selSlot ? 236 : 316, h: 26 });
+      { size: 10, color: COL.mint, align: 'left', width: d.selSlot ? 236 : 316, h: 32 });
   }
   if (d.selSlot) {
     // 右边缘收到 162（面板半宽 170，留 8px）：原来 x=132 + 40 = 172，**超出面板 2px**

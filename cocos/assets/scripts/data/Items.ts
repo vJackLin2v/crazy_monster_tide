@@ -61,7 +61,6 @@ export const ITEMS: Record<string, ItemDef> = {
   aoe_s: { name: '熔火符', icon: '◎', tier: 1, desc: '范围技能更疼', apply: (s: CharStats) => { s.aoeDmg += 0.12; } },
   aoe_l: { name: '烈焰之核', icon: '◎', tier: 1, desc: '范围技能很疼', apply: (s: CharStats) => { s.aoeDmg += 0.28; } },
   heal1: { name: '急救包', icon: '💊', tier: 1, desc: '立刻回一口血', apply: (s: CharStats) => { s.hp = Math.min(s.maxhp, s.hp + 30); } },
-  heal2: { name: '治疗药水', icon: '🧪', tier: 1, desc: '血直接回满', apply: (s: CharStats) => { s.hp = s.maxhp; } },
   t_fire: { name: '余烬核心', icon: '🔥', tier: 2, desc: '火系技能更疼', apply: (s: CharStats) => { s.tagBonus.fire = (s.tagBonus.fire ?? 0) + 0.25; } },
   t_ice: { name: '冰河之心', icon: '🧊', tier: 2, desc: '冰系技能更疼', apply: (s: CharStats) => { s.tagBonus.ice = (s.tagBonus.ice ?? 0) + 0.20; } },
   t_bolt: { name: '雷神之锤', icon: '⚡', tier: 2, desc: '雷系技能更疼', apply: (s: CharStats) => { s.tagBonus.lightning = (s.tagBonus.lightning ?? 0) + 0.25; } },
@@ -144,7 +143,6 @@ const pct = (n: number) => (n >= 0 ? '+' : '') + Math.round(n * 100) + '%';
 export function itemNumbers(it: ItemDef, id: string): string {
   // 回血类：emptyStats 本来就满血，diff 看不出来 —— 这两件直接写死数值
   if (id === 'heal1') return '立刻回复 30 生命';
-  if (id === 'heal2') return '立刻回满生命';
 
   const s = emptyStats();
   const before = JSON.parse(JSON.stringify(s)) as CharStats;

@@ -447,7 +447,7 @@ export function buildShop(parent: Node, wave: number, gold: number, slots: ShopS
 
 // ---------- 暂停 / Build 面板（底部抽屉 + 4 页签）----------
 /** 黑科技页的结构化数据（图标 / 名称 / 数量 / 效果 / 是否已装） */
-export interface ModDetailView { name: string; icon?: string; count: number; desc: string; installed: boolean }
+export interface ModDetailView { name: string; icon?: string; count: number; desc: string; nums?: string; installed: boolean }
 export interface BuildPageData { tab: string; lines: string[]; }
 
 /** 技能页的详情（M33 #4：手风琴，能看到技能描述 + 已装模块描述） */
@@ -781,8 +781,8 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
         }
         text(card, -W / 2 + 32, 16, m.name + (m.count > 1 ? ' ×' + m.count : ''),
           { size: 12, color: COL.cream, align: 'left', width: W - 110, bold: true, outline: true });
-        // 10px × 2 行需要 30px；原来给 24 会裁掉第二行（审计脚本实测 need=30 > box=24）
-        text(card, -W / 2 + 32, -10, m.desc,
+        // 精确数值优先；10px × 2 行需要 32px（容纳 Lv.Ⅱ 冷却等长文案）
+        text(card, -W / 2 + 32, -10, m.nums || m.desc,
           { size: 10, color: COL.dim, align: 'left', width: W - 96, h: 32 });
         if (m.installed) chip(card, W / 2 - 34, 0, '已装', { color: COL.mint, size: 9 });
       }

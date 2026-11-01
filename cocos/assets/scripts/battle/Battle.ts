@@ -192,6 +192,8 @@ export class Battle extends Component {
 
   private enemies: Enemy[] = [];
   private bullets: Bullet[] = [];
+  /** 多重射击：连续发射的待发队列（避免一次并排打出多颗） */
+  private pendingShots: { t: number; fire: () => void }[] = [];
   private areas: Area[] = [];
   private gems: Gem[] = [];
   private fx: Fx[] = [];
@@ -508,6 +510,7 @@ export class Battle extends Component {
     this.gems = [];
     for (const b of this.bullets) kill(b.node);
     this.bullets = [];
+    this.pendingShots = [];
     for (const a of this.areas) kill(a.node);
     this.areas = [];
     for (const f of this.fx) kill(f.node);
@@ -921,6 +924,7 @@ export class Battle extends Component {
     this.areas = [];
     for (const b of this.bullets) if (b.node && b.node.isValid) b.node.destroy();
     this.bullets = [];
+    this.pendingShots = [];
     for (const m of this.meteors) if (m.node && m.node.isValid) m.node.destroy();
     this.meteors = [];
     for (const bo of this.bolts) if (bo.node && bo.node.isValid) bo.node.destroy();
@@ -1123,21 +1127,23 @@ export class Battle extends Component {
       //   加量：同方向多打 1 发，全额伤害（火力集中）
       //   扇射：额外散开 2 发"小弹"，每发 60% 伤害、射程更短（覆盖面换伤害）
       const baseShots = rt.count;
-      // 用户反馈：两份刀刃几乎重叠，看不出打了两发 → 间距调到 ~17°
-      const baseSpread = baseShots > 1 ? 0.30 : 0;
-      // 第三轮批准：额外弹（第 2 发起）按 extraProjDmg 加成（三重镜 = +15%），主弹仍是全额
       const extraMul = 1 + (this.rs.stats.extraProjDmg ?? 0);
-      for (let i = 0; i < baseShots; i++) {
-        const a = dir + (i - (baseShots - 1) / 2) * baseSpread;
+      // M2-A 调整：multi 改为**连续发射**（同方向、间隔 0.08s），不再一次并排多颗；
+      // 与 split（命中后炸裂）区分。仍只算一次 cast。
+      const originX = this.px, originY = this.py;
+      const fireShot = (i: number) => {
         const shotRt = i === 0 || extraMul === 1 ? rt : { ...rt, dmg: rt.dmg * extraMul };
-        const bl = this.spawnBullet(this.px, this.py, Math.cos(a) * rt.spd, Math.sin(a) * rt.spd,
+        const bl = this.spawnBullet(originX, originY, Math.cos(dir) * rt.spd, Math.sin(dir) * rt.spd,
           shotRt, art.proj, art.hit, def.tags.includes('homing'));
-        // ★ 回旋刃（M46）：飞出去 0.5s 后折返，回程可再命中一次
         if (bl && def.tags.includes('return')) {
           bl.returning = true; bl.returnHit = false;
           bl.outT = 0.5;
           bl.life = 2.2;
         }
+      };
+      for (let i = 0; i < baseShots; i++) {
+        if (i === 0) fireShot(0);
+        else this.pendingShots.push({ t: 0.08 * i, fire: () => fireShot(i) });
       }
       const fanShots = rt.fan * 2;
       for (let i = 0; i < fanShots; i++) {
@@ -1314,8 +1320,8 @@ export class Battle extends Component {
     if (frames.length) { anim.setClips({ play: frames }); anim.play('play', true); }
     const sc = Math.max(2.4, rt.size / 10);
     node.setScale(sc, sc, 1);
-    // 用户反馈"陨石落地时是横着飞的"：岩石素材是侧视，垂直下落要转 90°，再加一点自转
-    node.angle = 90;
+    // M2-A 调整：陨石竖直向下（不再把侧视素材旋转 90°，避免看起来横向飞行）
+    node.angle = 0;
     node.setPosition(x, ARENA_H - (y - 320), 0);
     this.meteors.push({
       node,
@@ -1791,6 +1797,12 @@ export class Battle extends Component {
     this.updateEnemyShooting(dt);
     this.updateEnemyBullets(dt);
     this.updateBullets(dt);
+    // 多重连续发射：到期补发（同方向）
+    for (const p of this.pendingShots) {
+      p.t -= dtRaw;
+      if (p.t <= 0) p.fire();
+    }
+    compact(this.pendingShots, p => p.t > 0);
     this.updateAreas(dt);
     this.updateMeteors(dt);
     this.updateEcho(dt);
@@ -2669,6 +2681,7 @@ export class Battle extends Component {
     const kill = (n?: Node) => { if (n && n.isValid) n.destroy(); };
     for (const b of this.bullets) kill(b.node);
     this.bullets = [];
+    this.pendingShots = [];
     for (const a of this.areas) kill(a.node);
     this.areas = [];
     for (const f of this.fx) kill(f.node);
