@@ -71,7 +71,8 @@ for (const r of records) {
   if (num(s.killTotal) < num(s.bossKillTotal)) errors.push(r.runId + ': BOSS 击杀大于总击杀');
   if (state === 'complete') {
     const ev = Array.isArray(r.events) ? r.events : [];
-    if (!ev.some(e => e.type === 'run_start')) warnings.push(r.runId + ': 缺少 run_start 事件');
+    // 事件环上限 300：长局 run_start 会被裁剪，不能据此判定缺数据
+    if (ev.length < 300 && !ev.some(e => e.type === 'run_start')) warnings.push(r.runId + ': 缺少 run_start 事件');
     if (!ev.some(e => e.type === 'run_end')) warnings.push(r.runId + ': 缺少 run_end 事件');
   }
   const waveSeen = new Set();
