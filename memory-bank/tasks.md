@@ -22,6 +22,7 @@
 - 霜爆/寒冰环拆分：寒冰环自带 35%/BOSS30% 减速；霜爆不再自带减速，对减速目标 1.5x 爆发
 - 天火之心 aoe_x tier2→3，修复稀有度倒挂；tier 统计 51/24/4
 - resonator 描述改为“相同触发时机（Hook）”，与实现一致
+- greed 实装金币 +25%（apply 写 stats.greed）；Items/Skills 头注释数量修正（79/20）
 - 微信构建 success：3.14MB / 10.97MB；index.js 333,422 B（15:31:56）
 
 ### 未完成 / 待决策
@@ -30,7 +31,7 @@
 - 同类 modPower 误用排查：除已修处外，未发现其他“效果读取”使用 modPower；剩余用法均为 canInstall/合成容量语义。
 
 ### 下一步
-- 下一里程碑：greed 金币转攻击 smoke 断言 / 文档数量漂移（非数值）；卡片 Hook 标签另开 UI。
+- 下一里程碑：重新生成 docs/assets/item_audit_20261101.md（代码已漂移）或可选的卡片 Hook 标签。
 
 
 
