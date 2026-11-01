@@ -10,28 +10,24 @@
 
 ### 验证
 - tsc check = 0；tsc ui-check = 0
-- tests/run.ts = **556 PASS / 0 FAIL**（移除旧反伤模块测试 2 条、新增 1 条后，相对 558 基线 -2）
-- 反伤模块已从 MODULES/MODULE_IDS/MODULE_HOOKS/图标/Battle/SkillCalc 移除；thorncoat 道具保留
-- RUN_SAVE_VERSION 1 → 2，旧存档按“版本过旧”拒绝，用户已确认可删旧存档
-- multi_3 装火球 count=4；multi_3 文案 +3 发；chain_3 文案跳 3 次；echo_3 = 3 次
-- chain 图标改为 ui-thunder-core；multi 保留 sh-multihits；两模块描述区分“终结/不终结”
-- 黑科技图标加统一青色底框（商店/安装屏），覆盖跨类同图标 11 组
-- 技能 4 组重复图标已拆分：ring_blade/blade_storm、arcane/sentry、mine_field/spike、charge_pulse/orb
-- 道具 14 组图标已拆分（生命/护盾/金币/血/回复/拳/时/拾取/移速/暴伤/冰/火/低血）
-- 冰系数值统一：t_ice 20%→25%，cdr_ice 18%→15%
-- 霜爆/寒冰环拆分：寒冰环自带 35%/BOSS30% 减速；霜爆不再自带减速，对减速目标 1.5x 爆发
-- 天火之心 aoe_x tier2→3，修复稀有度倒挂；tier 统计 51/24/4
-- resonator 描述改为“相同触发时机（Hook）”，与实现一致
-- greed 实装金币 +25%（apply 写 stats.greed）；Items/Skills 头注释数量修正（79/20）
-- 微信构建 success：3.14MB / 10.97MB；index.js 333,422 B（15:31:56）
+- tests/run.ts = **587 PASS / 0 FAIL**
+- 反伤模块已移除，thorncoat 保留；RUN_SAVE_VERSION 2 拒绝旧存档
+- 整数型 Ⅲ 级空转已修（modIntEffect / modPower 分离）
+- chain 图标/描述与弹射区分；黑科技统一青色底框
+- 技能 4 组、道具 14 组重复图标已拆分
+- 冰系 t_ice 25%、cdr_ice 15%
+- 寒冰环自带减速；霜爆对减速目标 1.5x
+- aoe_x tier3；resonator 描述统一；greed 金币 +25% 实装
+- 道具/技能头注释 79/20；item_audit 已按当前代码重新生成（79 图标 / 0 重复 / 23 同属性档）
+- 微信构建 success：3.14MB / 10.98MB；index.js 334,125 B（2026-11-01 16:14:25）
 
 ### 未完成 / 待决策
-- chain 与 bounce 行为已有区别（chain 终结弹体跳击 70%，bounce 弹体转向续飞并 0.8 衰减），但图标/描述仍易混；未动。
-- reports/全量审核_黑科技_道具_技能_20261101.xlsx 的 P2-P14（图标、冰系标签、霜爆/寒冰环重叠、文档漂移、tier 倒挂等）已记录，未修。
-- 同类 modPower 误用排查：除已修处外，未发现其他“效果读取”使用 modPower；剩余用法均为 canInstall/合成容量语义。
+- 微信真机视觉/交互确认；
+- 可选：卡片显示 Hook 标签（resonator 目前用文字说明）；
+- item_audit 只统计道具；跨类图标仍由黑科技底框区分。
 
 ### 下一步
-- 下一里程碑：重新生成 docs/assets/item_audit_20261101.md（代码已漂移）或可选的卡片 Hook 标签。
+- 等待用户决定是否做 Hook 标签或真机验证；无其他已知代码缺陷。
 
 
 
