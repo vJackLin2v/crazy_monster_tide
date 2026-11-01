@@ -45,7 +45,7 @@ import { killOutcome, vampAllowed } from '../assets/scripts/game/CombatRules';
 import { normalizeRestoredStats } from '../assets/scripts/game/RunRestore';
 import { healStep, effectiveHealBudget } from '../assets/scripts/game/HealRules';
 import { VAMP_HEAL_PER_STACK } from '../assets/scripts/game/ModuleValues';
-import { frostringSlowPct, frostnovaDamage } from '../assets/scripts/game/SkillRules';
+import { frostnovaDamage } from '../assets/scripts/game/SkillRules';
 import { Rng } from '../assets/scripts/core/Rng';
 import { validateActiveRun, continueInfoOf, assertRestorable, newRunId, RUN_SAVE_VERSION, isLegalModuleId, isLegalItemId, type ActiveRunSave } from '../assets/scripts/game/RunSave';
 import { TelemetryRecorder } from '../assets/scripts/game/telemetry/TelemetryRecorder';
@@ -250,12 +250,8 @@ console.log('== 4c. 道具数量（需求 §10：52 普通 + 25 高级） ==')
   ok(SKILLS.charge_pulse.icon !== SKILLS.orb.icon, '蓄能脉冲/雷球图标已拆分');
 
   ok(frostnovaDamage(10, false) === 10 && frostnovaDamage(10, true) === 15, '霜爆对减速目标 1.5x 爆发');
-  ok(Math.abs(frostringSlowPct(false) - 0.35) < 1e-9 && Math.abs(frostringSlowPct(true) - 0.30) < 1e-9, '寒冰环 35% / BOSS 30% 减速');
-  ok((SKILLS.frostnova.tags as unknown as string[]).indexOf('slow') < 0
-    && (SKILLS.frostring.tags as unknown as string[]).indexOf('slow') >= 0, '霜爆不再标 slow；寒冰环保留 slow');
-  ok(SKILLS.frostnova.desc.indexOf('减速目标') >= 0 && SKILLS.frostring.desc.indexOf('减速') >= 0,
-    '霜爆/寒冰环描述区分');
-  ok(!SKILLS.shockwave && !SKILLS.thorn, '重复范围技能震荡波/荆棘环已移除');
+  ok((SKILLS.frostnova.tags as unknown as string[]).indexOf('slow') < 0, '霜爆不再自带 slow');
+  ok(!SKILLS.shockwave && !SKILLS.thorn && !SKILLS.frostring, '重复范围技能/寒冰环已移除');
 
 
   const iconGroups = [
@@ -267,6 +263,14 @@ console.log('== 4c. 道具数量（需求 §10：52 普通 + 25 高级） ==')
   ];
   for (const g of iconGroups) {
     ok(new Set(g.map(id => ITEM_ICON[id])).size === g.length, '道具图标已拆分：' + g.join('/'));
+  }
+  {
+    const allIcons = [
+      ...Object.values(ITEM_ICON),
+      ...Object.values(MODULE_ICON),
+      ...Object.keys(SKILLS).map(id => SKILLS[id].icon),
+    ];
+    ok(new Set(allIcons).size === allIcons.length, '全部道具/黑科技/技能图标唯一（' + allIcons.length + ' 个）');
   }
 
   ok(MODULES.chain.desc.indexOf('终结') >= 0 && MODULES.bounce.desc.indexOf('不终结') >= 0,

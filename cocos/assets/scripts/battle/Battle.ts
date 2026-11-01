@@ -40,7 +40,7 @@ import { pickDotSource } from '../game/telemetry/DotAttribution';
 import { stepPulse } from '../game/PulseHit';
 import type { DifficultyId } from '../data/Difficulties';
 import { DamageContext, DamageSource, SummonKind, makeDamageContext, canVamp, nextCastId, ModuleUsage } from '../game/DamageContext';
-import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, CHARGE_ECHO_MUL, sentryShotPlan, SENTRY_FAN_DMG_MUL, SENTRY_FAN_SPREAD, MINE_SPLIT_MUL, frostringSlowPct, FROSTRING_SLOW_DURATION, frostnovaDamage } from '../game/SkillRules';
+import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, CHARGE_ECHO_MUL, sentryShotPlan, SENTRY_FAN_DMG_MUL, SENTRY_FAN_SPREAD, MINE_SPLIT_MUL, frostnovaDamage } from '../game/SkillRules';
 import { rollEliteAffixes, affixHpMul, affixSpeedMul, affixSplits, AFFIX_SPLIT_COUNT, AFFIX_SPLIT_HP_MUL, AFFIX_SPLIT_SPEED_MUL, type EliteAffix } from '../game/EliteAffix';
 import { killOutcome, vampAllowed } from '../game/CombatRules';
 import { normalizeRestoredStats } from '../game/RunRestore';
@@ -2526,11 +2526,6 @@ export class Battle extends Component {
           // 霜爆：不再自带减速；对已减速目标爆发
           const dmg = a.tag === 'frostnova' ? frostnovaDamage(a.dmg, (e.slow ?? 0) > 0) : a.dmg;
           this.hitEnemy(e, dmg, this.bulletRt2(dmg), undefined, false, undefined, undefined, a.telSkill);
-          // 寒冰环：自身施加短时减速；不覆盖更强的既有减速
-          if (a.tag === 'frostring') {
-            e.slow = Math.max(e.slow ?? 0, FROSTRING_SLOW_DURATION);
-            e.slowPct = Math.max(e.slowPct ?? 0, frostringSlowPct(!!e.boss));
-          }
         }
         // ★ M33 #3：脉冲的**画面**也要跟着扩散（之前节点固定 r*2，看着像"闪了一下"）
         const k = Math.max(0.15, a.r / a.maxR);

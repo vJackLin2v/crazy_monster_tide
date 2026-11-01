@@ -1,6 +1,6 @@
 import type { SkillDef, SkillArt } from './Types';
 
-/** 18 个基础主动技能（移除震荡波/荆棘环后；docs/systems/skill_types.md） */
+/** 17 个基础主动技能（移除震荡波/荆棘环/寒冰环后；docs/systems/skill_types.md） */
 export const SKILLS: Record<string, SkillDef> = {
   // ── 第一批新技能（设计 v6）──
   ring_blade: { name: '环刃', icon: 'sk-ring.png', type: 'orbit', tags: ['physical','orbit','melee'], cd: 1.6, dmg: 6, spd: 0, color: '#E8DCC8', size: 40,
@@ -35,8 +35,6 @@ export const SKILLS: Record<string, SkillDef> = {
                  desc: '慢速大雷球：出手慢但单发重，追着目标炸。' },
   spike:       { name: '扎心',     icon: 'sh-earthquake.png',     type: 'area',       tags: ['nature','area','dot'],             cd: 2.0,  dmg: 5,  spd: 0,   color: '#A8E06A', size: 24, zoneLife: 3.2, tickRate: 0.50,
                  desc: '裂地施放最快、单次最轻，靠长尾磨血。' },
-  frostring:   { name: '寒冰环',   icon: 'skill-frost_ring.png',       type: 'pulse',      tags: ['ice','area','pulse','slow'],       cd: 1.6,  dmg: 6,  spd: 0,   color: '#CFEFFF', size: 30,
-                 desc: '贴身高频冰环：范围小、减速敌人，近身缠斗用。' },
   spirit:      { name: '灵能箭',   icon: 'sk-galebow.png',       type: 'projectile', tags: ['arcane','projectile','pierceable','homing'], cd: 1.0, dmg: 8,  spd: 260, color: '#C3A8FF', size: 5,
                  desc: '灵能箭会自动追着敌人，并穿透 1 个目标——最稳的命中。' },
 };
@@ -70,7 +68,6 @@ export const SKILL_ART: Record<string, SkillArt> = {
   orb:         { icon: 'skill-arcane_pulse.png',    proj: 'projectile/lightning/plasma-shot', hit: 'feedback/hit/shock-hit' },
   spike:       { icon: 'sh-earthquake.png',         zone: 'ground/earth/stone-burst',         hit: 'feedback/hit/heavy-hit',
                  cast: 'core/dust/dirt-kick' },
-  frostring:   { icon: 'skill-frost_ring.png',       aoe: 'ground/frost/frost-nova',           hit: 'feedback/hit/ice-hit' },
   spirit:      { icon: 'sk-galebow.png',             proj: 'projectile/lightning/energy-bolt', hit: 'core/spark/pierce-spark' },
 };
 
