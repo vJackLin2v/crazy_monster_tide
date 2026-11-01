@@ -48,6 +48,19 @@ export function chargeEchoRepeats(echoStacks: number): number {
 /** 蓄能脉冲的重放伤害系数（沿用复读机通用 60%） */
 export const CHARGE_ECHO_MUL = 0.6;
 
+/** 寒冰环自身减速：普通 35%，BOSS 按既有上限 30% */
+export const FROSTRING_SLOW_PCT = 0.35;
+export const FROSTRING_SLOW_DURATION = 1.2;
+export function frostringSlowPct(isBoss: boolean): number {
+  return isBoss ? 0.30 : FROSTRING_SLOW_PCT;
+}
+
+/** 霜爆：命中已减速目标时爆发倍率（不再自带减速） */
+export const FROSTNOVA_BURST_MUL = 1.5;
+export function frostnovaDamage(base: number, targetSlowed: boolean): number {
+  return targetSlowed ? Math.round(base * FROSTNOVA_BURST_MUL) : base;
+}
+
 /**
  * 哨兵开火计划：`multi`（count）决定每次几发，`fan` 决定额外散射几发。
  * 哨兵 0.9s 一发，基础弹速由 SENTRY_BULLET_SPEED 决定（哨兵技能本身 spd = 0）。

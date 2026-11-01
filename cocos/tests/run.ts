@@ -45,6 +45,7 @@ import { killOutcome, vampAllowed } from '../assets/scripts/game/CombatRules';
 import { normalizeRestoredStats } from '../assets/scripts/game/RunRestore';
 import { healStep, effectiveHealBudget } from '../assets/scripts/game/HealRules';
 import { VAMP_HEAL_PER_STACK } from '../assets/scripts/game/ModuleValues';
+import { frostringSlowPct, frostnovaDamage } from '../assets/scripts/game/SkillRules';
 import { Rng } from '../assets/scripts/core/Rng';
 import { validateActiveRun, continueInfoOf, assertRestorable, newRunId, RUN_SAVE_VERSION, isLegalModuleId, isLegalItemId, type ActiveRunSave } from '../assets/scripts/game/RunSave';
 import { TelemetryRecorder } from '../assets/scripts/game/telemetry/TelemetryRecorder';
@@ -244,6 +245,14 @@ console.log('== 4c. 道具数量（需求 §10：52 普通 + 25 高级） ==')
   ok(SKILLS.arcane.icon !== SKILLS.sentry.icon, '奥术飞弹/哨戒哨兵图标已拆分');
   ok(SKILLS.mine_field.icon !== SKILLS.spike.icon, '地雷阵/扎心图标已拆分');
   ok(SKILLS.charge_pulse.icon !== SKILLS.orb.icon, '蓄能脉冲/雷球图标已拆分');
+
+  ok(frostnovaDamage(10, false) === 10 && frostnovaDamage(10, true) === 15, '霜爆对减速目标 1.5x 爆发');
+  ok(Math.abs(frostringSlowPct(false) - 0.35) < 1e-9 && Math.abs(frostringSlowPct(true) - 0.30) < 1e-9, '寒冰环 35% / BOSS 30% 减速');
+  ok((SKILLS.frostnova.tags as unknown as string[]).indexOf('slow') < 0
+    && (SKILLS.frostring.tags as unknown as string[]).indexOf('slow') >= 0, '霜爆不再标 slow；寒冰环保留 slow');
+  ok(SKILLS.frostnova.desc.indexOf('减速目标') >= 0 && SKILLS.frostring.desc.indexOf('减速') >= 0,
+    '霜爆/寒冰环描述区分');
+
 
   const iconGroups = [
     ['maxhp_s','regen_l','thorncoat'], ['armor_s','invuln_s','shatter'],

@@ -40,7 +40,7 @@ import { pickDotSource } from '../game/telemetry/DotAttribution';
 import { stepPulse } from '../game/PulseHit';
 import type { DifficultyId } from '../data/Difficulties';
 import { DamageContext, DamageSource, SummonKind, makeDamageContext, canVamp, nextCastId, ModuleUsage } from '../game/DamageContext';
-import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, CHARGE_ECHO_MUL, sentryShotPlan, SENTRY_FAN_DMG_MUL, SENTRY_FAN_SPREAD, MINE_SPLIT_MUL } from '../game/SkillRules';
+import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, CHARGE_ECHO_MUL, sentryShotPlan, SENTRY_FAN_DMG_MUL, SENTRY_FAN_SPREAD, MINE_SPLIT_MUL, frostringSlowPct, FROSTRING_SLOW_DURATION, frostnovaDamage } from '../game/SkillRules';
 import { rollEliteAffixes, affixHpMul, affixSpeedMul, affixSplits, AFFIX_SPLIT_COUNT, AFFIX_SPLIT_HP_MUL, AFFIX_SPLIT_SPEED_MUL, type EliteAffix } from '../game/EliteAffix';
 import { killOutcome, vampAllowed } from '../game/CombatRules';
 import { normalizeRestoredStats } from '../game/RunRestore';
@@ -1162,6 +1162,8 @@ export class Battle extends Component {
       this.queueEcho(slot, rt.echo);
       // 0.45s 让扩散过程看得见；再补一圈更大的冲击环和尘土
       this.spawnArea(this.px, this.py, rt.size + 26, rt.dmg, 0.45, 'pulse', art.aoe, rt);
+      const pulseArea = this.areas[this.areas.length - 1];
+      if (pulseArea) pulseArea.tag = sk.id;
       this.addVfx('core/ring/shockwave', this.px, this.py, 0.38, Math.max(1.6, (rt.size + 26) / 12));
     } else if (def.type === 'orbit') {
       // 环刃：常驻，随等级加片（上限 4）；orbit × 环刃（S）= 额外 +1 片，仍受 4 片上限
@@ -2520,7 +2522,14 @@ export class Battle extends Component {
         if (!a.hit) a.hit = new Set<Enemy>();
         const wave = stepPulse(a, dt, this.enemies);
         for (const e of wave.hits) {
-          this.hitEnemy(e, a.dmg, this.bulletRt2(a.dmg), undefined, false, undefined, undefined, a.telSkill);
+          // 霜爆：不再自带减速；对已减速目标爆发
+          const dmg = a.tag === 'frostnova' ? frostnovaDamage(a.dmg, (e.slow ?? 0) > 0) : a.dmg;
+          this.hitEnemy(e, dmg, this.bulletRt2(dmg), undefined, false, undefined, undefined, a.telSkill);
+          // 寒冰环：自身施加短时减速；不覆盖更强的既有减速
+          if (a.tag === 'frostring') {
+            e.slow = Math.max(e.slow ?? 0, FROSTRING_SLOW_DURATION);
+            e.slowPct = Math.max(e.slowPct ?? 0, frostringSlowPct(!!e.boss));
+          }
         }
         // ★ M33 #3：脉冲的**画面**也要跟着扩散（之前节点固定 r*2，看着像"闪了一下"）
         const k = Math.max(0.15, a.r / a.maxR);
