@@ -14,9 +14,9 @@
 | 伤害 / 存在 | 每片刀刃每秒 6 伤害（每 0.25s 判定一次，单次 1.5 × 片数） |
 | 范围 | 以玩家为圆心、半径 40px 的环带（刃宽 10px） |
 | 片数 | `min(4, 1 + 等级 + orbit 份数)`：1 级 2 片，每级 +1，硬上限 4 |
-| 转速 | 1.4 圈/秒（受 rapid 加成） |
+| 转速 | 1.4 圈/秒（固定） |
 | 目标 | 环带内全部敌人，**不区分目标数量** |
-| 兼容 | orbit（S，+1 片）、giant（半径）、rapid、burn / frost / vamp / harvest / thornmail（命中与击杀结算）有效；multi/fan/split/bounce/pierce/chain/echo/thunder/overload/snipe **无效**（无弹体） |
+| 兼容 | orbit（S，+1 片）、giant（半径）、burn / frost / vamp / harvest（命中与击杀结算）有效；multi/fan/split/bounce/pierce/chain/echo/thunder/overload/snipe/rapid **无效**（无弹体/转速固定） |
 | 弱点 | 只有贴脸才打得到；对远程/风筝型敌人零输出；**不能打 BOSS 外围** |
 | 性能 | 最多 4 片 × 每 0.25s 一次圆形判定 |
 

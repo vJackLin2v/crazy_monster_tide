@@ -20,6 +20,27 @@
 ### 下一步
 - 等用户确认后进入批次 2（视觉/文案 4 项）。
 
+## 批次 3：假选项 3 项（2026-11-02）
+
+### 完成
+- CNT-01：SkillCalc.ts:8 环刃白名单移除 rapid；docs/design/skill_expansion_design.md 转速改“固定”、兼容说明更新。
+- CNT-02：Battle.ts explodeTrap 使用 `Math.max(48, tr.rt.size)` 爆炸半径，特效按 radius/48 同步缩放。
+- CNT-03：SkillRules.ts 新增 chainEchoRepeats；Battle.ts chain 分支新增 jumpR、nearestEnemy 改用 jumpR、return 前 queueEcho。
+
+### 验证
+- tsc check = 0；tsc ui-check = 0
+- tests/run.ts = **586 PASS / 0 FAIL**
+- 测试期望值变更（经用户批准）：tests/run.ts ring_blade 矩阵移除 rapid
+- tools/audit_combo.ts = 8588 组合；中位 19.0；最强/中位 4.00×
+  - 空转清单不再有环刃×急速、地雷阵×增大、连锁×增大/重复施放
+  - 连锁闪电最强 DPS：27.7 → **39.1**（echo+echo+chain）
+  - 地雷阵最强仍 30.5；环刃最强 24.0
+- 剩余空转：哨戒哨兵 × 狙击（既有问题，不属本批）
+- 微信构建 success：3.14MB / 10.97MB；index.js 332,334 B（2026-11-02 12:38:35）
+
+### 下一步
+- 等用户确认后进入批次 4。
+
 ## 批次 2：视觉 / 文案 4 项（2026-11-02）
 
 ### 完成
