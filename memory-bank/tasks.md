@@ -1,5 +1,38 @@
 # 当前任务
 
+## 全部批次完成（2026-11-02）
+
+### 完成：批次 1-6
+- 批次 1（P0 泄漏）：GameRoot.ts:80/378-385 DEBUG 按钮复用；Battle.ts:489-500 clearSkillRuntime 销毁 chargeFx；Battle.ts:537-550 resetRunState 清理 chargeFx。
+- 批次 2（视觉/文案）：GameRoot.ts 删除结算水印/导出按钮；TAG_CN 补 orbit/trap/summon/charge；Modals.ts:121 行高 21px；Hud.ts:191 ASCII +。
+- 批次 3（假选项）：SkillCalc.ts:8 环刃移除 rapid；Battle.ts explodeTrap 读取 size；SkillRules.ts chainEchoRepeats + Battle.ts 连锁 jumpR/queueEcho。
+- 批次 4（数值）：Skills.ts frostnova dmg 7→12；docs/delivery/SKILLS.md 同步。
+- 批次 5（性能）：Hud.ts syncT 20Hz；Battle.ts hitSetPool 复用/回收。
+- 批次 6（收尾）：Battle.ts waveDmgDealt 两处去掉无意义 Math.min；Tokens.ts FS.xs 11→12。
+
+### 验证（最终）
+- tsc check = 0；tsc ui-check = 0
+- tests/run.ts = **586 PASS / 0 FAIL**
+- UI 审计三视口 **0 条**
+- 微信构建 success：3.14MB / 10.97MB；index.js 332,551 B（2026-11-02 15:21:27）
+- 批次 1/5 的运行时验证见对应提交与 tasks 历史段
+
+### 未完成
+- PERF-01 网格化单独排期，未做
+- 微信真机确认
+
+### 每批必跑
+```
+npx tsc -p tsconfig.check.json
+npx tsc -p tsconfig.ui-check.json
+node <tsx> tests/run.ts
+node tools/ui/audit_text_fit.cjs   # 期望 0 条
+```
+
+### 下一步
+- 等用户安排 PERF-01 或真机验证。
+
+
 ## 批次 1：P0 节点泄漏修复（2026-11-02）
 
 ### 完成

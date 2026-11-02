@@ -71,7 +71,7 @@ export const R = { s: 6, m: 8, l: 8, bar: 4 };
 /** 间距阶梯（规范 §4：4/8/12/16/24） */
 export const SP = { xs: 4, s: 8, m: 12, l: 16, xl: 24 };
 /** 字号阶梯（规范 §3） */
-export const FS = { xs: 11, s: 13, m: 17, l: 26, xl: 26 };
+export const FS = { xs: 12, s: 13, m: 17, l: 26, xl: 26 };
 /** 说明文字字号 */
 export const FS_SUB = 11;
 /** 描边宽度（像素风统一 2px；容器用 edge，文字用 inkLine） */

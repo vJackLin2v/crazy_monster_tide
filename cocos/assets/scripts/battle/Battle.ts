@@ -1541,7 +1541,7 @@ export class Battle extends Component {
     if ((e.elite || e.boss) && this.rs.stats.eliteDmg) dmg = Math.round(dmg * (1 + Math.min(1.5, this.rs.stats.eliteDmg)));
     this.telemetry?.hit(telSid, dmg);
     e.hp -= dmg;
-      this.waveDmgDealt += Math.min(dmg);
+      this.waveDmgDealt += dmg;
     this.totalDmgDealt += dmg;
     // ★ 吸血：按伤害比例回血 + 绿色数字 + 角色身上回血动画（M39）
     if (this.rs.stats.lifesteal > 0) {
@@ -2255,7 +2255,7 @@ export class Battle extends Component {
           });
           if (dot > 0) {
             e.hp -= dot;
-      this.waveDmgDealt += Math.min(dot);
+      this.waveDmgDealt += dot;
             this.addDamageText(e.x, e.y - 10, dot, false, e.poisonT > 0 ? 'poison' : 'burn');
             if (e.hp <= 0) { this.killEnemy(e, undefined, 'normal', undefined, dotTel); continue; }
           }
