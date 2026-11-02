@@ -76,6 +76,8 @@ export class GameRoot extends Component {
   private hud: Hud | null = null;
   private cur: Node | null = null;
   private curModal: Node | null = null;
+  /** DEBUG 菜单「数据」按钮：复用，禁止每次 showMenu 追加 */
+  private dbgBtn: Node | null = null;
   private phase: Phase = 'menu';
   private charId = CHARS[0].id;
   /** 本次/下一局的随机种子：**每局都换**（原来写死 20261012 → 每局商店、奖励完全一样） */
@@ -374,8 +376,12 @@ export class GameRoot extends Component {
       },
     });
     if (DEBUG) {
-      const dbgBtn = button(this.uiRoot, SCREEN_W / 2 - 40, SCREEN_H / 2 - 30, 64, 28, '数据', { size: 10 });
-      onTap(dbgBtn.node, () => this.showTelemetry());
+      if (!this.dbgBtn || !this.dbgBtn.isValid) {
+        const b = button(this.uiRoot, SCREEN_W / 2 - 40, SCREEN_H / 2 - 30, 64, 28, '数据', { size: 10 });
+        onTap(b.node, () => this.showTelemetry());
+        this.dbgBtn = b.node;
+      }
+      this.dbgBtn.setSiblingIndex(this.uiRoot.children.length - 1);
     }
   }
 

@@ -1,6 +1,60 @@
 # 当前任务
 
-## M2-B.3.x 整数型黑科技 Ⅲ 级空转（2026-11-01）
+## 批次 1：P0 节点泄漏修复（2026-11-02）
+
+### 完成
+- BUG-01：GameRoot.ts:80 新增 dbgBtn；GameRoot.ts:378-385 改为复用并置顶，菜单连续进出不再累积。
+- BUG-02：Battle.ts:489-500 clearSkillRuntime 增加 chargeFx destroy + delete。
+- BUG-03：Battle.ts:537-550 resetRunState 清理 chargeFx 节点并重置 Record。
+
+### 验证
+- tsc check = 0；tsc ui-check = 0
+- tests/run.ts = **586 PASS / 0 FAIL**
+- 浏览器运行时：
+  - 连续 showMenu ×5 后，uiRoot 内含「数据」文字的 btn 数 = 1
+  - 蓄力中 clearSkillRuntime → `chargeFx` 节点数 1 → 0
+  - 再次蓄力后 resetRunState → `chargeFx` 节点数 1 → 0
+- 验收脚本：tools/ui/verify_batch1.cjs
+- 当前未做批次 2-6；本轮按规则停在批次 1。
+
+### 下一步
+- 等用户确认后进入批次 2（视觉/文案 4 项）。
+
+## 全量审查交付（2026-11-02）
+
+### 完成
+- **主交付**：`reports/full_audit_and_fix_plan_20261102.md` —— 审查报告 + 每个缺陷的详细修复方案（含代码补丁、验证步骤、风险评估、修复批次建议）。
+- 摘要版：`reports/full_audit_20261102.md`（BUG / 性能 / 组合 / UI / AI 测试五块）。
+- 新增审计工具：`tools/audit_combo.ts`（8616 组合枚举）、`tools/ui/audit_text_fit.cjs`（三视口逐页文本/遮挡审计）。
+- 缺陷 8 项 + 规则问题 3 项：
+  - BUG-1 P0 `GameRoot.ts:376` DEBUG「数据」按钮每次进菜单追加、永不销毁（实测 1→2→3）。
+  - BUG-2 P0 `Battle.ts:489 clearSkillRuntime` 不销毁 `chargeFx` 节点（实测换技能后 charging=false 但节点仍在，截图 `reports/text_fit/chargefx_leak.png`）。
+  - BUG-3 结算页残留水印「阶段3 收尾版」+ 导出日志按钮（`GameRoot.ts:1473`）。
+  - BUG-4 `TAG_CN` 缺 orbit/trap/summon/charge → 面板露英文。
+  - BUG-5 升级卡片 14px 字 / 19px 框（需 21px）→ 第二行裁切。
+  - BUG-6 HUD 空槽全角「＋」字形缺失 → ▯▯▯。
+  - BUG-7 `Battle.ts:1527/2240` `Math.min(dmg)` 单参数笔误。
+  - RULE-1 环刃转速未读 rapid（文档说受加成）→ 装急速零收益。
+  - RULE-2 白名单空转：`地雷阵×增大`、`哨戒哨兵×狙击`。
+
+### 验证
+- `tests/run.ts` = **586 PASS / 0 FAIL**（基线未破）
+- `tools/audit_combo.ts` = 8616 组合、中位 18.7、最强 76.2、比值 4.08×、4 条空转
+- `tools/ui/audit_text_fit.cjs` = 三视口合计 2 条裁切（均在升级三选一），截图 21 张
+- 内存：战斗内 60s 压测 mem 87MB 恒定、peak 117MB、节点 122→351 振荡 → **无泄漏**
+- 本轮**未修改任何游戏源码**
+
+### 未完成
+- 8 项 BUG + 3 项规则问题均未修（等确认；修复方案见 `reports/full_audit_and_fix_plan_20261102.md` 第 2、3 章）。
+- 微信真机视觉/交互确认（沿用上轮遗留）。
+- 性能优化只给定位，未做优化前后 FPS 对比。
+
+### 下一步
+- 等用户选定批次（建议 P0 两项内存 → P1 视觉/文案 → 规则空转 → 数值平衡 → 性能）。
+
+---
+
+## 历史：M2-B.3.x 整数型黑科技 Ⅲ 级空转（2026-11-01）
 
 ### 完成
 - 新增 data/Modules.ts modIntEffect(id)=levelOf(id)（Ⅰ/Ⅱ/Ⅲ = 1/2/3）。

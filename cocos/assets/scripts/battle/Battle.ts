@@ -490,6 +490,10 @@ export class Battle extends Component {
     delete this.castCount[slot];
     delete this.orbits[slot];
     delete this.charges[slot];
+    // ★ chargeFx 是节点，必须和 charges 一起销毁，否则换技能后圈永久残留
+    const fx = this.chargeFx[slot];
+    if (fx && fx.isValid) fx.destroy();
+    delete this.chargeFx[slot];
     this.skillT[slot] = 0;
     this.cdTotal[slot] = 0;
   }
@@ -538,6 +542,12 @@ export class Battle extends Component {
     this.sentries = [];
     this.charges = {};
     this.orbits = {};
+    // ★ chargeFx 带 node，与上面几个"纯数据"不同，必须单独销毁并重置
+    for (const k in this.chargeFx) {
+      const n = this.chargeFx[Number(k)];
+      if (n && n.isValid) n.destroy();
+    }
+    this.chargeFx = {};
     this.castCount = {};
     this.echoQueue = [];
     this.runTime = 0;
