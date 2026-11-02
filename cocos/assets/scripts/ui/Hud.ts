@@ -188,7 +188,7 @@ export class Hud {
       const isp = ic.addComponent(Sprite);
       isp.sizeMode = Sprite.SizeMode.CUSTOM;
       isp.trim = false;
-      const plus = text(box, 0, 1, '＋', { size: 22, color: COL.dash, width: 44, outline: false });
+      const plus = text(box, 0, 1, '+', { size: 22, color: COL.dash, width: 44, outline: false });
 
       const cd = mkNode(box, 'cd', SLOT, SLOT);
       const g = cd.addComponent(Graphics);

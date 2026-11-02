@@ -118,7 +118,7 @@ export function buildLevelUp(parent: Node, lv: number, cards: CardData[],
     const numsY = hasDesc ? CH / 2 - 56 : -2;
     if (c.nums) {
       const nLines = Math.max(1, Math.ceil(c.nums.length / charsPerLine(txtW, 14)));
-      const h = nLines * 19;
+      const h = nLines * Math.round(14 * 1.5);
       text(card, txtX, numsY, clampLines(c.nums, txtW, 14, 2),
         { size: 14, color: COL.cream, align: 'left', width: txtW, h, bold: true, outline: true });
     }

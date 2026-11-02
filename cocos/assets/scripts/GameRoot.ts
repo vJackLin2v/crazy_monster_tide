@@ -1473,14 +1473,6 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
         // 通关后进入无尽（RUN.canContinue 之前是死字段，从没人读）
         win && RUN.canContinue ? () => this.continueEndless() : undefined);
 
-      // 真机调试：一键复制本局日志（放在标题牌左侧，构建失败不阻断结算）
-      const vs2 = view.getVisibleSize();
-      // 构建标记：用来确认玩家跑的是哪个包
-      text(this.cur, vs2.width / 2 - 76, vs2.height / 2 - 16, '阶段3 收尾版',
-        { size: 8, color: new Color(150, 160, 180, 255), width: 140, align: 'right', outline: false });
-      const chip = panel(this.cur, 58 - vs2.width / 2, vs2.height / 2 - (safeTop() + 56), 88, 26, { art: 'btn' });
-      text(chip, 0, 0, '导出日志', { size: 10, color: new Color(240, 236, 226, 255), width: 84, bold: true, outline: true });
-      onTap(chip, () => this.copyRunLogs());
     } catch (e) {
       console.error('[UI] 结算面板构建失败，回到主菜单', e);
       this.closeModal(); this.clearScreen(); this.showMenu();
@@ -1776,6 +1768,7 @@ const TAG_CN: Record<string, string> = {
   // 形态
   projectile: '远程', area: '范围', pulse: '周身', chain: '连锁',
   melee: '近战', beam: '射线', burst: '爆发',
+  orbit: '环身', trap: '陷阱', summon: '召唤', charge: '蓄能',
   // 特性
   pierceable: '可穿透', homing: '追踪', return: '回旋',
   slow: '减速', dot: '持续伤害',

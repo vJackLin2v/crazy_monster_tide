@@ -20,6 +20,24 @@
 ### 下一步
 - 等用户确认后进入批次 2（视觉/文案 4 项）。
 
+## 批次 2：视觉 / 文案 4 项（2026-11-02）
+
+### 完成
+- BUG-04：删除 GameRoot.ts 结算页 1476-1483 的「阶段3 收尾版」水印与「导出日志」按钮；copyRunLogs 保留。
+- BUG-05：GameRoot.ts:1771 TAG_CN 补 orbit/trap/summon/charge；构筑面板标签全中文。
+- BUG-06：ui/Modals.ts:121 卡片高度改为 nLines * Math.round(14 * 1.5)（21px/行）。
+- BUG-07：ui/Hud.ts:191 空槽全角「＋」改为 ASCII「+」。
+
+### 验证
+- tsc check = 0；tsc ui-check = 0
+- tests/run.ts = **586 PASS / 0 FAIL**
+- UI 审计：三视口合计问题 **0 条**（原 2 条）
+- 截图：reports/text_fit/360x640-{result,build,hud,levelup}.png
+- 结算页无水印/导出日志；构筑标签「物理 · 远程 · 回旋」全中文；升级卡数值行完整
+
+### 下一步
+- 等用户确认后进入批次 3。
+
 ## 全量审查交付（2026-11-02）
 
 ### 完成
