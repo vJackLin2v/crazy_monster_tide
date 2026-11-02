@@ -45,6 +45,11 @@ export function chargeEchoRepeats(echoStacks: number): number {
   return echoStacks > 0 ? Math.min(1, echoRepeats(echoStacks)) : 0;
 }
 
+/** 连锁闪电：重复施放最多 1 次（与地雷/蓄能一致） */
+export function chainEchoRepeats(echoStacks: number): number {
+  return echoStacks > 0 ? Math.min(1, echoRepeats(echoStacks)) : 0;
+}
+
 /** 蓄能脉冲的重放伤害系数（沿用复读机通用 60%） */
 export const CHARGE_ECHO_MUL = 0.6;
 

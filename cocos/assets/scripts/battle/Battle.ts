@@ -40,7 +40,7 @@ import { pickDotSource } from '../game/telemetry/DotAttribution';
 import { stepPulse } from '../game/PulseHit';
 import type { DifficultyId } from '../data/Difficulties';
 import { DamageContext, DamageSource, SummonKind, makeDamageContext, canVamp, nextCastId, ModuleUsage } from '../game/DamageContext';
-import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, CHARGE_ECHO_MUL, sentryShotPlan, SENTRY_FAN_DMG_MUL, SENTRY_FAN_SPREAD, MINE_SPLIT_MUL, frostnovaDamage } from '../game/SkillRules';
+import { ringBladeCount, mineSplitCount, mineEchoRepeats, chargeEchoRepeats, chainEchoRepeats, CHARGE_ECHO_MUL, sentryShotPlan, SENTRY_FAN_DMG_MUL, SENTRY_FAN_SPREAD, MINE_SPLIT_MUL, frostnovaDamage } from '../game/SkillRules';
 import { rollEliteAffixes, affixHpMul, affixSpeedMul, affixSplits, AFFIX_SPLIT_COUNT, AFFIX_SPLIT_HP_MUL, AFFIX_SPLIT_SPEED_MUL, type EliteAffix } from '../game/EliteAffix';
 import { killOutcome, vampAllowed } from '../game/CombatRules';
 import { normalizeRestoredStats } from '../game/RunRestore';
@@ -1120,9 +1120,11 @@ export class Battle extends Component {
         this.hitEnemy(cur, rt.dmg, rt, art.hit);
         // ⚠️ B6：原来只吃 bounce（反弹模块），「传染」模块累积在 rt.chain 里但被忽略。
         //    现在两者都算跳数：2 基础跳 + 反弹 + 传染。
+        // 「增大」让链跳更远：以技能基础 size 为基准，避免裸装变化。
+        const jumpR = 140 * (1 + (rt.size - def.size) / 100);
         for (let j = 0; j < 2 + rt.bounce + rt.chain; j++) {
           const from = cur;
-          const nx = this.nearestEnemy(from.x, from.y, 140, hit);
+          const nx = this.nearestEnemy(from.x, from.y, jumpR, hit);
           if (!nx) break;
           hit.add(nx);
           this.spawnBolt(from.x, from.y, nx.x, nx.y);            // ★ 目标 → 下一个目标
@@ -1130,6 +1132,7 @@ export class Battle extends Component {
           this.addVfx('chain/chain-node', nx.x, nx.y, 0.3, 1);
           cur = nx;
         }
+        if (!this.echoReplay) this.queueEcho(slot, chainEchoRepeats(rt.echo));
         return;
       }
       // ★ 扇射：以前 fan 只改「间距」不改「数量」—— count=1 时(i - (count-1)/2) 恒为 0，
@@ -2008,10 +2011,11 @@ export class Battle extends Component {
 
   /** 地雷引爆：48px 内全部受伤（来源 normal，可吃常规加成） */
   private explodeTrap(tr: { x: number; y: number; dmg: number; rt: SkillRuntime; telSkill?: string }): void {
-    this.addVfx(FX.killBig, tr.x, tr.y, 0.45, 2.2);
+    const radius = Math.max(48, tr.rt.size);
+    this.addVfx(FX.killBig, tr.x, tr.y, 0.45, 2.2 * (radius / 48));
     for (const e of this.enemies) {
       if (e.dead) continue;
-      if (Math.hypot(e.x - tr.x, e.y - tr.y) <= 48) this.hitEnemy(e, tr.dmg, tr.rt, undefined, true, undefined, undefined, tr.telSkill);
+      if (Math.hypot(e.x - tr.x, e.y - tr.y) <= radius) this.hitEnemy(e, tr.dmg, tr.rt, undefined, true, undefined, undefined, tr.telSkill);
     }
     // split × 地雷阵（S）：引爆后向四周炸出分裂弹（伤害 40%，split:0 不再递归）
     const n = mineSplitCount(tr.rt.split);

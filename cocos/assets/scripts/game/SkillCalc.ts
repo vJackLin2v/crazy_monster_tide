@@ -5,7 +5,7 @@ export const NEW_SKILL_ALLOW: Record<string, string[]> = {
   // 矩阵里是 N 的组合**这里也必须没有**，否则会出现"装得上但没效果"。
   // 说明：thunder/chain 这类"弹体触发"的模块，对环刃/地雷阵/蓄能脉冲（无弹体）没有效果，
   // 因此矩阵与白名单都标 N —— 宁可不给装，也不给"装上去看不出来"的假选项。
-  ring_blade: ['orbit', 'giant', 'rapid', 'burn', 'frost', 'vamp', 'harvest'],
+  ring_blade: ['orbit', 'giant', 'burn', 'frost', 'vamp', 'harvest'],
   mine_field: ['giant', 'rapid', 'burn', 'frost', 'vamp', 'harvest', 'split', 'echo', 'overload'],
   sentry: ['multi', 'fan', 'split', 'bounce', 'pierce', 'rapid', 'burn', 'frost', 'chain', 'snipe', 'harvest', 'thunder', 'vamp'],
   charge_pulse: ['giant', 'burn', 'frost', 'vamp', 'harvest', 'overload', 'echo'],

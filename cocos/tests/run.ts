@@ -1160,7 +1160,7 @@ console.log('\n== 15. 兼容矩阵 × 白名单逐格一致（17 模块 × 4 技
 {
   // 这张表与 skill_expansion_design.md §7 的矩阵逐格对应；改了矩阵必须同时改这里。
   const MATRIX: Record<string, string[]> = {
-    ring_blade: ['orbit', 'giant', 'rapid', 'burn', 'frost', 'vamp', 'harvest'],
+    ring_blade: ['orbit', 'giant', 'burn', 'frost', 'vamp', 'harvest'],
     mine_field: ['giant', 'rapid', 'burn', 'frost', 'vamp', 'harvest', 'split', 'echo', 'overload'],
     sentry: ['multi', 'fan', 'split', 'bounce', 'pierce', 'rapid', 'burn', 'frost', 'chain', 'snipe', 'harvest', 'thunder', 'vamp'],
     charge_pulse: ['giant', 'burn', 'frost', 'vamp', 'harvest', 'overload', 'echo'],
