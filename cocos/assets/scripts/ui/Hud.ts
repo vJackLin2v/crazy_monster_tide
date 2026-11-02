@@ -60,6 +60,8 @@ export class Hud {
   private bossName!: Label;
   private hurtVig!: Node;
   private hurtOp!: UIOpacity;
+  /** HUD 字符串脏检查节流：20Hz */
+  private syncT = 0;
   private lastWarn = false;
   /** C6：上一帧的数据签名；不变就跳过重绘 */
   private lastSig = '';
@@ -214,8 +216,12 @@ export class Hud {
     }
   }
 
-  sync(d: HudData) {
-    // 受击红屏每帧都要更新（其余元素值不变时跳过）
+  sync(d: HudData, dt = 1 / 60) {
+    // 20Hz 节流：避免每帧拼接长签名字符串
+    this.syncT += dt;
+    if (this.syncT < 0.05) return;
+    this.syncT = 0;
+    // 受击红屏随后更新（其余元素值不变时跳过）
     this.hurtOp.opacity = Math.round(255 * Math.max(0, Math.min(1, d.hurtFlash)));
     let sig = [Math.round(d.hp), d.maxhp, d.lv, Math.round(d.exp), d.gold, d.wave, d.kills,
       d.waveLeft.toFixed(1), d.bossName ?? '', Math.round(d.bossHp), Math.round(d.bossMax)].join('|');

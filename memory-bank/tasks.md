@@ -20,6 +20,23 @@
 ### 下一步
 - 等用户确认后进入批次 2（视觉/文案 4 项）。
 
+## 批次 5：性能低风险 2 项（2026-11-02）
+
+### 完成
+- PERF-03：Hud.ts 新增 syncT；sync(d, dt) 20Hz 节流，GameRoot.update→syncHud(_dt) 传 dt。
+- PERF-02：Battle.ts 新增 hitSetPool；spawnBullet 复用并 clear；子弹 compact 回收时 clear + 入池（上限 64）。
+
+### 验证
+- tsc check = 0；tsc ui-check = 0
+- tests/run.ts = **586 PASS / 0 FAIL**
+- UI 审计：三视口 **0 条**
+- 60s 压测：nodes 126 → 272（振荡），heap 82MB 恒定，peak 111MB，errors none
+- 子弹对象池运行时：两次独立子弹均命中 10 伤害；第一颗回收后 hitSetPool 非空，第二颗正常命中
+- 微信构建 success：3.14MB / 10.97MB；index.js 332,571 B（2026-11-02 14:10:44）
+
+### 下一步
+- 等用户确认后进入批次 6。
+
 ## 批次 4：霜爆单变量数值（2026-11-02）
 
 ### 完成

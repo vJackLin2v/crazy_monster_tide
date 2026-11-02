@@ -1674,7 +1674,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
     }
     if (this.hud && this.battle.rs
       && (this.phase === 'battle' || this.phase === 'levelup' || this.phase === 'shop')) {
-      try { this.syncHud(); } catch (e) { this.hudError(e); }
+      try { this.syncHud(_dt); } catch (e) { this.hudError(e); }
     }
     // 升级三选一的兜底：phase 还停在 levelup 但弹窗已经没了 → 说明某个选卡分支
     // 忘了恢复，直接把状态和暂停一起解除（否则暂停键失效、玩家以为卡死）。
@@ -1721,7 +1721,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
     if (this.hudErrCount <= 3) console.error('[UI] HUD 同步失败（第 ' + this.hudErrCount + ' 次）', e);
   }
 
-  private syncHud() {
+  private syncHud(dt: number) {
     const rs = this.battle.rs;
     const boss = this.battle.bossAlive;
     // C1：冷却只取一次（getter 内部已是缓存值，不再 16 次 calcSkill）
@@ -1747,7 +1747,7 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
       };
     }
     this.hudData = d;
-    this.hud!.sync(d);
+    this.hud!.sync(d, dt);
   }
 
   /** 供 HUD 暂停按钮调用（Hud 里注册触摸时会回调这里） */

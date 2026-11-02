@@ -194,6 +194,8 @@ export class Battle extends Component {
 
   private enemies: Enemy[] = [];
   private bullets: Bullet[] = [];
+  /** 子弹命中表对象池：避免每颗子弹 new Set */
+  private hitSetPool: Set<Enemy>[] = [];
   /** 多重射击：连续发射的待发队列（避免一次并排打出多颗） */
   private pendingShots: { t: number; fire: () => void }[] = [];
   private areas: Area[] = [];
@@ -1281,11 +1283,13 @@ export class Battle extends Component {
     anim.autoSize = false;   // 子弹按技能 size 缩放，不跟随帧原生尺寸
     if (frames.length) { anim.setClips({ play: frames }); anim.play('play', true); }
     node.setPosition(x, ARENA_H - y, 0);
+    const hitSet = this.hitSetPool.pop() ?? new Set<Enemy>();
+    hitSet.clear();
     const b: Bullet = {
       node, anim, x, y, vx, vy, r: Math.max(4, rt.size),
       dmg: rt.dmg, pierce: rt.pierce, bounce: rt.bounce, chain: rt.chain, split: rt.split,
       life: orbit ? 3.2 : life, t: 0, hitVfx: hitVfx ?? 'core/spark/hit-spark',
-      hit: new Set(), homing, src, summonKind,
+      hit: hitSet, homing, src, summonKind,
       burn: rt.burn, slow: rt.slow, vamp: rt.vamp, thunder: rt.thunder,
       telSkill: telSkill ?? (src === 'summon' ? 'unknown' : this.telSkillId),
     };
@@ -2515,6 +2519,7 @@ export class Battle extends Component {
     }
     compact(this.bullets, b => {
       if (b.life > 0) return true;
+      if (this.hitSetPool.length < 64) { b.hit.clear(); this.hitSetPool.push(b.hit); }
       if (b.node && b.node.isValid) b.node.destroy();
       return false;
     });
