@@ -9,16 +9,17 @@
 - 批次 4（数值）：Skills.ts frostnova dmg 7→12；docs/delivery/SKILLS.md 同步。
 - 批次 5（性能）：Hud.ts syncT 20Hz；Battle.ts hitSetPool 复用/回收。
 - 批次 6（收尾）：Battle.ts waveDmgDealt 两处去掉无意义 Math.min；Tokens.ts FS.xs 11→12。
+- 批次 7（PERF-01）：Battle.ts 敌人 64px 空间网格；updateBullets 只查附近格，距离改平方比较；每帧 updateEnemies 后重建。
 
 ### 验证（最终）
 - tsc check = 0；tsc ui-check = 0
 - tests/run.ts = **586 PASS / 0 FAIL**
 - UI 审计三视口 **0 条**
-- 微信构建 success：3.14MB / 10.97MB；index.js 332,551 B（2026-11-02 15:21:27）
-- 批次 1/5 的运行时验证见对应提交与 tasks 历史段
+- 微信构建 success：3.14MB / 10.97MB；index.js 333,266 B（2026-11-02 15:28:49）
+- PERF-01 60s 压测：mem 54MB、peak 87MB、nodes 124→332 振荡、errors none
+- 批次 1/5/7 的运行时验证见对应提交与 tasks 历史段
 
 ### 未完成
-- PERF-01 网格化单独排期，未做
 - 微信真机确认
 
 ### 每批必跑
@@ -30,7 +31,7 @@ node tools/ui/audit_text_fit.cjs   # 期望 0 条
 ```
 
 ### 下一步
-- 等用户安排 PERF-01 或真机验证。
+- 等用户安排微信真机验证；无已知代码缺陷。
 
 
 ## 批次 1：P0 节点泄漏修复（2026-11-02）

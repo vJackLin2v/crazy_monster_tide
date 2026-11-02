@@ -194,6 +194,10 @@ export class Battle extends Component {
 
   private enemies: Enemy[] = [];
   private bullets: Bullet[] = [];
+  /** 敌人空间网格（PERF-01）：updateBullets 只查附近格 */
+  private static readonly GRID = 64;
+  private enemyGrid = new Map<number, Enemy[]>();
+  private gridScratch: Enemy[] = [];
   /** 子弹命中表对象池：避免每颗子弹 new Set */
   private hitSetPool: Set<Enemy>[] = [];
   /** 多重射击：连续发射的待发队列（避免一次并排打出多颗） */
@@ -1810,6 +1814,7 @@ export class Battle extends Component {
     this.updateBossMechanics();
     this.updateNewSkillTypes(dt);
     this.updateEnemies(dt);
+    this.rebuildEnemyGrid();
     this.updateEnemyShooting(dt);
     this.updateEnemyBullets(dt);
     this.updateBullets(dt);
@@ -2400,6 +2405,35 @@ export class Battle extends Component {
     }
   }
 
+
+  /** 每帧在 updateEnemies 之后重建；数组复用，不清 Map */
+  private rebuildEnemyGrid(): void {
+    const g = this.enemyGrid;
+    for (const arr of g.values()) arr.length = 0;
+    for (const e of this.enemies) {
+      if (e.dead) continue;
+      const k = (Math.floor(e.x / Battle.GRID) << 16) ^ Math.floor(e.y / Battle.GRID);
+      const arr = g.get(k);
+      if (arr) arr.push(e); else g.set(k, [e]);
+    }
+  }
+
+  /** 收集 (x,y) 半径 r 内候选敌人到 scratch，返回数量 */
+  private collectNear(x: number, y: number, r: number): number {
+    const out = this.gridScratch; out.length = 0;
+    const S = Battle.GRID;
+    const x0 = Math.floor((x - r) / S), x1 = Math.floor((x + r) / S);
+    const y0 = Math.floor((y - r) / S), y1 = Math.floor((y + r) / S);
+    for (let cy = y0; cy <= y1; cy++) {
+      for (let cx = x0; cx <= x1; cx++) {
+        const arr = this.enemyGrid.get((cx << 16) ^ cy);
+        if (!arr) continue;
+        for (const e of arr) out.push(e);
+      }
+    }
+    return out.length;
+  }
+
   private updateBullets(dt: number) {
     for (const b of this.bullets) {
       b.t += dt; b.life -= dt;
@@ -2448,9 +2482,12 @@ export class Battle extends Component {
       if (b.returning && b.returned) b.spinAngle = (b.spinAngle ?? 0) + 720 * dt;
       b.node.angle = -Math.atan2(b.vy, b.vx) * 180 / Math.PI + (b.spinAngle ?? 0);
 
-      for (const e of this.enemies) {
+      const nearN = this.collectNear(b.x, b.y, b.r + 40);
+      for (let ni = 0; ni < nearN; ni++) {
+        const e = this.gridScratch[ni];
         if (e.dead || b.hit.has(e)) continue;
-        if (Math.hypot(e.x - b.x, e.y - b.y) < e.r + b.r) {
+        const dx = e.x - b.x, dy = e.y - b.y;
+        if (dx * dx + dy * dy < (e.r + b.r) * (e.r + b.r)) {
           b.hit.add(e);
           this.hitEnemy(e, b.dmg, this.bulletRt(b), b.hitVfx, false, undefined, undefined, b.telSkill);
           // ★ 传染（M49）：**不是穿过去**，而是从这只怪身上"跳"到附近的另一只——
