@@ -25,7 +25,7 @@ export const SKILLS: Record<string, SkillDef> = {
                  desc: '大范围毒雾，铺得最久，适合拖住怪群。' },
   meteor:      { name: '陨石',     icon: 'sk-flamebomb.png',          type: 'area',       tags: ['fire','area','dot'],               cd: 3.6,  dmg: 14, spd: 0,   color: '#FF9B5A', size: 30, zoneLife: 2.4, tickRate: 0.35,
                  desc: '陨石落地爆发最疼，燃烧短，点名硬目标。' },
-  frostnova:   { name: '霜爆',     icon: 'skill-frost_ray.png',       type: 'pulse',      tags: ['ice','area','pulse','burst'],      cd: 3.6,  dmg: 7,  spd: 0,   color: '#B6F0DC', size: 34,
+  frostnova:   { name: '霜爆',     icon: 'skill-frost_ray.png',       type: 'pulse',      tags: ['ice','area','pulse','burst'],      cd: 3.6,  dmg: 12, spd: 0,   color: '#B6F0DC', size: 34,
                  desc: '大范围冰爆：对减速目标伤害更高，适合配合减速类黑科技。' },
   blade_storm: { name: '乱杀',     icon: 'sh-swordplus.png',       type: 'area',       tags: ['physical','area','dot'],           cd: 2.4,  dmg: 7,  spd: 0,   color: '#D9C7A0', size: 26, zoneLife: 2.8, tickRate: 0.30,
                  desc: '刃风贴脸转动最快，近身收益最高。' },
