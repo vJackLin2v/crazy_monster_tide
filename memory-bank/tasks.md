@@ -1,5 +1,100 @@
 # 当前任务
 
+## HUD 布局重排 + 转发改为纯微信自带（2026-11-06 下午）
+
+### 完成
+- **HUD 布局重排（`ui/Hud.ts`）**：放弃上一版"把右上内容横向挤到胶囊左侧"的做法（会在右上留一大块空白、暂停键被挤到屏幕中间）。改为行业通行的**顶部整体留系统区**：
+  - `S = max(safeTop, capsule.bottom + 6)`，HUD 从胶囊下沿开始排；左右两块顶部对齐。
+  - 右侧恢复贴边：波次文字右边界 `VW-68`、暂停键 `VW-30`（回到右上角，符合 `docs/ui/reference-library/wechat-minigame-guidelines.md` 的"暂停键右上角肌肉记忆"要求）。
+  - 波次文案恢复「波次 N · 击杀 M」。
+  - BOSS 条与顶部渐隐板跟随下移（`bossY = S+80`、`PLATE = max(S+100, bossY+22)`）。
+  - 血条 156 → 144，给中间留 ~28px 呼吸区。
+- **转发改为微信自带**（按用户澄清：不要游戏内分享按钮）：
+  - 撤掉 `buildResult` 的 `onShare` 参数与「分享」按钮，底部恢复「主界面 / 再来一局（/ 继续·无尽）」。
+  - `Share.ts`：`shareResult` → `shareNow`（保留但不被 UI 调用）；真正生效的是 `initShare()` + `setPassiveShare()`。
+  - `GameRoot.showResult` 里把本局成绩设为被动转发内容 —— 玩家点右上角 ··· → 转发，卡片就是本局战绩。
+
+### 验证
+- `tsc` 双配置 = 0；`cocos/tests/run.ts` = **586 PASS / 0 FAIL**；UI 审计三视口 = **0 条**
+- 胶囊：四机型 `pauseHit` 重叠全 0，且 `x[308,352]` 贴回右边缘
+  - SE2 y[516,560]｜iPhone13 y[632,676]｜14Pro y[628,672]｜15PM y[630,674]
+- 微信构建：主包 3.14MB / 总 10.97MB；产物含 `showShareMenu / onShareAppMessage / shareAppMessage`，无测试残留
+- 截图：`reports/text_fit/capsule_390x844.png`（HUD）、`capsule_375x667.png`（小屏）
+
+### 未完成
+- 真机确认（转发卡片、暂停键手感、iOS BGM）
+- 分享封面图（`SHARE_IMG` 留空 → 微信自动截图）
+
+### 下一步
+- 等真机验收；若 HUD 还需调整，按具体位置改。
+
+---
+
+## 清理测试 UI + 修胶囊 + 转发（2026-11-06）
+
+### 完成
+- **删除全部测试 UI 入口**：
+  - `GameRoot.ts`：删除 DEBUG「数据」按钮块、`dbgBtn` 字段、`showTelemetry()`、`copyRunLogs()`、`import { DEBUG }`、`import { buildTelemetryScreen }`。
+  - 删除 `ui/TelemetryScreen.ts` + `.meta`（唯一引用方已移除）。
+  - 保留控制台调试钩子（`__logs` / `__deviceLogDump` 等），它们不占玩家可见区域。
+- **HUD 胶囊避让（BUG-09 修复）**：
+  - `ui/Hud.ts`：`caps`/`capsSane` 从死变量改为真正参与布局；倒计时与暂停键水平让到胶囊左侧。
+  - 波次文案由「波次 N · 击杀 M」改为「第 N 波」并缩短宽度 —— 纯水平避让，不再依赖各机型胶囊高度（SE2 距顶 24~56、iPhone 13 是 47~77，垂直方案必然在某类机型翻车）。
+  - 四机型实测重叠归零：SE2 / iPhone 13 / 14 Pro / 15 Pro Max，`pauseHit` 重叠面积全部 = 0。
+- **转发（微信小游戏）**：
+  - 新增 `game/Share.ts`（+ .meta）：`initShare`（showShareMenu + onShareAppMessage）、`shareResult`（主动）、`readLaunchQuery`、`onShareEnter`。
+  - `GameRoot.ts`：启动时 `initShare()`；冷启动读 query 记 `share_enter`；热启动 `onShareEnter` 埋点；结算页传 `onShare`。
+  - `ui/MenuScreens.ts`：`buildResult` 增加 `onShare?`，底部按钮区重排为「主界面 / 再来一局 / 继续·无尽 / 分享（44×50）」，右侧固定 12px 边距。
+  - 分享文案按胜负区分，落地参数 `from / wave / win`。
+
+### 验证
+- `tsc -p tsconfig.check.json` / `-p tsconfig.ui-check.json` = **0 错误**
+- `tsx cocos/tests/run.ts` = **586 PASS / 0 FAIL**
+- UI 审计三视口 = **0 条**
+- 胶囊实测（`.tmp/probe_capsule.cjs`）：四机型 `pauseHit / pauseIcon` 重叠均为 **0**
+- 分享点击实测（`.tmp/probe_share.cjs`）：`deviceLog: {"ev":"share_click","d":{"wave":20,"win":1,"kills":1}}`，`pageerror: none`
+- 微信构建：主包 **3.14MB**（限 4MB）、总 **10.97MB**（限 20MB）
+- 构建产物扫描：无 `showTelemetry / 导出日志 / 阶段3` 残留；含 `shareAppMessage / showShareMenu / share_click / share_enter`
+- 截图：`reports/text_fit/capsule_390x844.png`（修复后 HUD）、`result_share.png`（结算页四按钮）
+
+### 未完成
+- 真机确认：转发卡片标题/封面、iOS 首次 BGM 是否静音（RISK-01）、胶囊真实位置与 mock 的偏差。
+- 分享封面图未做（`SHARE_IMG` 留空 → 微信自动截图；美术出图后填包内路径）。
+- 排行榜/订阅消息按用户要求**不做**。
+
+### 下一步
+- 等真机验证结果；如需要再做分享卡片图。
+
+---
+
+## 二次全量审查：微信平台 / 苹果端专项（2026-11-06）
+
+### 完成
+- 报告：`reports/review_20261106_wechat_ios.md`（审查结论 + 苹果端逐项对照 + 微信功能实现方案）。
+- 回归基线全部通过：tsc 双配置 0、`cocos/tests/run.ts` 586 PASS、UI 审计 0 条、60s 压测无泄漏（堆 51MB/峰值 87MB/节点 125→309）。
+- 包体积：主包 3.2MB（<4MB）、总 18MB（<20MB）。
+- **新发现 BUG-09（P0）**：微信胶囊遮挡 HUD 暂停键与倒计时。`ui/Hud.ts:146` 的 `caps`/`capsSane` 计算后从未使用，暂停键写死 `S+42`。四机型实测重叠：SE2 253px²、iPhone13 1259px²、14Pro 1290px²、15ProMax 1179px²（按钮 66% 被盖）。注释写 `S+62` 与实现 `S+42` 矛盾，属回归。
+- RISK-01：iOS 首次 BGM 可能静音（无手势解锁逻辑，待真机确认）。
+- 微信功能现状：转发/分享/排行榜/订阅**全部未实现**（0 处相关 API），`game.json` 无 `openDataContext`。
+
+### 验证
+- `tsc -p tsconfig.check.json` / `-p tsconfig.ui-check.json` = 0
+- `tsx cocos/tests/run.ts` = 586 PASS / 0 FAIL
+- `node tools/ui/audit_text_fit.cjs` = 0 条
+- `node .tmp/probe_soak2.cjs` = 60s，mem 51MB 恒定、errors none
+- 新增胶囊实测脚本 `.tmp/probe_capsule.cjs`（4 机型）
+- 本轮**未改动任何游戏源码**
+
+### 未完成
+- BUG-09 未修（等确认方案 A/B/C，建议 C：暂停键移到左上角）。
+- RISK-01 需 iPhone 真机确认。
+- 转发/排行榜未开工（方案已给）。
+
+### 下一步
+- 等用户确认从「修 BUG-09」还是「转发功能」开始；一次只做一个里程碑。
+
+---
+
 ## 全部批次完成（2026-11-02）
 
 ### 完成：批次 1-6

@@ -1,0 +1,34 @@
+const { chromium } = require('H:/AI-game/xingnang/cocos_port/node_modules/playwright-core');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+(async () => {
+  const browser = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true });
+  const ctx = await browser.newContext({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 1 });
+  const page = await ctx.newPage();
+  await page.goto('http://127.0.0.1:8123/', { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('canvas'); await sleep(8000);
+  await page.evaluate(() => localStorage.clear());
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('canvas'); await sleep(8000);
+  const out = await page.evaluate(async () => {
+    const cc = window.cc, sc = cc.director.getScene();
+    const find = (n, p, d = 0) => { if (d > 50 || !n) return null; if (p(n)) return n; for (const c of n.children) { const t = find(c, p, d + 1); if (t) return t; } return null; };
+    const g = find(sc, x => x.getComponent && x.getComponent('GameRoot')).getComponent('GameRoot');
+    const countDebugBtns = () => { let n = 0; const walk = x => { if (!x) return; if (x.name === 'btn') { const labels = x.getComponentsInChildren('cc.Label') || []; if (labels.some(l => l.string === '数据')) n++; } for (const c of x.children) walk(c); }; walk(g.uiRoot); return n; };
+    const countFx = () => { let n = 0; const walk = x => { if (!x) return; if (x.name === 'chargeFx') n++; for (const c of x.children) walk(c); }; walk(sc); return n; };
+    g.showMenu(); g.showMenu(); g.showMenu(); g.showMenu(); g.showMenu(); await new Promise(r => setTimeout(r, 200));
+    const debugBtns = countDebugBtns();
+    g.charId = 'knight'; await g.startBattle(); await new Promise(r => setTimeout(r, 300));
+    const b = g.battle; b.rs.skills = [{ id: 'charge_pulse', lvl: 1, mods: [] }];
+    b.fireSkill(0, b.rs.skillRuntime(0)); await new Promise(r => setTimeout(r, 100));
+    const fxBeforeClear = countFx();
+    b.paused = true; b.clearSkillRuntime(0); await new Promise(r => setTimeout(r, 100));
+    const fxAfterClear = countFx();
+    b.paused = false; b.fireSkill(0, b.rs.skillRuntime(0)); await new Promise(r => setTimeout(r, 100));
+    b.paused = true; const fxBeforeReset = countFx();
+    b.resetRunState(); await new Promise(r => setTimeout(r, 100));
+    const fxAfterReset = countFx();
+    return { debugBtns, fxBeforeClear, fxAfterClear, fxBeforeReset, fxAfterReset };
+  });
+  console.log(JSON.stringify(out));
+  await browser.close();
+})().catch(e => { console.log('FAIL', e.message); process.exit(1); });

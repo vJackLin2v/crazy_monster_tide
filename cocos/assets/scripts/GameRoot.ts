@@ -11,7 +11,6 @@
  *       battle ─暂停键→ build 抽屉
  */
 import { _decorator, Component, Node, view, ResolutionPolicy, Color, Game, game } from 'cc';
-import { DEBUG } from 'cc/env';
 import { SCREEN_W, SCREEN_H, RUN, waveTime, isBossWave, isEliteWave } from './core/Const';
 import { Joystick } from './engine/Joystick';
 import { Battle } from './battle/Battle';
@@ -37,9 +36,9 @@ import { RUN_SAVE_VERSION, assertRestorable, continueInfoOf, newRunId, type Acti
 import { addRun, buildSummary, emptyHistory, endReasonText, type HistoryFilter, type RunDetail, type RunHistoryData, type RunResult, type RunSummary } from './game/RunHistory';
 import { telemetryStart, telemetryRunEnd, telemetryShopEnter, telemetryShopBuy, telemetryShopReroll, telemetryShopLeave, listRuns, exportLogs, clearLogs, summarize } from './game/Telemetry';
 import { initDeviceLog, logEvent, dumpDeviceLog, clearDeviceLog, deviceLogCount, deviceInfo } from './game/DeviceLog';
+import { initShare, readLaunchQuery, onShareEnter, buildShareContent, setPassiveShare } from './game/Share';
 import { TelemetryRecorder } from './game/telemetry/TelemetryRecorder';
 import { saveRecord, loadRecords, exportAllJson, exportRunJson, clearAll, aggregate } from './game/telemetry/TelemetryStore';
-import { buildTelemetryScreen } from './ui/TelemetryScreen';
 
 /** 微信小游戏全局对象（浏览器/编辑器里不存在；用 typeof 访问保证安全） */
 declare const GameGlobal: Record<string, unknown> | undefined;
@@ -76,8 +75,6 @@ export class GameRoot extends Component {
   private hud: Hud | null = null;
   private cur: Node | null = null;
   private curModal: Node | null = null;
-  /** DEBUG 菜单「数据」按钮：复用，禁止每次 showMenu 追加 */
-  private dbgBtn: Node | null = null;
   private phase: Phase = 'menu';
   private charId = CHARS[0].id;
   /** 本次/下一局的随机种子：**每局都换**（原来写死 20261012 → 每局商店、奖励完全一样） */
@@ -198,6 +195,11 @@ export class GameRoot extends Component {
     this.activeCheck = loadActiveRun();
     game.on(Game.EVENT_HIDE, this.onAppHide, this);
     game.on(Game.EVENT_SHOW, this.onAppShow, this);
+    // 转发：打开右上角 ··· 菜单 + 注册被动转发内容；同时记录"从分享卡片进入"的来源
+    initShare();
+    const launchQ = readLaunchQuery();
+    if (launchQ.from) logEvent('share_enter', { ...launchQ, cold: 1 });
+    onShareEnter((q) => logEvent('share_enter', { ...q, cold: 0 }));
     // 微信版本更新：冷启动检查 → 下载完成提示重启（浏览器里自动跳过）
     setupUpdate(() => {
       const g = globalThis as unknown as { wx?: { showModal?: (o: unknown) => void } };
@@ -324,12 +326,6 @@ export class GameRoot extends Component {
 
   private skillName(id: string): string { return SKILLS[id] ? SKILLS[id].name : id; }
 
-  private showTelemetry(): void {
-    if (!DEBUG) return;
-    this.phase = 'menu'; this.closeModal(); this.clearScreen();
-    this.cur = buildTelemetryScreen(this.uiRoot, () => this.showMenu());
-  }
-
   private showMenu() {
     this.phase = 'menu'; this.closeModal(); this.clearScreen();
     Sfx.bgm('menu');
@@ -375,14 +371,6 @@ export class GameRoot extends Component {
         this.showMenu();
       },
     });
-    if (DEBUG) {
-      if (!this.dbgBtn || !this.dbgBtn.isValid) {
-        const b = button(this.uiRoot, SCREEN_W / 2 - 40, SCREEN_H / 2 - 30, 64, 28, '数据', { size: 10 });
-        onTap(b.node, () => this.showTelemetry());
-        this.dbgBtn = b.node;
-      }
-      this.dbgBtn.setSiblingIndex(this.uiRoot.children.length - 1);
-    }
   }
 
   // ---------- 继续游戏：存档 / 恢复 ----------
@@ -1346,32 +1334,6 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
   }
 
   // ---------- 11. 结算 ----------
-  /** 真机/网页一键复制本局日志（含每波统计），方便回传分析 */
-  private copyRunLogs(): void {
-    const data = exportLogs();
-    const wxAny = (globalThis as unknown as {
-      wx?: { setClipboardData?: (o: { data: string; success?: () => void; fail?: (e: unknown) => void }) => void };
-    }).wx;
-    if (wxAny && wxAny.setClipboardData) {
-      // 微信隐私协议未声明剪贴板时 setClipboardData 会失败：不能让异常冒到控制台
-      wxAny.setClipboardData({
-        data,
-        success: () => console.log('[日志] 已写入剪贴板，共 ' + data.length + ' 字符'),
-        fail: (e) => {
-          console.warn('[日志] 剪贴板不可用（隐私协议未声明），改为输出到控制台', e);
-          console.log(data);
-        },
-      });
-      return;
-    }
-    const nav = (globalThis as unknown as { navigator?: { clipboard?: { writeText: (t: string) => Promise<void> } } }).navigator;
-    if (nav && nav.clipboard) {
-      void nav.clipboard.writeText(data);
-      console.log('[日志] 已写入剪贴板，共 ' + data.length + ' 字符');
-      return;
-    }
-    console.log(data);
-  }
 
   private showResult(win: boolean) {
     logEvent('result_shown', { win, wave: this.battle.rs ? this.battle.rs.wave : 0 });
@@ -1433,6 +1395,13 @@ private installReturn: 'levelup' | 'pause' | 'shop' | 'nextwave' = 'levelup';
     Sfx.bgm('menu');
     this.closeModal(); this.clearScreen();
     const rs = this.battle.rs;
+    // 转发：把本局成绩设为「右上角 ··· → 转发」的默认内容。
+    // 微信小游戏的转发就是系统菜单里那一项，游戏内不需要额外按钮。
+    setPassiveShare(buildShareContent({
+      win, wave: rs.wave, kills: rs.kills, lv: rs.lv,
+      charName: (CHARS.find(c => c.id === this.charId) ?? CHARS[0]).name,
+      difficultyName: difficultyOf(rs.difficulty).name,
+    }));
     // 规格 v1.1 §2.9：本局 Build 每行 = 技能图标 + 名称(Lv) + 已装模块
     const build: ResultBuildRow[] = rs.skills.map(s => {
       const def = SKILLS[s.id];

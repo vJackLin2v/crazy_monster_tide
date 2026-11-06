@@ -39,3 +39,6 @@ deliverables/
 
 # 本地杂物：调试日志 / 旧评审包 / 一次性产物（只留本机，不进仓库）
 archive/
+
+# UI 审计截图（脚本每次重新生成，体积大）
+reports/text_fit/

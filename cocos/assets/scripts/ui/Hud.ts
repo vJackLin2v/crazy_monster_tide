@@ -76,8 +76,24 @@ export class Hud {
     this.vw = VW; this.vh = VH;
     this.root = mkNode(parent, 'Hud', VW, VH);
     const at = (x: number, y: number) => P(VW, VH, x, y);
-    const S = safeTop();
+    // ⚠️ 微信小游戏右上角胶囊会吃掉点击，且高度各机型差异极大
+    //    （iPhone SE2 距顶 24~56，iPhone 13 是 47~77，14/15 Pro 53~82）。
+    //    处理原则：**只有必须避让的部分下移**，不要整体下移 ——
+    //    割草游戏的战斗可视区寸土寸金，全下移会白吃掉 60~75px 的接敌空间。
+    //      · S  = 左上区基准（血条/经验/金币），胶囊在右侧，不影响它，保持贴顶；
+    //      · SR = 右上区基准（波次/倒计时/暂停），落到胶囊下沿之下，重新贴右。
+    //    这样右侧不再被挤到屏幕中间，暂停键回到右上角（微信官方设计指南要求的肌肉记忆位）。
+    const S0 = safeTop();
     const B = safeBottom();
+    const caps = wxCapsuleRect();
+    const capsSane = !!caps && caps.left > 120 && caps.left < VW - 24 && caps.bottom < VH * 0.4;
+    // 整体落到胶囊下沿之下：左右两块顶部对齐，才不会出现"左边贴顶、右边被压下去一截"的散乱感。
+    // 代价是顶部让出 ~50-80px，但这正是微信小游戏的标准做法（顶部留系统区），
+    // 比"把右上内容挤到屏幕中间、留一大块空白"干净得多。
+    const S = capsSane ? Math.max(S0, caps.bottom + 6) : S0;
+    // SR：右侧语义别名（当前与 S 相同，保留可读性）
+    const SR = S;
+    const bossY = S + 80;
 
     // ── 受击红光：屏幕四边由外向内逐层变淡 ──
     this.hurtVig = mkNode(this.root, 'hurtVig', VW, VH);
@@ -95,7 +111,8 @@ export class Hud {
     this.hurtOp.opacity = 0;
 
     // ── 顶部承载板：渐隐色带（不盖战斗区，只托住数字）──
-    const PLATE = S + 100;
+    // 高度跟着 BOSS 条走：右上区下移后 BOSS 条也顺延，色带要能托住它
+    const PLATE = Math.max(S + 100, bossY + 22);
     const plate = mkNode(this.root, 'topPlate', VW, PLATE, 0, VH / 2 - PLATE / 2);
     const pg = plate.addComponent(Graphics);
     const BANDS = 6, bh = PLATE / BANDS;
@@ -107,7 +124,7 @@ export class Hud {
     }
 
     // ── 左上：HP 156×18 ──
-    const HP_W = 156, HP_H = 18;
+    const HP_W = 144, HP_H = 18;   // 156→144：右上"波次"文字左端约在 182，留出 ~28px 呼吸区
     let p = at(10 + HP_W / 2, S + 4 + HP_H / 2);
     // ⚠️ 发光层必须先建（渲染在血条**下面**）：放在血条之后会盖住填充、把血条糊成灰块
     const warn = mkNode(this.root, 'hpWarn', HP_W + 4, HP_H + 4, p.x, p.y);
@@ -139,23 +156,15 @@ export class Hud {
       { size: 14, color: COL.cream, align: 'left', width: 96, bold: true, outline: true });
 
     // ── 右上：波次 · 击杀 / 倒计时 / 暂停 ──
-    // ⚠️ 微信小游戏右上角有"胶囊按钮"，会盖住这块（真机截图确认）。
-    //    有胶囊时：暂停键贴到胶囊左侧，波次/倒计时也整体左让；浏览器里保持原位。
-    // ⚠️ 胶囊给的值在个别机型/开发者工具里可能不是设计像素（曾导致暂停键与倒计时跑到屏幕外，
-    //    用户反馈"暂停按钮和倒计时都不见了"）。这里做**合法区间校验 + 回退**。
-    const caps = wxCapsuleRect();
-    const capsSane = !!caps && caps.left > 120 && caps.left < VW - 24 && caps.bottom < VH * 0.4;
-    // 用户 2026-10-30：波次/倒计时**回到右侧**（之前为了避胶囊挤到中间，很丑）。
-    // 胶囊只在顶部 ~46px 高，把暂停键下移到 S+62 就完全错开，文字不必再左让。
-    // 右侧分成两列：**文本列到 VW-68 结束**，右边 68px 留给暂停键，互不重叠。
-    // （上一版把文字右对齐到 VW-12、暂停也贴右，导致暂停压在倒计时上——有截图为证）
+    // 胶囊已在构造函数开头让过（S 已经落到胶囊下沿之下），这里可以放心**贴右**排。
+    // 右侧两列：文字列到 VW-68 结束，最右 68px 留给暂停键（44 热区），互不重叠。
     const rightEdge = VW - 68;
     const pauseX = VW - 30;
-    const pauseY = S + 42;
-    this.waveText = text(this.root, at(rightEdge, 0).x, at(0, S + 12).y, '波次 1 · 击杀 0',
+    const pauseY = SR + 42;
+    this.waveText = text(this.root, at(rightEdge, 0).x, at(0, SR + 12).y, '波次 1 · 击杀 0',
       { size: 12, color: COL.cream, align: 'right', width: 210, bold: true, outline: true });
     // ⚠️ 初始必须是空串：以前占位写 '0'，商店/波间会留下一个黑 0（用户反馈）
-    this.timerText = text(this.root, at(rightEdge, 0).x, at(0, S + 37).y, '',
+    this.timerText = text(this.root, at(rightEdge, 0).x, at(0, SR + 37).y, '',
       { size: 26, color: COL.cream, align: 'right', width: 130, bold: true, outline: true, shadow: true });
 
     // 暂停：视觉 36×36，热区 44（微信硬要求）
@@ -170,7 +179,7 @@ export class Hud {
     if (onPause) onTap(hit, onPause);
 
     // ── BOSS：名字 S+64 / 血条 336×12 @S+80（无 BOSS 不占位）──
-    this.bossBox = mkNode(this.root, 'bossBox', 336, 34, at(180, S + 80).x, at(0, S + 80).y);
+    this.bossBox = mkNode(this.root, 'bossBox', 336, 34, at(180, bossY).x, at(0, bossY).y);
     this.bossName = text(this.bossBox, -166, 8, '', { size: 11, color: COL.accent, align: 'left', width: 330, bold: true, outline: true });
     this.bossBar = gradBar(this.bossBox, 0, -7, 336, 12, {
       dir: 'h', from: new Color(255, 122, 60), to: COL.red, line: COL.line,
