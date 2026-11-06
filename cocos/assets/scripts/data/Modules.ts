@@ -9,7 +9,7 @@ export const MODULES: Record<string, ModuleDef> = {
   bounce:    { name: '弹射', icon: '↺', stack: 'additive', max: 3, requires: ['projectile'],               desc: '命中后转向附近另一只敌人继续飞（不终结，伤害递减）' },
   pierce:    { name: '穿透', icon: '⇢', stack: 'additive', max: 3, requires: ['projectile'],               desc: '子弹可以多穿透一个目标' },
   orbit:     { name: '环绕弹', icon: '◌', stack: 'additive', max: 3, requires: ['projectile'],               desc: '多一枚绕着角色旋转的子弹' },
-  giant:     { name: '增大', icon: '⬤', stack: 'additive', max: 3, requires: ['projectile','area','pulse','chain'], desc: '技能体积与范围更大' },
+  giant:     { name: '变大', icon: '⬤', stack: 'additive', max: 3, requires: ['projectile','area','pulse','chain'], desc: '技能体积与范围更大' },
   rapid:     { name: '冷却缩减', icon: '»', stack: 'tier',     max: 3, requires: ['projectile','pulse','chain','area'], desc: '技能冷却更短' },
   echo:      { name: '重复施放', icon: '↻', stack: 'tier',     max: 3, requires: [], desc: '施放后短暂延迟再放一次，伤害较低' },
   burn:      { name: '灼烧', icon: '✹', stack: 'tier',     max: 3, requires: [],  desc: '命中附加灼烧，持续掉血' },
@@ -68,7 +68,7 @@ export const MODULE_NUMS: Record<string, string> = {
   vamp:      '伤害的 4% 回血',
   chain:     '跳 1 次 · 70% · 终结',
   snipe:     '弹速 +40% · 伤害 +15%',
-  harvest:   '击杀回复 1 HP',
+  harvest:   '击杀回复 1 点血',
   thunder:   '15% 概率落雷',
   overload:  '伤害 +25% · 范围 -10%',
 };

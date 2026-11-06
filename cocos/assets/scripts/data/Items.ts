@@ -38,7 +38,7 @@ export const ITEMS: Record<string, ItemDef> = {
   sizeMul_l: { name: '大就是好', icon: '⬤', tier: 1, desc: '子弹特别大', apply: (s: CharStats) => { s.sizeMul *= 1.22; } },
   armor_s: { name: '铁胸甲', icon: '🛡', tier: 1, desc: '挨打掉血更少', apply: (s: CharStats) => { s.armor += 0.05; } },
   armor_l: { name: '龙鳞甲', icon: '🛡', tier: 1, desc: '挨打几乎不疼', apply: (s: CharStats) => { s.armor += 0.11; } },
-  regen_s: { name: '苔藓苔', icon: '✚', tier: 1, desc: '慢慢自动回血', apply: (s: CharStats) => { s.regen += 0.3; } },
+  regen_s: { name: '苔藓', icon: '✚', tier: 1, desc: '慢慢自动回血', apply: (s: CharStats) => { s.regen += 0.3; } },
   regen_l: { name: '生命之泉', icon: '✚', tier: 1, desc: '自动回血更快', apply: (s: CharStats) => { s.regen += 0.7; } },
   invuln_s: { name: '龟甲片', icon: '⏱', tier: 1, desc: '挨打后无敌更久', apply: (s: CharStats) => { s.invuln += 0.1; } },
   invuln_l: { name: '时之沙', icon: '⏱', tier: 1, desc: '挨打后无敌很久', apply: (s: CharStats) => { s.invuln += 0.22; } },
@@ -83,16 +83,16 @@ export const ITEMS: Record<string, ItemDef> = {
   vampire: { name: '吸血鬼牙', icon: '🩸', tier: 2, desc: '能吸血，暴击更疼', apply: (s: CharStats) => { s.lifesteal += 0.08; s.critdmg += 0.20; } },
 
   // ── 第一批新道具（设计 v6：tier 1 普通 / 2 稀有 / 3 传说）──
-  emberstack: { name: '灼烧增伤', icon: 'sh-fire', tier: 2, desc: '火系命中的目标再受火伤 +25%', special: 'emberstack', apply: () => { /* 运行时处理 */ } },
-  shatter:    { name: '破冰增伤',     icon: 'sh-shield', tier: 2, desc: '对被减速目标 +20% 伤害，对未被减速目标 -5%', special: 'shatter', apply: () => { /* 运行时处理 */ } },
-  voltloop:   { name: '落雷追加', icon: 'sk-bolt', tier: 2, desc: '雷击命中 15% 概率追加 40% 小雷击', special: 'voltloop', apply: () => { /* 运行时处理 */ } },
+  emberstack: { name: '火油瓶', icon: 'sh-fire', tier: 2, desc: '火系命中的目标再受火伤 +25%', special: 'emberstack', apply: () => { /* 运行时处理 */ } },
+  shatter:    { name: '碎冰锥',     icon: 'sh-shield', tier: 2, desc: '对被减速目标 +20% 伤害，对未被减速目标 -5%', special: 'shatter', apply: () => { /* 运行时处理 */ } },
+  voltloop:   { name: '引雷针', icon: 'sk-bolt', tier: 2, desc: '雷击命中 15% 概率追加 40% 小雷击', special: 'voltloop', apply: () => { /* 运行时处理 */ } },
   bloodpact:  { name: '血契',     icon: 'sh-blood', tier: 3, desc: '攻击力 +30%，最大生命 -25%', special: 'bloodpact', apply: (s) => { s.power *= 1.30; s.maxhp = Math.round(s.maxhp * 0.75); } },
-  lastbreath: { name: '低血强化',     icon: 'sh-execute', tier: 2, desc: '生命低于 35% 时攻速 +35%，高于则 -8%', special: 'lastbreath', apply: () => { /* 运行时处理 */ } },
-  thorncoat:  { name: '受击反伤', icon: 'sh-heart', tier: 1, desc: '受击反弹 12 点伤害（0.5s CD），移速 -6%', special: 'thorncoat', apply: () => { /* 移速 -6% 由运行时处理 */ } },
-  greed:      { name: '金币转攻击', icon: 'relic-007', tier: 2, desc: '金币 +25%，每 100 金币攻击 +3%（上限 +15%）', special: 'greed', apply: (s: CharStats) => { s.greed += 0.25; } },
-  frugal:     { name: '刷新省钱', icon: 'relic-019', tier: 1, desc: '刷新费用 -50%，每波结束金币 -2', special: 'frugal', apply: () => { /* 运行时处理 */ } },
-  focused:    { name: '极简专精', icon: 'sh-sizeup', tier: 3, desc: '装备技能 ≤2 个时：技能伤害 +25%、冷却 -10%', special: 'focused', apply: () => { /* 运行时处理 */ } },
-  resonator:  { name: '黑科技共鸣',   icon: 'relic-030', tier: 3, desc: '同一技能装了 2 个相同触发时机（Hook）的黑科技时，该技能伤害 +20%', special: 'resonator', apply: () => { /* 运行时处理 */ } },
+  lastbreath: { name: '残血护符',     icon: 'sh-execute', tier: 2, desc: '生命低于 35% 时攻速 +35%，高于则 -8%', special: 'lastbreath', apply: () => { /* 运行时处理 */ } },
+  thorncoat:  { name: '荆棘甲', icon: 'sh-heart', tier: 1, desc: '受击反弹 12 点伤害（0.5 秒一次），移速 -6%', special: 'thorncoat', apply: () => { /* 移速 -6% 由运行时处理 */ } },
+  greed:      { name: '点金手', icon: 'relic-007', tier: 2, desc: '金币 +25%，每 100 金币攻击 +3%（上限 +15%）', special: 'greed', apply: (s: CharStats) => { s.greed += 0.25; } },
+  frugal:     { name: '赊账簿', icon: 'relic-019', tier: 1, desc: '刷新费用 -50%，每波结束金币 -2', special: 'frugal', apply: () => { /* 运行时处理 */ } },
+  focused:    { name: '少即是多', icon: 'sh-sizeup', tier: 3, desc: '装备技能 ≤2 个时：技能伤害 +25%、冷却 -10%', special: 'focused', apply: () => { /* 运行时处理 */ } },
+  resonator:  { name: '共鸣石',   icon: 'relic-030', tier: 3, desc: '同一技能装了 2 个相同触发时机（Hook）的黑科技时，该技能伤害 +20%', special: 'resonator', apply: () => { /* 运行时处理 */ } },
 };
 
 /** 精英 / BOSS 掉落池（高级道具） */

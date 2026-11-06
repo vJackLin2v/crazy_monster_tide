@@ -7,9 +7,9 @@ export const SKILLS: Record<string, SkillDef> = {
                 desc: '两片刀刃绕身旋转，贴脸的敌人持续掉血。' },
   mine_field: { name: '地雷阵', icon: 'skill-flame_bomb.png', type: 'trap', tags: ['physical','trap','area'], cd: 2.6, dmg: 22, spd: 0, color: '#F0C46A', size: 44,
                 desc: '在脚下埋雷，敌人踩到才引爆；同屏最多 4 枚。' },
-  sentry:     { name: '哨戒哨兵', icon: 'skill-arcane_turret.png', type: 'summon', tags: ['arcane','summon','projectile'], cd: 1.2, dmg: 6, spd: 0, color: '#8C63CF', size: 8,
+  sentry:     { name: '哨戒塔', icon: 'skill-arcane_turret.png', type: 'summon', tags: ['arcane','summon','projectile'], cd: 1.2, dmg: 6, spd: 0, color: '#8C63CF', size: 8,
                 desc: '放一个哨兵自动射击，同时只能有一个。' },
-  charge_pulse: { name: '蓄能脉冲', icon: 'skill-thunder_beam.png', type: 'charge', tags: ['lightning','charge','pulse','burst'], cd: 4.0, dmg: 26, spd: 0, color: '#9BE7FF', size: 90,
+  charge_pulse: { name: '蓄能炮', icon: 'skill-thunder_beam.png', type: 'charge', tags: ['lightning','charge','pulse','burst'], cd: 4.0, dmg: 26, spd: 0, color: '#9BE7FF', size: 90,
                 desc: '蓄力后对锁定目标爆发，附带小范围溅射。' },
   fireball:    { name: '火球',     icon: 'skill-fireball.png',        type: 'projectile', tags: ['fire','projectile'],              cd: 0.85, dmg: 12, spd: 190, color: '#FFA84B', size: 5,
                  desc: '向最近的敌人扔出火球，命中时炸开一团火。' },
@@ -35,8 +35,8 @@ export const SKILLS: Record<string, SkillDef> = {
                  desc: '慢速大雷球：出手慢但单发重，追着目标炸。' },
   spike:       { name: '扎心',     icon: 'sh-earthquake.png',     type: 'area',       tags: ['nature','area','dot'],             cd: 2.0,  dmg: 5,  spd: 0,   color: '#A8E06A', size: 24, zoneLife: 3.2, tickRate: 0.50,
                  desc: '裂地施放最快、单次最轻，靠长尾磨血。' },
-  spirit:      { name: '灵能箭',   icon: 'sk-galebow.png',       type: 'projectile', tags: ['arcane','projectile','pierceable','homing'], cd: 1.0, dmg: 8,  spd: 260, color: '#C3A8FF', size: 5,
-                 desc: '灵能箭会自动追着敌人，并穿透 1 个目标——最稳的命中。' },
+  spirit:      { name: '追魂箭',   icon: 'sk-galebow.png',       type: 'projectile', tags: ['arcane','projectile','pierceable','homing'], cd: 1.0, dmg: 8,  spd: 260, color: '#C3A8FF', size: 5,
+                 desc: '追魂箭会自动追着敌人，并穿透 1 个目标——最稳的命中。' },
 };
 
 /** 技能 -> 美术资源（VFX 路径：assets/art/vfx/<组>/<子组>/<组件>/）
