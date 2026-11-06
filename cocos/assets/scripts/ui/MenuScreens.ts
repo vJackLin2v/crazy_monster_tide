@@ -71,7 +71,6 @@ export interface MenuView {
   /** none = 没有存档；ok = 可继续；corrupt = 有存档但读不出来 */
   saveState: 'none' | 'ok' | 'corrupt';
   info?: MenuContinueInfo;
-  corruptNote?: string;
   /** 主菜单底部版本行 */
   version?: string;
 }
@@ -173,9 +172,10 @@ export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandl
     lastActionY = startY2;
   } else if (vm.saveState === 'corrupt') {
     const card = panel(root, at2(180, coreY - 8).x, at2(180, coreY - 8).y, 300, 100, { art: 'panel_soft' });
-    text(card, -132, 30, '存档不可用', { size: 15, color: COL.dim, align: 'left', width: 220, bold: true, outline: true });
-    text(card, -132, 4, vm.corruptNote || '存档损坏或版本不兼容', { size: 10, color: COL.red, align: 'left', width: 280, outline: true });
-    text(card, -132, -24, '点此清除坏档后重新开始', { size: 9, color: COL.dim, align: 'left', width: 280 });
+    text(card, -132, 30, '进度读取失败', { size: 15, color: COL.dim, align: 'left', width: 220, bold: true, outline: true });
+    // 不把底层的校验错误（"存档缺少技能"这类）直接甩给玩家，只给一句能看懂的话
+    text(card, -132, 4, '旧存档无法读取，重新开始就行', { size: 10, color: COL.red, align: 'left', width: 280, outline: true });
+    text(card, -132, -24, '点此清除，重新开始', { size: 9, color: COL.dim, align: 'left', width: 280 });
     onTap(card, () => { if (h.onDiscardSave) h.onDiscardSave(); });
 
     const startBtn = button(root, at2(180, coreY + 76).x, at2(180, coreY + 76).y, BTN_W, BTN_H, '开始游戏',
@@ -256,7 +256,7 @@ export function buildQuitConfirm(
 
   const saveBtn = button(box, 0, 18, 268, 46, '保存并退出', { primary: true, size: 15 });
   onTap(saveBtn.node, onSaveExit);
-  const abandon = button(box, 0, -40, 268, 42, '放弃本局（写入历史）', { size: 13 });
+  const abandon = button(box, 0, -40, 268, 42, '放弃本局', { size: 13 });
   onTap(abandon.node, onAbandon);
   const cancel = button(box, 0, -98, 160, 36, '继续游戏', { size: 12 });
   onTap(cancel.node, onCancel);

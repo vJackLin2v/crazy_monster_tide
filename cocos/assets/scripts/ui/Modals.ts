@@ -515,7 +515,7 @@ export function buildBuildDrawer(parent: Node, pages: BuildPageData[],
   const dcTop = (DH + 24) / 2;            // 抽屉内容顶边（抽屉内部坐标）
 
   // 头部
-  text(drawer, 0, dcTop - 22, '构建面板', { size: 19, color: COL.cream, width: 340, bold: true, outline: true, shadow: true });
+  text(drawer, 0, dcTop - 22, '当前构筑', { size: 19, color: COL.cream, width: 340, bold: true, outline: true, shadow: true });
   text(drawer, 0, dcTop - 44, '第 ' + wave + ' 波 · 已暂停', { size: 10, color: COL.dim, width: 340 });
 
   // 4 个页签：视觉 36，热区 44（贴一条隐形热区，避免"看着够大其实点不中"）

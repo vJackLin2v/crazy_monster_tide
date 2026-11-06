@@ -16,9 +16,6 @@ import { ITEMS } from '../data/Items';
 import { ITEM_ICON } from '../data/IconMap';
 import { ENEMIES } from '../data/Enemies';
 import { Assets, iconFrame, loadIcon } from '../engine/Assets';
-import { listRuns, exportLogs } from '../game/Telemetry';
-import { DEBUG } from 'cc/env';
-import { BUILD_TAG } from '../core/BuildTag';
 import { updateState, applyUpdate } from '../game/Update';
 import { applyFxPrefs } from '../game/Prefs';
 import { writeSave } from '../engine/Save';
@@ -139,25 +136,10 @@ export function buildSettings(parent: Node, s: SaveData, onToggle: (k: 'music' |
     });
   });
 
-  // 战斗日志导出只在调试构建里出现（用户 #6：上线要隐藏）
-  if (DEBUG) {
-    const runs = listRuns().length;
-    text(box, 0, -H / 2 + 116, '战斗日志：已记录 ' + runs + ' 局（调试构建可见）',
-      { size: 10, color: COL.dim, width: W - 24, outline: false });
-    const exp = button(box, 0, -H / 2 + 82, 200, 40, '导出战斗日志', { size: 14 });
-    onTap(exp.node, () => {
-      const json = exportLogs();
-      console.log('[Log] 导出 ' + runs + ' 局：\n' + json);
-      try {
-        if (typeof navigator !== 'undefined' && navigator.clipboard) void navigator.clipboard.writeText(json);
-      } catch { /* 剪贴板不可用就只打控制台 */ }
-    });
-  }
-
   // 构建标记 + 更新状态：放在标题下方（原来是 -H/2+12，正好被"关闭"按钮盖住）
   const updLabel = (() => {
     const st = updateState();
-    return st === 'ready' ? '· 新版本已就绪，点击重启'
+    return st === 'ready' ? '· 已更新，点击重启'
       : st === 'none' ? '· 已是最新'
       : st === 'failed' ? '· 更新下载失败'
       : st === 'checking' ? '· 正在检查更新'

@@ -27,7 +27,7 @@ import { nextDifficulty, difficultyOf } from './data/Difficulties';
 import type { DifficultyId } from './data/Difficulties';
 import { buildCodex, buildAchievements } from './ui/CodexScreens';
 import { applyFxPrefs } from './game/Prefs';
-import { BUILD_TAG } from './core/BuildTag';
+import { BUILD_TAG, BUILD_ID } from './core/BuildTag';
 import { migrateDifficulty, badgesForRun } from './game/Progress';
 import { setupUpdate, updateState, applyUpdate } from './game/Update';
 import { loadSave, writeSave } from './engine/Save';
@@ -157,7 +157,7 @@ export class GameRoot extends Component {
     try { localStorage.setItem('cmt_build_tag', 'm2a-telemetry-20261101-1045'); } catch { /* ignore */ }
     // 真机行为日志：初始化实时日志通道，并记录本次启动（机型/平台，不含账号）
     initDeviceLog();
-    logEvent('session_start', deviceInfo());
+    logEvent('session_start', { ...deviceInfo(), build: BUILD_ID });
 
     this.battleNode = new Node('Battle');
     this.battleNode.parent = this.node;
@@ -352,7 +352,8 @@ export class GameRoot extends Component {
       };
     } else if (this.activeCheck.status === 'corrupt' || this.activeCheck.status === 'version') {
       vm.saveState = 'corrupt';
-      vm.corruptNote = this.activeCheck.message;
+      // 底层校验信息（"存档缺少技能"这类）只进日志供真机排障，界面上只给玩家一句能看懂的话
+      logEvent('save_unreadable', { status: this.activeCheck.status, msg: this.activeCheck.message });
     }
 
     logEvent('menu_shown', { save: vm.saveState, wave: vm.info ? vm.info.wave : 0, char: this.charId });
