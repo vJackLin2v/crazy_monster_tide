@@ -14,8 +14,9 @@ import { COL } from './Tokens';
 export const AGE_RATING = 8;
 
 const AGE_NOTE =
-  '本游戏适合 8 周岁以上玩家。内容为像素风格的怪物战斗，' +
-  '没有血腥画面、没有恐怖元素、没有社交系统，也没有任何付费内容。';
+  '本游戏适合 8 周岁以上玩家。\n' +
+  '像素风格怪物战斗，无血腥、无恐怖，\n' +
+  '无社交系统，也没有任何付费内容。';
 
 const HEALTH_TIP =
   '抵制不良游戏，拒绝盗版游戏。\n' +
@@ -24,8 +25,9 @@ const HEALTH_TIP =
   '合理安排时间，享受健康生活。';
 
 const PRIVACY_NOTE =
-  '游戏进度只保存在你自己的设备上，不会上传到任何服务器。\n' +
-  '为了排查机型兼容问题，会记录设备型号与系统版本，不含姓名、手机号、位置等个人信息。\n' +
+  '游戏进度只保存在你的设备上，不会上传。\n' +
+  '为排查兼容问题，会记录机型与系统版本，\n' +
+  '不含姓名、手机号、位置等个人信息。\n' +
   '在设置里可以随时清除全部本地数据。';
 
 /**
@@ -45,31 +47,32 @@ export function buildAboutModal(parent: Node, onClose: () => void): Node {
   dg.fill();
   onTap(dim, onClose);
 
-  const W = 320, H = 430;
+  const W = 320, H = 460;
   const box = panel(root, 0, 0, W, H, { art: 'panel' });
-  const TX = -W / 2 + 16;        // 正文左边界
   const TW = W - 32;             // 正文宽度
 
+  // 全部居中：标题、正文、按钮同一条中轴。正文靠手动断行控制每行长度，
+  // 否则自动换行后各行长短差太多，居中反而参差。
   // ── 适龄提示 ──
   text(box, 0, H / 2 - 25, '适龄提示 ' + AGE_RATING + '+', {
-    size: 15, color: COL.cream, width: W - 32, bold: true, outline: true, shadow: true,
+    size: 15, color: COL.cream, width: TW, bold: true, outline: true, shadow: true,
   });
-  text(box, TX, H / 2 - 65, AGE_NOTE, { size: 11, color: COL.dim, align: 'left', width: TW, h: 60 });
+  text(box, 0, H / 2 - 70, AGE_NOTE, { size: 11, color: COL.dim, width: TW, h: 66 });
 
   // ── 健康游戏忠告 ──
-  text(box, 0, H / 2 - 112, '健康游戏忠告', {
-    size: 12, color: COL.accent, width: W - 32, bold: true, outline: true,
+  text(box, 0, H / 2 - 120, '健康游戏忠告', {
+    size: 12, color: COL.accent, width: TW, bold: true, outline: true,
   });
-  text(box, TX, H / 2 - 155, HEALTH_TIP, { size: 11, color: COL.dim, align: 'left', width: TW, h: 88 });
+  text(box, 0, H / 2 - 174, HEALTH_TIP, { size: 11, color: COL.dim, width: TW, h: 88 });
 
   // ── 隐私说明 ──
-  text(box, 0, H / 2 - 217, '隐私说明', {
-    size: 12, color: COL.accent, width: W - 32, bold: true, outline: true,
+  text(box, 0, H / 2 - 230, '隐私说明', {
+    size: 12, color: COL.accent, width: TW, bold: true, outline: true,
   });
-  text(box, TX, H / 2 - 265, PRIVACY_NOTE, { size: 11, color: COL.dim, align: 'left', width: TW, h: 80 });
+  text(box, 0, H / 2 - 290, PRIVACY_NOTE, { size: 11, color: COL.dim, width: TW, h: 88 });
 
   // ── 关闭 ──
-  const ok = button(box, 0, -H / 2 + 32, 200, 44, '知道了', { primary: true, size: 14 });
+  const ok = button(box, 0, -H / 2 + 45, 200, 44, '知道了', { primary: true, size: 14 });
   onTap(ok.node, onClose);
 
   return root;
