@@ -22,6 +22,7 @@ import { COL } from './ui/Tokens';
 import { buildMenu, buildHowto, buildCharSelect, buildResult, buildQuitConfirm, buildStartNewConfirm, type ResultBuildRow, type MenuView } from './ui/MenuScreens';
 import { buildHistoryList, buildHistoryDetail } from './ui/HistoryScreens';
 import { buildSettings } from './ui/MetaScreens';
+import { buildAboutModal } from './ui/AboutModal';
 import { buildDifficultySelect } from './ui/DifficultyScreens';
 import { nextDifficulty, difficultyOf } from './data/Difficulties';
 import type { DifficultyId } from './data/Difficulties';
@@ -365,6 +366,7 @@ export class GameRoot extends Component {
       onAchievements: () => { logEvent('page_view', { page: 'achievements' }); this.showAchievements(); },
       onSettings: () => { logEvent('page_view', { page: 'settings' }); this.showSettings(); },
       onHowto: () => { logEvent('page_view', { page: 'howto' }); this.showHowto(); },
+      onAbout: () => { logEvent('page_view', { page: 'about' }); this.showAbout(); },
       onDiscardSave: () => {
         logEvent('save_discard');
         clearActiveRun();
@@ -642,6 +644,11 @@ export class GameRoot extends Component {
     this.cur = buildAchievements(this.uiRoot, this.save, () => this.showMenu());
   }
   /** 设置是**模态**：盖在菜单上，关闭后菜单还在（不重建，避免闪一下） */
+  /** 适龄提示 / 健康游戏忠告 / 隐私说明（主菜单底部那行小字进入） */
+  private showAbout(): void {
+    this.curModal = buildAboutModal(this.uiRoot, () => this.closeModal());
+  }
+
   private showSettings() {
     this.closeModal();
     this.curModal = buildSettings(this.uiRoot, this.save, (k) => {

@@ -22,6 +22,7 @@ import { Assets, iconFrame, loadIcon } from '../engine/Assets';
 import { CS, pageCount, cellPos, cellPosPaged, pageRowCount, gridBottom, detailBox, detailRows, pagerPos, portraitFit } from './CharLayout';
 import { freshStats } from '../game/Stats';
 import { safeTop, safeBottom } from './Safe';
+import { AGE_RATING } from './AboutModal';
 
 const C_MENU_EDGE = new Color(30, 30, 42);    // #1e1e2a
 const C_MENU_MID = new Color(58, 58, 82);     // #3a3a52
@@ -84,6 +85,8 @@ export interface MenuHandlers {
   onSettings: () => void;
   onHowto: () => void;
   onDiscardSave?: () => void;
+  /** 适龄提示 / 健康游戏忠告 / 隐私说明 */
+  onAbout?: () => void;
 }
 
 /** 按下缩放反馈（点击音由 onTap 统一播放） */
@@ -197,9 +200,17 @@ export function buildMenu(parent: Node, seed: number, vm: MenuView, h: MenuHandl
     { primary: startPrimary, size: 17 });
   pressable(howto.node, h.onHowto);
 
-  // 版本信息：主菜单最底部
+  // 底部：适龄提示 + 版本号。整行可点，弹出合规说明（审核要看适龄标识）
   if (vm.version) {
-    text(root, 0, at2(180, VH - 10).y, vm.version, { size: 8, color: COL.dim2, width: 340 });
+    const fy = at2(180, VH - 10).y;
+    text(root, 0, fy, '适龄提示 ' + AGE_RATING + '+  ·  ' + vm.version,
+      { size: 9, color: COL.dim2, width: 340 });
+    if (h.onAbout) {
+      // 热区 340×44（居中贴底），保证点得到；文字本身只有 9px
+      const ah = mkNode(root, 'aboutHit', 340, 44, 0, at2(180, VH - 22).y);
+      (ah as unknown as { __hit?: boolean }).__hit = true;
+      onTap(ah, h.onAbout);
+    }
   }
 
   // ── C. 底部功能入口（真实像素图标，无汉字替代）──
